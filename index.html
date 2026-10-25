@@ -1,0 +1,1319 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Retouche">
+<link rel="apple-touch-icon" href="icon-180.png"><link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Retouche vidéo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout : bande d'en-tête façon pellicule, puis une colonne (écran) ou deux colonnes (aperçu fixe + commandes). */
+:root{--bg:#eef1f0;--panel:#fbfcfb;--ink:#14211f;--mut:#566764;--line:#d1dad7;--acc:#0b7a80;--accink:#ffffff;--acc-soft:#dcefef;--tc:#a4620f;--stage:#0a0f10;--ok:#2c7a4b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--fd:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;--fb:"Instrument Sans","Avenir Next","Segoe UI",system-ui,sans-serif;--fm:"DM Mono",ui-monospace,"SF Mono",Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1112;--panel:#121b1c;--ink:#e3eeec;--mut:#8ea29e;--line:#233134;--acc:#52c7cc;--accink:#04282b;--acc-soft:#14292b;--tc:#e0a64a;--stage:#050808;--ok:#6cc58c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b1112;--panel:#121b1c;--ink:#e3eeec;--mut:#8ea29e;--line:#233134;--acc:#52c7cc;--accink:#04282b;--acc-soft:#14292b;--tc:#e0a64a;--stage:#050808;--ok:#6cc58c;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--fb);-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+.wrap{width:100%;max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,select{font:inherit;color:inherit}
+button{-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.mono{font-family:var(--fm);font-variant-numeric:tabular-nums}
+/* en-tête */
+.top{display:flex;align-items:center;gap:10px;padding-block:14px 12px}
+.brand{display:flex;align-items:center;gap:10px;font:700 19px/1 var(--fd);letter-spacing:-.01em}
+.brand svg{width:30px;height:30px;flex:none}
+.top .tag{margin-left:auto;font:500 11px/1 var(--fm);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.sprock{height:14px;background:repeating-linear-gradient(90deg,transparent 0 6px,var(--line) 6px 16px,transparent 16px 22px);-webkit-mask:linear-gradient(#000,#000);opacity:.9;border-block:1px solid var(--line)}
+/* accueil */
+.hero{padding-block:28px 6px}
+.eyebrow{margin:0 0 10px;font:500 12px/1 var(--fm);letter-spacing:.09em;text-transform:uppercase;color:var(--tc)}
+h1{font:700 clamp(30px,8vw,44px)/1.04 var(--fd);letter-spacing:-.025em;margin:0 0 12px;text-wrap:balance}
+.lead{margin:0 0 20px;color:var(--mut);max-width:46ch}
+.steps{list-style:none;margin:0 0 22px;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.steps li{border-top:3px solid var(--line);padding-top:8px;font-size:13px;line-height:1.3;color:var(--mut);transition:border-color .2s,color .2s}
+.steps b{display:block;color:var(--ink);font:600 14px/1.2 var(--fd);margin-bottom:2px}
+body.loaded .steps li:nth-child(1),body.loaded .steps li:nth-child(2){border-color:var(--acc)}
+body:has(#out:not([hidden])) .steps li{border-color:var(--acc)}
+body.loaded .steps li:nth-child(2) b,body:has(#out:not([hidden])) .steps li:nth-child(3) b{color:var(--acc)}
+body.loaded .hero .lead,body.loaded .hero .eyebrow{display:none}
+body.loaded .hero{padding-block:16px 0}
+body.loaded h1{font-size:22px;margin-bottom:12px}
+body.loaded .steps{display:none}
+.picks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pickbtn{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:16px;border-radius:16px;border:1px solid var(--line);background:var(--panel);cursor:pointer;text-align:left;font-weight:600;min-height:104px}
+.pickbtn svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.pickbtn.main{background:var(--acc);border-color:var(--acc);color:var(--accink)}
+.pickbtn:disabled{opacity:.5}
+body.loaded .pickbtn{min-height:0;flex-direction:row;align-items:center;padding:10px 12px;font-size:14px;gap:10px}
+body.loaded .pickbtn svg{width:22px;height:22px}
+.privacy{margin:14px 0 0;font-size:13px;color:var(--mut)}
+body.loaded .privacy,body.loaded .note{display:none}
+.note{margin-top:14px;padding:14px;border:1px dashed var(--line);border-radius:14px;background:var(--panel)}
+.note strong{display:block;margin-bottom:4px;font-family:var(--fd)}
+.note p{margin:0 0 10px;font-size:14px;color:var(--mut)}
+/* atelier */
+.work{display:grid;gap:18px;padding-top:16px;padding-bottom:48px}
+.stagecol{min-width:0}
+.ctlcol{min-width:0}
+.stage{position:relative;border-radius:16px;overflow:hidden;background:var(--stage);border:1px solid var(--line)}
+#cv{display:block;width:100%;height:auto;max-height:56vh;object-fit:contain;margin:0 auto}
+.bdg{position:absolute;left:10px;top:10px;padding:5px 9px;border-radius:999px;background:rgba(5,8,8,.72);color:#e9f4f2;font:500 11px/1 var(--fm);letter-spacing:.08em;text-transform:uppercase}
+.bdg.orig{background:#e0a64a;color:#2a1a02}
+.tcb{position:absolute;right:10px;bottom:10px;padding:5px 8px;border-radius:8px;background:rgba(5,8,8,.72);color:#f0c46f;font-size:12px}
+.row{display:flex;gap:8px;margin-top:10px}
+.btn{display:block;width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-weight:600;cursor:pointer}
+.btn.main{background:var(--acc);border-color:var(--acc);color:var(--accink)}
+.btn.big{padding:17px 16px;font:700 18px/1.1 var(--fd);margin-top:14px;border-radius:14px}
+.btn:disabled{opacity:.5}
+.row .btn{flex:1;padding:11px 10px;font-size:15px}
+#cmp{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#cmp:active{background:var(--acc-soft);border-color:var(--acc)}
+input[type=range]{width:100%;accent-color:var(--acc);margin:10px 0 0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.meta span{padding:5px 9px;border:1px solid var(--line);border-radius:999px;font:500 12px/1.1 var(--fm);color:var(--mut);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* onglets */
+.tabs{display:flex;gap:4px;padding:4px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.tab{flex:1;padding:10px 6px;border:0;border-radius:10px;background:transparent;font:600 14px/1.1 var(--fd);color:var(--mut);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--acc);color:var(--accink)}
+.panel{padding-top:14px}
+.panel h2{font:700 17px/1.2 var(--fd);margin:0 0 6px}
+.help{margin:0 0 12px;font-size:14px;color:var(--mut)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{padding:11px 6px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font:600 14px/1.15 var(--fd);cursor:pointer;text-align:center}
+.seg button small{display:block;margin-top:3px;font:500 11px/1.1 var(--fm);color:var(--mut)}
+.seg button[aria-pressed="true"]{border-color:var(--acc);background:var(--acc-soft);box-shadow:inset 0 0 0 1px var(--acc)}
+#qhint{margin:10px 0 0;font-size:13px;color:var(--mut);min-height:2.6em}
+.pre{display:flex;gap:8px;margin-bottom:6px}
+.pre .btn{flex:1;font-size:14px;padding:10px 6px}
+label.s{display:block;margin:14px 0 0}
+label.s span{display:flex;justify-content:space-between;font-size:14px;color:var(--mut)}
+select{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--panel)}
+.st{min-height:22px;margin:10px 0 0;font-size:14px;color:var(--mut)}
+progress{width:100%;height:8px;margin-top:12px;border-radius:99px;overflow:hidden;appearance:none;-webkit-appearance:none;border:0;background:var(--line)}
+progress::-webkit-progress-bar{background:var(--line)}
+progress::-webkit-progress-value{background:var(--acc);border-radius:99px}
+progress::-moz-progress-bar{background:var(--acc)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:14px}
+.card h2{font:700 17px/1.2 var(--fd);margin:0 0 10px}
+#rv{width:100%;border-radius:12px;background:#000;max-height:52vh}
+#ri{width:100%;border-radius:12px;max-height:60vh;object-fit:contain}
+[hidden]{display:none!important}
+@media (min-width:900px){
+  .wrap.wide{max-width:1080px}
+  .work{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:start}
+  .stagecol{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+  #cv{max-height:62vh}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+/* === Plus de peps === */
+:root{--g1:#ff7a59;--g2:#ff3d8b;--g3:#7b5cff;--g4:#17c3b2;--grad:linear-gradient(120deg,var(--g1),var(--g2) 45%,var(--g3));--grad2:linear-gradient(120deg,var(--g4),#2b8cff);--glow:rgba(255,61,139,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--glow:rgba(255,61,139,.45);--bg:#0d0a17;--panel:#171329;--line:#2b2447;--acc-soft:#241c44;--mut:#a79fc4;--ink:#f4f0ff;--stage:#07050f}}
+:root[data-theme="dark"]{--glow:rgba(255,61,139,.45);--bg:#0d0a17;--panel:#171329;--line:#2b2447;--acc-soft:#241c44;--mut:#a79fc4;--ink:#f4f0ff;--stage:#07050f}
+:root{--bg:#fff7f2;--panel:#ffffff;--line:#f0dcd2;--mut:#7a6670;--ink:#241524;--acc:#7b5cff;--accink:#fff;--acc-soft:#efe9ff;--tc:#e8590c}
+body{background:radial-gradient(520px 320px at 90% -40px,rgba(255,61,139,.22),transparent 70%),radial-gradient(480px 360px at -10% 220px,rgba(23,195,178,.2),transparent 70%),radial-gradient(500px 400px at 100% 640px,rgba(123,92,255,.16),transparent 70%),var(--bg);background-attachment:fixed}
+body::before{background:transparent}
+.brand span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand svg rect:first-child{fill:url(#lg)}
+.sprock{background:repeating-linear-gradient(90deg,transparent 0 6px,rgba(255,61,139,.45) 6px 16px,transparent 16px 22px);border-color:transparent;animation:roll 3s linear infinite}
+@keyframes roll{to{background-position:22px 0}}
+.eyebrow{display:inline-block;padding:6px 11px;border-radius:999px;background:var(--grad);color:#fff;letter-spacing:.07em}
+h1{font-size:clamp(34px,9.5vw,50px)}
+h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.steps li{border-top:0;border-radius:14px;background:var(--panel);padding:10px;box-shadow:0 1px 0 var(--line),0 8px 20px -12px rgba(123,92,255,.35)}
+.steps li:nth-child(1){border-left:4px solid var(--g1)}.steps li:nth-child(2){border-left:4px solid var(--g2)}.steps li:nth-child(3){border-left:4px solid var(--g3)}
+.steps .em{display:block;font-size:22px;margin-bottom:4px}
+body.loaded .steps li{border-color:inherit}
+.pickbtn{border:0;box-shadow:0 10px 24px -14px rgba(123,92,255,.55);transition:transform .15s}
+.pickbtn:active{transform:scale(.97)}
+.pickbtn.main{background:var(--grad);color:#fff;box-shadow:0 14px 30px -12px var(--glow)}
+#pickp{background:var(--grad2);color:#fff;box-shadow:0 14px 30px -12px rgba(43,140,255,.5)}
+.pickbtn svg{width:34px;height:34px}
+.note{border-style:solid;border-color:transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,var(--grad) border-box;border:2px solid transparent}
+.stage{border:0;box-shadow:0 0 0 2px transparent,0 22px 44px -18px var(--glow);background:var(--stage);outline:3px solid transparent;background-clip:padding-box}
+.stage::after{content:"";position:absolute;inset:0;border-radius:16px;padding:2px;background:var(--grad);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.bdg{background:var(--grad);color:#fff;box-shadow:0 4px 14px var(--glow)}
+.bdg.orig{background:#fff;color:#241524}
+.btn{border:0;box-shadow:0 1px 0 var(--line),0 6px 16px -10px rgba(36,21,36,.4);transition:transform .12s}
+.btn:active{transform:scale(.97)}
+.btn.main{background:var(--grad);color:#fff;box-shadow:0 12px 26px -10px var(--glow)}
+.btn.big{position:relative;overflow:hidden;font-size:20px;padding:19px 16px;border-radius:18px}
+.btn.big::before{content:"✨ "}
+.btn.big::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite}
+@keyframes shine{0%,55%{left:-80px}100%{left:120%}}
+#cmp{background:var(--grad2);color:#fff}
+#cmp:active{background:var(--grad);border-color:transparent}
+#pp{background:var(--panel)}
+.meta span{background:var(--panel);border:0;box-shadow:0 1px 0 var(--line);color:var(--ink)}
+.tabs{background:var(--panel);border:0;box-shadow:0 10px 24px -16px rgba(123,92,255,.5)}
+.tab[aria-selected="true"]{background:var(--grad);color:#fff;box-shadow:0 8px 16px -8px var(--glow)}
+.seg button{border:2px solid transparent;box-shadow:0 1px 0 var(--line)}
+.seg button[aria-pressed="true"]{border-color:transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,var(--grad) border-box;border:2px solid transparent;box-shadow:0 10px 20px -12px var(--glow)}
+.seg button:nth-child(1)::before{content:"🚀";display:block;font-size:20px;margin-bottom:2px}
+.seg button:nth-child(2)::before{content:"⚡";display:block;font-size:20px;margin-bottom:2px}
+.seg button:nth-child(3)::before{content:"🧼";display:block;font-size:20px;margin-bottom:2px}
+.card{border:0;box-shadow:0 12px 28px -16px rgba(123,92,255,.45)}
+progress{height:12px}
+progress::-webkit-progress-value{background:var(--grad);border-radius:99px;box-shadow:0 0 12px var(--glow)}
+progress::-moz-progress-bar{background:var(--grad)}
+input[type=range]{accent-color:var(--g2)}
+.panel h2::before{content:"🎬 "}
+.hero,.picks,.work{animation:pop .5s ease both}
+@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.sprock,.btn.big::after,.hero,.picks,.work{animation:none!important}}
+.opts{margin-bottom:6px}
+.chk{display:flex;gap:12px;align-items:flex-start;padding:12px;margin:0 0 8px;border-radius:14px;background:var(--panel);box-shadow:0 1px 0 var(--line)}
+.chk input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--g2);flex:none}
+.chk b{display:block;font-family:var(--fd)}
+.chk span{font-size:14px;color:var(--mut)}
+.trim{padding:12px;border-radius:14px;background:var(--panel);box-shadow:0 1px 0 var(--line)}
+.trim b{display:block;font-family:var(--fd)}
+.trim .mono{display:block;font-size:13px;color:var(--mut);margin-bottom:2px}
+#spl[aria-pressed="true"]{background:var(--grad);color:#fff}
+</style>
+</head>
+<body>
+<header class="wrap wide top">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
+    <span>Retouche</span>
+  </div>
+  <span class="tag">sur ton téléphone</span>
+</header>
+<div class="sprock" aria-hidden="true"></div>
+<main class="wrap wide">
+  <section class="hero">
+    <p class="eyebrow">Vidéos et photos anciennes</p>
+    <h1>Redonne de l’<em>éclat</em> à tes vieux films de famille 🎞️</h1>
+    <p class="lead">Moins de blocs et de bruit, des couleurs plus justes, une image plus nette. Tout est calculé sur ton téléphone.</p>
+    <ol class="steps">
+      <li><span class="em">📱</span><b>Choisir</b>une vidéo ou une photo</li>
+      <li><span class="em">👀</span><b>Comparer</b>maintiens « Original »</li>
+      <li><span class="em">🎉</span><b>Exporter</b>puis enregistrer</li>
+    </ol>
+  </section>
+
+  <input type="file" id="f" accept="video/*" hidden>
+  <input type="file" id="fp" accept="image/*" hidden>
+  <div class="picks">
+    <button class="pickbtn main" id="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span class="lbl">Choisir une vidéo</span></button>
+    <button class="pickbtn" id="pickp"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg><span class="lbl">Choisir une photo</span></button>
+  </div>
+  <p class="st" id="st0"></p>
+  <p class="privacy">Rien n’est envoyé sur internet, sauf une image si tu utilises l’analyse IA.</p>
+
+  <div class="note" id="inst" hidden>
+    <strong>Ajouter à l’écran d’accueil</strong>
+    <p>Dans Safari, appuie sur Partager, puis sur « Sur l’écran d’accueil ». L’app s’ouvrira ensuite comme une vraie app.</p>
+    <button class="btn" id="instx">Compris</button>
+  </div>
+
+  <div id="app" class="work" hidden>
+    <div class="stagecol">
+      <div class="stage">
+        <canvas id="cv" width="320" height="180"></canvas>
+        <span class="bdg" id="bdg">Amélioré</span>
+        <span class="tcb mono" id="tc">0:00 / 0:00</span>
+      </div>
+      <input type="range" id="tm" min="0" max="1000" value="0" aria-label="Position dans la vidéo">
+      <div class="row">
+        <button class="btn" id="pp">Lecture</button>
+        <button class="btn" id="cmp">Maintenir : original</button>
+        <button class="btn" id="spl" aria-pressed="false">Curseur</button>
+      </div>
+      <div class="meta" id="meta"></div>
+    </div>
+
+    <div class="ctlcol">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-t="tp1" aria-selected="true">✨ Améliorer</button>
+        <button class="tab" role="tab" data-t="tp2" aria-selected="false">🎛️ Réglages</button>
+        <button class="tab" role="tab" data-t="tp3" id="tabx" aria-selected="false">⏩ Prolonger</button>
+      </div>
+
+      <div class="panel" id="tp1">
+        <div id="qwrap">
+          <p class="help">Choisis la taille du résultat. Les réglages d’image sont faits tout seuls.</p>
+          <div class="seg" role="group" aria-label="Taille du résultat">
+            <button data-q="3840" aria-pressed="true">4K<small>le plus net</small></button>
+            <button data-q="1920" aria-pressed="false">Full HD<small>plus rapide</small></button>
+            <button data-q="-1" aria-pressed="false">Origine<small>nettoyage seul</small></button>
+          </div>
+          <select id="q" hidden><option value="3840">4K</option><option value="1920">Full HD</option><option value="-1">Taille d’origine (avant un autre outil)</option></select>
+          <p id="qhint"></p>
+        </div>
+        <button class="btn" id="ai" style="margin-top:12px" hidden>Analyse intelligente (IA)</button>
+        <button class="btn main big" id="ex">Améliorer en 4K</button>
+      </div>
+
+      <div class="panel" id="tp2" hidden>
+        <div class="opts vonly">
+          <h2>Options de la vidéo</h2>
+          <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Réduit les tremblements de la main. L’image est un peu recadrée.</span></label>
+          <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe une vidéo à 15 ou 24 images par seconde à 30, comme un iPhone récent.</span></label>
+          <div class="trim"><b>Partie à traiter</b><span class="mono" id="t_txt">tout</span>
+            <input type="range" id="t_in" min="0" max="1000" value="0" aria-label="Début"><input type="range" id="t_out" min="0" max="1000" value="1000" aria-label="Fin"></div>
+          <h2 style="margin-top:18px">Réglages d’image</h2>
+        </div>
+        <p class="help">Facultatif. Tu peux partir d’un préréglage, puis affiner.</p>
+        <div class="pre">
+          <button class="btn" data-p="auto">Auto</button>
+          <button class="btn" data-p="vhs">Cassette VHS</button>
+          <button class="btn" data-p="film">Film jauni</button>
+        </div>
+        <div id="sl"></div>
+      </div>
+
+      <div class="panel" id="tp3" hidden>
+        <div id="plc">
+          <h2>Prolonger la vidéo (essai)</h2>
+          <p class="help">L’app regarde ta vidéo, repère les moments où les gestes se répètent (un geste de la main, un mouvement…) et les enchaîne pour continuer l’action, avec des raccords adoucis. Le résultat commence par ta vidéo entière puis se prolonge, sans le son. Elle réorganise ce qui existe : elle n’invente pas de nouveaux gestes, donc plus ta vidéo contient de répétitions, plus c’est réussi. Vidéo de 2 minutes maximum.</p>
+          <select id="pl" aria-label="Durée voulue"><option value="30">30 secondes</option><option value="60" selected>1 minute</option><option value="120">2 minutes</option><option value="180">3 minutes</option><option value="240">4 minutes</option></select>
+          <button class="btn main" id="plb" style="margin-top:10px">Créer la version prolongée</button>
+          <button class="btn" id="lfb" style="margin-top:8px">Enregistrer la dernière image</button>
+          <p class="help" style="margin:8px 0 0">La dernière image peut servir de départ à un service de génération vidéo en ligne, qui invente une vraie suite.</p>
+        </div>
+      </div>
+
+      <progress id="pg" value="0" max="1" hidden></progress>
+      <p class="st" id="st1" role="status"></p>
+
+      <div class="card" id="out" hidden>
+        <h2>Résultat</h2>
+        <img id="ri" alt="Photo retouchée" hidden>
+        <video id="rv" controls playsinline></video>
+        <button class="btn main" id="sv" style="margin-top:10px" hidden>Enregistrer la vidéo</button>
+        <button class="btn" id="rtb" style="margin-top:8px" hidden>Refaire avec le son (en temps réel)</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
+const cv=$("#cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:false});
+const v=document.createElement("video");v.playsInline=true;v.muted=true;v.setAttribute("playsinline","");v.preload="auto";
+v.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(v);
+const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,ai:1,cs:.7};
+let show=1,looping=false,exporting=false,cancel=false,az=false,dl=null,url=null,outUrl=null,outBlob=null,curFile=null;
+const PREVIEW=1280,FPS=30;let OFPS=30;
+function measureFps(){
+  return new Promise(res=>{
+    if(!v.requestVideoFrameCallback){res(FPS);return}
+    const ts=[];let done=false;
+    const fin=()=>{
+      if(done)return;done=true;v.pause();
+      const d=[];for(let i=1;i<ts.length;i++){const x=ts[i]-ts[i-1];if(x>.008&&x<.2)d.push(x)}
+      d.sort((a,b)=>a-b);let f=d.length>5?1/d[d.length>>1]:FPS,best=f,bd=1e9;
+      for(const s of [24000/1001,24,25,30000/1001,30,48,50,60000/1001,60]){const e=Math.abs(s-f);if(e<bd){bd=e;best=s}}
+      f=bd<.6?best:Math.round(f*100)/100;res(Math.max(5,Math.min(60,f)));
+    };
+    const cb=(n,md)=>{ts.push(md.mediaTime);if(ts.length>=45)fin();else v.requestVideoFrameCallback(cb)};
+    v.muted=true;
+    seekEl(v,0).then(()=>v.play()).then(()=>v.requestVideoFrameCallback(cb)).catch(fin);
+    setTimeout(fin,3000);
+  });
+}
+let mode="video",photoEl=null,wd;
+function cur(){return mode==="photo"&&photoEl?photoEl:v}
+function dims(s){return [s.videoWidth||s.naturalWidth||s.width||0,s.videoHeight||s.naturalHeight||s.height||0]}
+function setMode(){
+  const ph=mode==="photo";
+  $("#app").hidden=false;$("#st0").hidden=true;
+  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#tabx").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);$("#qwrap").hidden=ph;document.body.classList.add("loaded");if(ph)showTab("tp1");$("#bdg").hidden=false;
+  $("#ex").textContent=ph?"Améliorer la photo":($("#q").value==="-1"?"Nettoyer (taille d’origine)":$("#q").value==="3840"?"Améliorer en 4K":"Améliorer en Full HD");
+  $("#out").hidden=true;
+}
+if(!gl){msg("Ton navigateur ne gère pas le traitement vidéo (WebGL).");$("#pick").disabled=true}
+try{if(sessionStorage.getItem("exp")){sessionStorage.removeItem("exp");msg("La page s’est rechargée pendant l’export : la mémoire de l’iPhone était saturée. Essaie en Full HD ou avec une vidéo plus courte.")}}catch(e){}
+
+const VS="attribute vec2 p;varying vec2 uv;void main(){uv=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}";
+const FS=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float on,br,co,sa,wa,sp;uniform vec3 tr;uniform sampler2D t0;
+vec3 cr(vec2 u){vec2 pos=u/px;vec2 c=floor(pos-.5)+.5;vec2 f=pos-c;
+vec2 w0=f*(-.5+f*(1.-.5*f));vec2 w1=1.+f*f*(-2.5+1.5*f);vec2 w2=f*(.5+f*(2.-1.5*f));vec2 w3=f*f*(-.5+.5*f);
+vec2 w12=w1+w2;vec2 t12=px*(c+w2/w12);vec2 t0=px*(c-1.);vec2 t3=px*(c+2.);
+vec3 r=texture2D(t,vec2(t12.x,t0.y)).rgb*(w12.x*w0.y)+texture2D(t,vec2(t0.x,t12.y)).rgb*(w0.x*w12.y)
++texture2D(t,vec2(t12.x,t12.y)).rgb*(w12.x*w12.y)+texture2D(t,vec2(t3.x,t12.y)).rgb*(w3.x*w12.y)+texture2D(t,vec2(t12.x,t3.y)).rgb*(w12.x*w3.y);
+return r/(w12.x*w0.y+w0.x*w12.y+w12.x*w12.y+w3.x*w12.y+w12.x*w3.y);}
+void main(){vec3 c;vec2 uu=(uv-.5)*tr.x+.5+tr.yz;
+if(on>.5){c=cr(uu);c+=br;c=(c-.5)*co+.5;float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sa);c.r+=wa;c.b-=wa;}
+else c=texture2D(t,uv).rgb;
+if(sp>0.){if(uv.x<sp)c=texture2D(t0,uv).rgb;if(abs(uv.x-sp)<.0025)c=vec3(1.);}
+gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
+const VSA="attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}";
+const FSA0=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float ai;
+float Y(vec2 o){return dot(texture2D(t,uv+o*px).rgb,vec3(.299,.587,.114));}
+void main(){vec4 c=texture2D(t,uv);float c0=dot(c.rgb,vec3(.299,.587,.114));
+float d0=Y(vec2(-3.,-3.))-c0;
+float d1=Y(vec2(-2.,-3.))-c0;
+float d2=Y(vec2(-1.,-3.))-c0;
+float d3=Y(vec2(0.,-3.))-c0;
+float d4=Y(vec2(1.,-3.))-c0;
+float d5=Y(vec2(2.,-3.))-c0;
+float d6=Y(vec2(3.,-3.))-c0;
+float d7=Y(vec2(-3.,-2.))-c0;
+float d8=Y(vec2(-2.,-2.))-c0;
+float d9=Y(vec2(-1.,-2.))-c0;
+float d10=Y(vec2(2.,-2.))-c0;
+float d11=Y(vec2(3.,-2.))-c0;
+float d12=Y(vec2(-3.,-1.))-c0;
+float d13=Y(vec2(-2.,-1.))-c0;
+float d14=Y(vec2(1.,-1.))-c0;
+float d15=Y(vec2(2.,-1.))-c0;
+float d16=Y(vec2(3.,-1.))-c0;
+float d17=Y(vec2(-3.,0.))-c0;
+float d18=Y(vec2(-2.,0.))-c0;
+float d19=Y(vec2(3.,0.))-c0;
+float d20=Y(vec2(-3.,1.))-c0;
+float d21=Y(vec2(-2.,1.))-c0;
+float d22=Y(vec2(-1.,1.))-c0;
+float d23=Y(vec2(1.,1.))-c0;
+float d24=Y(vec2(2.,1.))-c0;
+float d25=Y(vec2(3.,1.))-c0;
+float d26=Y(vec2(-3.,2.))-c0;
+float d27=Y(vec2(-2.,2.))-c0;
+float d28=Y(vec2(3.,2.))-c0;
+float d29=Y(vec2(-3.,3.))-c0;
+float d30=Y(vec2(-2.,3.))-c0;
+float d31=Y(vec2(-1.,3.))-c0;
+float d32=Y(vec2(0.,3.))-c0;
+float d33=Y(vec2(1.,3.))-c0;
+float d34=Y(vec2(2.,3.))-c0;
+float d35=Y(vec2(3.,3.))-c0;
+float a0=max(0.,-2.5869e-01+d0*(8.5744e-01)+d1*(5.7801e-01)+d2*(6.7908e-01)+d3*(3.8569e-01)+d4*(-4.1216e-02)+d5*(4.4414e-02)+d6*(-3.1244e-02)+d7*(4.6077e-01)+d8*(1.6340e-01)+d9*(-1.6466e-01)+d10*(-2.3390e-01)+d11*(-1.6665e-01)+d12*(4.6466e-01)+d13*(2.2777e-02)+d14*(-1.2598e+00)+d15*(-1.8578e-01)+d16*(3.1093e-01)+d17*(2.6893e-01)+d18*(-2.1567e-01)+d19*(-1.7274e-01)+d20*(1.1503e-01)+d21*(-2.2304e-01)+d22*(-1.0135e+00)+d23*(-6.4076e-01)+d24*(1.6595e-01)+d25*(3.9329e-01)+d26*(1.0413e-01)+d27*(-8.2652e-02)+d28*(1.5267e-01)+d29*(1.0806e-01)+d30*(-8.0934e-02)+d31*(5.0826e-02)+d32*(-1.2755e-01)+d33*(2.5853e-01)+d34*(2.6460e-01)+d35*(2.9893e-01));
+float a1=max(0.,-5.7119e-03+d0*(2.6554e-01)+d1*(5.0701e-01)+d2*(5.6621e-01)+d3*(6.6466e-01)+d4*(2.8810e-01)+d5*(3.2900e-01)+d6*(1.0963e-01)+d7*(-1.4472e-01)+d8*(9.6789e-02)+d9*(7.1199e-01)+d10*(1.9968e-01)+d11*(-3.0546e-01)+d12*(-1.0822e+00)+d13*(1.8019e-01)+d14*(-1.2920e-01)+d15*(-1.9928e-01)+d16*(-5.1533e-01)+d17*(-1.0732e+00)+d18*(-3.7669e-01)+d19*(-9.9758e-01)+d20*(-1.0516e+00)+d21*(-4.2497e-02)+d22*(2.0231e-01)+d23*(2.7035e-01)+d24*(-2.1865e-01)+d25*(-2.0234e-01)+d26*(-5.5069e-01)+d27*(1.0842e-01)+d28*(-3.0869e-01)+d29*(7.4658e-02)+d30*(3.7749e-01)+d31*(4.2209e-01)+d32*(8.0629e-01)+d33*(4.0733e-01)+d34*(1.6913e-01)+d35*(-6.9512e-02));
+float a2=max(0.,-3.0026e-02+d0*(6.7876e-01)+d1*(-2.1710e-01)+d2*(1.5786e-01)+d3*(7.8463e-02)+d4*(3.6754e-02)+d5*(-5.4439e-02)+d6*(-2.5952e-02)+d7*(7.4451e-01)+d8*(-3.9836e-01)+d9*(7.9018e-02)+d10*(-3.6414e-01)+d11*(1.9330e-01)+d12*(8.5724e-01)+d13*(-6.7354e-01)+d14*(-1.1059e-01)+d15*(-2.9543e-01)+d16*(5.8486e-02)+d17*(6.0587e-01)+d18*(-9.0418e-01)+d19*(-1.5085e-03)+d20*(2.1216e-01)+d21*(-5.4195e-01)+d22*(-6.9062e-01)+d23*(-2.5917e-01)+d24*(-5.0191e-01)+d25*(8.3258e-02)+d26*(3.7199e-02)+d27*(-8.8503e-01)+d28*(2.6680e-01)+d29*(6.6817e-01)+d30*(-2.4914e-01)+d31*(6.5675e-02)+d32*(2.3866e-02)+d33*(8.2525e-01)+d34*(4.4578e-01)+d35*(7.3625e-01));
+float a3=max(0.,-2.8956e-02+d0*(-5.6820e-01)+d1*(-1.7829e-01)+d2*(-2.2920e-01)+d3*(-3.8648e-01)+d4*(-2.1767e-01)+d5*(2.8242e-01)+d6*(4.2496e-01)+d7*(-3.5538e-01)+d8*(-1.4408e-01)+d9*(3.0734e-01)+d10*(7.0103e-02)+d11*(2.4230e-01)+d12*(-4.0748e-01)+d13*(8.3456e-01)+d14*(1.1141e-02)+d15*(1.5908e-01)+d16*(-1.4801e-01)+d17*(-4.0464e-01)+d18*(7.7178e-01)+d19*(-4.3716e-01)+d20*(-2.7694e-01)+d21*(4.9573e-01)+d22*(1.0534e+00)+d23*(3.1842e-01)+d24*(1.4148e-01)+d25*(-3.5392e-01)+d26*(-2.5936e-02)+d27*(-2.5393e-01)+d28*(-2.9006e-01)+d29*(-3.6500e-02)+d30*(-1.0787e-01)+d31*(-2.1700e-01)+d32*(-3.1027e-01)+d33*(-2.8824e-01)+d34*(-1.2710e-01)+d35*(-9.8777e-01));
+float a4=max(0.,-6.9154e-02+d0*(6.3412e-03)+d1*(-1.0845e-02)+d2*(-6.2913e-01)+d3*(-7.7694e-01)+d4*(-4.2978e-01)+d5*(3.8919e-02)+d6*(4.3125e-02)+d7*(5.1801e-02)+d8*(-3.1124e-02)+d9*(-8.9655e-01)+d10*(-7.0348e-02)+d11*(6.9666e-02)+d12*(-5.6021e-02)+d13*(-6.3551e-01)+d14*(-7.2389e-01)+d15*(-7.2152e-02)+d16*(-5.4953e-03)+d17*(3.1942e-01)+d18*(1.9836e-01)+d19*(3.8774e-01)+d20*(1.7374e-01)+d21*(3.7505e-01)+d22*(5.6159e-01)+d23*(4.1236e-01)+d24*(4.3310e-01)+d25*(-1.3912e-02)+d26*(1.1247e-01)+d27*(1.1171e-01)+d28*(1.6355e-01)+d29*(-1.8125e-01)+d30*(-4.8123e-02)+d31*(-7.6952e-02)+d32*(-1.0349e-01)+d33*(-2.1792e-01)+d34*(-1.6492e-01)+d35*(-8.3295e-02));
+float a5=max(0.,-1.9378e-01+d0*(3.4579e-02)+d1*(3.2889e-01)+d2*(5.7096e-01)+d3*(2.6230e-01)+d4*(8.7989e-02)+d5*(3.4449e-02)+d6*(-2.4408e-01)+d7*(1.2200e-01)+d8*(2.4690e-01)+d9*(-2.2310e-01)+d10*(-5.6631e-02)+d11*(2.9416e-01)+d12*(-2.5034e-02)+d13*(-3.9525e-01)+d14*(-1.2848e+00)+d15*(-3.7823e-01)+d16*(1.1238e-01)+d17*(-1.6615e-01)+d18*(-5.9086e-01)+d19*(-3.4109e-01)+d20*(9.5588e-02)+d21*(3.6663e-02)+d22*(-7.7031e-01)+d23*(-4.0182e-01)+d24*(1.2364e-02)+d25*(4.2844e-01)+d26*(4.5453e-02)+d27*(-1.1587e-01)+d28*(5.9294e-01)+d29*(-9.6825e-02)+d30*(2.5635e-02)+d31*(5.0617e-01)+d32*(6.2257e-01)+d33*(1.0146e+00)+d34*(6.7282e-01)+d35*(1.8859e-02));
+float a6=max(0.,1.4743e-01+d0*(-3.5254e-02)+d1*(-1.4349e-02)+d2*(-2.4067e-01)+d3*(-3.5499e-01)+d4*(-6.1020e-02)+d5*(1.9231e-01)+d6*(2.9745e-01)+d7*(1.6865e-01)+d8*(-2.1139e-02)+d9*(-1.9807e-01)+d10*(1.8529e-01)+d11*(3.4476e-01)+d12*(4.5460e-02)+d13*(-1.6301e-01)+d14*(-1.9405e-01)+d15*(2.9053e-01)+d16*(3.1626e-01)+d17*(6.0730e-01)+d18*(1.8228e-01)+d19*(1.0607e-01)+d20*(7.6351e-01)+d21*(4.9518e-01)+d22*(3.4183e-01)+d23*(-8.2071e-01)+d24*(-3.7321e-01)+d25*(-6.0682e-02)+d26*(5.7662e-01)+d27*(1.6590e-01)+d28*(-2.3611e-01)+d29*(8.7394e-01)+d30*(5.8275e-01)+d31*(5.1470e-01)+d32*(-2.0868e-02)+d33*(-4.1544e-01)+d34*(-1.3980e-01)+d35*(2.0083e-01));
+float a7=max(0.,9.8980e-02+d0*(-5.6581e-02)+d1*(-2.4752e-01)+d2*(-4.1073e-01)+d3*(-3.1919e-01)+d4*(-1.7719e-01)+d5*(-3.5109e-01)+d6*(-6.4369e-01)+d7*(-1.7025e-01)+d8*(7.0372e-02)+d9*(1.1483e+00)+d10*(4.6197e-01)+d11*(4.6725e-02)+d12*(-2.1846e-01)+d13*(2.0471e-01)+d14*(1.2131e+00)+d15*(4.3818e-01)+d16*(-2.6145e-01)+d17*(-2.9122e-01)+d18*(1.3605e-01)+d19*(1.1579e-01)+d20*(-2.4858e-01)+d21*(-8.7385e-02)+d22*(9.0120e-01)+d23*(-5.7464e-02)+d24*(-3.1236e-02)+d25*(-3.9705e-01)+d26*(5.4244e-03)+d27*(1.5819e-01)+d28*(-3.1699e-02)+d29*(-1.8884e-01)+d30*(-1.6784e-01)+d31*(-1.0385e-01)+d32*(5.1728e-02)+d33*(-7.3227e-02)+d34*(-1.3384e-01)+d35*(8.2861e-03));
+float a8=max(0.,-1.0892e-03+d0*(8.6064e-02)+d1*(1.0695e-01)+d2*(8.4669e-02)+d3*(-7.1360e-02)+d4*(-9.1126e-02)+d5*(4.0042e-01)+d6*(1.6453e-02)+d7*(2.8364e-01)+d8*(7.0602e-02)+d9*(3.8264e-01)+d10*(4.0770e-02)+d11*(4.8887e-01)+d12*(-4.2853e-01)+d13*(-7.4224e-01)+d14*(-1.4812e+00)+d15*(-6.2799e-01)+d16*(3.5861e-01)+d17*(-1.6749e-01)+d18*(2.6317e-01)+d19*(3.3607e-01)+d20*(-3.3286e-01)+d21*(3.9433e-01)+d22*(2.0591e+00)+d23*(-4.6649e-01)+d24*(-5.2279e-01)+d25*(3.1482e-01)+d26*(-1.7731e-01)+d27*(-5.2796e-01)+d28*(3.5051e-01)+d29*(-1.4911e-01)+d30*(-4.2666e-01)+d31*(2.1685e-02)+d32*(-1.7968e-02)+d33*(-2.9288e-01)+d34*(-1.7950e-01)+d35*(2.8928e-01));
+float a9=max(0.,4.2735e-04+d0*(-5.7242e-01)+d1*(-2.8541e-01)+d2*(1.9772e-01)+d3*(5.2071e-01)+d4*(-5.3179e-01)+d5*(-8.7961e-02)+d6*(-1.8872e-02)+d7*(-3.7503e-01)+d8*(3.5756e-01)+d9*(1.2780e+00)+d10*(-1.5947e-01)+d11*(4.3960e-01)+d12*(-1.8801e-01)+d13*(4.0193e-01)+d14*(2.4105e-01)+d15*(2.7912e-01)+d16*(3.0094e-01)+d17*(6.8300e-01)+d18*(7.2163e-01)+d19*(5.1291e-01)+d20*(2.6007e-01)+d21*(-2.2280e-01)+d22*(-1.0662e+00)+d23*(-1.1124e+00)+d24*(-4.3314e-01)+d25*(-4.9457e-02)+d26*(-1.5139e-01)+d27*(-3.0632e-01)+d28*(2.5237e-02)+d29*(2.7173e-01)+d30*(2.4892e-01)+d31*(4.0337e-01)+d32*(2.9715e-01)+d33*(4.8763e-01)+d34*(4.5974e-01)+d35*(-1.2564e-01));
+float a10=max(0.,-2.3903e-01+d0*(-4.7680e-02)+d1*(-1.1298e-01)+d2*(3.3461e-01)+d3*(5.4490e-01)+d4*(1.8855e-04)+d5*(1.9977e-01)+d6*(-3.6623e-02)+d7*(8.1072e-02)+d8*(-1.9546e-01)+d9*(5.2361e-01)+d10*(-8.5571e-03)+d11*(-6.6459e-02)+d12*(-7.7111e-02)+d13*(-4.7386e-01)+d14*(2.0484e-01)+d15*(-1.8735e-01)+d16*(-2.6167e-01)+d17*(-3.2383e-01)+d18*(-7.7591e-01)+d19*(1.6216e-01)+d20*(-2.4468e-01)+d21*(-8.5324e-01)+d22*(-1.6094e-01)+d23*(4.4065e-01)+d24*(-8.7586e-02)+d25*(-8.0417e-02)+d26*(-4.0210e-01)+d27*(-5.9256e-01)+d28*(1.4375e-01)+d29*(1.1451e-01)+d30*(-5.6613e-01)+d31*(-7.8988e-01)+d32*(-9.1390e-02)+d33*(5.3143e-02)+d34*(2.3166e-01)+d35*(1.3871e-01));
+float a11=max(0.,-2.1268e-01+d0*(-9.5617e-02)+d1*(1.4821e-01)+d2*(-4.8573e-01)+d3*(-2.2197e-01)+d4*(-3.8035e-02)+d5*(1.9163e-01)+d6*(-5.8398e-01)+d7*(3.6012e-01)+d8*(9.2016e-02)+d9*(-3.2325e-01)+d10*(5.9583e-01)+d11*(-4.4990e-01)+d12*(1.3902e-01)+d13*(8.0926e-04)+d14*(-3.0139e-01)+d15*(1.0977e+00)+d16*(2.2329e-01)+d17*(-7.4232e-02)+d18*(4.2942e-01)+d19*(2.3068e-01)+d20*(1.5664e-01)+d21*(3.4407e-01)+d22*(-6.7596e-01)+d23*(2.2010e-01)+d24*(9.2440e-01)+d25*(1.8802e-02)+d26*(1.1424e-01)+d27*(3.7849e-01)+d28*(-6.5106e-02)+d29*(-7.0675e-01)+d30*(-3.3702e-01)+d31*(-2.1590e-01)+d32*(-5.8848e-01)+d33*(6.9840e-02)+d34*(4.2775e-01)+d35*(-2.2734e-01));
+float a12=max(0.,-2.6769e-01+d0*(5.6011e-01)+d1*(-7.1540e-01)+d2*(-6.9683e-01)+d3*(-5.2108e-01)+d4*(-3.4002e-01)+d5*(-2.4063e-01)+d6*(5.3483e-02)+d7*(-2.5607e-01)+d8*(-7.8192e-01)+d9*(-5.9328e-01)+d10*(-3.8292e-01)+d11*(-3.7880e-01)+d12*(-2.4564e-01)+d13*(5.3575e-02)+d14*(9.1418e-01)+d15*(4.4588e-01)+d16*(-2.6577e-01)+d17*(1.7086e-02)+d18*(5.3402e-01)+d19*(-2.7640e-02)+d20*(5.2089e-02)+d21*(2.4732e-03)+d22*(9.8870e-01)+d23*(4.6820e-01)+d24*(-4.3312e-02)+d25*(-1.4055e-01)+d26*(-5.6917e-02)+d27*(-2.2479e-01)+d28*(2.3943e-01)+d29*(-1.3970e-01)+d30*(-2.9225e-01)+d31*(-4.8509e-01)+d32*(-2.6893e-01)+d33*(-2.2788e-01)+d34*(-1.7746e-01)+d35*(-1.9739e-01));
+float a13=max(0.,2.1995e-01+d0*(1.2133e-01)+d1*(4.8125e-01)+d2*(2.6028e-01)+d3*(8.8962e-01)+d4*(1.1290e-02)+d5*(2.5036e-02)+d6*(1.8755e-02)+d7*(2.8453e-01)+d8*(-1.0072e-01)+d9*(7.2382e-01)+d10*(-4.1497e-01)+d11*(-4.4412e-01)+d12*(5.1119e-01)+d13*(7.8488e-01)+d14*(4.3025e-01)+d15*(-9.1142e-02)+d16*(-1.4043e-01)+d17*(5.3067e-01)+d18*(3.2915e-01)+d19*(-1.7389e-01)+d20*(7.3734e-03)+d21*(-7.4306e-02)+d22*(-8.4386e-02)+d23*(5.5683e-01)+d24*(2.1946e-01)+d25*(-6.6523e-02)+d26*(-3.0545e-01)+d27*(-2.1513e-01)+d28*(6.2208e-02)+d29*(-7.6977e-02)+d30*(-2.0483e-01)+d31*(-3.6786e-01)+d32*(7.6141e-02)+d33*(2.3686e-01)+d34*(2.4642e-01)+d35*(2.4860e-01));
+float a14=max(0.,-1.7068e-02+d0*(-1.8615e-01)+d1*(2.5730e-01)+d2*(-2.7872e-01)+d3*(-5.8149e-01)+d4*(-1.2191e-01)+d5*(1.2941e-01)+d6*(-2.6073e-01)+d7*(-1.2111e-01)+d8*(4.6238e-01)+d9*(2.4876e-01)+d10*(4.9296e-01)+d11*(3.8964e-02)+d12*(-2.8335e-01)+d13*(4.2986e-01)+d14*(-7.3350e-01)+d15*(4.7212e-01)+d16*(-3.2882e-01)+d17*(-3.8447e-01)+d18*(-7.1852e-03)+d19*(-3.1693e-01)+d20*(-2.7201e-01)+d21*(3.7758e-01)+d22*(-1.5776e+00)+d23*(-1.3286e+00)+d24*(3.1557e-01)+d25*(2.1319e-01)+d26*(2.5473e-01)+d27*(6.7841e-01)+d28*(1.0552e-01)+d29*(-3.2965e-01)+d30*(1.7779e-01)+d31*(9.8520e-03)+d32*(-9.7305e-02)+d33*(1.2863e-01)+d34*(3.6530e-01)+d35*(-4.5589e-02));
+float a15=max(0.,-2.5450e-03+d0*(1.0105e-01)+d1*(-1.0602e-01)+d2*(5.8724e-01)+d3*(2.7344e-01)+d4*(1.5793e-01)+d5*(8.1188e-02)+d6*(-1.2213e-01)+d7*(-6.0684e-02)+d8*(5.6649e-02)+d9*(-3.0603e-01)+d10*(2.1526e-01)+d11*(4.3286e-02)+d12*(-5.2175e-01)+d13*(-9.9501e-01)+d14*(-9.3512e-01)+d15*(-6.6480e-01)+d16*(-1.9656e-01)+d17*(-7.5458e-01)+d18*(-7.0555e-01)+d19*(-1.9026e-01)+d20*(-7.2780e-01)+d21*(-6.9346e-01)+d22*(-2.6042e-01)+d23*(-2.1475e-01)+d24*(-3.3495e-01)+d25*(-1.4895e-01)+d26*(-4.6263e-01)+d27*(-3.3829e-01)+d28*(-2.4074e-01)+d29*(-1.7849e-01)+d30*(2.0989e-01)+d31*(9.4587e-02)+d32*(6.7210e-01)+d33*(9.1444e-02)+d34*(1.3896e-01)+d35*(9.2127e-02));
+float a16=max(0.,-1.8740e-04+d0*(1.5992e-01)+d1*(-2.5288e-02)+d2*(-2.0171e-02)+d3*(-7.3945e-01)+d4*(-3.9502e-01)+d5*(1.5926e-01)+d6*(-2.2601e-02)+d7*(2.3074e-01)+d8*(2.3961e-01)+d9*(2.0321e-01)+d10*(-2.6918e-01)+d11*(4.7594e-01)+d12*(1.4038e-01)+d13*(7.3092e-02)+d14*(-8.2021e-01)+d15*(1.4853e-01)+d16*(5.1304e-01)+d17*(1.0171e-01)+d18*(6.0324e-01)+d19*(9.2053e-01)+d20*(-1.1673e-01)+d21*(5.5241e-02)+d22*(-4.1584e-01)+d23*(-6.2763e-01)+d24*(3.1566e-01)+d25*(7.4034e-01)+d26*(-2.8209e-01)+d27*(-3.2548e-01)+d28*(5.2610e-01)+d29*(-3.0694e-01)+d30*(-2.8591e-01)+d31*(-5.9823e-01)+d32*(-7.4358e-01)+d33*(-4.5664e-01)+d34*(-8.2935e-03)+d35*(3.8236e-01));
+float a17=max(0.,5.5086e-02+d0*(-1.9086e-01)+d1*(3.4203e-02)+d2*(1.1993e-01)+d3*(-7.1979e-03)+d4*(-1.9414e-01)+d5*(2.5383e-01)+d6*(8.1681e-02)+d7*(-1.4910e-01)+d8*(2.6646e-01)+d9*(5.2371e-01)+d10*(-1.0303e-01)+d11*(6.9957e-02)+d12*(-9.9499e-02)+d13*(2.1905e-01)+d14*(-1.2158e+00)+d15*(-4.1502e-01)+d16*(-8.5219e-02)+d17*(-9.5493e-02)+d18*(5.8583e-01)+d19*(-2.3590e-01)+d20*(-2.1541e-01)+d21*(2.4894e-01)+d22*(8.2422e-01)+d23*(-9.1597e-01)+d24*(-3.1546e-01)+d25*(1.7778e-01)+d26*(3.2887e-02)+d27*(4.6384e-03)+d28*(8.6168e-02)+d29*(-1.8818e-01)+d30*(-1.3713e-01)+d31*(2.3266e-01)+d32*(1.3118e-01)+d33*(-2.1480e-01)+d34*(3.9028e-03)+d35*(9.6839e-02));
+float a18=max(0.,3.3012e-01+d0*(1.7083e-01)+d1*(2.1700e-01)+d2*(1.5417e-01)+d3*(9.1064e-02)+d4*(-6.4132e-02)+d5*(-1.0075e-01)+d6*(1.8357e-01)+d7*(3.4520e-03)+d8*(-2.3652e-01)+d9*(-2.0123e-01)+d10*(-1.8980e-01)+d11*(-1.6107e-01)+d12*(-1.5649e-01)+d13*(3.6423e-01)+d14*(-9.6787e-02)+d15*(-2.0520e-01)+d16*(-1.0194e-01)+d17*(-2.1811e-01)+d18*(-1.0297e-02)+d19*(7.2305e-02)+d20*(-2.3689e-04)+d21*(-2.6048e-01)+d22*(8.6363e-02)+d23*(1.2927e+00)+d24*(6.0239e-01)+d25*(1.7899e-01)+d26*(4.9929e-02)+d27*(6.4674e-02)+d28*(2.2963e-01)+d29*(-1.5175e-02)+d30*(4.8679e-02)+d31*(1.8399e-02)+d32*(3.9983e-01)+d33*(5.1860e-01)+d34*(3.8313e-01)+d35*(-1.6843e-01));
+float a19=max(0.,2.7328e-01+d0*(-2.4123e-01)+d1*(-1.1908e-01)+d2*(-2.9881e-01)+d3*(4.6147e-01)+d4*(6.6141e-01)+d5*(4.0573e-01)+d6*(3.3536e-01)+d7*(-7.1705e-02)+d8*(-2.1008e-01)+d9*(1.9045e-01)+d10*(5.9720e-01)+d11*(5.7427e-01)+d12*(-2.0316e-01)+d13*(-2.3402e-01)+d14*(5.9307e-01)+d15*(4.1237e-01)+d16*(4.2598e-01)+d17*(-1.2923e-01)+d18*(-1.2261e-01)+d19*(4.4229e-01)+d20*(1.7660e-01)+d21*(1.7836e-02)+d22*(1.0093e-02)+d23*(-7.4117e-01)+d24*(-3.3369e-01)+d25*(-9.0284e-02)+d26*(-1.0824e-01)+d27*(4.1998e-01)+d28*(-3.3895e-02)+d29*(9.2129e-02)+d30*(-1.1179e-01)+d31*(1.8521e-01)+d32*(-1.3718e-01)+d33*(-2.5654e-01)+d34*(-2.6463e-01)+d35*(-1.2811e-01));
+float e0=max(0.,-1.1639e-01+a0*(3.3952e-01)+a1*(3.1472e-01)+a2*(-3.8424e-03)+a3*(-4.5497e-01)+a4*(5.3476e-01)+a5*(4.9276e-01)+a6*(5.2649e-02)+a7*(-7.8870e-01)+a8*(-4.9867e-01)+a9*(-1.4088e-01)+a10*(-1.0264e-01)+a11*(3.6669e-01)+a12*(-4.0497e-01)+a13*(-1.7053e-01)+a14*(-8.9158e-01)+a15*(-1.8791e-01)+a16*(3.7757e-02)+a17*(2.7845e-01)+a18*(-2.5985e-01)+a19*(7.2172e-01));
+float e1=max(0.,-2.8237e-01+a0*(-1.8380e-01)+a1*(4.5126e-01)+a2*(-4.5891e-02)+a3*(4.4040e-01)+a4*(9.9488e-02)+a5*(6.6352e-01)+a6*(6.6650e-01)+a7*(-2.8885e-01)+a8*(-5.9492e-01)+a9*(-2.6014e-01)+a10*(-3.1347e-01)+a11*(-1.9596e-02)+a12*(5.6422e-02)+a13*(-1.6028e-01)+a14*(-1.2652e-01)+a15*(2.3753e-02)+a16*(2.1555e-01)+a17*(-1.2843e-01)+a18*(-6.3193e-02)+a19*(1.4970e-01));
+float e2=max(0.,1.2435e-01+a0*(1.3598e-01)+a1*(-7.0377e-01)+a2*(5.3470e-02)+a3*(2.8514e-02)+a4*(1.4955e-01)+a5*(2.5902e-01)+a6*(2.2042e-01)+a7*(-4.7955e-01)+a8*(-2.3581e-01)+a9*(8.7074e-02)+a10*(-2.6337e-01)+a11*(3.5387e-01)+a12*(-5.3312e-01)+a13*(-4.1280e-02)+a14*(-1.0550e-01)+a15*(6.8780e-01)+a16*(1.2013e-01)+a17*(8.2494e-02)+a18*(-3.3587e-01)+a19*(-1.2750e-01));
+float e3=max(0.,-7.3900e-02+a0*(1.0831e-01)+a1*(6.8323e-01)+a2*(1.8957e-01)+a3*(-2.6827e-01)+a4*(-2.0811e-01)+a5*(6.7614e-01)+a6*(4.1782e-01)+a7*(-6.9379e-01)+a8*(-1.3088e-01)+a9*(4.0238e-02)+a10*(-4.1212e-01)+a11*(2.9435e-01)+a12*(3.4828e-02)+a13*(-4.2968e-01)+a14*(-9.9363e-01)+a15*(-2.3740e-01)+a16*(3.9205e-01)+a17*(-3.8592e-01)+a18*(-5.4559e-01)+a19*(-2.8700e-02));
+float e4=max(0.,1.6791e-02+a0*(-1.0478e+00)+a1*(-5.3989e-01)+a2*(-2.1766e-01)+a3*(1.0464e-01)+a4*(-5.2109e-02)+a5*(-2.0400e-01)+a6*(8.0452e-02)+a7*(4.7070e-01)+a8*(1.8079e-01)+a9*(4.3248e-01)+a10*(6.7189e-01)+a11*(-7.2208e-01)+a12*(1.3512e-01)+a13*(4.2101e-01)+a14*(1.9899e-01)+a15*(-7.4254e-02)+a16*(-3.0419e-01)+a17*(3.9734e-01)+a18*(2.2389e-01)+a19*(-6.2311e-02));
+float e5=max(0.,-4.7973e-02+a0*(2.2934e-01)+a1*(-2.4638e-01)+a2*(-7.5544e-02)+a3*(1.2701e-01)+a4*(-3.5684e-02)+a5*(-5.3425e-02)+a6*(2.1664e-01)+a7*(-3.2808e-01)+a8*(8.9377e-01)+a9*(3.1710e-01)+a10*(-8.1259e-01)+a11*(7.1501e-01)+a12*(-4.3410e-01)+a13*(1.6034e-01)+a14*(7.5845e-01)+a15*(2.3632e-01)+a16*(-4.3292e-01)+a17*(-9.0452e-01)+a18*(1.9997e-02)+a19*(3.6176e-01));
+float e6=max(0.,6.5763e-02+a0*(-3.2720e-01)+a1*(1.1988e-01)+a2*(-4.9259e-01)+a3*(4.6258e-01)+a4*(1.7107e-01)+a5*(7.3314e-01)+a6*(2.5063e-01)+a7*(1.6886e-01)+a8*(-9.4374e-01)+a9*(-1.1823e+00)+a10*(-2.6398e-01)+a11*(-4.5553e-01)+a12*(-2.3762e-01)+a13*(2.3445e-01)+a14*(-8.7919e-01)+a15*(3.4874e-02)+a16*(8.8646e-01)+a17*(-1.2218e-01)+a18*(-8.6700e-01)+a19*(2.8637e-02));
+float e7=max(0.,9.4942e-02+a0*(1.2937e-01)+a1*(-2.3491e-01)+a2*(-2.5635e-01)+a3*(4.2538e-01)+a4*(-8.5938e-02)+a5*(-8.2614e-01)+a6*(-2.8121e-01)+a7*(2.1539e-01)+a8*(5.5612e-01)+a9*(2.3147e-01)+a10*(5.1845e-01)+a11*(-5.4845e-01)+a12*(5.7884e-01)+a13*(2.2611e-01)+a14*(7.8118e-01)+a15*(-7.6865e-02)+a16*(-6.6274e-01)+a17*(-2.8306e-01)+a18*(-2.0866e-01)+a19*(-4.0065e-02));
+float e8=max(0.,-3.4695e-01+a0*(-4.8409e-02)+a1*(3.5066e-01)+a2*(-5.5143e-01)+a3*(-2.8812e-03)+a4*(4.2670e-01)+a5*(-5.5578e-01)+a6*(-9.1382e-03)+a7*(5.5926e-01)+a8*(-2.7538e-01)+a9*(-3.4677e-01)+a10*(2.1413e-01)+a11*(-4.9509e-01)+a12*(4.8678e-01)+a13*(2.8792e-01)+a14*(-1.4349e-01)+a15*(1.5985e-02)+a16*(7.6489e-02)+a17*(2.0775e-01)+a18*(5.8871e-01)+a19*(2.4003e-01));
+float e9=max(0.,-1.8400e-01+a0*(1.9879e-01)+a1*(-7.5635e-02)+a2*(8.8895e-01)+a3*(5.6635e-01)+a4*(4.9949e-01)+a5*(-5.2234e-01)+a6*(1.3513e-01)+a7*(2.1584e-01)+a8*(-8.4110e-01)+a9*(-9.1056e-01)+a10*(9.0989e-02)+a11*(-7.5136e-01)+a12*(-2.3065e-01)+a13*(-9.9438e-02)+a14*(-1.0395e+00)+a15*(2.5906e-01)+a16*(-2.4584e-01)+a17*(4.5449e-01)+a18*(7.1746e-02)+a19*(3.9590e-01));
+float o=-2.5295e-02+e0*(-1.2649e-01)+e1*(-8.7453e-02)+e2*(-1.3353e-01)+e3*(1.4123e-01)+e4*(9.1763e-02)+e5*(9.3875e-02)+e6*(7.1869e-02)+e7*(-1.2740e-01)+e8*(1.0327e-01)+e9*(8.4793e-02);
+gl_FragColor=vec4(clamp(c.rgb+ai*o,0.,1.),1.);}`;
+const FSA=`precision highp float;varying vec2 uv;uniform sampler2D t,t4,t16;uniform vec2 px,s4,s16;uniform float ai;
+float Y(vec2 o){return dot(texture2D(t,uv+o*px).rgb,vec3(.299,.587,.114));}
+void main(){vec4 c=texture2D(t,uv);float c0=dot(c.rgb,vec3(.299,.587,.114));vec2 fc=floor(gl_FragCoord.xy);
+float dA=c0-dot(texture2D(t4,(fc+.5)/4./s4).rgb,vec3(.299,.587,.114));float dB=c0-dot(texture2D(t16,(fc+.5)/16./s16).rgb,vec3(.299,.587,.114));
+float qx=mod(fc.x,8.)/7.,qy=mod(fc.y,8.)/7.,rx=mod(fc.x,16.)/15.,ry=mod(fc.y,16.)/15.;
+float d0=Y(vec2(-3.,-3.))-c0;
+float d1=Y(vec2(-1.,-3.))-c0;
+float d2=Y(vec2(0.,-3.))-c0;
+float d3=Y(vec2(1.,-3.))-c0;
+float d4=Y(vec2(2.,-3.))-c0;
+float d5=Y(vec2(3.,-3.))-c0;
+float d6=Y(vec2(-3.,-2.))-c0;
+float d7=Y(vec2(-2.,-2.))-c0;
+float d8=Y(vec2(1.,-2.))-c0;
+float d9=Y(vec2(3.,-2.))-c0;
+float d10=Y(vec2(-1.,-1.))-c0;
+float d11=Y(vec2(0.,-1.))-c0;
+float d12=Y(vec2(1.,-1.))-c0;
+float d13=Y(vec2(3.,-1.))-c0;
+float d14=Y(vec2(-3.,0.))-c0;
+float d15=Y(vec2(-2.,0.))-c0;
+float d16=Y(vec2(-1.,0.))-c0;
+float d17=Y(vec2(1.,0.))-c0;
+float d18=Y(vec2(3.,0.))-c0;
+float d19=Y(vec2(-3.,1.))-c0;
+float d20=Y(vec2(-2.,1.))-c0;
+float d21=Y(vec2(-1.,1.))-c0;
+float d22=Y(vec2(0.,1.))-c0;
+float d23=Y(vec2(1.,1.))-c0;
+float d24=Y(vec2(3.,1.))-c0;
+float d25=Y(vec2(-3.,2.))-c0;
+float d26=Y(vec2(-2.,2.))-c0;
+float d27=Y(vec2(1.,2.))-c0;
+float d28=Y(vec2(3.,2.))-c0;
+float d29=Y(vec2(-3.,3.))-c0;
+float d30=Y(vec2(-2.,3.))-c0;
+float d31=Y(vec2(-1.,3.))-c0;
+float d32=Y(vec2(0.,3.))-c0;
+float d33=Y(vec2(1.,3.))-c0;
+float d34=Y(vec2(2.,3.))-c0;
+float d35=Y(vec2(3.,3.))-c0;
+float a0=max(0.,5.7663e-02+d0*(3.1484e-02)+d1*(-3.4910e-01)+d2*(-2.3742e-01)+d3*(2.2202e-01)+d4*(1.4260e-01)+d5*(2.9937e-01)+d6*(-8.5073e-02)+d7*(-3.3206e-01)+d8*(1.0512e-01)+d9*(5.7475e-02)+d10*(-7.4077e-02)+d11*(-1.7790e-01)+d12*(-9.1398e-02)+d13*(-6.8652e-03)+d14*(2.3501e-01)+d15*(1.5073e-01)+d16*(-1.4000e-01)+d17*(-5.5482e-01)+d18*(9.5371e-03)+d19*(2.1878e-01)+d20*(6.2519e-01)+d21*(2.7605e-01)+d22*(-8.5642e-01)+d23*(-4.9422e-01)+d24*(1.5073e-01)+d25*(-1.3936e-01)+d26*(-2.2790e-01)+d27*(-9.1320e-01)+d28*(-1.2373e-01)+d29*(-1.4805e-01)+d30*(-2.9936e-01)+d31*(-3.8579e-01)+d32*(-8.4644e-01)+d33*(-4.3364e-01)+d34*(-5.4485e-01)+d35*(1.7614e-01)+dA*(-2.7506e-01)+dB*(4.1041e-01)+qx*(-1.2684e-02)+qy*(-3.1018e-02)+rx*(5.5106e-03)+ry*(6.5791e-03));
+float a1=max(0.,4.0331e-01+d0*(1.5530e-01)+d1*(5.6517e-02)+d2*(-3.5949e-03)+d3*(4.1374e-01)+d4*(7.4657e-01)+d5*(9.9136e-01)+d6*(-3.1712e-02)+d7*(-1.6000e-01)+d8*(1.6412e-01)+d9*(5.2349e-01)+d10*(-3.8493e-01)+d11*(-8.6083e-01)+d12*(-1.0262e+00)+d13*(6.1509e-01)+d14*(3.5532e-01)+d15*(4.4275e-01)+d16*(3.4242e-01)+d17*(-1.2401e+00)+d18*(2.0601e-01)+d19*(-3.2887e-02)+d20*(4.6154e-01)+d21*(6.1574e-01)+d22*(-3.1321e-01)+d23*(-7.2070e-01)+d24*(8.5796e-02)+d25*(2.5177e-01)+d26*(6.5766e-01)+d27*(4.2728e-01)+d28*(3.1370e-01)+d29*(-3.3804e-01)+d30*(9.6532e-02)+d31*(4.0622e-01)+d32*(3.0308e-01)+d33*(8.5005e-02)+d34*(-5.5688e-02)+d35*(4.1744e-01)+dA*(-1.4178e-02)+dB*(5.0082e-01)+qx*(3.5157e-02)+qy*(1.6000e-02)+rx*(-3.0406e-03)+ry*(1.2682e-02));
+float a2=max(0.,-2.4804e-02+d0*(7.1796e-01)+d1*(-3.4942e-01)+d2*(-7.7670e-01)+d3*(-2.3518e-01)+d4*(-5.2519e-01)+d5*(4.6986e-01)+d6*(-1.0880e-01)+d7*(-9.3324e-01)+d8*(2.6687e-02)+d9*(-2.8777e-01)+d10*(4.1055e-01)+d11*(1.1713e+00)+d12*(1.6379e+00)+d13*(1.7062e-01)+d14*(-3.2776e-01)+d15*(6.9630e-01)+d16*(6.3232e-01)+d17*(4.3579e-01)+d18*(-2.7669e-02)+d19*(-3.1682e-01)+d20*(8.4850e-01)+d21*(-3.4217e-01)+d22*(-1.2281e+00)+d23*(-1.3828e+00)+d24*(-6.4643e-01)+d25*(-6.4912e-02)+d26*(2.0113e-01)+d27*(-3.4302e-02)+d28*(1.0817e+00)+d29*(-7.1113e-01)+d30*(-3.9143e-01)+d31*(5.4268e-01)+d32*(1.0888e+00)+d33*(5.4997e-01)+d34*(-3.4039e-01)+d35*(2.8404e-01)+dA*(8.3594e-01)+dB*(1.0508e-02)+qx*(7.6912e-03)+qy*(2.2069e-04)+rx*(-3.8870e-03)+ry*(9.2621e-04));
+float a3=max(0.,-2.5322e-01+d0*(6.8500e-01)+d1*(5.5815e-01)+d2*(6.0510e-01)+d3*(1.6981e-01)+d4*(-3.0249e-02)+d5*(-1.1935e-01)+d6*(2.0533e-01)+d7*(3.2230e-01)+d8*(-1.2314e-01)+d9*(-1.8849e-01)+d10*(-5.2903e-01)+d11*(-7.9673e-01)+d12*(-6.6846e-01)+d13*(-4.4249e-01)+d14*(-3.6493e-01)+d15*(-3.3585e-01)+d16*(-1.3772e+00)+d17*(-1.3369e+00)+d18*(-2.7642e-01)+d19*(-2.9726e-01)+d20*(-4.3145e-02)+d21*(-9.7214e-01)+d22*(-6.3117e-01)+d23*(-8.0607e-02)+d24*(2.3732e-02)+d25*(-2.9128e-02)+d26*(-1.7034e-01)+d27*(6.1007e-01)+d28*(5.5303e-01)+d29*(5.5453e-02)+d30*(2.1950e-01)+d31*(4.6764e-01)+d32*(1.2373e+00)+d33*(1.0806e+00)+d34*(6.7305e-01)+d35*(2.5709e-01)+dA*(-3.3772e-01)+dB*(-3.7197e-01)+qx*(-2.5744e-02)+qy*(2.8568e-02)+rx*(-8.1347e-03)+ry*(-1.6719e-02));
+float a4=max(0.,-6.4294e-04+d0*(8.1217e-02)+d1*(-9.6993e-02)+d2*(2.1435e-01)+d3*(2.1043e-01)+d4*(-4.1425e-01)+d5*(-3.0351e-01)+d6*(5.9446e-01)+d7*(2.9970e-01)+d8*(1.2523e+00)+d9*(3.0630e-01)+d10*(-2.3125e+00)+d11*(-1.2574e+00)+d12*(3.2078e-01)+d13*(-1.9303e-01)+d14*(9.2041e-01)+d15*(8.5180e-02)+d16*(-1.2260e+00)+d17*(1.0421e+00)+d18*(-2.5179e-01)+d19*(4.2130e-01)+d20*(7.8585e-01)+d21*(-4.3107e-01)+d22*(8.2058e-01)+d23*(6.2353e-01)+d24*(-6.8448e-01)+d25*(-3.9744e-01)+d26*(2.9998e-01)+d27*(8.9945e-01)+d28*(-6.7112e-01)+d29*(-5.0762e-01)+d30*(-3.0530e-02)+d31*(-4.1522e-01)+d32*(-2.1441e-01)+d33*(3.0606e-01)+d34*(-1.1147e-01)+d35*(-2.3200e-01)+dA*(7.0008e-01)+dB*(-4.4241e-01)+qx*(-6.1968e-03)+qy*(-1.3467e-02)+rx*(7.3235e-03)+ry*(-1.1082e-04));
+float a5=max(0.,1.9742e-01+d0*(-1.3933e-01)+d1*(4.3587e-01)+d2*(7.6749e-01)+d3*(7.4100e-02)+d4*(-6.5854e-02)+d5*(-5.1187e-01)+d6*(-1.1883e-01)+d7*(-2.3916e-02)+d8*(4.5337e-01)+d9*(-4.0512e-01)+d10*(3.0925e-01)+d11*(4.4520e-01)+d12*(1.2145e-01)+d13*(-7.3420e-01)+d14*(-2.6008e-01)+d15*(-3.5699e-01)+d16*(-3.3087e-01)+d17*(1.5593e-01)+d18*(-2.3183e-01)+d19*(-2.7885e-01)+d20*(-2.2840e-01)+d21*(1.2638e-01)+d22*(4.9785e-01)+d23*(4.3941e-01)+d24*(3.6318e-02)+d25*(1.1298e-01)+d26*(3.0032e-01)+d27*(1.1469e+00)+d28*(1.3739e-01)+d29*(-2.5892e-01)+d30*(-1.8047e-03)+d31*(4.6006e-01)+d32*(1.0384e+00)+d33*(6.3988e-01)+d34*(5.1156e-01)+d35*(1.2887e-01)+dA*(7.1805e-01)+dB*(5.0112e-01)+qx*(-1.3613e-02)+qy*(-7.1227e-03)+rx*(8.5821e-03)+ry*(-1.8138e-03));
+float a6=max(0.,2.7321e-01+d0*(-3.0536e-01)+d1*(6.5505e-03)+d2*(-2.7429e-01)+d3*(-2.3086e-01)+d4*(1.2441e-01)+d5*(-2.6084e-02)+d6*(-7.7541e-01)+d7*(-1.1020e-01)+d8*(-2.0655e-01)+d9*(1.0015e-01)+d10*(1.1407e+00)+d11*(7.6658e-01)+d12*(1.2726e-01)+d13*(1.7263e-01)+d14*(-5.2196e-01)+d15*(4.8738e-01)+d16*(1.8377e+00)+d17*(6.3557e-01)+d18*(-1.1528e-01)+d19*(-4.4542e-01)+d20*(3.9737e-01)+d21*(1.9843e+00)+d22*(1.8671e+00)+d23*(8.3624e-01)+d24*(-6.3679e-02)+d25*(-8.4049e-01)+d26*(-3.8856e-01)+d27*(7.6149e-02)+d28*(-3.8178e-01)+d29*(8.1553e-04)+d30*(-4.7139e-01)+d31*(-3.3807e-01)+d32*(-3.5114e-01)+d33*(-3.3161e-01)+d34*(-3.2812e-01)+d35*(-3.0553e-01)+dA*(8.1037e-01)+dB*(-4.6340e-01)+qx*(3.1040e-03)+qy*(2.0419e-03)+rx*(3.1863e-03)+ry*(1.5452e-02));
+float a7=max(0.,9.9856e-02+d0*(-4.9830e-01)+d1*(1.9193e-01)+d2*(3.1332e-01)+d3*(-7.6185e-02)+d4*(-1.2242e-01)+d5*(-5.3856e-03)+d6*(-1.1027e-01)+d7*(1.3066e-01)+d8*(6.6107e-01)+d9*(1.4488e-01)+d10*(-4.8856e-01)+d11*(5.9300e-01)+d12*(4.7583e-01)+d13*(-2.4424e-02)+d14*(-2.4692e-01)+d15*(3.5467e-01)+d16*(2.7699e-01)+d17*(1.7204e-01)+d18*(-8.2446e-01)+d19*(-1.8103e-01)+d20*(6.6748e-01)+d21*(5.5092e-01)+d22*(8.5038e-01)+d23*(-4.1826e-02)+d24*(-1.3236e+00)+d25*(-2.7930e-02)+d26*(3.2444e-01)+d27*(3.0255e-01)+d28*(-9.4434e-01)+d29*(-3.9460e-01)+d30*(4.7099e-02)+d31*(2.9555e-01)+d32*(5.9235e-01)+d33*(7.4669e-02)+d34*(-4.3453e-01)+d35*(-8.5544e-01)+dA*(8.3307e-01)+dB*(-7.2328e-01)+qx*(-7.5405e-03)+qy*(-1.8442e-02)+rx*(-1.3319e-03)+ry*(7.3882e-03));
+float a8=max(0.,3.1433e-02+d0*(2.8304e-01)+d1*(-1.5007e-01)+d2*(-3.2688e-01)+d3*(-6.3317e-02)+d4*(1.1818e-01)+d5*(-8.2718e-02)+d6*(1.7708e-01)+d7*(-4.1868e-01)+d8*(-1.6846e-01)+d9*(9.8840e-02)+d10*(-4.5833e-01)+d11*(-7.0120e-01)+d12*(-4.0112e-01)+d13*(7.6045e-02)+d14*(4.2813e-01)+d15*(-3.8496e-01)+d16*(-7.1573e-01)+d17*(-7.3443e-01)+d18*(-2.7401e-01)+d19*(4.0934e-01)+d20*(6.7346e-02)+d21*(-4.1844e-01)+d22*(-6.7972e-01)+d23*(-9.2578e-01)+d24*(-7.4763e-02)+d25*(1.4493e-01)+d26*(-2.1353e-01)+d27*(-8.7461e-01)+d28*(-1.6961e-01)+d29*(9.4541e-01)+d30*(3.4477e-01)+d31*(9.9361e-02)+d32*(-3.7234e-01)+d33*(2.2363e-03)+d34*(-6.9293e-02)+d35*(4.2484e-01)+dA*(-2.4061e+00)+dB*(-3.1656e+00)+qx*(-1.3768e-02)+qy*(5.8581e-03)+rx*(-1.5895e-04)+ry*(-6.7777e-04));
+float a9=max(0.,1.9826e-01+d0*(6.4915e-02)+d1*(-3.3166e-01)+d2*(-2.5674e-01)+d3*(-3.5355e-01)+d4*(-1.4249e-01)+d5*(6.6783e-01)+d6*(3.4461e-01)+d7*(1.3154e-01)+d8*(-3.9637e-01)+d9*(5.8699e-02)+d10*(-1.3955e-01)+d11*(-1.2252e-01)+d12*(7.5079e-03)+d13*(2.9707e-01)+d14*(8.7886e-01)+d15*(6.6645e-01)+d16*(6.0061e-01)+d17*(7.2597e-01)+d18*(4.0183e-01)+d19*(9.4115e-01)+d20*(5.2756e-01)+d21*(4.4445e-01)+d22*(4.7827e-01)+d23*(1.3394e-01)+d24*(-8.6519e-03)+d25*(6.2243e-01)+d26*(3.0027e-01)+d27*(-2.6580e-01)+d28*(-2.7069e-02)+d29*(4.1818e-01)+d30*(8.5720e-02)+d31*(7.9786e-02)+d32*(-1.7421e-01)+d33*(-5.1080e-01)+d34*(-2.6227e-01)+d35*(-8.2330e-02)+dA*(4.1011e-01)+dB*(-2.7538e-01)+qx*(1.5056e-02)+qy*(-8.7323e-03)+rx*(2.8828e-03)+ry*(3.3806e-03));
+float a10=max(0.,6.9753e-03+d0*(-7.0630e-01)+d1*(-3.1531e-01)+d2*(-1.2086e-01)+d3*(-5.7777e-01)+d4*(-9.3111e-02)+d5*(-6.9301e-01)+d6*(-1.0342e-01)+d7*(8.6500e-01)+d8*(3.6065e-01)+d9*(7.8930e-04)+d10*(1.1932e+00)+d11*(1.3753e+00)+d12*(9.0189e-01)+d13*(2.8307e-01)+d14*(-4.1218e-01)+d15*(3.2655e-01)+d16*(4.7714e-01)+d17*(1.4201e+00)+d18*(-1.1568e-01)+d19*(-1.7422e-01)+d20*(-2.0211e-01)+d21*(-1.6656e-01)+d22*(6.6335e-01)+d23*(1.2554e+00)+d24*(1.3624e-01)+d25*(7.6715e-02)+d26*(4.3879e-01)+d27*(3.9140e-01)+d28*(-7.1063e-01)+d29*(1.2667e-01)+d30*(2.9657e-01)+d31*(-2.3285e-02)+d32*(1.4155e-01)+d33*(-1.0868e-01)+d34*(4.1194e-01)+d35*(-7.9838e-01)+dA*(4.1180e-01)+dB*(-6.6728e-01)+qx*(3.1148e-03)+qy*(-2.4792e-03)+rx*(-1.7639e-03)+ry*(-2.5293e-03));
+float a11=max(0.,2.3254e-02+d0*(5.9778e-01)+d1*(6.4618e-01)+d2*(5.0344e-01)+d3*(1.3140e-01)+d4*(-2.8113e-01)+d5*(-6.8330e-02)+d6*(8.9206e-01)+d7*(6.5821e-01)+d8*(-3.2819e-02)+d9*(-6.0221e-01)+d10*(1.2398e-01)+d11*(4.2004e-01)+d12*(-2.1151e-01)+d13*(-9.2775e-01)+d14*(2.7977e-01)+d15*(-1.5592e-01)+d16*(-6.1357e-01)+d17*(-1.9021e-01)+d18*(-1.0735e+00)+d19*(-5.8816e-01)+d20*(-1.9445e-01)+d21*(-6.5656e-01)+d22*(4.1545e-01)+d23*(7.2540e-01)+d24*(-4.3498e-01)+d25*(-4.0673e-01)+d26*(-3.0765e-01)+d27*(3.6942e-01)+d28*(-1.8888e-01)+d29*(-6.0785e-01)+d30*(-1.9522e-01)+d31*(2.3696e-02)+d32*(6.0599e-01)+d33*(7.9745e-01)+d34*(3.8721e-01)+d35*(1.1122e-01)+dA*(-3.3524e-01)+dB*(-1.7919e+00)+qx*(1.0078e-02)+qy*(-2.8948e-03)+rx*(-4.1677e-03)+ry*(-4.4346e-03));
+float a12=max(0.,4.2773e-01+d0*(-2.9924e-01)+d1*(-5.3155e-01)+d2*(-8.0447e-01)+d3*(-4.2323e-01)+d4*(-4.1888e-01)+d5*(1.7565e-01)+d6*(-4.4080e-01)+d7*(-3.9632e-01)+d8*(-1.0308e+00)+d9*(-3.1072e-01)+d10*(6.0622e-02)+d11*(-3.2486e-01)+d12*(-7.2505e-01)+d13*(-2.2225e-01)+d14*(-1.9985e-01)+d15*(2.1580e-01)+d16*(1.1414e+00)+d17*(-1.7512e-01)+d18*(-2.2202e-01)+d19*(-1.5652e-01)+d20*(2.9398e-01)+d21*(7.3777e-01)+d22*(7.3478e-01)+d23*(3.1140e-01)+d24*(-1.0895e-01)+d25*(-2.9056e-01)+d26*(-2.8144e-01)+d27*(-3.9854e-02)+d28*(-7.8528e-02)+d29*(-1.8778e-01)+d30*(-1.6349e-01)+d31*(-4.6542e-01)+d32*(-3.2647e-01)+d33*(-2.4033e-01)+d34*(-3.2886e-01)+d35*(-5.2717e-02)+dA*(-1.7953e+00)+dB*(-7.1650e-01)+qx*(1.4892e-02)+qy*(4.0208e-03)+rx*(7.2481e-03)+ry*(1.1732e-02));
+float a13=max(0.,-7.8901e-02+d0*(2.5602e-01)+d1*(-4.7614e-01)+d2*(-1.8843e-01)+d3*(-8.4564e-02)+d4*(-4.5219e-02)+d5*(-3.8592e-02)+d6*(2.3946e-01)+d7*(-5.7324e-01)+d8*(-1.4646e-01)+d9*(5.8642e-01)+d10*(-1.1032e+00)+d11*(-1.1197e+00)+d12*(-4.7295e-01)+d13*(-8.6286e-02)+d14*(7.6813e-02)+d15*(-1.0412e+00)+d16*(-1.3317e+00)+d17*(-8.3701e-01)+d18*(-2.6886e-01)+d19*(-3.9915e-01)+d20*(-8.2566e-01)+d21*(-7.5541e-01)+d22*(-9.5788e-01)+d23*(-7.1549e-01)+d24*(-3.7500e-01)+d25*(3.3627e-01)+d26*(-6.0294e-01)+d27*(-4.8447e-01)+d28*(-5.1093e-01)+d29*(1.0178e+00)+d30*(3.2220e-01)+d31*(4.4664e-01)+d32*(1.0418e-01)+d33*(1.7784e-01)+d34*(-7.2175e-02)+d35*(1.2418e-01)+dA*(2.1728e-02)+dB*(2.0540e-01)+qx*(-1.7821e-02)+qy*(3.1668e-02)+rx*(-1.1322e-03)+ry*(1.3081e-02));
+float a14=max(0.,2.0203e-03+d0*(1.4445e-01)+d1*(-6.9378e-02)+d2*(-5.4169e-01)+d3*(-7.2857e-01)+d4*(-5.1216e-01)+d5*(-4.7622e-01)+d6*(5.0317e-01)+d7*(5.2176e-01)+d8*(-2.2511e-01)+d9*(7.1645e-02)+d10*(8.2751e-01)+d11*(1.0639e-01)+d12*(1.6905e-01)+d13*(4.1145e-01)+d14*(6.7997e-01)+d15*(5.4993e-01)+d16*(3.9024e-01)+d17*(1.1941e+00)+d18*(8.7642e-01)+d19*(-1.3216e-01)+d20*(-3.3201e-01)+d21*(-7.9865e-01)+d22*(-7.6422e-01)+d23*(4.5824e-01)+d24*(6.9983e-01)+d25*(-3.0735e-01)+d26*(-4.2477e-01)+d27*(2.6147e-01)+d28*(4.5984e-01)+d29*(-5.0885e-01)+d30*(-4.7956e-01)+d31*(-7.6926e-01)+d32*(-5.8782e-01)+d33*(-1.1878e-01)+d34*(1.2369e-01)+d35*(1.3624e-01)+dA*(5.2869e-01)+dB*(-3.6187e-01)+qx*(-2.1786e-03)+qy*(-2.7192e-02)+rx*(7.9352e-03)+ry*(8.1834e-03));
+float a15=max(0.,-4.6583e-02+d0*(-3.9120e-01)+d1*(5.6336e-01)+d2*(3.9742e-01)+d3*(1.6009e-01)+d4*(-9.0511e-02)+d5*(-4.2840e-01)+d6*(4.8789e-01)+d7*(1.1345e+00)+d8*(5.0354e-01)+d9*(2.3890e-01)+d10*(-1.3822e-01)+d11*(-6.5870e-01)+d12*(-6.2559e-01)+d13*(2.9596e-01)+d14*(7.0300e-01)+d15*(5.1791e-01)+d16*(-7.0198e-01)+d17*(-8.7155e-01)+d18*(5.6743e-01)+d19*(6.3337e-02)+d20*(5.0175e-02)+d21*(-1.6653e+00)+d22*(-1.4228e+00)+d23*(-8.5958e-01)+d24*(4.7303e-01)+d25*(6.0502e-01)+d26*(6.3809e-01)+d27*(8.4800e-01)+d28*(2.4577e-01)+d29*(-4.4326e-01)+d30*(1.9200e-01)+d31*(1.5649e-01)+d32*(4.9357e-02)+d33*(2.5708e-01)+d34*(3.5053e-01)+d35*(-1.0223e-01)+dA*(1.0064e+00)+dB*(3.1936e-01)+qx*(-2.5587e-02)+qy*(1.4125e-02)+rx*(-1.5855e-03)+ry*(-8.2789e-03));
+float a16=max(0.,-2.9040e-02+d0*(-1.5937e-01)+d1*(-1.2878e+00)+d2*(-1.4722e+00)+d3*(-3.9187e-01)+d4*(-2.6396e-01)+d5*(-2.0859e-02)+d6*(1.8491e-01)+d7*(-2.5206e-01)+d8*(1.8469e-01)+d9*(-1.1318e-02)+d10*(9.5047e-04)+d11*(-4.5626e-02)+d12*(8.8437e-01)+d13*(3.7167e-01)+d14*(6.0546e-01)+d15*(8.1442e-01)+d16*(7.8592e-01)+d17*(9.1554e-01)+d18*(1.5603e-01)+d19*(2.1922e-01)+d20*(6.2433e-01)+d21*(3.6271e-01)+d22*(1.3074e-02)+d23*(2.8485e-01)+d24*(6.2133e-02)+d25*(5.0316e-02)+d26*(6.5900e-01)+d27*(3.3249e-01)+d28*(1.6167e-01)+d29*(-4.4871e-01)+d30*(9.4202e-02)+d31*(2.2668e-01)+d32*(-2.9312e-01)+d33*(-1.7021e-01)+d34*(1.2003e-03)+d35*(-4.6551e-02)+dA*(6.1914e-01)+dB*(1.2158e+00)+qx*(2.6309e-03)+qy*(2.8432e-02)+rx*(-3.1516e-04)+ry*(-5.1326e-03));
+float a17=max(0.,-2.0138e-02+d0*(6.4425e-01)+d1*(-9.2941e-01)+d2*(-8.2654e-01)+d3*(-6.9340e-01)+d4*(-5.8518e-01)+d5*(-7.5180e-02)+d6*(5.0628e-02)+d7*(-3.8344e-01)+d8*(-4.2839e-01)+d9*(-2.3094e-02)+d10*(-7.0682e-01)+d11*(-6.8893e-01)+d12*(3.1196e-01)+d13*(-3.8959e-02)+d14*(-1.5603e-01)+d15*(8.7037e-02)+d16*(-2.3071e-01)+d17*(9.4023e-01)+d18*(2.5603e-01)+d19*(-1.1784e-01)+d20*(-1.8151e-01)+d21*(-7.2796e-01)+d22*(-1.0890e-01)+d23*(5.1322e-02)+d24*(-2.7219e-01)+d25*(-3.4637e-01)+d26*(-1.3408e-01)+d27*(1.6782e-01)+d28*(8.9908e-02)+d29*(-3.2998e-01)+d30*(3.1337e-02)+d31*(-1.3379e-01)+d32*(2.8452e-01)+d33*(-1.3440e-01)+d34*(5.4617e-02)+d35*(-4.3447e-01)+dA*(-1.7408e-02)+dB*(-1.5611e+00)+qx*(3.9445e-03)+qy*(-4.4668e-03)+rx*(5.7954e-03)+ry*(-4.0547e-03));
+float a18=max(0.,1.5875e-02+d0*(1.1703e-01)+d1*(-7.5394e-01)+d2*(-1.3246e-01)+d3*(3.8114e-01)+d4*(3.1064e-01)+d5*(1.6495e-01)+d6*(-4.0525e-01)+d7*(-7.8542e-01)+d8*(8.7655e-01)+d9*(4.1694e-01)+d10*(-1.1796e+00)+d11*(-6.7897e-02)+d12*(1.2390e+00)+d13*(7.2977e-01)+d14*(-4.4890e-01)+d15*(-3.7386e-01)+d16*(-4.5845e-01)+d17*(8.5093e-01)+d18*(1.7008e-01)+d19*(-8.5455e-02)+d20*(2.5063e-01)+d21*(1.2210e-01)+d22*(-8.3328e-02)+d23*(-5.9304e-02)+d24*(-4.4754e-01)+d25*(-3.3969e-02)+d26*(1.8760e-01)+d27*(-8.4384e-02)+d28*(-2.5252e-01)+d29*(2.2830e-01)+d30*(5.5678e-02)+d31*(1.2480e-02)+d32*(6.7202e-02)+d33*(-1.2622e-01)+d34*(-1.6287e-01)+d35*(-4.0470e-01)+dA*(1.4908e-01)+dB*(-6.3351e-01)+qx*(1.0481e-02)+qy*(5.3127e-03)+rx*(3.3147e-03)+ry*(3.1896e-03));
+float a19=max(0.,2.5635e-02+d0*(-4.7439e-01)+d1*(-8.8718e-01)+d2*(-7.2761e-01)+d3*(-2.1165e-01)+d4*(1.3002e-01)+d5*(-6.4666e-01)+d6*(8.4356e-03)+d7*(-3.3323e-01)+d8*(9.8695e-01)+d9*(-7.0769e-01)+d10*(3.7429e-01)+d11*(1.4050e+00)+d12*(1.8262e+00)+d13*(-3.7749e-01)+d14*(-2.6518e-01)+d15*(5.7720e-02)+d16*(5.0695e-01)+d17*(1.1142e+00)+d18*(-5.1796e-01)+d19*(-6.8983e-02)+d20*(3.3913e-01)+d21*(-3.9164e-01)+d22*(-7.1128e-01)+d23*(-3.6969e-01)+d24*(-5.1166e-01)+d25*(-1.6993e-02)+d26*(6.1959e-01)+d27*(-7.5558e-01)+d28*(-3.2431e-02)+d29*(-2.7504e-01)+d30*(1.1198e-01)+d31*(-5.9724e-01)+d32*(-7.9348e-01)+d33*(-4.3513e-01)+d34*(-2.8053e-01)+d35*(5.5938e-02)+dA*(-1.5867e-01)+dB*(4.2695e-01)+qx*(7.8941e-03)+qy*(3.0969e-02)+rx*(-8.9209e-03)+ry*(-2.3851e-03));
+float e0=max(0.,7.7446e-02+a0*(3.1215e-01)+a1*(-3.5919e-01)+a2*(9.7312e-02)+a3*(-5.1257e-01)+a4*(-2.5550e-01)+a5*(-3.2678e-02)+a6*(3.1122e-01)+a7*(-2.4300e-01)+a8*(-3.1269e-02)+a9*(5.9545e-02)+a10*(-3.3324e-01)+a11*(4.7322e-01)+a12*(-7.8133e-02)+a13*(4.3259e-01)+a14*(-3.3400e-01)+a15*(7.0566e-01)+a16*(1.7740e-02)+a17*(-1.5877e-01)+a18*(8.7729e-02)+a19*(-2.7230e-01));
+float e1=max(0.,-3.1874e-01+a0*(-1.6070e-01)+a1*(-3.5461e-01)+a2*(-5.8773e-01)+a3*(-3.1952e-01)+a4*(-8.2093e-01)+a5*(3.2207e-01)+a6*(-5.7322e-02)+a7*(2.9046e-01)+a8*(-4.0262e-01)+a9*(3.2818e-01)+a10*(-5.5451e-01)+a11*(6.0324e-01)+a12*(3.9187e-01)+a13*(-1.6946e-01)+a14*(-9.6477e-02)+a15*(-7.8069e-01)+a16*(3.0306e-01)+a17*(3.8420e-01)+a18*(7.2371e-01)+a19*(2.7809e-02));
+float e2=max(0.,3.6636e-02+a0*(-8.8291e-02)+a1*(-5.6328e-02)+a2*(1.8384e-01)+a3*(-7.7543e-02)+a4*(3.5405e-01)+a5*(3.7791e-01)+a6*(1.4624e-01)+a7*(2.9307e-02)+a8*(-2.1080e-02)+a9*(-1.1245e-01)+a10*(9.9430e-02)+a11*(-4.6731e-01)+a12*(-6.0028e-02)+a13*(6.6466e-01)+a14*(-4.8265e-03)+a15*(-2.1149e-01)+a16*(8.7269e-02)+a17*(-6.2623e-02)+a18*(-5.8275e-01)+a19*(2.0855e-01));
+float e3=max(0.,2.1379e-01+a0*(2.2672e-02)+a1*(2.8152e-01)+a2*(-7.2136e-04)+a3*(-5.9653e-02)+a4*(7.5653e-02)+a5*(1.7381e-02)+a6*(-3.1283e-01)+a7*(-1.0839e-01)+a8*(-7.2097e-01)+a9*(-3.1761e-01)+a10*(3.2896e-01)+a11*(4.6135e-01)+a12*(-9.3224e-02)+a13*(-1.3475e-01)+a14*(-1.5023e-01)+a15*(-5.5098e-01)+a16*(-3.1281e-01)+a17*(5.7595e-01)+a18*(-6.6948e-02)+a19*(6.9591e-02));
+float e4=max(0.,1.1891e-01+a0*(8.0204e-02)+a1*(-2.9963e-01)+a2*(-7.4015e-01)+a3*(-8.1624e-01)+a4*(-3.3192e-01)+a5*(1.6284e-01)+a6*(2.5341e-01)+a7*(5.0716e-01)+a8*(1.5367e-02)+a9*(2.0574e-01)+a10*(-7.1305e-01)+a11*(-2.3872e-01)+a12*(-4.6898e-01)+a13*(-2.8931e-02)+a14*(5.7239e-01)+a15*(-9.4410e-01)+a16*(1.9109e-01)+a17*(8.0724e-02)+a18*(-1.1167e-01)+a19*(1.6150e-01));
+float e5=max(0.,1.4223e-01+a0*(-5.5419e-02)+a1*(-3.4456e-01)+a2*(5.6844e-01)+a3*(-8.2276e-01)+a4*(4.7058e-01)+a5*(-1.6280e-01)+a6*(4.2189e-01)+a7*(-3.6322e-01)+a8*(-1.2715e+00)+a9*(1.9601e-01)+a10*(2.7660e-01)+a11*(-3.3577e-01)+a12*(9.7290e-03)+a13*(1.8667e-01)+a14*(-5.5197e-01)+a15*(8.7048e-01)+a16*(-3.8983e-01)+a17*(8.0445e-03)+a18*(-2.8714e-01)+a19*(-1.5638e-01));
+float e6=max(0.,-2.0270e-01+a0*(1.6765e-01)+a1*(5.7922e-01)+a2*(-1.4729e-02)+a3*(-1.4921e-01)+a4*(2.3116e-01)+a5*(1.1098e-02)+a6*(-1.9008e-01)+a7*(4.6418e-02)+a8*(-1.1861e-01)+a9*(1.4692e-01)+a10*(3.5272e-01)+a11*(-1.9178e-01)+a12*(-1.0856e-01)+a13*(-4.3744e-01)+a14*(5.1842e-03)+a15*(-1.9551e-01)+a16*(-7.3343e-01)+a17*(-2.9848e-01)+a18*(-3.0132e-01)+a19*(3.6920e-01));
+float e7=max(0.,-9.8940e-02+a0*(4.4035e-01)+a1*(2.9317e-01)+a2*(-8.6823e-01)+a3*(4.0702e-01)+a4*(-6.3341e-01)+a5*(1.6902e-03)+a6*(-6.9080e-01)+a7*(5.9799e-01)+a8*(-2.2074e-02)+a9*(1.9175e-01)+a10*(-4.9688e-01)+a11*(-2.2463e-02)+a12*(-2.7201e-01)+a13*(-3.7006e-01)+a14*(3.1269e-01)+a15*(-2.3904e-01)+a16*(5.6562e-01)+a17*(1.4225e-01)+a18*(4.4540e-01)+a19*(-5.8079e-01));
+float e8=max(0.,1.7456e-01+a0*(-4.4948e-01)+a1*(3.5517e-01)+a2*(2.9112e-01)+a3*(-1.8109e-01)+a4*(1.6930e-03)+a5*(1.4347e-02)+a6*(6.6093e-01)+a7*(-1.1749e-01)+a8*(-1.2607e-02)+a9*(4.8568e-02)+a10*(4.2574e-01)+a11*(4.0090e-01)+a12*(-6.0260e-01)+a13*(4.4321e-01)+a14*(3.2249e-02)+a15*(-3.8083e-01)+a16*(-1.4050e-01)+a17*(-1.0712e-01)+a18*(-2.0574e-01)+a19*(3.0430e-01));
+float e9=max(0.,3.0758e-01+a0*(1.9393e-02)+a1*(-2.5422e-01)+a2*(3.1445e-01)+a3*(-6.1927e-01)+a4*(3.7622e-01)+a5*(4.4596e-01)+a6*(1.9343e-01)+a7*(-3.9696e-01)+a8*(-4.1701e-01)+a9*(1.6515e-01)+a10*(2.0493e-01)+a11*(-1.6056e-01)+a12*(-2.6673e-01)+a13*(2.6784e-01)+a14*(-3.5362e-01)+a15*(3.9468e-01)+a16*(1.6518e-01)+a17*(-1.6565e-02)+a18*(-1.5206e-01)+a19*(-3.3935e-01));
+float o=-1.8993e-02+e0*(-7.8107e-02)+e1*(9.7905e-02)+e2*(-7.7067e-02)+e3*(-5.7063e-02)+e4*(8.7617e-02)+e5*(-5.6241e-02)+e6*(5.4406e-02)+e7*(-9.5332e-02)+e8*(6.4246e-02)+e9*(9.9980e-02);
+gl_FragColor=vec4(clamp(c.rgb+ai*o,0.,1.),1.);}`;
+const FSP=`precision highp float;uniform sampler2D t;uniform vec2 sz;void main(){vec2 b=floor(gl_FragCoord.xy)*4.;vec3 s=texture2D(t,(b+vec2(1.,1.))/sz).rgb+texture2D(t,(b+vec2(3.,1.))/sz).rgb+texture2D(t,(b+vec2(1.,3.))/sz).rgb+texture2D(t,(b+vec2(3.,3.))/sz).rgb;gl_FragColor=vec4(s*.25,1.);}`;
+const FSB=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float sh,dn,cs;
+float Lm(vec3 c){return dot(c,vec3(.299,.587,.114));}
+void main(){vec3 c=texture2D(t,uv).rgb,b=vec3(0.),a=vec3(0.);float w=0.;
+for(int i=-1;i<=1;i++)for(int j=-1;j<=1;j++){vec3 n=texture2D(t,uv+vec2(float(i),float(j))*px).rgb;vec3 d=n-c;float k=exp(-dot(d,d)/.01);b+=n*k;w+=k;a+=n;}
+b/=w;a/=9.;c=mix(c,b,dn);c+=sh*(c-a);
+if(cs>0.){float y=Lm(c);vec2 u0=vec2(c.b-y,c.r-y),acc=vec2(0.);float ws=0.;
+for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++){vec3 n=texture2D(t,uv+vec2(float(i),float(j))*2.*px).rgb;float yn=Lm(n);float dy=yn-y;
+float k=exp(-dy*dy/.0177-float(i*i+j*j)*4./18.);acc+=k*vec2(n.b-yn,n.r-yn);ws+=k;}
+vec2 u=mix(u0,acc/ws,cs);c.r=y+u.y;c.b=y+u.x;c.g=(y-.299*c.r-.114*c.b)/.587;}
+gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
+const U={},UA={},UB={},UP={};let tex,tex2,tex3,tex4,tex16,fbo,fw=0,fh=0,prog,progA,progB,progP,aiOK=true,wide=true;
+if(gl){
+  const mk=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
+  const pg=(vs,fs)=>{const g=gl.createProgram();gl.attachShader(g,mk(gl.VERTEX_SHADER,vs));gl.attachShader(g,mk(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(g,0,"p");gl.linkProgram(g);return g};
+  prog=pg(VS,FS);progA=pg(VSA,FSA);progB=pg(VSA,FSB);progP=pg(VSA,FSP);
+  if(!gl.getProgramParameter(progA,gl.LINK_STATUS)||!gl.getProgramParameter(progP,gl.LINK_STATUS)){wide=false;progA=pg(VSA,FSA0)}
+  aiOK=!!gl.getProgramParameter(progA,gl.LINK_STATUS);
+  if(!aiOK)setTimeout(()=>msg("La restauration IA n’est pas disponible sur cet appareil : les autres réglages restent actifs."),800);
+  gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
+  const mt=()=>{const x=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,x);
+    [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,c])=>gl.texParameteri(gl.TEXTURE_2D,a,c));return x};
+  tex=mt();tex2=mt();tex3=mt();tex4=mt();tex16=mt();fbo=gl.createFramebuffer();
+  const loc=(g,o,n)=>n.forEach(k=>{o[k]=gl.getUniformLocation(g,k)});
+  loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0"]);loc(progA,UA,["t","t4","t16","px","s4","s16","ai"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progP,UP,["t","sz"]);
+}
+function pass(pg,src,dst,w,h,set){
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,dst,0);
+  gl.viewport(0,0,w,h);gl.useProgram(pg);gl.bindTexture(gl.TEXTURE_2D,src);
+  set();gl.drawArrays(gl.TRIANGLE_STRIP,0,4);gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+}
+function draw(el){
+  if(poolMode&&!el)return;
+  const s0=el||cur();if(!poolMode)stabT=v.currentTime;
+  if(!gl||!dims(s0)[0]||s0.readyState<2)return;
+  const [w,h]=dims(s0);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,s0);
+  const w4=Math.ceil(w/4),h4=Math.ceil(h/4),w16=Math.ceil(w4/4),h16=Math.ceil(h4/4);
+  if(fw!==w||fh!==h){fw=w;fh=h;[[tex2,w,h],[tex3,w,h],[tex4,w4,h4],[tex16,w16,h16]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
+  let src=tex;
+  if(show&&aiOK&&P.ai>0){
+    if(wide){
+      pass(progP,tex,tex4,w4,h4,()=>{gl.uniform1i(UP.t,0);gl.uniform2f(UP.sz,w,h)});
+      pass(progP,tex4,tex16,w16,h16,()=>{gl.uniform1i(UP.t,0);gl.uniform2f(UP.sz,w4,h4)});
+      gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,tex4);gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,tex16);gl.activeTexture(gl.TEXTURE0);
+      pass(progA,tex,tex2,w,h,()=>{gl.uniform1i(UA.t,0);gl.uniform1i(UA.t4,1);gl.uniform1i(UA.t16,2);gl.uniform2f(UA.px,1/w,1/h);gl.uniform2f(UA.s4,w4,h4);gl.uniform2f(UA.s16,w16,h16);gl.uniform1f(UA.ai,P.ai)});
+    }else{pass(progA,src,tex2,w,h,()=>{gl.uniform1i(UA.t,0);gl.uniform2f(UA.px,1/w,1/h);gl.uniform1f(UA.ai,P.ai)})}
+    src=tex2}
+  if(show&&(P.sh>0||P.dn>0||P.cs>0)){pass(progB,src,tex3,w,h,()=>{gl.uniform1i(UB.t,0);gl.uniform2f(UB.px,1/w,1/h);gl.uniform1f(UB.sh,P.sh);gl.uniform1f(UB.dn,P.dn);gl.uniform1f(UB.cs,P.cs)});src=tex3}
+  gl.useProgram(prog);gl.bindTexture(gl.TEXTURE_2D,src);gl.uniform1i(U.t,0);
+  gl.viewport(0,0,cv.width,cv.height);
+  gl.uniform2f(U.px,1/w,1/h);gl.uniform1f(U.on,show);
+  {const T=stabTR();gl.uniform3f(U.tr,T[0],T[1],T[2])}
+  gl.uniform1f(U.sp,show&&split?split:0);
+  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
+  for(const k of ["br","co","sa","wa"])gl.uniform1f(U[k],P[k]);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+}
+function size(L){
+  const [w,h]=dims(cur());if(!w)return;
+  if(L<0){cv.width=w&~1;cv.height=h&~1;draw();return}
+  const s=Math.min(L/Math.max(w,h),L*9/16/Math.min(w,h));
+  cv.width=Math.round(w*s/2)*2;cv.height=Math.round(h*s/2)*2;draw();
+}
+function loop(){
+  draw();
+  if(v.requestVideoFrameCallback)v.requestVideoFrameCallback(loop);else requestAnimationFrame(loop);
+}
+
+/* Réglages avancés */
+const S=[["ai","Restauration IA",0,1,.05],["cs","Nettoyage des couleurs",0,1,.05],["br","Luminosité",-.3,.3,.01],["co","Contraste",.6,1.6,.01],["sa","Couleurs",0,2,.01],["wa","Chaleur",-.15,.15,.01],["sh","Netteté",0,2,.05],["dn","Réduction du bruit",0,1,.05]];
+$("#sl").innerHTML=S.map(([k,n,a,b,s])=>`<label class="s"><span>${n}</span><input type="range" id="r_${k}" min="${a}" max="${b}" step="${s}" value="${P[k]}"></label>`).join("");
+S.forEach(([k])=>{$("#r_"+k).oninput=e=>{P[k]=+e.target.value;draw()}});
+const sync=()=>{S.forEach(([k])=>{$("#r_"+k).value=P[k]});draw()};
+const PR={auto:{br:.01,co:1.05,sa:1.04,wa:0,sh:.3,dn:.2},vhs:{br:.02,co:1.08,sa:1,wa:0,sh:.4,dn:.5},film:{br:.01,co:1.06,sa:1.1,wa:-.05,sh:.25,dn:.2}};
+document.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{Object.assign(P,PR[b.dataset.p]);sync()});
+$("#q").addEventListener("change",e=>{if(mode==="photo")return;$("#ex").textContent=e.target.value==="-1"?"Nettoyer (taille d’origine)":e.target.value==="3840"?"Améliorer en 4K":"Améliorer en Full HD"});
+
+/* Analyse automatique d’une image de la vidéo */
+function analyze(){
+  const c=document.createElement("canvas");c.width=32;c.height=18;
+  const x=c.getContext("2d");x.drawImage(cur(),0,0,32,18);
+  const d=x.getImageData(0,0,32,18).data,n=d.length/4;
+  let r=0,g=0,b=0,sat=0;
+  for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];sat+=Math.max(d[i],d[i+1],d[i+2])-Math.min(d[i],d[i+1],d[i+2])}
+  r/=n*255;g/=n*255;b/=n*255;sat/=n*255;
+  const l=(r+g+b)/3,cl=(x,a,b)=>Math.max(a,Math.min(b,x));
+  Object.assign(P,{br:cl((.45-l)*.3,-.04,.06),co:1.04,sa:cl(1.12-sat*1.5,.95,1.08),wa:-cl((r-b)*.2,-.04,.04),sh:.3,dn:.2,ai:1});
+  sync();
+}
+
+/* Analyse IA : Claude regarde une image et propose les réglages */
+(async()=>{
+  let sm=null;
+  try{if(window.claude&&claude.use)sm=await claude.use("sample")}catch(e){}
+  if(!sm)return;
+  try{if(!(await sm.limits()).images)return}catch(e){return}
+  const b=$("#ai");b.hidden=false;
+  b.onclick=async()=>{
+    if(!v.videoWidth||exporting)return;
+    b.disabled=true;msg("L’IA regarde ta vidéo…");
+    try{
+      const c=document.createElement("canvas"),s=Math.min(1,768/Math.max(v.videoWidth,v.videoHeight));
+      c.width=Math.round(v.videoWidth*s);c.height=Math.round(v.videoHeight*s);
+      c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+      const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.85));
+      const r=await sm.json(`Tu es expert en restauration de vieilles vidéos de famille. Voici une image de la vidéo originale. Réponds uniquement avec un objet JSON : {"br": luminosité entre -0.3 et 0.3 (positif éclaircit), "co": contraste entre 0.6 et 1.6 (1 = inchangé), "sa": couleurs entre 0 et 2 (1 = inchangé), "wa": chaleur entre -0.15 et 0.15 (négatif refroidit une dominante jaune ou rouge), "sh": netteté entre 0 et 2, "dn": réduction du bruit entre 0 et 1, "note": une phrase courte en français sur les défauts visibles}. Sois mesuré : de petites corrections valent mieux que des excès.`,{images:[blob],modelTier:"quick"});
+      S.forEach(([k,,a,z])=>{if(typeof r[k]==="number")P[k]=Math.max(a,Math.min(z,r[k]))});
+      sync();msg(r.note||"Réglages mis à jour par l’IA.");
+    }catch(e){msg("Analyse IA indisponible : "+((e&&e.message)||"erreur inconnue"))}
+    finally{b.disabled=false}
+  };
+})();
+
+/* Comparaison */
+const cmp=$("#cmp");
+const bd=()=>{const b=$("#bdg");b.textContent=show?"Amélioré":"Original";b.classList.toggle("orig",!show)};
+const off=e=>{e.preventDefault();show=0;bd();draw()},on=e=>{e.preventDefault();show=1;bd();draw()};
+cmp.addEventListener("pointerdown",off);
+["pointerup","pointercancel","pointerleave"].forEach(n=>cmp.addEventListener(n,on));
+cmp.addEventListener("contextmenu",e=>e.preventDefault());
+
+/* Interface : onglets, taille du résultat, repères */
+let activeTab="tp1";
+function showTab(id){
+  activeTab=id;
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.t===id?"true":"false"));
+  ["tp1","tp2","tp3"].forEach(p=>{$("#"+p).hidden=p!==id});
+}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showTab(t.dataset.t));
+const fmtT=s=>{s=Math.max(0,Math.round(s||0));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+function chips(a){const m=$("#meta");m.textContent="";a.forEach(t=>{const s=document.createElement("span");s.textContent=t;m.appendChild(s)})}
+const HINTS={"3840":"Agrandit jusqu’à la 4K : le plus net, mais le plus long.","1920":"Environ deux fois plus rapide qu’en 4K, avec une très bonne netteté.","-1":"Nettoie sans agrandir. À utiliser avant un outil d’agrandissement par IA."};
+function updateEst(){
+  const q=+$("#q").value;let t=HINTS[$("#q").value]||"";
+  if(mode==="video"&&v.duration&&v.videoWidth){
+    let sp=null;try{sp=JSON.parse(localStorage.getItem("spd")||"null")}catch(e){}
+    if(sp&&sp.r>0){
+      const w=v.videoWidth,h=v.videoHeight;let px=w*h;
+      if(q>0){const s=Math.min(q/Math.max(w,h),q*9/16/Math.min(w,h));px=Math.round(w*s/2)*2*Math.round(h*s/2)*2}
+      const sec=v.duration*30*(px/sp.p)/sp.r;
+      t+=" Durée estimée : "+(sec>90?"environ "+Math.round(sec/60)+" min":"moins de 2 min")+" (d’après ton dernier export).";
+    }else t+=" La durée estimée s’affichera après ton premier export.";
+  }
+  $("#qhint").textContent=t;
+}
+document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{
+  $("#q").value=b.dataset.q;$("#q").dispatchEvent(new Event("change"));
+  try{localStorage.setItem("q",b.dataset.q)}catch(e){}
+});
+$("#q").addEventListener("change",()=>{
+  document.querySelectorAll("[data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q===$("#q").value?"true":"false"));
+  updateEst();
+});
+try{const sq=localStorage.getItem("q");if(sq&&[...$("#q").options].some(o=>o.value===sq)){$("#q").value=sq;$("#q").dispatchEvent(new Event("change"))}}catch(e){}
+
+/* ===== Stabilisation ===== */
+let STAB=null,stabOn=false,stabT=0,split=0;
+function stabShift(A,B,W,H){
+  const R=8,mx=Math.round(W*.08)+R,my=Math.round(H*.08)+R,gx=4,gy=3,ox=[],oy=[];
+  const bw=Math.floor((W-2*mx)/gx),bh=Math.floor((H-2*my)/gy);
+  const sad=(x0,y0,x1,y1,sx,sy)=>{let s=0;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)s+=Math.abs(A[y*W+x]-B[(y+sy)*W+x+sx]);return s};
+  for(let bj=0;bj<gy;bj++)for(let bi=0;bi<gx;bi++){
+    const x0=mx+bi*bw,y0=my+bj*bh,x1=x0+bw,y1=y0+bh;let best=1e30,bsx=0,bsy=0,worst=0;
+    for(let sy=-R;sy<=R;sy++)for(let sx=-R;sx<=R;sx++){const s=sad(x0,y0,x1,y1,sx,sy);if(s<best){best=s;bsx=sx;bsy=sy}if(s>worst)worst=s}
+    if(worst-best>bw*bh*1.2){ox.push(bsx);oy.push(bsy)}/* bloc assez texturé */
+  }
+  if(ox.length<3)return[0,0];
+  const med=a=>{const b=a.slice().sort((p,q)=>p-q);return b[b.length>>1]};
+  const sx=med(ox),sy=med(oy);
+  const g=(a,b)=>sad(mx,my,W-mx,H-my,a,b);
+  const c=g(sx,sy),sub=(m,p)=>{const d=m+p-2*c;return d>1e-6?Math.max(-.5,Math.min(.5,(m-p)/(2*d))):0};
+  const fx=sx>-R&&sx<R?sub(g(sx-1,sy),g(sx+1,sy)):0,fy=sy>-R&&sy<R?sub(g(sx,sy-1),g(sx,sy+1)):0;
+  return[sx+fx,sy+fy];
+}
+async function stabAnalyze(){
+  const dur=v.duration,R=15,N=Math.floor(dur*R);if(N<4)return null;
+  const TW=128,TH=Math.max(24,Math.round(TW*v.videoHeight/v.videoWidth));
+  const c=document.createElement("canvas");c.width=TW;c.height=TH;const x=c.getContext("2d",{willReadFrequently:true});
+  const grab=()=>{x.drawImage(v,0,0,TW,TH);const d=x.getImageData(0,0,TW,TH).data,g=new Float32Array(TW*TH);for(let i=0;i<g.length;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];return g};
+  let prev=null;const dx=new Float64Array(N),dy=new Float64Array(N);
+  for(let i=0;i<N;i++){
+    await seekEl(v,Math.min(i/R+.001,dur-.001));const g=grab();
+    if(prev){const s=stabShift(prev,g,TW,TH);dx[i]=s[0];dy[i]=s[1]}
+    prev=g;if(i%8===0){msg("Stabilisation : analyse de la vidéo… "+Math.round(i/N*100)+" %");await wait(0)}
+  }
+  const cum=a=>{const o=new Float64Array(N);let s=0;for(let i=0;i<N;i++){s+=a[i];o[i]=s}return o};
+  const sm=a=>{const sg=Math.max(2,Math.round(.7*R)),o=new Float64Array(N);for(let i=0;i<N;i++){let s=0,w=0;for(let k=-3*sg;k<=3*sg;k++){const j=i+k;if(j<0||j>=N)continue;const q=Math.exp(-k*k/(2*sg*sg));s+=q*a[j];w+=q}o[i]=s/w}return o};
+  const Cx=cum(dx),Cy=cum(dy),Sx=sm(Cx),Sy=sm(Cy),ox=new Float32Array(N),oy=new Float32Array(N);let mxv=0;
+  for(let i=0;i<N;i++){ox[i]=(Cx[i]-Sx[i])/TW;oy[i]=(Cy[i]-Sy[i])/TH;mxv=Math.max(mxv,Math.abs(ox[i]),Math.abs(oy[i]))}
+  const m=Math.min(.09,mxv+.01);
+  for(let i=0;i<N;i++){ox[i]=Math.max(-m,Math.min(m,ox[i]));oy[i]=Math.max(-m,Math.min(m,oy[i]))}
+  return{R,N,ox,oy,sc:1-2*m,m,mx:mxv};
+}
+function stabTR(){
+  if(!stabOn||!STAB||!show)return[1,0,0];
+  const f=Math.max(0,Math.min(STAB.N-1,stabT*STAB.R)),i=Math.floor(f),j=Math.min(STAB.N-1,i+1),a=f-i;
+  return[STAB.sc,STAB.ox[i]*(1-a)+STAB.ox[j]*a,STAB.oy[i]*(1-a)+STAB.oy[j]*a];
+}
+async function stabEnable(on){
+  stabOn=on;
+  if(on&&!STAB&&mode==="video"&&v.videoWidth){
+    try{v.pause();const t=v.currentTime;STAB=await stabAnalyze();await seekEl(v,t);
+      msg(STAB?(STAB.mx<.004?"Ta vidéo est déjà stable : peu de changement.":"Stabilisation prête (recadrage d’environ "+Math.round(STAB.m*200)+" %)."):"Vidéo trop courte pour être stabilisée.")}
+    catch(e){msg("La stabilisation a échoué : "+((e&&e.message)||"erreur"));stabOn=false;$("#o_stab").checked=false}
+  }
+  draw();
+}
+$("#o_stab").onchange=e=>{stabEnable(e.target.checked)};
+/* ===== Découpe début/fin ===== */
+function trimRange(){const d=v.duration||0;return[$("#t_in").value/1000*d,$("#t_out").value/1000*d]}
+function trimUpdate(src){
+  let a=+$("#t_in").value,b=+$("#t_out").value;
+  if(src==="in"&&a>b-20){a=Math.max(0,b-20);$("#t_in").value=a}
+  if(src==="out"&&b<a+20){b=Math.min(1000,a+20);$("#t_out").value=b}
+  const [s,e]=trimRange();$("#t_txt").textContent=fmtT(s)+" → "+fmtT(e)+" ("+Math.round(e-s)+" s)";
+  if(v.duration&&!exporting){v.currentTime=src==="out"?Math.max(0,e-.05):s}
+}
+$("#t_in").oninput=()=>trimUpdate("in");$("#t_out").oninput=()=>trimUpdate("out");
+/* ===== Comparaison par curseur ===== */
+$("#spl").onclick=()=>{
+  split=split?0:.5;$("#spl").setAttribute("aria-pressed",split?"true":"false");
+  cv.style.touchAction=split?"none":"";const b=$("#bdg");
+  if(split){b.textContent="Original | Amélioré";b.classList.remove("orig")}else b.textContent="Amélioré";
+  draw();
+};
+const spMove=e=>{if(!split)return;const r=cv.getBoundingClientRect();split=Math.min(.97,Math.max(.03,(e.clientX-r.left)/r.width));draw()};
+cv.addEventListener("pointerdown",e=>{if(split){try{cv.setPointerCapture(e.pointerId)}catch(_){}spMove(e)}});
+cv.addEventListener("pointermove",e=>{if(split&&e.buttons)spMove(e)});
+
+/* Fichier */
+$("#pick").onclick=()=>$("#f").click();
+$("#f").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  curFile=f;az=false;if(url)URL.revokeObjectURL(url);
+  url=URL.createObjectURL(f);v.src=url;v.load();
+  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;
+  clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
+};
+v.onloadedmetadata=()=>{
+  STAB=null;stabOn=false;$('#o_stab').checked=false;$('#o_fluid').checked=false;$('#t_in').value=0;$('#t_out').value=1000;$('#t_txt').textContent='tout';
+  $("#app").hidden=false;$("#st0").hidden=true;$("#pick .lbl").textContent="Autre vidéo";mode="video";setMode();clearTimeout(wd);
+  size(PREVIEW);msg("");
+  chips([v.videoWidth+"×"+v.videoHeight,fmtT(v.duration),(curFile.size/1048576).toFixed(0)+" Mo"]);$("#tc").hidden=false;$("#tc").textContent="0:00 / "+fmtT(v.duration);updateEst();
+  v.currentTime=Math.min(1,v.duration/3);
+  if(!looping){looping=true;loop()}
+};
+v.onloadeddata=()=>draw();
+v.onerror=()=>{clearTimeout(wd);msg("Cette vidéo ne peut pas être lue ici (erreur "+(v.error?v.error.code:"?")+"). Essaie une autre vidéo.")};
+v.onseeked=()=>{if(!az){az=true;try{analyze()}catch(e){}}draw()};
+
+/* Lecture */
+$("#pp").onclick=()=>{if(v.paused)v.play();else v.pause()};
+v.onplay=()=>{$("#pp").textContent="Pause"};
+v.onpause=()=>{$("#pp").textContent="Lecture"};
+v.ontimeupdate=()=>{if(v.duration&&!exporting)$("#tm").value=v.currentTime/v.duration*1000;$("#tc").textContent=fmtT(v.currentTime)+" / "+fmtT(v.duration)};
+$("#tm").oninput=e=>{if(v.duration&&!exporting)v.currentTime=e.target.value/1000*v.duration};
+
+/* Export image par image (WebCodecs) */
+const seek=t=>new Promise(r=>{
+  if(Math.abs(v.currentTime-t)<1e-4)return r();
+  v.addEventListener("seeked",r,{once:true});v.currentTime=t;
+});
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+let poolMode=false;
+let rvfcMiss=0,rvfcOK=true;
+const seekEl=(e,t)=>new Promise(r=>{
+  if(Math.abs(e.currentTime-t)<1e-4)return r();
+  const wf=poolMode&&rvfcOK&&!!e.requestVideoFrameCallback;let fired=false,to2=0;
+  const fin=()=>{clearTimeout(to);clearTimeout(to2);r()},to=setTimeout(fin,3000);
+  e.addEventListener("seeked",()=>{
+    if(!wf||fired)return fin();
+    to2=setTimeout(()=>{if(!fired){if(++rvfcMiss>=4)rvfcOK=false}fin()},100);
+  },{once:true});
+  if(wf)e.requestVideoFrameCallback(()=>{fired=true;rvfcMiss=0;if(to2)fin()});
+  e.currentTime=t;
+});
+let rtNoSound=false,ac,gain,dst,au=false;
+function aud(){
+  if(au)return;au=true;
+  try{
+    ac=new (window.AudioContext||window.webkitAudioContext)();
+    const s=ac.createMediaElementSource(v);
+    gain=ac.createGain();s.connect(gain);gain.connect(ac.destination);
+    dst=ac.createMediaStreamDestination();s.connect(dst);
+  }catch(e){ac=dst=gain=null}
+}
+async function realtime(){
+  const type=window.MediaRecorder&&["video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
+  if(!type)throw new Error("export en temps réel impossible sur cet appareil");
+  aud();if(ac&&ac.resume)try{await ac.resume()}catch(e){}
+  v.pause();await seek(0);
+  const st=cv.captureStream(30);
+  if(dst&&dst.stream.getAudioTracks()[0])st.addTrack(dst.stream.getAudioTracks()[0]);
+  if(gain)gain.gain.value=0;
+  const chunks=[],rec=new MediaRecorder(st,{mimeType:type,videoBitsPerSecond:12e6});
+  rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+  const done=new Promise(r=>{rec.onstop=r});
+  v.onended=()=>{if(rec.state!=="inactive")rec.stop()};
+  rtNoSound=false;v.muted=false;
+  rec.start(500);
+  try{await v.play()}catch(e){v.muted=true;rtNoSound=true;await v.play()}
+  const iv=setInterval(()=>{$("#pg").value=v.currentTime/v.duration;if(cancel){v.pause();if(rec.state!=="inactive")rec.stop()}},300);
+  await done;clearInterval(iv);v.onended=null;
+  if(gain)gain.gain.value=1;
+  return new Blob(chunks,{type:type.split(";")[0]});
+}
+const probe=b=>new Promise(res=>{
+  const p=document.createElement("video"),u=URL.createObjectURL(b);let d=false;
+  const fin=x=>{if(d)return;d=true;URL.revokeObjectURL(u);res(x)};
+  p.muted=true;p.playsInline=true;p.preload="auto";
+  p.onloadedmetadata=()=>fin(true);
+  p.onerror=()=>fin(p.error?p.error.code:"?");
+  setTimeout(()=>fin(true),6000);p.src=u;p.load();
+});
+$("#rv").onerror=()=>msg("La lecture a échoué (code "+($("#rv").error?$("#rv").error.code:"?")+").");
+$("#ex").onclick=async()=>{
+  if(exporting){cancel=true;return}
+  if(mode==="photo"){exportPhoto();return}
+  if(!v.videoWidth)return;
+  if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
+  exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp","1")}catch(e){}
+  const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
+  $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;
+  let wl=null,err=null;
+  try{
+    try{wl=await navigator.wakeLock.request("screen")}catch(e){}
+    msg("Préparation…");OFPS=window.__plan?FPS:await measureFps();
+    const isPlan=!!window.__plan,fluid=!isPlan&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
+    let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
+    if(!isPlan&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
+    const dT=Math.max(.2,tE-tS);
+    msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde");
+    /* résolution et encodeur */
+    let cfg=null;
+    for(const L of [+$("#q").value,1920,1280]){
+      if(window.__plan&&L>1920&&window.__plan.length/FPS>60){msg("Version longue : export en Full HD pour ne pas saturer la mémoire de l’iPhone.");continue}
+      size(L);
+      const c={codec:cv.width*cv.height>2073600*1.2?"avc1.640033":"avc1.640028",width:cv.width,height:cv.height,
+        bitrate:Math.round(cv.width*cv.height*OUTF*.045),framerate:OUTF,avc:{format:"avc"},latencyMode:"quality"};
+      if(c.bitrate*(window.__plan?window.__plan.length/OFPS:dT)/8>7e8&&L!==1280){msg("Vidéo longue : taille réduite pour ne pas saturer la mémoire.");continue}
+      if((await VideoEncoder.isConfigSupported(c)).supported){cfg=c;break}
+    }
+    if(!cfg)throw new Error("Encodage vidéo non pris en charge.");
+    /* audio */
+    let ab=null,acfg=null,audioWhy="",rawA=null;
+    if(!window.__plan){try{rawA=await demuxAudio(curFile)}catch(e){rawA=null}}
+    if(rawA&&trimmed){const a0=Math.round(tS*1e6),a1=Math.round(tE*1e6);rawA.samples=rawA.samples.filter(s=>s.ts>=a0&&s.ts<a1).map(s=>({data:s.data,ts:s.ts-a0,dur:s.dur}))}
+    if(rawA&&rawA.samples.length){acfg={numberOfChannels:rawA.ch,sampleRate:rawA.sr}}
+    if(!rawA&&!window.AudioEncoder)audioWhy="ton iPhone ne sait pas encoder le son dans ce mode";
+    if(!rawA&&trimmed)audioWhy="le son n’est pas conservé avec la découpe sur cet appareil";
+    if(!rawA&&window.AudioEncoder&&!window.__plan&&!trimmed){
+      try{
+        const ctx=new (window.AudioContext||window.webkitAudioContext)();
+        ab=await ctx.decodeAudioData(await curFile.arrayBuffer());ctx.close();
+        acfg={codec:"mp4a.40.2",sampleRate:ab.sampleRate,numberOfChannels:Math.min(2,ab.numberOfChannels),bitrate:128000};
+        if(!(await AudioEncoder.isConfigSupported(acfg)).supported){acfg=null;audioWhy="format de son non pris en charge"}
+      }catch(e){acfg=null;audioWhy="le son de la vidéo n’a pas pu être lu ("+((e&&e.name)||"erreur")+")"}
+    }
+    const target=new Mp4Muxer.ArrayBufferTarget();
+    const mux=new Mp4Muxer.Muxer({target,fastStart:"in-memory",
+      video:{codec:"avc",width:cfg.width,height:cfg.height},
+      ...(acfg?{audio:{codec:"aac",numberOfChannels:acfg.numberOfChannels,sampleRate:acfg.sampleRate}}:{})});
+    const vch=[],ach=[];
+    const enc=new VideoEncoder({output:(c,m)=>{vch.push([c,m])},error:e=>{err=e}});
+    enc.configure(cfg);
+    if(acfg&&!rawA){
+      const ae=new AudioEncoder({output:(c,m)=>{ach.push([c,m])},error:e=>{err=e}});
+      ae.configure(acfg);
+      const ch=acfg.numberOfChannels,N=ab.length,B=16384,d=[];
+      for(let i=0;i<ch;i++)d.push(ab.getChannelData(i));
+      for(let o=0;o<N;o+=B){
+        const n=Math.min(B,N-o),buf=new Float32Array(n*ch);
+        for(let c=0;c<ch;c++)buf.set(d[c].subarray(o,o+n),c*n);
+        ae.encode(new AudioData({format:"f32-planar",sampleRate:ab.sampleRate,numberOfFrames:n,numberOfChannels:ch,timestamp:Math.round(o/ab.sampleRate*1e6),data:buf}));
+        if(ae.encodeQueueSize>20)await wait(5);
+      }
+      await ae.flush();ab=null;
+    }
+    /* image par image */
+    const off=isPlan?0:Math.round(tS*OFPS);
+    let fplan=null;
+    if(fluid){fplan=[];const n=Math.max(1,Math.floor(dT*OUTF+1e-6));for(let k=0;k<n;k++){const pp=k*OFPS/OUTF,a=Math.floor(pp),w=pp-a;fplan.push(w<.04?{a:a+off}:{a:a+off,b:a+off+1,w,j:a+off})}}
+    const plan=window.__plan||fplan||null;
+    const total=plan?plan.length:Math.max(1,Math.floor(dT*OFPS+1e-6));
+    const reqs=[];(plan||Array.from({length:total},(_,k)=>({a:k+off}))).forEach(p=>{reqs.push(p.a);if(p.b!=null)reqs.push(p.b)});
+    let q=0,fcache=null;const bc=document.createElement("canvas");bc.width=v.videoWidth;bc.height=v.videoHeight;const bx=bc.getContext("2d");
+    const vpx=v.videoWidth*v.videoHeight,POOL=vpx<=6e5?5:vpx<=1.3e6?4:3,els=[v],pend=[];let tW=0,tD=0,tQ=0;
+    const tc=document.createElement("canvas");tc.width=24;tc.height=18;const tx=tc.getContext("2d",{willReadFrequently:true});let prevT=null,dup=0,run=0,maxRun=0;
+    for(let k=1;k<POOL;k++){const e=document.createElement("video");e.muted=true;e.playsInline=true;e.preload="auto";e.src=url;e.setAttribute("playsinline","");e.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(e);els.push(e);e.load()}
+    await Promise.all(els.slice(1).map(e=>new Promise(r=>{if(e.readyState>=2)r();else{e.onloadeddata=r;e.onerror=r}})));
+    const go=k=>{if(k<reqs.length)pend[k]=seekEl(els[k%POOL],Math.min((reqs[k]+.5)/OFPS,v.duration-.001))};
+    for(let i=0;i<POOL;i++)go(i);
+    poolMode=true;const T0=performance.now();
+    for(let i=0;i<total;i++){
+      if(cancel||err)break;
+      const pl=plan?plan[i]:{a:i+off};const t0=performance.now();const qa=q++;await pend[qa];let qb=-1,src=els[qa%POOL];
+      if(pl.b!=null){qb=q++;await pend[qb];
+        try{if(!(fcache&&fcache.j===pl.j&&i-fcache.i<2))fcache={j:pl.j,i,fl:mfFlow(els[qa%POOL],els[qb%POOL],v.videoWidth,v.videoHeight)};mfBlend(bx,els[qa%POOL],els[qb%POOL],pl.w,v.videoWidth,v.videoHeight,fcache.fl)}
+        catch(e){bx.setTransform(1,0,0,1,0,0);bx.globalAlpha=1;bx.drawImage(els[qa%POOL],0,0);bx.globalAlpha=pl.w;bx.drawImage(els[qb%POOL],0,0);bx.globalAlpha=1}
+        src=bc}
+      const t1=performance.now();tW+=t1-t0;
+      stabT=(isPlan?(pl.a+.5)/FPS:(pl.a+.5+(pl.b!=null?pl.w:0))/OFPS);
+      draw(src);
+      if(!plan&&i<150){tx.drawImage(src,0,0,24,18);const td=tx.getImageData(0,0,24,18).data;
+        if(prevT){let sm=true;for(let z=0;z<td.length;z++){if(td[z]!==prevT[z]){sm=false;break}}if(sm){dup++;run++;if(run>maxRun)maxRun=run}else run=0}
+        prevT=td}
+      const f=new VideoFrame(cv,{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
+      enc.encode(f,{keyFrame:i%60===0});f.close();go(qa+POOL);if(qb>=0)go(qb+POOL);
+      const t2=performance.now();tD+=t2-t1;
+      while(enc.encodeQueueSize>6)await wait(8);
+      tQ+=performance.now()-t2;
+      $("#pg").value=(i+1)/total;
+      if(i%10===0){const el=(performance.now()-T0)/1000,rest=el/(i+1)*(total-i-1);msg("Image "+(i+1)+" sur "+total+" ("+Math.round((i+1)/total*100)+" %), reste environ "+(rest>90?Math.round(rest/60)+" min":Math.round(rest)+" s"))}
+    }
+    poolMode=false;els.slice(1).forEach(e=>{e.removeAttribute("src");e.load();e.remove()});
+    if(err)throw err;
+    if(cancel){enc.close();msg("Export annulé.")}
+    else{
+      await enc.flush();
+      try{const n=Math.max(1,total);window.__timing="attente image "+Math.round(tW/n)+" ms, traitement "+Math.round(tD/n)+" ms, encodage "+Math.round(tQ/n)+" ms par image"}catch(e){}
+      try{const el=(performance.now()-T0)/1000;if(!plan&&el>3)localStorage.setItem("spd",JSON.stringify({r:total/el,p:cv.width*cv.height}))}catch(e){}
+      const build=wa=>{
+        const tg=new Mp4Muxer.ArrayBufferTarget();
+        const mx=new Mp4Muxer.Muxer({target:tg,fastStart:"in-memory",video:{codec:"avc",width:cfg.width,height:cfg.height},
+          ...(wa?{audio:{codec:"aac",numberOfChannels:acfg.numberOfChannels,sampleRate:acfg.sampleRate}}:{})});
+        vch.forEach(([c,m])=>mx.addVideoChunk(c,m));
+        if(wa&&rawA)rawA.samples.forEach((s,i)=>mx.addAudioChunkRaw(s.data,"key",s.ts,s.dur,i===0?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:rawA.ch,sampleRate:rawA.sr,description:rawA.asc}}:undefined));
+        else if(wa)ach.forEach(([c,m])=>mx.addAudioChunk(c,m));
+        mx.finalize();return new Blob([tg.buffer],{type:"video/mp4"});
+      };
+      var wa=!!acfg;msg("Vérification du fichier…");
+      try{outBlob=build(wa)}catch(e){audioWhy="l’ajout du son a échoué ("+((e&&e.message)||"erreur")+")";wa=false;outBlob=build(false)}
+      let pr=await probe(outBlob);
+      if(pr!==true&&wa){audioWhy="le fichier avec le son était refusé par l’iPhone (code "+pr+")";wa=false;outBlob=build(false);pr=await probe(outBlob)}
+      if(pr!==true&&window.__plan)throw new Error("le fichier est illisible (code "+pr+")");
+      if(pr!==true){
+        msg("Le fichier image par image n’est pas lisible ici (code "+pr+"). Passage à la méthode de secours en temps réel : garde l’écran allumé…");
+        $("#pg").value=0;outBlob=await realtime();wa=!rtNoSound;
+        if(cancel)throw new Error("export annulé.");
+      }
+      
+      vch.length=0;ach.length=0;
+      if(outUrl)URL.revokeObjectURL(outUrl);
+      outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
+      $("#rv").hidden=false;$("#ri").hidden=true;$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan;$("#out").hidden=false;$("#sv").hidden=!dl;
+      msg((wa?"Terminé !":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(plan?"":" Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+"."));
+      try{$("#st1").textContent+=" ["+window.__timing+"]"}catch(e){}
+      $("#out").scrollIntoView({behavior:"smooth"});
+    }
+  }catch(e){msg("Échec de l’export : "+(e&&e.message||"erreur inconnue"))}
+  finally{
+    window.__plan=null;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
+    size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
+    if(wl)try{wl.release()}catch(e){}
+  }
+};
+
+/* Prolonger la vidéo (essai) */
+let analyzing=false;
+/* Fondu enchaîné compensé par le mouvement : on estime un champ de déplacement entre deux images,
+   puis on déforme chaque image vers l'autre avant de les mélanger (au lieu d'un simple fondu qui fait des fantômes). */
+const MF={fw:40,gx:12,cvs:null,x:null,ga:null,gb:null};
+function mfGray(el,w,h){
+  if(!MF.cvs){MF.cvs=document.createElement("canvas");MF.x=MF.cvs.getContext("2d",{willReadFrequently:true})}
+  MF.cvs.width=w;MF.cvs.height=h;MF.x.drawImage(el,0,0,w,h);
+  const d=MF.x.getImageData(0,0,w,h).data,g=new Float32Array(w*h);
+  for(let i=0;i<g.length;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];
+  return g;
+}
+/* flow[v]=(ux,uy) en pixels de la miniature, tel que A(x) ≈ B(x+u) ; renvoie null si le mouvement est négligeable */
+function mfFlow(elA,elB,vw,vh){
+  const fw=MF.fw,fh=Math.max(8,Math.round(fw*vh/vw)),A=mfGray(elA,fw,fh),B=mfGray(elB,fw,fh);
+  const gx=MF.gx,gy=Math.max(3,Math.round(gx*vh/vw)),R=4,P=3;
+  const ux=new Float32Array((gx+1)*(gy+1)),uy=new Float32Array((gx+1)*(gy+1)),cf=new Float32Array((gx+1)*(gy+1));
+  let mx=0;
+  for(let j=0;j<=gy;j++)for(let i=0;i<=gx;i++){
+    const cx=Math.round(i/gx*(fw-1)),cy=Math.round(j/gy*(fh-1));
+    let best=1e30,bx=0,by=0,zero=0;const E=new Float32Array((2*R+1)*(2*R+1));
+    for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){
+      let s=0;
+      for(let yy=-P;yy<=P;yy++){const ya=Math.min(fh-1,Math.max(0,cy+yy)),yb=Math.min(fh-1,Math.max(0,cy+yy+dy));
+        for(let xx=-P;xx<=P;xx++){const xa=Math.min(fw-1,Math.max(0,cx+xx)),xb=Math.min(fw-1,Math.max(0,cx+xx+dx));
+          const d=A[ya*fw+xa]-B[yb*fw+xb];s+=d*d}}
+      E[(dy+R)*(2*R+1)+dx+R]=s;if(dx===0&&dy===0)zero=s;
+      if(s<best||(s===best&&Math.abs(dx)+Math.abs(dy)<Math.abs(bx)+Math.abs(by))){best=s;bx=dx;by=dy}
+    }
+    /* on ne bouge que si le gain est net, sinon le bruit crée des déformations */
+    if(zero<best*1.25+40){bx=0;by=0}
+    let sx=bx,sy=by;
+    if(Math.abs(bx)<R&&Math.abs(by)<R&&(bx||by)){
+      const e=(x,y)=>E[(y+R)*(2*R+1)+x+R],c=e(bx,by);
+      const px=e(bx-1,by)+e(bx+1,by)-2*c,py=e(bx,by-1)+e(bx,by+1)-2*c;
+      if(px>1e-6)sx+=Math.max(-.5,Math.min(.5,(e(bx-1,by)-e(bx+1,by))/(2*px)));
+      if(py>1e-6)sy+=Math.max(-.5,Math.min(.5,(e(bx,by-1)-e(bx,by+1))/(2*py)));
+    }
+    const k=j*(gx+1)+i;ux[k]=sx;uy[k]=sy;cf[k]=best;
+    if(Math.abs(sx)>mx)mx=Math.abs(sx);if(Math.abs(sy)>mx)mx=Math.abs(sy);
+  }
+  if(mx<.5)return null;
+  /* lissage 3x3 pour des déformations douces */
+  const sm=(u)=>{const o=new Float32Array(u.length);for(let j=0;j<=gy;j++)for(let i=0;i<=gx;i++){let s=0,n=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const x=i+a,y=j+b;if(x<0||y<0||x>gx||y>gy)continue;const w=(a===0&&b===0)?2:1;s+=w*u[y*(gx+1)+x];n+=w}o[j*(gx+1)+i]=s/n}return o};
+  return{ux:sm(sm(ux)),uy:sm(sm(uy)),gx,gy,fw,fh};
+}
+function mfTri(ctx,img,s0,s1,s2,d0,d1,d2){
+  /* transformation affine qui envoie le triangle source sur le triangle destination */
+  const det=(s1[0]-s0[0])*(s2[1]-s0[1])-(s2[0]-s0[0])*(s1[1]-s0[1]);if(Math.abs(det)<1e-6)return;
+  const a=((d1[0]-d0[0])*(s2[1]-s0[1])-(d2[0]-d0[0])*(s1[1]-s0[1]))/det,
+        c=((d2[0]-d0[0])*(s1[0]-s0[0])-(d1[0]-d0[0])*(s2[0]-s0[0]))/det,
+        b=((d1[1]-d0[1])*(s2[1]-s0[1])-(d2[1]-d0[1])*(s1[1]-s0[1]))/det,
+        d=((d2[1]-d0[1])*(s1[0]-s0[0])-(d1[1]-d0[1])*(s2[0]-s0[0]))/det;
+  const e=d0[0]-a*s0[0]-c*s0[1],f=d0[1]-b*s0[0]-d*s0[1];
+  /* le triangle est légèrement agrandi pour éviter les fines coutures entre cellules */
+  const cx=(d0[0]+d1[0]+d2[0])/3,cy=(d0[1]+d1[1]+d2[1])/3,g=p=>{const dx=p[0]-cx,dy=p[1]-cy,l=Math.hypot(dx,dy)||1;return[p[0]+dx/l*.8,p[1]+dy/l*.8]};
+  const q0=g(d0),q1=g(d1),q2=g(d2);
+  ctx.save();ctx.beginPath();ctx.moveTo(q0[0],q0[1]);ctx.lineTo(q1[0],q1[1]);ctx.lineTo(q2[0],q2[1]);ctx.closePath();ctx.clip();
+  ctx.setTransform(a,b,c,d,e,f);ctx.drawImage(img,0,0);ctx.restore();
+}
+function mfDrawWarped(ctx,img,fl,vw,vh,k,alpha){
+  /* k : combien du déplacement on applique (signé) ; destination = grille régulière ; source = grille déplacée */
+  const {ux,uy,gx,gy,fw,fh}=fl,sx=vw/fw,sy=vh/fh;ctx.globalAlpha=alpha;
+  const V=(i,j)=>{const q=j*(gx+1)+i;return[[i/gx*vw,j/gy*vh],[i/gx*vw+k*ux[q]*sx,j/gy*vh+k*uy[q]*sy]]};
+  for(let j=0;j<gy;j++)for(let i=0;i<gx;i++){
+    const p00=V(i,j),p10=V(i+1,j),p01=V(i,j+1),p11=V(i+1,j+1);
+    mfTri(ctx,img,p00[1],p10[1],p01[1],p00[0],p10[0],p01[0]);
+    mfTri(ctx,img,p10[1],p11[1],p01[1],p10[0],p11[0],p01[0]);
+  }
+  ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;
+}
+/* t = poids de B (0..1). Renvoie true si la déformation a été appliquée, false : simple fondu. */
+function mfBlend(ctx,elA,elB,t,vw,vh,fl){
+  if(!fl){ctx.globalAlpha=1;ctx.drawImage(elA,0,0);ctx.globalAlpha=t;ctx.drawImage(elB,0,0);ctx.globalAlpha=1;return false}
+  /* A(x) ≈ B(x+u) : l'image intermédiaire I(x) = (1-t)·A(x - t·u) + t·B(x + (1-t)·u) */
+  /* on copie d'abord chaque image dans un canevas : dessiner plusieurs centaines de fois depuis un élément vidéo sature la mémoire de l'iPhone */
+  if(!MF.ca){MF.ca=document.createElement("canvas");MF.cb=document.createElement("canvas")}
+  for(const c of [MF.ca,MF.cb]){if(c.width!==vw||c.height!==vh){c.width=vw;c.height=vh}}
+  MF.ca.getContext("2d").drawImage(elA,0,0);MF.cb.getContext("2d").drawImage(elB,0,0);
+  ctx.clearRect(0,0,vw,vh);
+  mfDrawWarped(ctx,MF.ca,fl,vw,vh,-t,1);
+  mfDrawWarped(ctx,MF.cb,fl,vw,vh,1-t,t);
+  return true;
+}
+
+/* Planificateur de prolongation : "texture vidéo" avec lecture avant/arrière.
+   feats : Float32Array N×F (miniatures couleur), renvoie le plan image par image (cadence de sortie = 30 i/s). */
+function vtBuild(feats,N,F){
+  const G=new Float32Array(N*N);
+  for(let i=0;i<N;i++){const a=i*F;for(let j=i;j<N;j++){const b=j*F;let s=0;for(let k=0;k<F;k++)s+=feats[a+k]*feats[b+k];G[i*N+j]=G[j*N+i]=s}}
+  const D=G;/* en place : D = |a|²+|b|²-2ab */
+  const sq=new Float32Array(N);for(let i=0;i<N;i++)sq[i]=G[i*N+i];
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++){const v=(sq[i]+sq[j]-2*G[i*N+j])/F;G[i*N+j]=v>0?v:0}
+  return D;
+}
+function vtTopK(D,N,MING,KK){
+  /* états s=2*i+(0 avant / 1 arrière). Pour chaque état : les KK meilleures destinations (hors continuité naturelle). */
+  const W=[.125,.375,.375,.125],ks=[-1,0,1,2],cl=x=>x<0?0:x>=N?N-1:x;
+  const S=2*N,tc=new Float32Array(S*KK).fill(Infinity),tt=new Int32Array(S*KK).fill(-1);
+  for(let di=0;di<2;di++){const d=di?-1:1;
+    for(let i=0;i<N;i++){
+      const s=2*i+di,base=s*KK;
+      for(let ei=0;ei<2;ei++){const e=ei?-1:1;
+        for(let j=0;j<N;j++){
+          const diff=j-i;if(d===e?Math.abs(diff-d)<MING:Math.abs(diff)<MING)continue;
+          let c=0;for(let q=0;q<4;q++){const p=cl(i+ks[q]*d),r=cl(j+(ks[q]-1)*e);c+=W[q]*D[p*N+r]}
+          const t=2*j+ei;
+          /* insertion dans la liste triée */
+          if(c<tc[base+KK-1]){let m=KK-1;while(m>0&&tc[base+m-1]>c){tc[base+m]=tc[base+m-1];tt[base+m]=tt[base+m-1];m--}tc[base+m]=c;tt[base+m]=t}
+        }
+      }
+    }
+  }
+  return{tc,tt,KK};
+}
+function vtScore(res,N,sig){
+  const n=res.seq.length,cnt=new Float32Array(N);let rev=0,mj=0,p=[];
+  for(const s of res.seq){cnt[s>>1]++;if(s&1)rev++}
+  let ent=0;for(let k=0;k<N;k++)if(cnt[k]){const q=cnt[k]/n;ent-=q*Math.log(q)}ent/=Math.log(Math.max(2,N));
+  res.jumps.forEach(j=>{mj+=j.cost/sig;p.push(j.cost/sig)});mj/=Math.max(1,res.jumps.length);
+  p.sort((a,b)=>a-b);const p90=p.length?p[Math.floor(p.length*.9)]:0;
+  let rep=0,run=0;const seen=new Set();
+  for(let t=1;t<n;t++){const k=res.seq[t-1]*8192+res.seq[t];if(seen.has(k)){run++;if(run>rep)rep=run}else run=0;seen.add(k)}
+  return{score:mj+.5*p90-3*ent+4*rev/n+.1*rep/15*2,mj,p90,ent,rev:rev/n,rep:rep/15,jps:res.jumps.length/(n/15)};
+}
+/* Construit le plan complet (cadence 30 i/s). N images analysées à 15 i/s. nOut = nombre d'images voulues. */
+function vtPlan(feats,N,F,nOut,opt){
+  const o=Object.assign({sm:1,K:60,revpen:8,usepen:1,minseg:24,KK:48,MING:6,trials:16},opt||{});
+  const D=vtBuild(feats,N,F),T=vtTopK(D,N,o.MING,o.KK);
+  /* échelle de coût : 40e centile du meilleur raccord de chaque état */
+  const best=[];for(let s=0;s<2*N;s++){const c=T.tc[s*T.KK];if(isFinite(c)&&c>0)best.push(c)}
+  best.sort((a,b)=>a-b);o.sig=Math.max(2e-5,best[Math.floor(best.length*.4)]||1e-4);
+  const nSteps=Math.ceil((nOut-2*N)/2)+8;/* l'original est joué en entier, puis la suite */
+  let seed=12345;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+  let bestR=null;
+  for(let t=0;t<o.trials;t++){
+    const r=vtWalk2(N,T,nSteps,o,rnd);const sc=vtScore(r.res,N,o.sig);
+    if(!bestR||sc.score<bestR.sc.score)bestR={r,sc};
+  }
+  return Object.assign(vtExpand(bestR.r,N,nOut,o),{stats:bestR.sc,sig:o.sig});
+}
+function vtWalk2(N,T,nSteps,o,rnd){
+  /* original joué en entier (sans raccord), puis marche à partir de la dernière image */
+  const head=[];for(let i=0;i<N;i++)head.push(i*2);
+  const w=vtWalkFrom(N,T,nSteps,o,rnd,N-1,head);
+  return{res:w,head:N};
+}
+function vtWalkFrom(N,T,M,o,rnd,start,head){
+  /* identique à vtWalk mais avec l'historique d'usage de l'original déjà compté */
+  const {tc,tt,KK}=T,use=new Float32Array(N).fill(1),seq=head.slice(),jumps=[];
+  let i=start,dd=0,r=o.minseg;const sig=o.sig;seq.pop();use[N-1]--;
+  const lim=head.length+M;
+  while(seq.length<lim){
+    const d=dd?-1:1;seq.push(i*2+dd);use[i]++;r++;
+    const nxt=i+d,valid=nxt>=0&&nxt<N;
+    if(valid&&r<o.minseg){i=nxt;continue}
+    const s=2*i+dd,base=s*KK;const ex=new Float64Array(KK+1).fill(-Infinity);let mxe=-Infinity;
+    for(let k=0;k<KK;k++){const t=tt[base+k];if(t<0)continue;const c=tc[base+k]+(((t&1)!==dd)?o.revpen*sig:0);ex[k]=-c/(sig*o.sm)-o.usepen*use[t>>1];if(ex[k]>mxe)mxe=ex[k]}
+    if(valid){ex[KK]=-o.usepen*use[nxt]+Math.log(o.K);if(ex[KK]>mxe)mxe=ex[KK]}
+    if(mxe===-Infinity){if(valid){i=nxt;continue}break}
+    let tot=0;const ws=ex.map(e=>e===-Infinity?0:Math.exp(e-mxe));for(const w of ws)tot+=w;
+    let x=rnd()*tot,k=0;while(k<KK&&(x-=ws[k])>0)k++;
+    if(k>=KK){i=nxt;continue}
+    const t=tt[base+k];jumps.push({at:seq.length,from:i,d,to:t>>1,d2:(t&1)?-1:1,cost:tc[base+k]});
+    i=t>>1;dd=t&1;r=0;
+  }
+  return{seq,jumps};
+}
+function vtExpand(r,N,nOut,o){
+  /* seq : suite d'états (analyse 15 i/s) → images à 30 i/s avec fondus aux raccords */
+  const res=r.res,plan=[],js=res.jumps;let ji=0,Nf=2*N;
+  const clampF=x=>x<0?0:x>=Nf?Nf-1:x;
+  let stepIdx=0;const seq=res.seq;
+  /* découpe en passages naturels */
+  const runs=[];let cur=null;
+  for(let k=0;k<seq.length;k++){
+    const st=seq[k],i=st>>1,dd=st&1;
+    if(cur&&cur.dd===dd&&i===cur.last+(dd?-1:1)){cur.n++;cur.last=i}
+    else{cur={start:i,dd,n:1,last:i};runs.push(cur)}
+  }
+  for(let q=0;q<runs.length&&plan.length<nOut;q++){
+    const R=runs[q],d=R.dd?-1:1;
+    /* trames propres du passage, la première partie recouverte par le fondu */
+    let L=0,jinfo=null;
+    if(q>0){/* raccord entre runs[q-1] et R : coût moyen = coût du saut correspondant */
+      jinfo=js[q-1];L=Math.max(8,Math.min(20,Math.round(8+4*Math.min(3,jinfo.cost/o.sig))))}
+    const base=2*R.start,total=2*R.n;
+    if(q>0){
+      const P=runs[q-1],pd=P.dd?-1:1,endF=2*P.last;
+      for(let m=1;m<=L&&plan.length<nOut;m++){
+        const a=clampF(endF+pd*m),b=clampF(base+d*(m-2));
+        const t=(x=>x*x*(3-2*x))(m/(L+1));
+        plan.push({a,b,w:t,j:q});
+      }
+    }
+    const lastRun=q===runs.length-1;
+    for(let mm=(q>0?L-1:0);mm<(lastRun?total:total-1)&&plan.length<nOut;mm++)plan.push({a:clampF(base+d*mm)});
+    /* note : m décalé de 1 pour la continuité après le fondu */
+  }
+  while(plan.length<nOut){/* sécurité */plan.push({a:plan.length?plan[plan.length-1].a:0})}
+  return{plan:plan.slice(0,nOut),jumps:js.length,runs:runs.length};
+}
+
+async function prolong(){
+  if(analyzing||exporting||mode!=="video"||!v.videoWidth)return;
+  const N=Math.floor(v.duration*15),nOut=Math.round(+$("#pl").value*FPS);
+  if(v.duration>120){msg("Pour prolonger, la vidéo doit durer 2 minutes ou moins.");return}
+  if(N<45){msg("Vidéo trop courte pour être prolongée (3 secondes minimum).");return}
+  if(nOut<2*N+60){msg("Choisis une durée plus longue que ta vidéo ("+Math.round(v.duration)+" s) : la version prolongée commence par ta vidéo entière, puis continue.");return}
+  analyzing=true;$("#plb").disabled=true;v.pause();
+  try{
+    const m=28,sc=m/Math.max(v.videoWidth,v.videoHeight),TW=Math.max(8,Math.round(v.videoWidth*sc)),TH=Math.max(8,Math.round(v.videoHeight*sc)),F=TW*TH*3;
+    const c=document.createElement("canvas");c.width=TW;c.height=TH;
+    const x=c.getContext("2d",{willReadFrequently:true}),feats=new Float32Array(N*F);
+    for(let i=0;i<N;i++){
+      await seekEl(v,Math.min(i/15+.001,v.duration-.001));
+      x.drawImage(v,0,0,TW,TH);const d=x.getImageData(0,0,TW,TH).data;
+      for(let k=0,o=i*F;k<TW*TH;k++){feats[o++]=d[k*4]/255;feats[o++]=d[k*4+1]/255;feats[o++]=d[k*4+2]/255}
+      if(i%15===0){msg("Étape 1/2 : je regarde ta vidéo… "+Math.round(i/N*70)+" %");await wait(0)}
+    }
+    msg("Étape 2/2 : je cherche les meilleurs enchaînements…");await wait(30);
+    const r=vtPlan(feats,N,F,nOut);
+    const bl=r.plan.filter(p=>p.b!=null).length;
+    const q=r.stats.mj;/* coût moyen des raccords, en unités du meilleur raccord typique */
+    msg(r.jumps+" enchaînements créés, "+(r.stats.rev>.02?Math.round(r.stats.rev*100)+" % joué à l’envers. ":"")+(q>4?"Ta vidéo se répète peu : les raccords seront visibles. ":"")+"Export de la version prolongée…");
+    window.__plan=r.plan;await wait(50);
+    await $("#ex").onclick();
+  }catch(e){msg("Échec de la prolongation : "+((e&&e.message)||"erreur"))}
+  finally{analyzing=false;$("#plb").disabled=false}
+}
+async function lastFrame(){
+  if(!v.videoWidth||exporting||analyzing)return;
+  v.pause();await seekEl(v,Math.max(0,v.duration-.08));
+  const c=document.createElement("canvas");c.width=v.videoWidth;c.height=v.videoHeight;c.getContext("2d").drawImage(v,0,0);
+  const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.95));
+  if(!blob){msg("Impossible de créer l’image.");return}
+  outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
+  $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer l’image";
+  $("#out").hidden=false;$("#sv").hidden=!dl;
+  msg("Dernière image prête."+(dl?"":" Appuie longuement dessus pour l’enregistrer."));
+  $("#out").scrollIntoView({behavior:"smooth"});
+}
+$("#plb").onclick=prolong;$("#lfb").onclick=lastFrame;
+/* Refaire avec le son (temps réel) */
+$("#rtb").onclick=async()=>{
+  if(exporting||analyzing)return;
+  exporting=true;cancel=false;$("#rtb").disabled=true;$("#ex").disabled=true;$("#pg").hidden=false;$("#pg").value=0;
+  try{
+    const q=+$("#q").value;size(q<0?-1:Math.min(q,1920));
+    msg("Export en temps réel, avec le son : garde l’écran allumé…");
+    const b=await realtime();if(cancel)throw new Error("annulé");
+    outBlob=b;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(b);
+    $("#rv").src=outUrl;$("#rv").hidden=false;$("#ri").hidden=true;$("#sv").textContent="Enregistrer la vidéo";$("#out").hidden=false;$("#sv").hidden=false;
+    msg(rtNoSound?"Terminé, mais le son n’a pas pu être ajouté par ton iPhone.":"Terminé, avec le son.");
+    $("#out").scrollIntoView({behavior:"smooth"});
+  }catch(e){msg("Échec : "+((e&&e.message)||"erreur"))}
+  finally{exporting=false;$("#rtb").disabled=false;$("#ex").disabled=false;$("#pg").hidden=true;size(PREVIEW);v.currentTime=Math.min(1,v.duration/3)}
+};
+async function demuxAudio(file){
+  const rd=async(a,b)=>new DataView(await file.slice(a,b).arrayBuffer());
+  let off=0,moov=null;
+  while(off<file.size){
+    const d=await rd(off,Math.min(off+16,file.size));if(d.byteLength<8)break;
+    let size=d.getUint32(0);const type=String.fromCharCode(d.getUint8(4),d.getUint8(5),d.getUint8(6),d.getUint8(7));let hdr=8;
+    if(size===1){size=Number(d.getBigUint64(8));hdr=16}else if(size===0)size=file.size-off;
+    if(type==="moov"){moov=[off+hdr,off+size];break}
+    if(size<8)break;off+=size;
+  }
+  if(!moov)return null;
+  const buf=new Uint8Array(await file.slice(moov[0],moov[1]).arrayBuffer()),dv=new DataView(buf.buffer);
+  const tp=o=>String.fromCharCode(buf[o],buf[o+1],buf[o+2],buf[o+3]);
+  const kids=(s,e)=>{const r=[];let o=s;while(o+8<=e){let sz=dv.getUint32(o);const t=tp(o+4);let h=8;if(sz===1){sz=Number(dv.getBigUint64(o+8));h=16}else if(sz===0)sz=e-o;if(sz<8||o+sz>e)break;r.push({t,s:o+h,e:o+sz});o+=sz}return r};
+  const find=(s,e,path)=>{let cur=[{s,e}];for(const p of path){const nx=[];for(const c of cur)for(const k of kids(c.s,c.e))if(k.t===p)nx.push(k);cur=nx}return cur};
+  for(const trak of find(0,buf.length,["trak"])){
+    const hd=find(trak.s,trak.e,["mdia","hdlr"])[0];if(!hd||tp(hd.s+8)!=="soun")continue;
+    const mh=find(trak.s,trak.e,["mdia","mdhd"])[0],ts=mh&&buf[mh.s]===1?dv.getUint32(mh.s+20):dv.getUint32(mh.s+12);
+    const st=find(trak.s,trak.e,["mdia","minf","stbl"])[0];if(!st)continue;
+    const sub=n=>kids(st.s,st.e).find(k=>k.t===n);
+    const stsd=sub("stsd"),stts=sub("stts"),stsc=sub("stsc"),stsz=sub("stsz"),co=sub("stco")||sub("co64");
+    if(!stsd||!stts||!stsc||!stsz||!co)return null;
+    if(tp(stsd.s+12)!=="mp4a")return null;
+    let es=-1;for(let i=stsd.s+8;i<stsd.e-4;i++){if(tp(i)==="esds"){es=i+8;break}}
+    if(es<0)return null;
+    const len=p=>{let l=0,b;do{b=buf[p++];l=(l<<7)|(b&127)}while(b&128);return [l,p]};
+    let p=es,l;
+    if(buf[p]!==3)return null;[l,p]=len(p+1);const fl=buf[p+2];p+=3;if(fl&128)p+=2;if(fl&64){p+=1+buf[p]}if(fl&32)p+=2;
+    if(buf[p]!==4)return null;[l,p]=len(p+1);p+=13;
+    if(buf[p]!==5)return null;[l,p]=len(p+1);const asc=buf.slice(p,p+l);
+    const SR=[96000,88200,64000,48000,44100,32000,24000,22050,16000,12000,11025,8000,7350],CH=[0,1,2,3,4,5,6,8];
+    const sfi=((asc[0]&7)<<1)|(asc[1]>>7),cc=(asc[1]>>3)&15;if(sfi>12||!CH[cc])return null;
+    // durées
+    const n1=dv.getUint32(stts.s+4),dur=[];let q=stts.s+8;for(let i=0;i<n1;i++){const c=dv.getUint32(q),dl=dv.getUint32(q+4);q+=8;for(let k=0;k<c;k++)dur.push(dl)}
+    // tailles
+    const fixed=dv.getUint32(stsz.s+4),ns=dv.getUint32(stsz.s+8),sizes=[];for(let i=0;i<ns;i++)sizes.push(fixed||dv.getUint32(stsz.s+12+i*4));
+    // chunks
+    const nc=dv.getUint32(co.s+4),c64=tp(co.s-4)==="co64"||co.t==="co64";
+    const offs=[];for(let i=0;i<nc;i++)offs.push(c64?Number(dv.getBigUint64(co.s+8+i*8)):dv.getUint32(co.s+8+i*4));
+    const ne=dv.getUint32(stsc.s+4),sc=[];for(let i=0;i<ne;i++)sc.push([dv.getUint32(stsc.s+8+i*12),dv.getUint32(stsc.s+12+i*12)]);
+    const samples=[];let si=0,t=0;
+    for(let c=0;c<nc;c++){
+      let per=sc[0][1];for(const e of sc)if(e[0]<=c+1)per=e[1];
+      let tot=0;const cnt=Math.min(per,ns-si);for(let k=0;k<cnt;k++)tot+=sizes[si+k];
+      const bytes=new Uint8Array(await file.slice(offs[c],offs[c]+tot).arrayBuffer());let o=0;
+      for(let k=0;k<cnt;k++){const sz=sizes[si],d=dur[si]||1024;samples.push({data:bytes.slice(o,o+sz),ts:Math.round(t*1e6/ts),dur:Math.round(d*1e6/ts)});o+=sz;t+=d;si++}
+      if(si>=ns)break;
+    }
+    return {ch:CH[cc],sr:SR[sfi],asc,samples};
+  }
+  return null;
+}
+
+/* Photos */
+$("#pickp").onclick=()=>$("#fp").click();
+$("#fp").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const u=URL.createObjectURL(f),im=new Image();msg("Chargement de la photo…");
+  im.onload=()=>{
+    const k=Math.min(1,4096/Math.max(im.naturalWidth,im.naturalHeight));
+    const c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);
+    photoEl=c;mode="photo";v.pause();setMode();chips([c.width+"×"+c.height,"photo"]);$("#tc").hidden=true;updateEst();$("#pickp .lbl").textContent="Autre photo";
+    size(PREVIEW);try{analyze()}catch(e){}draw();msg("");
+  };
+  im.onerror=()=>msg("Impossible de lire cette photo.");im.src=u;
+};
+async function exportPhoto(){
+  if(!photoEl)return;
+  const [w,h]=dims(photoEl),m=Math.max(w,h);
+  let s=m<1500?3:m<2500?2:1;s=Math.min(s,4096/m);
+  cv.width=Math.round(w*s);cv.height=Math.round(h*s);show=1;
+  msg("Traitement de la photo…");await wait(30);
+  draw(photoEl);
+  const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",.95)),W=cv.width,H=cv.height;
+  size(PREVIEW);
+  if(!blob){msg("Impossible de créer la photo.");return}
+  outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
+  $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
+  $("#out").hidden=false;$("#sv").hidden=!dl;
+  msg("Terminé ! "+W+"×"+H+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
+  $("#out").scrollIntoView({behavior:"smooth"});
+}
+/* Raccourci écran d’accueil */
+(function(){
+  let seen=false;try{seen=localStorage.getItem("inst")==="1"}catch(e){}
+  const sa=window.navigator.standalone||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
+  const b=$("#inst");if(!sa&&!seen)b.hidden=false;
+  $("#instx").onclick=()=>{b.hidden=true;try{localStorage.setItem("inst","1")}catch(e){}};
+})();
+/* Enregistrement */
+(async()=>{try{if(window.claude&&claude.use)dl=await claude.use("downloads")}catch(e){dl=null}})();
+$("#sv").onclick=async()=>{
+  if(!dl||!outBlob)return;
+  try{await dl.save({filename:outBlob.type.startsWith("image")?"photo-retouchee.jpg":"retouche."+(outBlob.type.includes("webm")?"webm":"mp4"),data:outBlob});msg("Vidéo enregistrée.")}
+  catch(e){if(!e||e.code!=="declined")msg("Enregistrement impossible : "+((e&&e.message)||"erreur inconnue"))}
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js"></script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{})</script>
+</body>
+</html>
