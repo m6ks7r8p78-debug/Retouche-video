@@ -89,6 +89,7 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:10px 0 0}
 .panel{padding-top:14px}
 .panel h2{font:700 17px/1.2 var(--fd);margin:0 0 6px}
 .rec ul{margin:8px 0 0;padding-left:18px;font-size:14px;line-height:1.5}#adv>summary{cursor:pointer;font-weight:700;padding:12px 2px}
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.fgrid button{padding:0;border:2px solid transparent;border-radius:10px;background:none;overflow:hidden;position:relative;cursor:pointer}.fgrid button.on{border-color:var(--acc,#7b5cff)}.fgrid canvas{width:100%;display:block}.fgrid span{position:absolute;left:4px;bottom:3px;font:600 11px/1 system-ui;color:#fff;text-shadow:0 1px 2px #000}
 .help{margin:0 0 12px;font-size:14px;color:var(--mut)}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .seg button{padding:11px 6px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font:600 14px/1.15 var(--fd);cursor:pointer;text-align:center}
@@ -271,6 +272,12 @@ input[type=range]{accent-color:var(--g2)}
 
       <div class="panel" id="tp2" hidden>
         <div class="card rec" id="rec" hidden><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul></div>
+        <div class="card" id="flt" hidden><h2>Retirer un filtre Snapchat / Instagram <span class="mono" style="font-weight:400">(essai)</span></h2>
+          <p class="help" id="flt_h">Les filtres les plus probables pour ta vidéo sont en premier. Touche la miniature qui paraît la plus naturelle (peau, murs, vêtements). « Aucun » garde la vidéo telle quelle.</p>
+          <div id="flt_g" class="fgrid"></div>
+          <div id="flt_s" hidden><label class="help" style="display:block;margin:10px 0 4px">Force du retrait <span class="mono" id="flt_v">100 %</span></label><input type="range" id="flt_r" min="0" max="1" step=".05" value="1" aria-label="Force du retrait"></div>
+          <p class="help" style="margin:10px 0 0">Ce qui marche : les filtres de couleur (teintes, lumière, délavé). Ce qui ne s’enlève pas : autocollants, textes, masques, déformations du visage. Le noir et blanc ne peut pas retrouver ses couleurs.</p></div>
+        <button class="btn" id="fltb" style="margin:10px 0">Retirer un filtre Snapchat / Instagram (essai)</button>
         <details id="adv"><summary>Réglages avancés <span class="mono" style="font-weight:400">(déjà réglés automatiquement)</span></summary>
         <div class="opts vonly">
           <h2>Options de la vidéo</h2>
@@ -374,7 +381,9 @@ if(!gl){msg("Ton navigateur ne gère pas le traitement vidéo (WebGL).");$("#pic
 try{if(sessionStorage.getItem("exp")){sessionStorage.removeItem("exp");msg("La page s’est rechargée pendant l’export : la mémoire de l’iPhone était saturée. Essaie en Full HD ou avec une vidéo plus courte.")}}catch(e){}
 
 const VS="attribute vec2 p;varying vec2 uv;void main(){uv=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}";
-const FS=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float on,br,co,sa,wa,sp;uniform vec3 tr,gn;uniform float ex;uniform sampler2D t0;
+const FS=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float on,br,co,sa,wa,sp;uniform vec3 tr,gn;uniform float ex,lf,lrow,lnb;uniform sampler2D t0,tl;
+vec3 lu(vec3 c){c=clamp(c,0.,1.)*16.;float b0=floor(c.b);float b1=min(b0+1.,16.);float y=(lrow*17.+c.g+.5)/(lnb*17.);
+return mix(texture2D(tl,vec2((b0*17.+c.r+.5)/289.,y)).rgb,texture2D(tl,vec2((b1*17.+c.r+.5)/289.,y)).rgb,c.b-b0);}
 vec3 cr(vec2 u){vec2 pos=u/px;vec2 c=floor(pos-.5)+.5;vec2 f=pos-c;
 vec2 w0=f*(-.5+f*(1.-.5*f));vec2 w1=1.+f*f*(-2.5+1.5*f);vec2 w2=f*(.5+f*(2.-1.5*f));vec2 w3=f*f*(-.5+.5*f);
 vec2 w12=w1+w2;vec2 t12=px*(c+w2/w12);vec2 t0=px*(c-1.);vec2 t3=px*(c+2.);
@@ -382,7 +391,7 @@ vec3 r=texture2D(t,vec2(t12.x,t0.y)).rgb*(w12.x*w0.y)+texture2D(t,vec2(t0.x,t12.
 +texture2D(t,vec2(t12.x,t12.y)).rgb*(w12.x*w12.y)+texture2D(t,vec2(t3.x,t12.y)).rgb*(w3.x*w12.y)+texture2D(t,vec2(t12.x,t3.y)).rgb*(w12.x*w3.y);
 return r/(w12.x*w0.y+w0.x*w12.y+w12.x*w12.y+w3.x*w12.y+w12.x*w3.y);}
 void main(){vec3 c;vec2 uu=(uv-.5)*tr.x+.5+tr.yz;
-if(on>.5){c=cr(uu)*gn*ex;c+=br;c=(c-.5)*co+.5;float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sa);c.r+=wa;c.b-=wa;}
+if(on>.5){c=cr(uu);if(lf>0.)c=mix(c,lu(c),lf);c=c*gn*ex;c+=br;c=(c-.5)*co+.5;float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sa);c.r+=wa;c.b-=wa;}
 else c=texture2D(t,uv).rgb;
 if(sp>0.){if(uv.x<sp)c=texture2D(t0,uv).rgb;if(abs(uv.x-sp)<.0025)c=vec3(1.);}
 gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
@@ -568,7 +577,7 @@ if(gl){
     [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,c])=>gl.texParameteri(gl.TEXTURE_2D,a,c));return x};
   tex=mt();tex2=mt();tex3=mt();tex4=mt();tex16=mt();texP=mt();texN=mt();texD=mt();fbo=gl.createFramebuffer();
   const loc=(g,o,n)=>n.forEach(k=>{o[k]=gl.getUniformLocation(g,k)});
-  loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex"]);loc(progA,UA,["t","t4","t16","px","s4","s16","ai"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progP,UP,["t","sz"]);loc(progD,UD,["t","tp","tn","px","thr"]);
+  loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex","lf","lrow","lnb","tl"]);loc(progA,UA,["t","t4","t16","px","s4","s16","ai"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progP,UP,["t","sz"]);loc(progD,UD,["t","tp","tn","px","thr"]);
 }
 function pass(pg,src,dst,w,h,set){
   gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
@@ -613,6 +622,7 @@ function draw(el){
   gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
   for(const k of ["br","co","sa","wa"])gl.uniform1f(U[k],P[k]);
   gl.uniform1f(U.ex,show?(exporting?DFG:REC.pv()):1);
+  {const on=show&&FLT.tex&&FLT.sel>=0?FLT.f:0;gl.uniform1f(U.lf,on);if(on>0){gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,FLT.tex);gl.uniform1i(U.tl,4);gl.activeTexture(gl.TEXTURE0);gl.uniform1f(U.lrow,FLT.sel);gl.uniform1f(U.lnb,FLT.nb)}}
   {const w=show?P.wb:0;gl.uniform3f(U.gn,1+(WBG[0]-1)*w,1+(WBG[1]-1)*w,1+(WBG[2]-1)*w)}
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   if(dustSwap){const k=tex;tex=texD;texD=k}
@@ -911,7 +921,7 @@ function btUpdate(){
 function loadFile(f){
   return new Promise(res=>{
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
-  curFile=f;az=false;if(url)URL.revokeObjectURL(url);
+  curFile=f;az=false;try{FLT.reset()}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
   msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
@@ -1087,6 +1097,53 @@ REC.after=async function(){
       if(ch.wb){WBG=ch.wb;P.wb=.85}if(ch.dn)P.dn=ch.dn;sync();b.hidden=true;$("#ex").click()};
   }catch(e){}finally{if(el){el.removeAttribute("src");el.load()}}
 };
+
+/* ===== Retrait de filtre (bibliothèque de filtres appris sur de vraies paires avec/sans filtre) ===== */
+const FLT={sel:-1,f:1,n:0,tex:null,data:null,
+  async load(){
+    if(FLT.data)return true;
+    const img=new Image();img.src="filtres.png";await img.decode();
+    const c=document.createElement("canvas");c.width=img.width;c.height=img.height;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(img,0,0);
+    FLT.data=x.getImageData(0,0,c.width,c.height).data;FLT.nb=img.height/17;FLT.n=FLT.nb/2;
+    if(gl){FLT.tex=gl.createTexture();gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,FLT.tex);
+      [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,b])=>gl.texParameteri(gl.TEXTURE_2D,a,b));
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,img);gl.activeTexture(gl.TEXTURE0)}
+    return true},
+  /* même calcul que le shader, sur le processeur (miniatures) */
+  px(k,r,g,b){const D=FLT.data,W=289,R=r*16,G=g*16,B=b*16,r0=Math.min(15,Math.floor(R)),g0=Math.min(15,Math.floor(G)),b0=Math.min(15,Math.floor(B)),fr=R-r0,fg=G-g0,fb=B-b0,o=[0,0,0];
+    for(let db=0;db<2;db++)for(let dg=0;dg<2;dg++)for(let dr=0;dr<2;dr++){const w=(dr?fr:1-fr)*(dg?fg:1-fg)*(db?fb:1-fb);if(!w)continue;const i=((k*17+g0+dg)*W+(b0+db)*17+r0+dr)*4;o[0]+=w*D[i];o[1]+=w*D[i+1];o[2]+=w*D[i+2]}
+    return o},
+  async open(){
+    const box=$("#flt");box.hidden=false;$("#fltb").hidden=true;
+    const g=$("#flt_g");g.textContent="Préparation des aperçus…";
+    try{await FLT.load()}catch(e){g.textContent="Impossible de charger la bibliothèque de filtres.";return}
+    const src=cur(),[w,h]=dims(src),TW=120,TH=Math.round(TW*h/w);
+    const c0=document.createElement("canvas");c0.width=TW;c0.height=TH;const x0=c0.getContext("2d",{willReadFrequently:true});x0.drawImage(src,0,0,TW,TH);
+    const base=x0.getImageData(0,0,TW,TH),d=base.data,np=TW*TH;
+    const lum=a=>{const y=new Float32Array(np);for(let i=0,j=0;j<np;i+=4,j++)y[j]=(.299*a[i]+.587*a[i+1]+.114*a[i+2])/255;return y};
+    const grad=y=>{const o=new Float32Array(np);for(let j=0;j<TH-1;j++)for(let i=0;i<TW-1;i++){const k=j*TW+i;o[k]=Math.abs(y[k+1]-y[k])+Math.abs(y[k+TW]-y[k])}return o};
+    const gb=grad(lum(d)),C=[];
+    /* chaque filtre connu : aperçu + plausibilité (le filtre a-t-il pu produire ces couleurs ? crée-t-il des contours absents ?) */
+    for(let k=0;k<FLT.n;k++){
+      const o=new Uint8ClampedArray(d.length);let rt=0;
+      for(let i=0;i<d.length;i+=4){const q=FLT.px(k,d[i]/255,d[i+1]/255,d[i+2]/255);o[i]=q[0];o[i+1]=q[1];o[i+2]=q[2];o[i+3]=255;
+        const z=FLT.px(k+FLT.n,q[0]/255,q[1]/255,q[2]/255);rt+=(Math.abs(z[0]-d[i])+Math.abs(z[1]-d[i+1])+Math.abs(z[2]-d[i+2]))/3}
+      const go=grad(lum(o));let ne=0;for(let j=0;j<np;j++)ne+=Math.max(0,go[j]-1.6*gb[j]-.02);
+      C.push({k,o,sc:rt/np+.5*ne/np*1000});if(k%3===2)await new Promise(r=>setTimeout(r,0))}
+    C.sort((a,b)=>a.sc-b.sc);window.__fltOrder=C.map(c=>[c.k,+c.sc.toFixed(2)]);g.textContent="";
+    const mk=(k,o,label,par)=>{const b=document.createElement("button");b.type="button";const c=document.createElement("canvas");c.width=TW;c.height=TH;const x=c.getContext("2d");
+      if(k<0)x.putImageData(base,0,0);else x.putImageData(new ImageData(o,TW,TH),0,0);
+      const s=document.createElement("span");s.textContent=label;b.append(c,s);if(k===FLT.sel)b.classList.add("on");
+      b.onclick=()=>{FLT.sel=k;$("#flt").querySelectorAll(".fgrid button").forEach(z=>z.classList.remove("on"));b.classList.add("on");$("#flt_s").hidden=k<0;draw()};par.appendChild(b)};
+    mk(-1,null,"Aucun",g);C.slice(0,7).forEach((c,j)=>mk(c.k,c.o,String(j+1),g));
+    const more=document.createElement("div");more.className="fgrid";more.style.marginTop="6px";more.hidden=true;C.slice(7).forEach((c,j)=>mk(c.k,c.o,String(j+8),more));
+    const mb=document.createElement("button");mb.className="btn";mb.type="button";mb.style.marginTop="8px";mb.textContent="Voir les "+(C.length-7)+" autres filtres (moins probables)";
+    mb.onclick=()=>{more.hidden=false;mb.remove()};g.after(mb);mb.after(more);FLT.extra=[mb,more];
+  },
+  reset(){(FLT.extra||[]).forEach(e=>e.remove());FLT.extra=null;FLT.sel=-1;FLT.f=1;$("#flt").hidden=true;$("#fltb").hidden=false;$("#flt_s").hidden=true;$("#flt_r").value=1;$("#flt_v").textContent="100 %"}
+};
+$("#fltb").onclick=()=>FLT.open();
+$("#flt_r").oninput=e=>{FLT.f=+e.target.value;$("#flt_v").textContent=Math.round(FLT.f*100)+" %";draw()};
 /* Lecture */
 $("#pp").onclick=()=>{if(v.paused)v.play();else v.pause()};
 v.onplay=()=>{$("#pp").textContent="Pause"};
@@ -1171,7 +1228,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.16)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.17)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1929,7 +1986,7 @@ $("#fp").onchange=e=>{
     const k=Math.min(1,4096/Math.max(im.naturalWidth,im.naturalHeight));
     const c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
     c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);
-    photoEl=c;mode="photo";v.pause();setMode();chips([c.width+"×"+c.height,"photo"]);$("#tc").hidden=true;updateEst();$("#pickp .lbl").textContent="Autre photo";
+    try{FLT.reset()}catch(e){}photoEl=c;mode="photo";v.pause();setMode();chips([c.width+"×"+c.height,"photo"]);$("#tc").hidden=true;updateEst();$("#pickp .lbl").textContent="Autre photo";
     size(PREVIEW);try{analyze()}catch(e){}draw();msg("");
   };
   im.onerror=()=>msg("Impossible de lire cette photo.");im.src=u;
