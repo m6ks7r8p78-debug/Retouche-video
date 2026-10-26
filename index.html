@@ -937,11 +937,21 @@ $("#ex").onclick=async()=>{
       }
       const t1=performance.now();tW+=t1-t0;
       stabT=(isPlan?(pl.a+.5)/FPS:(pl.a+.5+(pl.b!=null?pl.w:0))/OFPS);
-      draw(src);
+      let f=null;
+      try{
+        draw(src);
+        if(rdr)f=new VideoFrame(cv,{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
+      }catch(e){
+        if(!rdr)throw e;
+        window.__seqInfo="seq abandon image "+((e&&e.message)||e);rdr.close();rdr=null;
+        q=0;for(let z=0;z<i;z++){q+=plan&&plan[z].b!=null?2:1}
+        await initPool();poolMode=true;for(let z=q;z<q+POOL;z++)go(z);
+        i--;continue;
+      }
       if(!plan&&i<150){tx.drawImage(src,0,0,24,18);const td=tx.getImageData(0,0,24,18).data;
         if(prevT){let sm=true;for(let z=0;z<td.length;z++){if(td[z]!==prevT[z]){sm=false;break}}if(sm){dup++;run++;if(run>maxRun)maxRun=run}else run=0}
         prevT=td}
-      const f=new VideoFrame(cv,{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
+      if(!f)f=new VideoFrame(cv,{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       enc.encode(f,{keyFrame:i%60===0});f.close();if(!rdr&&qa>=0){go(qa+POOL);if(qb>=0)go(qb+POOL)}
       const t2=performance.now();tD+=t2-t1;
       while(enc.encodeQueueSize>6)await wait(8);
