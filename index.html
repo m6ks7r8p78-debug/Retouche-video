@@ -270,7 +270,7 @@ input[type=range]{accent-color:var(--g2)}
       </div>
 
       <div class="panel" id="tp2" hidden>
-        <div class="card rec" id="rec" hidden><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><button class="btn" id="rec_b" hidden></button></div>
+        <div class="card rec" id="rec" hidden><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul></div>
         <details id="adv"><summary>Réglages avancés <span class="mono" style="font-weight:400">(déjà réglés automatiquement)</span></summary>
         <div class="opts vonly">
           <h2>Options de la vidéo</h2>
@@ -314,6 +314,7 @@ input[type=range]{accent-color:var(--g2)}
 
       <div class="card" id="out" hidden>
         <h2>Résultat</h2>
+        <div class="rec" id="rec_after"><p class="help" id="rec_at" style="margin:0 0 6px"></p><ul id="rec_a"></ul><button class="btn" id="rec_b" hidden></button></div>
         <img id="ri" alt="Photo retouchée" hidden>
         <div id="ba" hidden>
           <div class="bag">
@@ -1043,6 +1044,33 @@ const REC={last:null,
     finally{if(curFile===my){try{await seekEl(v,t0)}catch(e){}draw()}REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
   }
 };
+
+/* Analyse du résultat exporté : propose un nouvel essai seulement si un défaut mesurable reste */
+REC.after=async function(){
+  const b=$("#rec_b");b.hidden=true;let el=null;
+  try{
+    if(mode!=="video"||!outUrl||window.__plan)return;
+    /* élément à part : la lecture visible peut être masquée (comparaison) et ne dessinerait pas ses images */
+    el=document.createElement("video");el.muted=true;el.playsInline=true;el.preload="auto";el.src=outUrl;
+    await new Promise(r=>{el.onloadeddata=r;el.onerror=r;setTimeout(r,8000)});
+    if(!(el.videoWidth>0)||!(el.duration>1))return;
+    const m=await AZ.run(el,{fps:OFPS||30});if(!m)return;
+    const A={dust:$("#o_dust").checked,stab:$("#o_stab").checked},sug=[],ch={};
+    if(m.dust>=REC.T.dust&&!A.dust){sug.push("Il reste des poussières : activer leur retrait.");ch.dust=true}
+    if(m.gains&&Math.max(...m.gains)-Math.min(...m.gains)>=REC.T.cast&&P.wb===0){sug.push("Une dominante de couleur persiste : équilibrer les couleurs.");ch.wb=m.gains}
+    if(m.shake>=REC.T.shake&&!A.stab){sug.push("Le résultat tremble encore : activer la stabilisation.");ch.stab=true}
+    if(m.noise>=REC.T.noiseMid&&P.dn<.5){sug.push("Le bruit est encore visible : réduction du bruit renforcée.");ch.dn=m.noise>=REC.T.noiseHi?.6:.45}
+    const ul=$("#rec_a");ul.textContent="";
+    if(!sug.length){$("#rec_at").textContent="Résultat vérifié : aucun défaut mesurable ne reste. Si quelque chose te gêne, ouvre « Réglages avancés ».";return}
+    $("#rec_at").textContent="J’ai analysé ta vidéo améliorée et je propose :";
+    sug.forEach(t=>{const li=document.createElement("li");li.textContent=t;ul.appendChild(li)});
+    b.hidden=false;b.textContent="Réessayer avec ces réglages";
+    b.onclick=()=>{
+      const set=(id,v)=>{$("#"+id).checked=v;try{localStorage.setItem(id,v?"1":"0")}catch(x){}};
+      if(ch.dust)set("o_dust",true);if(ch.stab){set("o_stab",true);try{stabEnable(true)}catch(e){}}
+      if(ch.wb){WBG=ch.wb;P.wb=.85}if(ch.dn)P.dn=ch.dn;sync();b.hidden=true;$("#ex").click()};
+  }catch(e){}finally{if(el){el.removeAttribute("src");el.load()}}
+};
 /* Lecture */
 $("#pp").onclick=()=>{if(v.paused)v.play();else v.pause()};
 v.onplay=()=>{$("#pp").textContent="Pause"};
@@ -1127,7 +1155,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.13)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.14)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1295,7 +1323,7 @@ $("#ex").onclick=async()=>{
       vch.length=0;ach.length=0;
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
-      $("#rv").hidden=false;baShow(!isPlan,tS);$("#ri").hidden=true;$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan;$("#out").hidden=false;$("#sv").hidden=false;
+      $("#rv").hidden=false;baShow(!isPlan,tS);$("#ri").hidden=true;if(!isPlan)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan;$("#out").hidden=false;$("#sv").hidden=false;
       msg((wa?"Terminé !":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(plan?"":" Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+"."));
       try{$("#st1").textContent+=" ["+window.__timing+"]"}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
