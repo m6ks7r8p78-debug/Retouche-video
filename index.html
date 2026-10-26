@@ -197,7 +197,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.11</span>
+  <span class="tag">sur ton téléphone · v2.12</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -273,6 +273,7 @@ input[type=range]{accent-color:var(--g2)}
           <h2>Options de la vidéo</h2>
           <label class="chk"><input type="checkbox" id="o_fast"><span><b>Mode rapide</b>Ignore la stabilisation et le mouvement fluide pour exporter plus vite. Idéal pour les vidéos longues.</span></label>
           <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Réduit les tremblements de la main. L’image est un peu recadrée.</span></label>
+          <label class="chk"><input type="checkbox" id="o_defl"><span><b>Anti-scintillement</b>Pour les vieux films et caméscopes dont la luminosité clignote d’une image à l’autre. Les vrais changements de lumière sont conservés.</span></label>
           <label class="chk"><input type="checkbox" id="o_dust"><span><b>Retirer poussières et points noirs</b>Pour les films 8 mm et les pellicules numérisées : efface les petites taches qui apparaissent sur une seule image. Les zones en mouvement ne sont pas touchées.</span></label>
           <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Isole la voix, supprime souffle et bruits de fond, la rend plus nette puis réencode le son. La musique est atténuée.</span></label>
           <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe une vidéo à 15 ou 24 images par seconde à 30, comme un iPhone récent.</span></label>
@@ -332,7 +333,7 @@ const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||
 const cv=$("#cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:false});
 const v=document.createElement("video");v.playsInline=true;v.muted=true;v.setAttribute("playsinline","");v.preload="auto";
 v.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(v);
-const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,ai:0,cs:.7,wb:0};let WBG=[1,1,1];
+const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,ai:0,cs:.7,wb:0};let WBG=[1,1,1],DFG=1;
 let show=1,looping=false,exporting=false,cancel=false,az=false,dl=null,url=null,outUrl=null,outBlob=null,curFile=null;
 const PREVIEW=1280,FPS=30;let OFPS=30;
 let fpsC=null;
@@ -368,7 +369,7 @@ if(!gl){msg("Ton navigateur ne gère pas le traitement vidéo (WebGL).");$("#pic
 try{if(sessionStorage.getItem("exp")){sessionStorage.removeItem("exp");msg("La page s’est rechargée pendant l’export : la mémoire de l’iPhone était saturée. Essaie en Full HD ou avec une vidéo plus courte.")}}catch(e){}
 
 const VS="attribute vec2 p;varying vec2 uv;void main(){uv=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}";
-const FS=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float on,br,co,sa,wa,sp;uniform vec3 tr,gn;uniform sampler2D t0;
+const FS=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float on,br,co,sa,wa,sp;uniform vec3 tr,gn;uniform float ex;uniform sampler2D t0;
 vec3 cr(vec2 u){vec2 pos=u/px;vec2 c=floor(pos-.5)+.5;vec2 f=pos-c;
 vec2 w0=f*(-.5+f*(1.-.5*f));vec2 w1=1.+f*f*(-2.5+1.5*f);vec2 w2=f*(.5+f*(2.-1.5*f));vec2 w3=f*f*(-.5+.5*f);
 vec2 w12=w1+w2;vec2 t12=px*(c+w2/w12);vec2 t0=px*(c-1.);vec2 t3=px*(c+2.);
@@ -376,7 +377,7 @@ vec3 r=texture2D(t,vec2(t12.x,t0.y)).rgb*(w12.x*w0.y)+texture2D(t,vec2(t0.x,t12.
 +texture2D(t,vec2(t12.x,t12.y)).rgb*(w12.x*w12.y)+texture2D(t,vec2(t3.x,t12.y)).rgb*(w3.x*w12.y)+texture2D(t,vec2(t12.x,t3.y)).rgb*(w12.x*w3.y);
 return r/(w12.x*w0.y+w0.x*w12.y+w12.x*w12.y+w3.x*w12.y+w12.x*w3.y);}
 void main(){vec3 c;vec2 uu=(uv-.5)*tr.x+.5+tr.yz;
-if(on>.5){c=cr(uu)*gn;c+=br;c=(c-.5)*co+.5;float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sa);c.r+=wa;c.b-=wa;}
+if(on>.5){c=cr(uu)*gn*ex;c+=br;c=(c-.5)*co+.5;float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sa);c.r+=wa;c.b-=wa;}
 else c=texture2D(t,uv).rgb;
 if(sp>0.){if(uv.x<sp)c=texture2D(t0,uv).rgb;if(abs(uv.x-sp)<.0025)c=vec3(1.);}
 gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
@@ -562,7 +563,7 @@ if(gl){
     [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,c])=>gl.texParameteri(gl.TEXTURE_2D,a,c));return x};
   tex=mt();tex2=mt();tex3=mt();tex4=mt();tex16=mt();texP=mt();texN=mt();texD=mt();fbo=gl.createFramebuffer();
   const loc=(g,o,n)=>n.forEach(k=>{o[k]=gl.getUniformLocation(g,k)});
-  loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn"]);loc(progA,UA,["t","t4","t16","px","s4","s16","ai"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progP,UP,["t","sz"]);loc(progD,UD,["t","tp","tn","px","thr"]);
+  loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex"]);loc(progA,UA,["t","t4","t16","px","s4","s16","ai"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progP,UP,["t","sz"]);loc(progD,UD,["t","tp","tn","px","thr"]);
 }
 function pass(pg,src,dst,w,h,set){
   gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
@@ -606,6 +607,7 @@ function draw(el){
   gl.uniform1f(U.sp,show&&split?split:0);
   gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
   for(const k of ["br","co","sa","wa"])gl.uniform1f(U[k],P[k]);
+  gl.uniform1f(U.ex,show?DFG:1);
   {const w=show?P.wb:0;gl.uniform3f(U.gn,1+(WBG[0]-1)*w,1+(WBG[1]-1)*w,1+(WBG[2]-1)*w)}
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   if(dustSwap){const k=tex;tex=texD;texD=k}
@@ -766,6 +768,30 @@ function stabShift(A,B,W,H){
   return[sx+fx,sy+fy];
 }
 /* ouvre une lecture séquentielle vérifiée (ou null) */
+/* ===== Anti-scintillement : mesure la luminance de chaque image, retire seulement les variations rapides ===== */
+function flickerGains(T){
+  /* un vrai scintillement change toutes les zones de l'image du même facteur ; un mouvement n'en change qu'une partie.
+     On ne corrige donc que quand les 12 zones sont d'accord. */
+  const n=T.length,Y=T.map(t=>t.map(v=>Math.log(Math.max(.02,v)))),g=new Float32Array(n).fill(1),R=7;
+  const med=a=>{const b=a.slice().sort((p,q)=>p-q);return b[b.length>>1]};
+  let start=0;
+  const seg=(a,z)=>{for(let i=a;i<z;i++){
+    const d=[];for(let k=0;k<12;k++){const w=[];for(let j=Math.max(a,i-R);j<=Math.min(z-1,i+R);j++)w.push(Y[j][k]);const m=med(w);if(m>-2.5)d.push(m-Y[i][k])}   /* zones assez claires seulement (le noir est trop bruité) */
+    if(d.length<3)continue;
+    const md=med(d),mad=med(d.map(v=>Math.abs(v-md)));
+    if(Math.abs(md)>.012&&mad<.015)g[i]=Math.exp(Math.max(-.22,Math.min(.22,md)))}};
+  for(let i=1;i<n;i++){let j=0;for(let k=0;k<12;k++)j+=Math.abs(Y[i][k]-Y[i-1][k]);if(j/12>.4){seg(start,i);start=i}}   /* coupure de plan */
+  seg(start,n);
+  const o=new Float32Array(n);for(let i=0;i<n;i++){let a=0,c=0;for(let j=Math.max(0,i-1);j<=Math.min(n-1,i+1);j++){a+=g[j];c++}o[i]=g[i]===1&&(i>0&&g[i-1]===1||i<n-1&&g[i+1]===1)?1:a/c}
+  return o;
+}
+async function lumaTrace(off,total,fps){
+  const sr=await makeSeq(off,fps);if(!sr)return null;
+  const L=[];
+  try{for(let i=0;i<total;i++){if(typeof cancel!=="undefined"&&cancel)throw new Error("annulé");L.push(await sr.thumb(i+off));if(i%40===0)$("#pg").value=0}}
+  catch(e){sr.close();return null}
+  sr.close();return L;
+}
 async function makeSeq(start,fps){
   if(!window.VideoDecoder||window.__noseq||!curFile||mode!=="video")return null;
   let r=null;
@@ -824,6 +850,8 @@ async function stabEnable(on){
 $("#o_stab").onchange=e=>{try{localStorage.setItem("o_stab",e.target.checked?"1":"0")}catch(x){}stabEnable(e.target.checked)};
 $("#o_voice").addEventListener("change",e=>{try{localStorage.setItem("o_voice",e.target.checked?"1":"0")}catch(x){}});
 try{$("#o_voice").checked=localStorage.getItem("o_voice")==="1"}catch(e){}
+$("#o_defl").addEventListener("change",e=>{try{localStorage.setItem("o_defl",e.target.checked?"1":"0")}catch(x){}});
+try{$("#o_defl").checked=localStorage.getItem("o_defl")==="1"}catch(e){}
 $("#o_dust").addEventListener("change",e=>{try{localStorage.setItem("o_dust",e.target.checked?"1":"0")}catch(x){}});
 try{$("#o_dust").checked=localStorage.getItem("o_dust")==="1"}catch(e){}
 $("#o_fast").addEventListener("change",e=>{try{localStorage.setItem("o_fast",e.target.checked?"1":"0")}catch(x){}});
@@ -981,7 +1009,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.11)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.12)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1059,6 +1087,8 @@ $("#ex").onclick=async()=>{
       for(let k=1;k<POOL;k++){const e=document.createElement("video");e.muted=true;e.playsInline=true;e.preload="auto";e.src=url;e.setAttribute("playsinline","");e.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(e);els.push(e);e.load()}
       await Promise.all(els.slice(1).map(e=>new Promise(r=>{if(e.readyState>=2)r();else{e.onloadeddata=r;e.onerror=r}})))};
     const go=k=>{if(poolUp&&k<reqs.length)pend[k]=seekEl(els[k%POOL],Math.min((reqs[k]+.5)/OFPS,v.duration-.001))};
+    let dfg=null;
+    if(!isPlan&&$("#o_defl").checked&&window.VideoDecoder){msg("Mesure du scintillement…");const Ltr=await lumaTrace(off,total,OFPS);if(Ltr&&Ltr.length===total){dfg=flickerGains(Ltr);window.__dfgL=Ltr;window.__dfg=Array.from(dfg)}else msg("Anti-scintillement indisponible pour cette vidéo : elle est traitée sans.")}
     /* lecture séquentielle (bien plus rapide que de chercher chaque image) */
     if(!isPlan&&window.VideoDecoder&&!window.__noseq&&cv.width*cv.height<=2073600*1.2){
       rdr=await makeSeq(off,OFPS);
@@ -1067,7 +1097,7 @@ $("#ex").onclick=async()=>{
     poolMode=!rdr;const T0=performance.now();
     for(let i=0;i<total;i++){
       if(cancel||err)break;
-      const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;
+      const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
       if(rdr){
         try{
           const ca=await rdr.need(pl.a);src=ca;q++;
@@ -1117,7 +1147,7 @@ $("#ex").onclick=async()=>{
       $("#pg").value=(i+1)/total;
       if(i%15===0){const el=(performance.now()-T0)/1000,rest=el/(i+1)*(total-i-1);msg("Image "+(i+1)+" sur "+total+" ("+Math.round((i+1)/total*100)+" %), reste environ "+(rest>90?Math.round(rest/60)+" min":Math.round(rest)+" s"))}
     }
-    DUST.on=false;DUST.p=DUST.n=null;poolMode=false;if(rdr)rdr.close();els.slice(1).forEach(e=>{e.removeAttribute("src");e.load();e.remove()});
+    DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;if(rdr)rdr.close();els.slice(1).forEach(e=>{e.removeAttribute("src");e.load();e.remove()});
     if(err)throw err;
     if(cancel){enc.close();msg("Export annulé.")}
     else{
@@ -1158,7 +1188,7 @@ $("#ex").onclick=async()=>{
     else if(/annul/i.test(m))msg("Export annulé.");
     else msg(friendly(m))}
   finally{
-    window.__plan=null;DUST.on=false;DUST.p=DUST.n=null;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
+    window.__plan=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}
   }
@@ -1659,6 +1689,24 @@ class SeqReader{
     return lo;
   }
   peek(a){const r=this.map(a),e=this.cache.find(x=>x.r===r);return e?e.c:null}
+  /* luminance moyenne (0..1) de l'image a, sans créer de grand canvas : sert à mesurer le scintillement */
+  async thumb(a){
+    let idx=this.map(a);const t0=performance.now();
+    if(idx-1>this.lo){this.lo=idx-1;for(const [r,fr] of this.frames)if(r<this.lo){fr.close();this.frames.delete(r)}this._wake()}
+    while(!this.frames.has(idx)){
+      if(this.err)throw this.err;
+      if(typeof cancel!=="undefined"&&cancel)throw new Error("annulé");
+      if(this.done){let best=-1;for(const r of this.frames.keys())if(r<=idx&&r>best)best=r;if(best<0)throw new Error("image absente");idx=best;break}
+      await new Promise(r=>{this.waiters.push(r);setTimeout(r,200)});
+      if(performance.now()-t0>20000)throw new Error("décodage trop lent");
+    }
+    const fr=this.frames.get(idx),i=this.i,W=32,H=24;
+    if(!this.tc){this.tc=document.createElement("canvas");this.tc.width=W;this.tc.height=H;this.tx=this.tc.getContext("2d",{willReadFrequently:true})}
+    const x=this.tx,sx=W/i.dw,sy=H/i.dh,m=i.mat;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,W,H);x.setTransform(m[0]*sx,m[1]*sy,m[2]*sx,m[3]*sy,m[4]*sx,m[5]*sy);x.drawImage(fr,0,0,i.W,i.H);x.setTransform(1,0,0,1,0,0);
+    const d=x.getImageData(0,0,W,H).data,out=[];
+    for(let ty=0;ty<3;ty++)for(let tx=0;tx<4;tx++){const v=[];for(let yy=0;yy<8;yy++)for(let xx=0;xx<8;xx++){const o=((ty*8+yy)*W+tx*8+xx)*4;v.push(.299*d[o]+.587*d[o+1]+.114*d[o+2])}v.sort((p,q)=>p-q);out.push(v[32]/255)}
+    return out;   /* 12 médianes de luminance (grille 4×3) */
+  }
   /* rend un canvas (orientation corrigée) contenant l'image n° a (cadence fps) ; a doit croître */
   async need(a){
     let idx=this.map(a);
