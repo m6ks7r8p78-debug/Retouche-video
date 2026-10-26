@@ -196,7 +196,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.3</span>
+  <span class="tag">sur ton téléphone · v2.4</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -272,7 +272,7 @@ input[type=range]{accent-color:var(--g2)}
         <div class="opts vonly">
           <h2>Options de la vidéo</h2>
           <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Réduit les tremblements de la main. L’image est un peu recadrée.</span></label>
-          <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Réduit le souffle et les bruits de fond. La musique et l’ambiance sont atténuées.</span></label>
+          <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Isole la voix, supprime souffle et bruits de fond, la rend plus nette puis réencode le son. La musique est atténuée.</span></label>
           <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe une vidéo à 15 ou 24 images par seconde à 30, comme un iPhone récent.</span></label>
           <div class="trim"><b>Partie à traiter</b><span class="mono" id="t_txt">tout</span>
             <input type="range" id="t_in" min="0" max="1000" value="0" aria-label="Début"><input type="range" id="t_out" min="0" max="1000" value="1000" aria-label="Fin"></div>
@@ -912,7 +912,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.3)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.4)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fluid=!isPlan&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(!isPlan&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
@@ -937,7 +937,7 @@ $("#ex").onclick=async()=>{
       try{
         msg("Nettoyage du son…");
         ab=await voiceClean(rawA,curFile,tS,tE,trimmed);
-        acfg={codec:"mp4a.40.2",sampleRate:48000,numberOfChannels:ab.numberOfChannels,bitrate:128000};
+        acfg={codec:"mp4a.40.2",sampleRate:48000,numberOfChannels:ab.numberOfChannels,bitrate:192000};
         if((await AudioEncoder.isConfigSupported(acfg)).supported){voiceOK=true;rawA=null}else{ab=null;acfg=null;audioWhy="l’iPhone ne peut pas réencoder le son nettoyé"}
       }catch(e){ab=null;acfg=null;voiceOK=false;audioWhy="le nettoyage du son a échoué ("+((e&&e.message)||"erreur")+")";window.__voiceErr=e}
     }
@@ -1379,7 +1379,7 @@ async function toRate(ab,rate){
 }
 let rnnMod=null;
 async function voiceClean(raw,file,t0,t1,trim,bed){
-  bed=bed==null?.12:bed;
+  bed=bed==null?.04:bed;
   let ab=await decodeAudioAny(raw,file);ab=await toRate(ab,48000);
   if(!rnnMod){const m=await import("./rnnoise.mjs");rnnMod=await m.default()}
   const M=rnnMod,ch=Math.min(2,ab.numberOfChannels),N=ab.length,LAG=960,inP=M._malloc(480*4),outP=M._malloc(480*4);
@@ -1399,6 +1399,20 @@ async function voiceClean(raw,file,t0,t1,trim,bed){
       res.push(o2);
     }
   }finally{M._free(inP);M._free(outP)}
+  /* netteté : coupe les graves parasites, renforce la présence de la voix, compresse légèrement, normalise */
+  try{
+    const oc=new OfflineAudioContext(ch,L,48000),b=oc.createBuffer(ch,L,48000);for(let c=0;c<ch;c++)b.copyToChannel(res[c],c);
+    const src=oc.createBufferSource();src.buffer=b;
+    const hp=oc.createBiquadFilter();hp.type="highpass";hp.frequency.value=90;hp.Q.value=.7;
+    const pr=oc.createBiquadFilter();pr.type="peaking";pr.frequency.value=3000;pr.Q.value=.9;pr.gain.value=3;
+    const ar=oc.createBiquadFilter();ar.type="highshelf";ar.frequency.value=7000;ar.gain.value=1.5;
+    const cp=oc.createDynamicsCompressor();cp.threshold.value=-26;cp.knee.value=18;cp.ratio.value=3;cp.attack.value=.005;cp.release.value=.2;
+    src.connect(hp);hp.connect(pr);pr.connect(ar);ar.connect(cp);cp.connect(oc.destination);src.start();
+    const o=await oc.startRendering(),out=[];let pk=1e-6;
+    for(let c=0;c<ch;c++){const d=o.getChannelData(c).slice();out.push(d);for(let i=0;i<d.length;i+=3){const v=Math.abs(d[i]);if(v>pk)pk=v}}
+    const g=Math.min(8,.89/pk);for(const d of out)for(let i=0;i<d.length;i++)d[i]=Math.max(-1,Math.min(1,d[i]*g));
+    return {sampleRate:48000,length:L,numberOfChannels:ch,getChannelData:i=>out[i]};
+  }catch(e){}
   return {sampleRate:48000,length:L,numberOfChannels:ch,getChannelData:i=>res[i]};
 }
 
