@@ -276,7 +276,7 @@ input[type=range]{accent-color:var(--g2)}
           <h2>Options de la vidéo</h2>
           <label class="chk"><input type="checkbox" id="o_fast"><span><b>Mode rapide</b>Ignore la stabilisation et le mouvement fluide pour exporter plus vite. Idéal pour les vidéos longues.</span></label>
           <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Réduit les tremblements de la main. L’image est un peu recadrée.</span></label>
-          <label class="chk"><input type="checkbox" id="o_defl"><span><b>Anti-scintillement</b>Pour les vieux films et caméscopes dont la luminosité clignote d’une image à l’autre. Les vrais changements de lumière sont conservés.</span></label>
+          <label class="chk"><input type="checkbox" id="o_defl"><span><b>Anti-scintillement</b>Visible dans l’aperçu sur les 5 premières secondes. Pour les vieux films et caméscopes dont la luminosité clignote d’une image à l’autre. Les vrais changements de lumière sont conservés.</span></label>
           <label class="chk"><input type="checkbox" id="o_dust"><span><b>Retirer poussières et points noirs</b>Pour les films 8 mm et les pellicules numérisées : efface les petites taches qui apparaissent sur une seule image. Les zones en mouvement ne sont pas touchées.</span></label>
           <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Isole la voix, supprime souffle et bruits de fond, la rend plus nette puis réencode le son. La musique est atténuée.</span></label>
           <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe une vidéo à 15 ou 24 images par seconde à 30, comme un iPhone récent.</span></label>
@@ -612,7 +612,7 @@ function draw(el){
   gl.uniform1f(U.sp,show&&split?split:0);
   gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
   for(const k of ["br","co","sa","wa"])gl.uniform1f(U[k],P[k]);
-  gl.uniform1f(U.ex,show?DFG:1);
+  gl.uniform1f(U.ex,show?(exporting?DFG:REC.pv()):1);
   {const w=show?P.wb:0;gl.uniform3f(U.gn,1+(WBG[0]-1)*w,1+(WBG[1]-1)*w,1+(WBG[2]-1)*w)}
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   if(dustSwap){const k=tex;tex=texD;texD=k}
@@ -855,7 +855,7 @@ async function stabEnable(on){
 $("#o_stab").onchange=e=>{try{localStorage.setItem("o_stab",e.target.checked?"1":"0")}catch(x){}stabEnable(e.target.checked)};
 $("#o_voice").addEventListener("change",e=>{try{localStorage.setItem("o_voice",e.target.checked?"1":"0")}catch(x){}});
 try{$("#o_voice").checked=localStorage.getItem("o_voice")==="1"}catch(e){}
-$("#o_defl").addEventListener("change",e=>{try{localStorage.setItem("o_defl",e.target.checked?"1":"0")}catch(x){}});
+$("#o_defl").addEventListener("change",e=>{try{localStorage.setItem("o_defl",e.target.checked?"1":"0")}catch(x){}draw()});
 try{$("#o_defl").checked=localStorage.getItem("o_defl")==="1"}catch(e){}
 $("#o_dust").addEventListener("change",e=>{try{localStorage.setItem("o_dust",e.target.checked?"1":"0")}catch(x){}});
 try{$("#o_dust").checked=localStorage.getItem("o_dust")==="1"}catch(e){}
@@ -1004,9 +1004,10 @@ const AZ={
 
 
 /* ===== Recommandation automatique ===== */
-const REC={last:null,
+const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$("#o_defl").checked)return 1;const i=Math.round(v.currentTime*REC.ffps);return i>=0&&i<REC.fg.length?REC.fg[i]:1}catch(e){return 1}},
   recommend(m,fl){
-    const o={dust:false,defl:false,stab:false,wb:null,dn:.2,sh:.3},n=[];
+    const o={dust:false,defl:false,stab:false,voice:false,wb:null,dn:.2,sh:.3},n=[];
+    if(m.audio&&m.audio.peak>-45&&m.audio.floor>REC.T.hiss){o.voice=true;n.push("Son avec souffle ou bruit de fond constant : voix clarifiée activée.")}
     if(m.dust>=REC.T.dust){o.dust=true;n.push("Poussières ou points noirs détectés (≈"+Math.round(m.dust)+" par image) : effacement activé.")}
     if(fl&&(fl.frac>=REC.T.flick||fl.mean>=REC.T.flickMean)){o.defl=true;n.push("Scintillement détecté ("+Math.round(fl.frac*100)+" % des images) : anti-scintillement activé.")}
     if(m.shake>=REC.T.shake){o.stab=true;n.push("Image tremblante : stabilisation activée.")}
@@ -1016,10 +1017,10 @@ const REC={last:null,
     if(m.p98-m.p2<.45)n.push("Image peu contrastée : contraste relevé.");
     else if(m.p50<.22)n.push("Image sombre : éclaircie légèrement.");
     return{o,n}},
-  T:{dust:15,flick:.25,flickMean:.008,shake:1.2,cast:.08,noiseMid:1.6,noiseHi:3,blur:30},
+  T:{hiss:-52,dust:15,flick:.25,flickMean:.008,shake:1.2,cast:.08,noiseMid:1.6,noiseHi:3,blur:30},
   apply(r){
     const o=r.o,set=(id,v)=>{const e=$("#"+id);if(e){e.checked=v;try{localStorage.setItem(id,v?"1":"0")}catch(x){}}};
-    set("o_dust",o.dust);set("o_defl",o.defl);set("o_stab",o.stab);
+    set("o_dust",o.dust);set("o_voice",o.voice);set("o_defl",o.defl);set("o_stab",o.stab);
     try{stabEnable(o.stab)}catch(e){}
     if(o.wb){WBG=o.wb;P.wb=.85}else{WBG=[1,1,1];P.wb=0}
     P.dn=o.dn;P.sh=o.sh;sync()},
@@ -1036,7 +1037,8 @@ const REC={last:null,
       let fl=null;
       if(window.VideoDecoder&&v.duration>.5){
         const total=Math.min(Math.floor(v.duration*fps)-1,150);
-        if(total>=20){const L=await lumaTrace(0,total,fps);if(L&&L.length===total){const g=flickerGains(L);let c=0,sum=0;for(const x of g){if(x!==1)c++;sum+=Math.abs(x-1)}fl={frac:c/total,mean:sum/total}}}}
+        if(total>=20){const L=await lumaTrace(0,total,fps);if(L&&L.length===total){const g=flickerGains(L);REC.fg=g;REC.ffps=fps;REC.fgf=my;let c=0,sum=0;for(const x of g){if(x!==1)c++;sum+=Math.abs(x-1)}fl={frac:c/total,mean:sum/total}}}}
+      const au=await REC.audio();m.audio=au;
       if(curFile!==my)return;
       const r=REC.recommend(m,fl);REC.last={m,fl,r};window.__prof={m,fl};
       REC.apply(r);REC.show(r);
@@ -1045,6 +1047,20 @@ const REC={last:null,
   }
 };
 
+
+/* Son : repère le souffle / bruit de fond constant (sur les 20 premières secondes) */
+REC.audio=async function(){
+  try{
+    if(!window.AudioDecoder||!curFile||curFile.size>600*1048576)return null;
+    const raw=await demuxAudio(curFile);if(!raw||!raw.samples.length)return null;
+    const lim=20*1e6,smp=raw.samples.filter(x=>x.ts<=lim);if(smp.length<10)return null;
+    const ab=await decodeAudioAny({...raw,samples:smp},curFile);
+    const x=ab.getChannelData(0),sr=ab.sampleRate,F=Math.round(sr*.02),n=Math.floor(x.length/F),db=[];
+    for(let i=0;i<n;i++){let e=0;for(let j=i*F;j<(i+1)*F;j++)e+=x[j]*x[j];db.push(10*Math.log10(e/F+1e-12))}
+    if(n<50)return null;db.sort((a,b)=>a-b);
+    return{floor:db[Math.floor(n*.1)],peak:db[Math.floor(n*.95)],med:db[n>>1]}
+  }catch(e){return null}
+};
 /* Analyse du résultat exporté : propose un nouvel essai seulement si un défaut mesurable reste */
 REC.after=async function(){
   const b=$("#rec_b");b.hidden=true;let el=null;
@@ -1155,7 +1171,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.14)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.15)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
