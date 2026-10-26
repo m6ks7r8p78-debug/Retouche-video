@@ -196,7 +196,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.1</span>
+  <span class="tag">sur ton téléphone · v2.2</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -263,6 +263,7 @@ input[type=range]{accent-color:var(--g2)}
         <button class="btn" id="ai" style="margin-top:12px" hidden>Analyse intelligente (IA)</button>
         <div id="bt" class="card" hidden style="margin-top:12px"><p class="help" id="btt" style="margin:0 0 8px"></p>
           <button class="btn main" id="exall">Améliorer tout le lot</button>
+          <div id="btl" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"></div>
           <button class="btn" id="svall" style="margin-top:8px" hidden>Enregistrer toutes les vidéos</button></div>
         <button class="btn main big" id="ex">Améliorer en 4K</button>
       </div>
@@ -793,6 +794,14 @@ function btUpdate(){
   else $("#btt").textContent=batch.total+" vidéos choisies. Règle la première ci-dessus (taille, stabilisation…), puis lance tout le lot avec les mêmes réglages.";
   $("#exall").hidden=batch.running||batch.done.length===batch.total;
   $("#svall").hidden=!batch.done.length||batch.running;
+  const L=$("#btl");L.textContent="";
+  if(!batch.running&&batch.done.length>1)batch.done.forEach((d,k)=>{const bt=document.createElement("button");bt.className="btn";bt.textContent="Comparer avant / après : "+(d.name.replace(/-retouche\.\w+$/,"")).slice(0,28);
+    bt.onclick=()=>{
+      if(d.u1)URL.revokeObjectURL(d.u1);if(d.u2)URL.revokeObjectURL(d.u2);
+      d.u1=URL.createObjectURL(d.src);d.u2=URL.createObjectURL(d.blob);
+      $("#out").hidden=false;$("#ri").hidden=true;$("#sv").hidden=true;$("#rtb").hidden=true;$("#rv").src=d.u2;
+      baShow(d.ok,d.off,d.u1,d.u2);$("#out").scrollIntoView({behavior:"smooth"})};
+    L.appendChild(bt)});
 }
 function loadFile(f){
   return new Promise(res=>{
@@ -900,7 +909,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.1)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.2)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fluid=!isPlan&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(!isPlan&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
@@ -1514,12 +1523,13 @@ class SeqReader{
 
 /* ===== Comparatif avant / après ===== */
 const baO=$("#bao"),baR=$("#bar"),baP=$("#bap"),baS=$("#bas");let baOff=0,baOn=false,baSolo=false;
-function baShow(ok,off){
+function baShow(ok,off,uo,ur){
+  uo=uo||url;ur=ur||outUrl;
   baOn=false;baSolo=false;baO.pause();baR.pause();
-  const can=ok&&url&&outUrl;
+  const can=ok&&uo&&ur;
   $("#bat").hidden=!can;
   if(!can){$("#ba").hidden=true;$("#rv").hidden=false;return}
-  baOff=off||0;baO.src=url;baR.src=outUrl;baO.load();baR.load();baS.value=0;baP.textContent="▶";
+  window.__baLastOff=off||0;baOff=off||0;baO.src=uo;baR.src=ur;baO.load();baR.load();baS.value=0;baP.textContent="▶";
   $("#ba").hidden=false;$("#rv").hidden=true;$("#bat").textContent="Voir le résultat seul";
 }
 function baSync(){const t=baR.currentTime;if(Math.abs(baO.currentTime-(t+baOff))>.12)try{baO.currentTime=t+baOff}catch(e){}}
@@ -1587,7 +1597,7 @@ $("#exall").onclick=async()=>{
       if(window.__retryPending){window.__retryPending=false;await wait(800);continue}
       if(!outBlob)break; /* annulé ou échec */
       const nm=(curFile.name||"video").replace(/\.[^.]+$/,"")+"-retouche."+(outBlob.type.includes("webm")?"webm":"mp4");
-      batch.done.push({blob:outBlob,name:nm});outBlob=null;btUpdate();
+      batch.done.push({blob:outBlob,name:nm,src:curFile,off:(window.__baLastOff||0),ok:!window.__plan});outBlob=null;btUpdate();
       if(!batch.todo.length)break;
       await loadFile(batch.todo.shift());await wait(300);
     }
