@@ -196,7 +196,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.4</span>
+  <span class="tag">sur ton téléphone · v2.5</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -271,6 +271,7 @@ input[type=range]{accent-color:var(--g2)}
       <div class="panel" id="tp2" hidden>
         <div class="opts vonly">
           <h2>Options de la vidéo</h2>
+          <label class="chk"><input type="checkbox" id="o_fast"><span><b>Mode rapide</b>Ignore la stabilisation et le mouvement fluide pour exporter plus vite. Idéal pour les vidéos longues.</span></label>
           <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Réduit les tremblements de la main. L’image est un peu recadrée.</span></label>
           <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Isole la voix, supprime souffle et bruits de fond, la rend plus nette puis réencode le son. La musique est atténuée.</span></label>
           <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe une vidéo à 15 ou 24 images par seconde à 30, comme un iPhone récent.</span></label>
@@ -759,6 +760,8 @@ async function stabEnable(on){
 $("#o_stab").onchange=e=>{try{localStorage.setItem("o_stab",e.target.checked?"1":"0")}catch(x){}stabEnable(e.target.checked)};
 $("#o_voice").addEventListener("change",e=>{try{localStorage.setItem("o_voice",e.target.checked?"1":"0")}catch(x){}});
 try{$("#o_voice").checked=localStorage.getItem("o_voice")==="1"}catch(e){}
+$("#o_fast").addEventListener("change",e=>{try{localStorage.setItem("o_fast",e.target.checked?"1":"0")}catch(x){}});
+try{$("#o_fast").checked=localStorage.getItem("o_fast")==="1"}catch(e){}
 $("#o_fluid").addEventListener("change",e=>{try{localStorage.setItem("o_fluid",e.target.checked?"1":"0")}catch(x){}});
 /* ===== Découpe début/fin ===== */
 function trimRange(){const d=v.duration||0;return[$("#t_in").value/1000*d,$("#t_out").value/1000*d]}
@@ -912,10 +915,11 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.4)");OFPS=window.__plan?FPS:await measureFps();
-    const isPlan=!!window.__plan,fluid=!isPlan&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
+    msg("Préparation… (v2.5)");OFPS=window.__plan?FPS:await measureFps();
+    const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
-    if(!isPlan&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
+    if(fast)stabOn=false;
+    if(!isPlan&&!fast&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
     const dT=Math.max(.2,tE-tS);
     msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde");
     /* résolution et encodeur */
