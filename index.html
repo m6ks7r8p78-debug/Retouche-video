@@ -1171,7 +1171,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.15)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.16)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1184,7 +1184,7 @@ $("#ex").onclick=async()=>{
       if(window.__plan&&L>1920&&window.__plan.length/FPS>60){msg("Version longue : export en Full HD pour ne pas saturer la mémoire de l’iPhone.");continue}
       size(L);
       const c={codec:cv.width*cv.height>2073600*1.2?"avc1.640033":"avc1.640028",width:cv.width,height:cv.height,
-        bitrate:Math.round(cv.width*cv.height*OUTF*.045),framerate:OUTF,avc:{format:"avc"},latencyMode:"quality"};
+        bitrate:Math.round(cv.width*cv.height*OUTF*.07),framerate:OUTF,avc:{format:"avc"},latencyMode:"quality"};
       if(c.bitrate*(window.__plan?window.__plan.length/OFPS:dT)/8>7e8&&L!==1280){msg("Vidéo longue : taille réduite pour ne pas saturer la mémoire.");continue}
       if((await VideoEncoder.isConfigSupported(c)).supported){cfg=c;break}
     }
@@ -1241,7 +1241,7 @@ $("#ex").onclick=async()=>{
     const total=plan?plan.length:Math.max(1,Math.floor(dT*OFPS+1e-6));
     const reqs=[];(plan||Array.from({length:total},(_,k)=>({a:k+off}))).forEach(p=>{reqs.push(p.a);if(p.b!=null)reqs.push(p.b)});
     let q=0,fcache=null;const bc=document.createElement("canvas");bc.width=v.videoWidth;bc.height=v.videoHeight;const bx=bc.getContext("2d");
-    const vpx=v.videoWidth*v.videoHeight,POOL=3,els=[v],pend=[];let tW=0,tD=0,tQ=0;
+    const vpx=v.videoWidth*v.videoHeight,POOL=3,els=[v],pend=[];let tW=0,tD=0,tQ=0,tDr=0,tVF=0,tDu=0,tEn=0;
     const tc=document.createElement("canvas");tc.width=24;tc.height=18;const tx=tc.getContext("2d",{willReadFrequently:true});let prevT=null,dup=0,run=0,maxRun=0;
     let poolUp=false,rdr=null;
     const dustOn=!isPlan&&$("#o_dust").checked;
@@ -1287,9 +1287,9 @@ $("#ex").onclick=async()=>{
       }
       const t1=performance.now();tW+=t1-t0;
       stabT=(isPlan?(pl.a+.5)/FPS:(pl.a+.5+(pl.b!=null?pl.w:0))/OFPS);
-      let f=null;
+      let f=null,p1=performance.now();
       try{
-        draw(src);
+        const p0=performance.now();draw(src);p1=performance.now();tDr+=p1-p0;
         if(rdr)f=new VideoFrame(cv,{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       }catch(e){
         if(!rdr)throw e;
@@ -1298,11 +1298,13 @@ $("#ex").onclick=async()=>{
         await initPool();poolMode=true;for(let z=q;z<q+POOL;z++)go(z);
         i--;continue;
       }
+      const d0=performance.now();tVF+=d0-p1;
       if(!plan&&i<150){tx.drawImage(src,0,0,24,18);const td=tx.getImageData(0,0,24,18).data;
         if(prevT){let sm=true;for(let z=0;z<td.length;z++){if(td[z]!==prevT[z]){sm=false;break}}if(sm){dup++;run++;if(run>maxRun)maxRun=run}else run=0}
         prevT=td}
+      tDu+=performance.now()-d0;
       if(!f)f=new VideoFrame(cv,{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
-      enc.encode(f,{keyFrame:i%60===0});f.close();if(!rdr&&qa>=0){go(qa+POOL);if(qb>=0)go(qb+POOL)}
+      const e0=performance.now();enc.encode(f,{keyFrame:i%60===0});f.close();tEn+=performance.now()-e0;if(!rdr&&qa>=0){go(qa+POOL);if(qb>=0)go(qb+POOL)}
       const t2=performance.now();tD+=t2-t1;
       while(enc.encodeQueueSize>6)await wait(8);
       tQ+=performance.now()-t2;
@@ -1314,7 +1316,7 @@ $("#ex").onclick=async()=>{
     if(cancel){enc.close();msg("Export annulé.")}
     else{
       await enc.flush();
-      try{const n=Math.max(1,total);window.__timing=v.videoWidth+"×"+v.videoHeight+" à "+(Math.round(OFPS*10)/10)+" i/s, sortie "+cfg.width+"×"+cfg.height+" : attente image "+Math.round(tW/n)+" ms, traitement "+Math.round(tD/n)+" ms, encodage "+Math.round(tQ/n)+" ms par image"+(window.__seqInfo?" ["+window.__seqInfo+"]":(rdr?"":" [lecture classique]"))}catch(e){}
+      try{const n=Math.max(1,total);window.__timing=v.videoWidth+"×"+v.videoHeight+" à "+(Math.round(OFPS*10)/10)+" i/s, sortie "+cfg.width+"×"+cfg.height+" : attente image "+Math.round(tW/n)+" ms, traitement "+Math.round(tD/n)+" ms (dessin "+Math.round(tDr/n)+", image "+Math.round(tVF/n)+", contrôle "+Math.round(tDu/n)+", envoi "+Math.round(tEn/n)+"), encodage "+Math.round(tQ/n)+" ms par image"+(window.__seqInfo?" ["+window.__seqInfo+"]":(rdr?"":" [lecture classique]"))}catch(e){}
       try{const el=(performance.now()-T0)/1000;if(!plan&&el>3)localStorage.setItem("spd",JSON.stringify({r:total/el,p:cv.width*cv.height}))}catch(e){}
       const build=wa=>{
         const tg=new Mp4Muxer.ArrayBufferTarget();
