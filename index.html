@@ -886,7 +886,7 @@ $("#ex").onclick=async()=>{
     const total=plan?plan.length:Math.max(1,Math.floor(dT*OFPS+1e-6));
     const reqs=[];(plan||Array.from({length:total},(_,k)=>({a:k+off}))).forEach(p=>{reqs.push(p.a);if(p.b!=null)reqs.push(p.b)});
     let q=0,fcache=null;const bc=document.createElement("canvas");bc.width=v.videoWidth;bc.height=v.videoHeight;const bx=bc.getContext("2d");
-    const vpx=v.videoWidth*v.videoHeight,POOL=vpx<=6e5?5:vpx<=1.3e6?4:3,els=[v],pend=[];let tW=0,tD=0,tQ=0;
+    const vpx=v.videoWidth*v.videoHeight,POOL=3,els=[v],pend=[];let tW=0,tD=0,tQ=0;
     const tc=document.createElement("canvas");tc.width=24;tc.height=18;const tx=tc.getContext("2d",{willReadFrequently:true});let prevT=null,dup=0,run=0,maxRun=0;
     for(let k=1;k<POOL;k++){const e=document.createElement("video");e.muted=true;e.playsInline=true;e.preload="auto";e.src=url;e.setAttribute("playsinline","");e.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(e);els.push(e);e.load()}
     await Promise.all(els.slice(1).map(e=>new Promise(r=>{if(e.readyState>=2)r();else{e.onloadeddata=r;e.onerror=r}})));
