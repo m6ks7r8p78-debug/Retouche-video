@@ -821,7 +821,7 @@ $("#ex").onclick=async()=>{
   if(mode==="photo"){exportPhoto();return}
   if(!v.videoWidth)return;
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
-  exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp","1")}catch(e){}
+  exporting=true;cancel=false;v.pause();show=1;try{cv.style.visibility="hidden"}catch(e){}try{sessionStorage.setItem("exp","1")}catch(e){}
   const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
   $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;
   let wl=null,err=null;
@@ -957,7 +957,7 @@ $("#ex").onclick=async()=>{
       while(enc.encodeQueueSize>6)await wait(8);
       tQ+=performance.now()-t2;
       $("#pg").value=(i+1)/total;
-      if(i%10===0){const el=(performance.now()-T0)/1000,rest=el/(i+1)*(total-i-1);msg("Image "+(i+1)+" sur "+total+" ("+Math.round((i+1)/total*100)+" %), reste environ "+(rest>90?Math.round(rest/60)+" min":Math.round(rest)+" s"))}
+      if(i%15===0){const el=(performance.now()-T0)/1000,rest=el/(i+1)*(total-i-1);msg("Image "+(i+1)+" sur "+total+" ("+Math.round((i+1)/total*100)+" %), reste environ "+(rest>90?Math.round(rest/60)+" min":Math.round(rest)+" s"))}
     }
     poolMode=false;if(rdr)rdr.close();els.slice(1).forEach(e=>{e.removeAttribute("src");e.load();e.remove()});
     if(err)throw err;
@@ -1000,7 +1000,7 @@ $("#ex").onclick=async()=>{
     else msg("Échec de l’export : "+(m||"erreur inconnue"))}
   finally{
     window.__plan=null;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
-    size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
+    try{cv.style.visibility=""}catch(e){}size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}
   }
 };
