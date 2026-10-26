@@ -197,7 +197,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.6</span>
+  <span class="tag">sur ton téléphone · v2.7</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -607,14 +607,26 @@ $("#q").addEventListener("change",e=>{if(mode==="photo")return;$("#ex").textCont
 
 /* Analyse automatique d’une image de la vidéo */
 function analyze(){
-  const c=document.createElement("canvas");c.width=32;c.height=18;
-  const x=c.getContext("2d");x.drawImage(cur(),0,0,32,18);
-  const d=x.getImageData(0,0,32,18).data,n=d.length/4;
-  let r=0,g=0,b=0,sat=0;
-  for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];sat+=Math.max(d[i],d[i+1],d[i+2])-Math.min(d[i],d[i+1],d[i+2])}
-  r/=n*255;g/=n*255;b/=n*255;sat/=n*255;
-  const l=(r+g+b)/3,cl=(x,a,b)=>Math.max(a,Math.min(b,x));
-  Object.assign(P,{br:cl((.45-l)*.3,-.04,.06),co:1.04,sa:cl(1.12-sat*1.5,.95,1.08),wa:-cl((r-b)*.2,-.04,.04),sh:.3,dn:.2,ai:1});
+  /* analyse d’une image : points noir/blanc (percentiles), couleurs ternes, dominante chaude ou froide — réglages doux */
+  const W=64,H=36,c=document.createElement("canvas");c.width=W;c.height=H;
+  const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(cur(),0,0,W,H);
+  const d=x.getImageData(0,0,W,H).data,n=W*H,hist=new Float32Array(256);
+  let r=0,g=0,b=0,k=0,sat=0;
+  for(let i=0;i<d.length;i+=4){
+    const R=d[i],G=d[i+1],B=d[i+2],y=Math.round(.299*R+.587*G+.114*B);hist[y]++;
+    sat+=Math.max(R,G,B)-Math.min(R,G,B);
+    if(y>26&&y<230){r+=R;g+=G;b+=B;k++}   /* tons moyens seulement : ni noirs ni blancs brûlés */
+  }
+  const pc=q=>{let a=0;for(let i=0;i<256;i++){a+=hist[i];if(a>=q*n)return i/255}return 1};
+  const p2=pc(.02),p50=pc(.5),p98=pc(.98),spread=Math.max(.05,p98-p2);
+  sat/=n*255;
+  const cl=(v,a,z)=>Math.max(a,Math.min(z,v));
+  let wa=0;if(k>n*.2){r/=k*255;b/=k*255;wa=-cl((r-b)*.3,-.07,.07)}
+  Object.assign(P,{
+    br:cl((.45-p50)*.35,-.05,.08),
+    co:spread<.85?cl(1+(.85-spread)*.45,1.04,1.25):1.04,
+    sa:cl(1.2-sat*1.6,1,1.14),
+    wa,sh:.3,dn:.2,ai:1});
   sync();
 }
 
@@ -917,7 +929,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.6)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.7)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
