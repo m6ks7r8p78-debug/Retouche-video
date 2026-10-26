@@ -827,7 +827,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation…");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (version 40)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fluid=!isPlan&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(!isPlan&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
