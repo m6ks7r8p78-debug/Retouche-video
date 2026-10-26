@@ -951,16 +951,20 @@ const AZ={
   sharp(f){const{W,H,y}=f,g=[];for(let j=1;j<H-1;j+=2)for(let i=1;i<W-1;i+=2){const k=j*W+i;g.push(Math.abs(y[k+1]-y[k-1])+Math.abs(y[k+W]-y[k-W]))}
     g.sort((a,b)=>a-b);return g[Math.floor(g.length*.95)]},
   /* poussières : taches isolées sur une seule image (médiane de 3 images consécutives) ; renvoie le nombre par mégapixel */
-  dust(a,b,c){const{W,H}=b,A=a.y,B=b.y,C=c.y,thr=14,n=W*H,cand=new Uint8Array(n),mv=new Uint8Array(n);
-    for(let k=0;k<n;k++){const p=A[k],q=B[k],r=C[k],m=Math.max(Math.min(p,q),Math.min(Math.max(p,q),r));
-      if(Math.abs(p-r)>thr*1.2)mv[k]=1;if(Math.abs(q-m)>thr)cand[k]=1}
+  dust(a,b,c){const{W,H}=b,A=a.y,B=b.y,C=c.y,n=W*H;
+    let ma=0,mb=0,mc=0;for(let k=0;k<n;k++){ma+=A[k];mb+=B[k];mc+=C[k]}ma/=n;mb/=n;mc/=n;
+    const ga=mb/Math.max(1,ma),gc=mb/Math.max(1,mc),thr=22,cand=new Uint8Array(n),mv=new Uint8Array(n);
+    /* images voisines ramenées à la même luminosité globale (sinon le scintillement ressemble à de la poussière) */
+    for(let k=0;k<n;k++){const p=A[k]*ga,q=B[k],r=C[k]*gc,d1=q-p,d2=q-r;
+      if(Math.abs(p-r)>thr*.6)mv[k]=1;
+      if(Math.abs(d1)>thr&&Math.abs(d2)>thr&&(d1>0)===(d2>0))cand[k]=1}
     const mvd=new Uint8Array(n);for(let j=3;j<H-3;j++)for(let i=3;i<W-3;i++){const k=j*W+i;if(mv[k]){for(let dj=-3;dj<=3;dj++)for(let di=-3;di<=3;di++)mvd[k+dj*W+di]=1}}
     const seen=new Uint8Array(n);let cnt=0;const st=[];
     for(let k0=0;k0<n;k0++){if(!cand[k0]||seen[k0])continue;
       let area=0,x0=1e9,x1=-1,y0=1e9,y1=-1,still=true;st.length=0;st.push(k0);seen[k0]=1;
       while(st.length){const k=st.pop();area++;const i=k%W,j=(k/W)|0;if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j;if(mvd[k])still=false;if(area>120)break;
         for(const q of [k-1,k+1,k-W,k+W,k-W-1,k-W+1,k+W-1,k+W+1])if(q>=0&&q<n&&cand[q]&&!seen[q]){seen[q]=1;st.push(q)}}
-      if(still&&area<=80&&Math.max(x1-x0,y1-y0)<=13)cnt++}
+      if(still&&area>=2&&area<=80&&Math.max(x1-x0,y1-y0)<=13)cnt++}
     return cnt/(n/1e6)},
   /* décalage global entre deux images (recherche ±R pixels sur une miniature) */
   shift(a,b,R){const{W,H,y:A}=a,B=b.y;let best=1e30,bx=0,by=0;
@@ -1003,16 +1007,15 @@ const REC={last:null,
   recommend(m,fl){
     const o={dust:false,defl:false,stab:false,wb:null,dn:.2,sh:.3},n=[];
     if(m.dust>=REC.T.dust){o.dust=true;n.push("Poussières ou points noirs détectés (≈"+Math.round(m.dust)+" par image) : effacement activé.")}
-    if(fl&&fl.frac>=REC.T.flick){o.defl=true;n.push("Scintillement détecté ("+Math.round(fl.frac*100)+" % des images) : anti-scintillement activé.")}
+    if(fl&&(fl.frac>=REC.T.flick||fl.mean>=REC.T.flickMean)){o.defl=true;n.push("Scintillement détecté ("+Math.round(fl.frac*100)+" % des images) : anti-scintillement activé.")}
     if(m.shake>=REC.T.shake){o.stab=true;n.push("Image tremblante : stabilisation activée.")}
     if(m.gains){const sp=Math.max(...m.gains)-Math.min(...m.gains);if(sp>=REC.T.cast){o.wb=m.gains;n.push("Dominante de couleur détectée : couleurs équilibrées.")}}
     if(m.noise>=REC.T.noiseHi){o.dn=.5;n.push("Image bruitée ou granuleuse : réduction du bruit renforcée.")}
     else if(m.noise>=REC.T.noiseMid){o.dn=.35;n.push("Un peu de bruit : réduction du bruit moyenne.")}
-    if(m.sharp<REC.T.blur){o.sh=.5;n.push("Image plutôt floue : netteté renforcée.")}
     if(m.p98-m.p2<.45)n.push("Image peu contrastée : contraste relevé.");
     else if(m.p50<.22)n.push("Image sombre : éclaircie légèrement.");
     return{o,n}},
-  T:{dust:6,flick:.15,shake:1.2,cast:.08,noiseMid:1.6,noiseHi:3,blur:30},
+  T:{dust:15,flick:.25,flickMean:.008,shake:1.2,cast:.08,noiseMid:1.6,noiseHi:3,blur:30},
   apply(r){
     const o=r.o,set=(id,v)=>{const e=$("#"+id);if(e){e.checked=v;try{localStorage.setItem(id,v?"1":"0")}catch(x){}}};
     set("o_dust",o.dust);set("o_defl",o.defl);set("o_stab",o.stab);
@@ -1024,11 +1027,11 @@ const REC={last:null,
     const ul=$("#rec_l");ul.textContent="";r.n.forEach(t=>{const li=document.createElement("li");li.textContent=t;ul.appendChild(li)})},
   async profile(){
     if(mode!=="video"||exporting)return;
-    const my=curFile,t0=v.currentTime;let ok=true;
+    const my=curFile,t0=v.currentTime;let ok=true;REC.stop=false;let done;REC.pr=new Promise(r=>done=r);
     $("#rec").hidden=false;$("#rec_t").textContent="Analyse de ta vidéo en cours…";$("#rec_l").textContent="";
     try{
       const fps=await measureFps();
-      const m=await AZ.run(v,{fps,cancel:()=>curFile!==my||exporting});if(!m)return;
+      const m=await AZ.run(v,{fps,cancel:()=>curFile!==my||exporting||REC.stop});if(!m)return;
       let fl=null;
       if(window.VideoDecoder&&v.duration>.5){
         const total=Math.min(Math.floor(v.duration*fps)-1,150);
@@ -1037,7 +1040,7 @@ const REC={last:null,
       const r=REC.recommend(m,fl);REC.last={m,fl,r};window.__prof={m,fl};
       REC.apply(r);REC.show(r);
     }catch(e){ok=false;$("#rec").hidden=true}
-    finally{if(curFile===my){try{await seekEl(v,t0)}catch(e){}draw()}}
+    finally{if(curFile===my){try{await seekEl(v,t0)}catch(e){}draw()}REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
   }
 };
 /* Lecture */
@@ -1116,6 +1119,7 @@ $("#ex").onclick=async()=>{
   if(exporting){cancel=true;return}
   if(mode==="photo"){exportPhoto();return}
   if(!v.videoWidth)return;
+  if(REC.pr){REC.stop=true;try{await REC.pr}catch(e){}}
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
   exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp","1")}catch(e){}
   const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
@@ -1123,7 +1127,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.12)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.13)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
