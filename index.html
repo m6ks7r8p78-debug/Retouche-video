@@ -106,6 +106,15 @@ progress::-moz-progress-bar{background:var(--acc)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:14px}
 .card h2{font:700 17px/1.2 var(--fd);margin:0 0 10px}
 #rv{width:100%;border-radius:12px;background:#000;max-height:52vh}
+#ba{display:flex;flex-direction:column;gap:10px}
+.bag{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bag figure{margin:0;min-width:0}
+.bag figcaption{font:600 12px/1 var(--fb);letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:6px;display:flex;justify-content:space-between}
+.bag figcaption b{color:var(--acc)}
+.bag video{width:100%;border-radius:10px;background:#000;max-height:46vh;display:block}
+.bac{display:flex;align-items:center;gap:10px}
+.bac button{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:18px}
+.bac input{flex:1;min-width:0;accent-color:var(--acc)}
 #ri{width:100%;border-radius:12px;max-height:60vh;object-fit:contain}
 [hidden]{display:none!important}
 @media (min-width:900px){
@@ -187,7 +196,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.0</span>
+  <span class="tag">sur ton téléphone · v2.1</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -295,6 +304,14 @@ input[type=range]{accent-color:var(--g2)}
       <div class="card" id="out" hidden>
         <h2>Résultat</h2>
         <img id="ri" alt="Photo retouchée" hidden>
+        <div id="ba" hidden>
+          <div class="bag">
+            <figure><figcaption>Avant</figcaption><video id="bao" muted playsinline preload="auto"></video></figure>
+            <figure><figcaption><b>Après</b></figcaption><video id="bar" playsinline preload="auto"></video></figure>
+          </div>
+          <div class="bac"><button id="bap" aria-label="Lecture">▶</button><input type="range" id="bas" min="0" max="1000" value="0" aria-label="Position"></div>
+        </div>
+        <button class="btn" id="bat" style="margin-top:8px" hidden>Voir le résultat seul</button>
         <video id="rv" controls playsinline></video>
         <button class="btn main" id="sv" style="margin-top:10px" hidden>Enregistrer la vidéo</button>
         <button class="btn" id="rtb" style="margin-top:8px" hidden>Refaire avec le son (en temps réel)</button>
@@ -883,7 +900,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.0)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.1)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fluid=!isPlan&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(!isPlan&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
@@ -1034,7 +1051,7 @@ $("#ex").onclick=async()=>{
       vch.length=0;ach.length=0;
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
-      $("#rv").hidden=false;$("#ri").hidden=true;$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan;$("#out").hidden=false;$("#sv").hidden=false;
+      $("#rv").hidden=false;baShow(!isPlan,tS);$("#ri").hidden=true;$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan;$("#out").hidden=false;$("#sv").hidden=false;
       msg((wa?"Terminé !":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(plan?"":" Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+"."));
       try{$("#st1").textContent+=" ["+window.__timing+"]"}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
@@ -1292,7 +1309,7 @@ async function lastFrame(){
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.95));
   if(!blob){msg("Impossible de créer l’image.");return}
   outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
-  $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer l’image";
+  $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer l’image";
   $("#out").hidden=false;$("#sv").hidden=false;
   msg("Dernière image prête."+(dl?"":" Appuie longuement dessus pour l’enregistrer."));
   $("#out").scrollIntoView({behavior:"smooth"});
@@ -1307,7 +1324,7 @@ $("#rtb").onclick=async()=>{
     msg("Export en temps réel, avec le son : garde l’écran allumé…");
     const b=await realtime();if(cancel)throw new Error("annulé");
     outBlob=b;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(b);
-    $("#rv").src=outUrl;$("#rv").hidden=false;$("#ri").hidden=true;$("#sv").textContent="Enregistrer la vidéo";$("#out").hidden=false;$("#sv").hidden=false;
+    $("#rv").src=outUrl;$("#rv").hidden=false;$("#ri").hidden=true;$("#sv").textContent="Enregistrer la vidéo";baShow(false,0);$("#out").hidden=false;$("#sv").hidden=false;
     msg(rtNoSound?"Terminé, mais le son n’a pas pu être ajouté par ton iPhone.":"Terminé, avec le son.");
     $("#out").scrollIntoView({behavior:"smooth"});
   }catch(e){msg("Échec : "+((e&&e.message)||"erreur"))}
@@ -1495,6 +1512,31 @@ class SeqReader{
   close(){this.closed=true;for(const fr of this.frames.values())fr.close();this.frames.clear();try{this.dec.close()}catch(e){}this._wake()}
 }
 
+/* ===== Comparatif avant / après ===== */
+const baO=$("#bao"),baR=$("#bar"),baP=$("#bap"),baS=$("#bas");let baOff=0,baOn=false,baSolo=false;
+function baShow(ok,off){
+  baOn=false;baSolo=false;baO.pause();baR.pause();
+  const can=ok&&url&&outUrl;
+  $("#bat").hidden=!can;
+  if(!can){$("#ba").hidden=true;$("#rv").hidden=false;return}
+  baOff=off||0;baO.src=url;baR.src=outUrl;baO.load();baR.load();baS.value=0;baP.textContent="▶";
+  $("#ba").hidden=false;$("#rv").hidden=true;$("#bat").textContent="Voir le résultat seul";
+}
+function baSync(){const t=baR.currentTime;if(Math.abs(baO.currentTime-(t+baOff))>.12)try{baO.currentTime=t+baOff}catch(e){}}
+baP.onclick=async()=>{
+  if(!baR.paused){baR.pause();baO.pause();baP.textContent="▶";return}
+  if(baR.ended||baR.currentTime>=baR.duration-.05){baR.currentTime=0}
+  baSync();baR.muted=false;
+  try{await Promise.all([baR.play(),baO.play()]);baP.textContent="❚❚"}catch(e){baP.textContent="▶"}
+};
+baR.addEventListener("timeupdate",()=>{if(baR.duration)baS.value=Math.round(baR.currentTime/baR.duration*1000);if(!baR.paused)baSync()});
+baR.addEventListener("ended",()=>{baO.pause();baP.textContent="▶"});
+baS.oninput=()=>{if(!baR.duration)return;const t=baS.value/1000*baR.duration;baR.currentTime=t;try{baO.currentTime=t+baOff}catch(e){}};
+$("#bat").onclick=()=>{
+  baR.pause();baO.pause();baP.textContent="▶";baSolo=!baSolo;
+  $("#ba").hidden=baSolo;$("#rv").hidden=!baSolo;$("#bat").textContent=baSolo?"Comparer avec l’original":"Voir le résultat seul";
+};
+
 /* Photos */
 $("#pickp").onclick=()=>$("#fp").click();
 $("#fp").onchange=e=>{
@@ -1520,7 +1562,7 @@ async function exportPhoto(){
   size(PREVIEW);
   if(!blob){msg("Impossible de créer la photo.");return}
   outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
-  $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
+  $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
   $("#out").hidden=false;$("#sv").hidden=false;
   msg("Terminé ! "+W+"×"+H+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
   $("#out").scrollIntoView({behavior:"smooth"});
