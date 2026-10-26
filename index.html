@@ -895,7 +895,7 @@ $("#ex").onclick=async()=>{
       await Promise.all(els.slice(1).map(e=>new Promise(r=>{if(e.readyState>=2)r();else{e.onloadeddata=r;e.onerror=r}})))};
     const go=k=>{if(poolUp&&k<reqs.length)pend[k]=seekEl(els[k%POOL],Math.min((reqs[k]+.5)/OFPS,v.duration-.001))};
     /* lecture séquentielle (bien plus rapide que de chercher chaque image) */
-    if(!isPlan&&window.VideoDecoder&&!window.__noseq){
+    if(!isPlan&&window.VideoDecoder&&!window.__noseq&&cv.width*cv.height<=2073600*1.2){
       try{
         const inf=await demuxVideo(curFile);
         if(inf&&inf.dw===v.videoWidth&&inf.dh===v.videoHeight){
@@ -994,7 +994,10 @@ $("#ex").onclick=async()=>{
       try{$("#st1").textContent+=" ["+window.__timing+"]"}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
-  }catch(e){msg("Échec de l’export : "+(e&&e.message||"erreur inconnue"))}
+  }catch(e){
+    const m=(e&&e.message)||"";
+    if(/encod/i.test(m)&&!window.__plan&&+$("#q").value>1920&&!window.__retried){window.__retried=true;$("#q").value="1920";msg("L’encodeur de l’iPhone n’a pas tenu le 4K : nouvel essai en Full HD…");setTimeout(()=>{window.__retried=false;$("#ex").onclick()},600)}
+    else msg("Échec de l’export : "+(m||"erreur inconnue"))}
   finally{
     window.__plan=null;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
