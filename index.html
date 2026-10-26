@@ -197,7 +197,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.7</span>
+  <span class="tag">sur ton téléphone · v2.8</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -330,7 +330,7 @@ const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||
 const cv=$("#cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:false});
 const v=document.createElement("video");v.playsInline=true;v.muted=true;v.setAttribute("playsinline","");v.preload="auto";
 v.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(v);
-const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,ai:1,cs:.7};
+const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,ai:0,cs:.7};
 let show=1,looping=false,exporting=false,cancel=false,az=false,dl=null,url=null,outUrl=null,outBlob=null,curFile=null;
 const PREVIEW=1280,FPS=30;let OFPS=30;
 let fpsC=null;
@@ -597,7 +597,7 @@ function loop(){
 }
 
 /* Réglages avancés */
-const S=[["ai","Restauration IA",0,1,.05],["cs","Nettoyage des couleurs",0,1,.05],["br","Luminosité",-.3,.3,.01],["co","Contraste",.6,1.6,.01],["sa","Couleurs",0,2,.01],["wa","Chaleur",-.15,.15,.01],["sh","Netteté",0,2,.05],["dn","Réduction du bruit",0,1,.05]];
+const S=[["ai","Restauration IA (expérimental)",0,1,.05],["cs","Nettoyage des couleurs",0,1,.05],["br","Luminosité",-.3,.3,.01],["co","Contraste",.6,1.6,.01],["sa","Couleurs",0,2,.01],["wa","Chaleur",-.15,.15,.01],["sh","Netteté",0,2,.05],["dn","Réduction du bruit",0,1,.05]];
 $("#sl").innerHTML=S.map(([k,n,a,b,s])=>`<label class="s"><span>${n}</span><input type="range" id="r_${k}" min="${a}" max="${b}" step="${s}" value="${P[k]}"></label>`).join("");
 S.forEach(([k])=>{$("#r_"+k).oninput=e=>{P[k]=+e.target.value;draw()}});
 const sync=()=>{S.forEach(([k])=>{$("#r_"+k).value=P[k]});draw()};
@@ -626,7 +626,7 @@ function analyze(){
     br:cl((.45-p50)*.35,-.05,.08),
     co:spread<.85?cl(1+(.85-spread)*.45,1.04,1.25):1.04,
     sa:cl(1.2-sat*1.6,1,1.14),
-    wa,sh:.3,dn:.2,ai:1});
+    wa,sh:.3,dn:.2,ai:0});
   sync();
 }
 
@@ -929,7 +929,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.7)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.8)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
