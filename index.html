@@ -197,7 +197,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.8</span>
+  <span class="tag">sur ton téléphone · v2.9</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -273,6 +273,7 @@ input[type=range]{accent-color:var(--g2)}
           <h2>Options de la vidéo</h2>
           <label class="chk"><input type="checkbox" id="o_fast"><span><b>Mode rapide</b>Ignore la stabilisation et le mouvement fluide pour exporter plus vite. Idéal pour les vidéos longues.</span></label>
           <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Réduit les tremblements de la main. L’image est un peu recadrée.</span></label>
+          <label class="chk"><input type="checkbox" id="o_dust"><span><b>Retirer poussières et points noirs</b>Pour les films 8 mm et les pellicules numérisées : efface les petites taches qui apparaissent sur une seule image. Les zones en mouvement ne sont pas touchées.</span></label>
           <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Isole la voix, supprime souffle et bruits de fond, la rend plus nette puis réencode le son. La musique est atténuée.</span></label>
           <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe une vidéo à 15 ou 24 images par seconde à 30, comme un iPhone récent.</span></label>
           <div class="trim"><b>Partie à traiter</b><span class="mono" id="t_txt">tout</span>
@@ -534,11 +535,22 @@ for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++){vec3 n=texture2D(t,uv+vec2(float(i)
 float k=exp(-dy*dy/.0177-float(i*i+j*j)*4./18.);acc+=k*vec2(n.b-yn,n.r-yn);ws+=k;}
 vec2 u=mix(u0,acc/ws,cs);c.r=y+u.y;c.b=y+u.x;c.g=(y-.299*c.r-.114*c.b)/.587;}
 gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
-const U={},UA={},UB={},UP={};let tex,tex2,tex3,tex4,tex16,fbo,fw=0,fh=0,prog,progA,progB,progP,aiOK=true,wide=true;
+const FSD=`precision highp float;varying vec2 uv;uniform sampler2D t,tp,tn;uniform vec2 px;uniform float thr;
+vec3 med3(vec3 a,vec3 b,vec3 c){return max(min(a,b),min(max(a,b),c));}
+float mx(vec3 v){return max(v.r,max(v.g,v.b));}
+void main(){vec3 c0=texture2D(t,uv).rgb;float cnt=0.,mov=0.,near=0.;
+for(int j=-3;j<=3;j++)for(int i=-3;i<=3;i++){vec2 q=uv+vec2(float(i),float(j))*px;
+vec3 c=texture2D(t,q).rgb,p=texture2D(tp,q).rgb,n=texture2D(tn,q).rgb;
+if(mx(abs(p-n))>thr*1.2)mov=1.;
+if(mx(abs(c-med3(c,p,n)))>thr){cnt+=1.;if(abs(float(i))<1.5&&abs(float(j))<1.5)near=1.;}}
+vec3 m0=med3(c0,texture2D(tp,uv).rgb,texture2D(tn,uv).rgb);float d0=mx(abs(c0-m0));
+float k=(mov<.5&&near>.5&&cnt<=40.)?smoothstep(thr*.35,thr*.7,d0):0.;
+gl_FragColor=vec4(mix(c0,m0,k),1.);}`;
+const U={},UA={},UB={},UP={},UD={};let DUST={on:false,p:null,n:null};let tex,tex2,tex3,tex4,tex16,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progA,progB,progP,aiOK=true,wide=true;
 if(gl){
   const mk=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
   const pg=(vs,fs)=>{const g=gl.createProgram();gl.attachShader(g,mk(gl.VERTEX_SHADER,vs));gl.attachShader(g,mk(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(g,0,"p");gl.linkProgram(g);return g};
-  prog=pg(VS,FS);progA=pg(VSA,FSA);progB=pg(VSA,FSB);progP=pg(VSA,FSP);
+  prog=pg(VS,FS);progA=pg(VSA,FSA);progB=pg(VSA,FSB);progP=pg(VSA,FSP);progD=pg(VSA,FSD);
   if(!gl.getProgramParameter(progA,gl.LINK_STATUS)||!gl.getProgramParameter(progP,gl.LINK_STATUS)){wide=false;progA=pg(VSA,FSA0)}
   aiOK=!!gl.getProgramParameter(progA,gl.LINK_STATUS);
   if(!aiOK)setTimeout(()=>msg("La restauration IA n’est pas disponible sur cet appareil : les autres réglages restent actifs."),800);
@@ -547,9 +559,9 @@ if(gl){
   gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
   const mt=()=>{const x=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,x);
     [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,c])=>gl.texParameteri(gl.TEXTURE_2D,a,c));return x};
-  tex=mt();tex2=mt();tex3=mt();tex4=mt();tex16=mt();fbo=gl.createFramebuffer();
+  tex=mt();tex2=mt();tex3=mt();tex4=mt();tex16=mt();texP=mt();texN=mt();texD=mt();fbo=gl.createFramebuffer();
   const loc=(g,o,n)=>n.forEach(k=>{o[k]=gl.getUniformLocation(g,k)});
-  loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0"]);loc(progA,UA,["t","t4","t16","px","s4","s16","ai"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progP,UP,["t","sz"]);
+  loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0"]);loc(progA,UA,["t","t4","t16","px","s4","s16","ai"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progP,UP,["t","sz"]);loc(progD,UD,["t","tp","tn","px","thr"]);
 }
 function pass(pg,src,dst,w,h,set){
   gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
@@ -565,7 +577,17 @@ function draw(el){
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,s0);
   const w4=Math.ceil(w/4),h4=Math.ceil(h/4),w16=Math.ceil(w4/4),h16=Math.ceil(h4/4);
-  if(fw!==w||fh!==h){fw=w;fh=h;[[tex2,w,h],[tex3,w,h],[tex4,w4,h4],[tex16,w16,h16]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
+  if(fw!==w||fh!==h){fw=w;fh=h;[[tex2,w,h],[tex3,w,h],[tex4,w4,h4],[tex16,w16,h16],[texD,w,h]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
+  let dustSwap=false;
+  if(show&&DUST.on&&DUST.p&&DUST.n&&progD&&gl.getProgramParameter(progD,gl.LINK_STATUS)){
+    try{
+      gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,texP);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,DUST.p);
+      gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,texN);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,DUST.n);
+      gl.activeTexture(gl.TEXTURE0);
+      pass(progD,tex,texD,w,h,()=>{gl.uniform1i(UD.t,0);gl.uniform1i(UD.tp,1);gl.uniform1i(UD.tn,2);gl.uniform2f(UD.px,1/w,1/h);gl.uniform1f(UD.thr,.055)});
+      const k=tex;tex=texD;texD=k;dustSwap=true;
+    }catch(e){gl.activeTexture(gl.TEXTURE0)}
+  }
   let src=tex;
   if(show&&aiOK&&P.ai>0){
     if(wide){
@@ -584,6 +606,7 @@ function draw(el){
   gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
   for(const k of ["br","co","sa","wa"])gl.uniform1f(U[k],P[k]);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+  if(dustSwap){const k=tex;tex=texD;texD=k}
 }
 function size(L){
   const [w,h]=dims(cur());if(!w)return;
@@ -722,7 +745,7 @@ async function makeSeq(start,fps){
   try{
     const inf=await demuxVideo(curFile);
     if(!inf||inf.dw!==v.videoWidth||inf.dh!==v.videoHeight)return null;
-    r=new SeqReader(curFile,inf);await r.open(start);const c0=await r.need(start);
+    r=new SeqReader(curFile,inf);r.setFps(fps);await r.open(r.map(start));const c0=await r.need(start);
     const t=document.createElement("canvas");t.width=24;t.height=18;const x=t.getContext("2d",{willReadFrequently:true});
     x.drawImage(c0,0,0,24,18);const da=x.getImageData(0,0,24,18).data;
     await seekEl(v,Math.min((start+.5)/fps,v.duration-.001));
@@ -774,6 +797,8 @@ async function stabEnable(on){
 $("#o_stab").onchange=e=>{try{localStorage.setItem("o_stab",e.target.checked?"1":"0")}catch(x){}stabEnable(e.target.checked)};
 $("#o_voice").addEventListener("change",e=>{try{localStorage.setItem("o_voice",e.target.checked?"1":"0")}catch(x){}});
 try{$("#o_voice").checked=localStorage.getItem("o_voice")==="1"}catch(e){}
+$("#o_dust").addEventListener("change",e=>{try{localStorage.setItem("o_dust",e.target.checked?"1":"0")}catch(x){}});
+try{$("#o_dust").checked=localStorage.getItem("o_dust")==="1"}catch(e){}
 $("#o_fast").addEventListener("change",e=>{try{localStorage.setItem("o_fast",e.target.checked?"1":"0")}catch(x){}});
 try{$("#o_fast").checked=localStorage.getItem("o_fast")==="1"}catch(e){}
 $("#o_fluid").addEventListener("change",e=>{try{localStorage.setItem("o_fluid",e.target.checked?"1":"0")}catch(x){}});
@@ -929,7 +954,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.8)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.9)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1002,6 +1027,7 @@ $("#ex").onclick=async()=>{
     const vpx=v.videoWidth*v.videoHeight,POOL=3,els=[v],pend=[];let tW=0,tD=0,tQ=0;
     const tc=document.createElement("canvas");tc.width=24;tc.height=18;const tx=tc.getContext("2d",{willReadFrequently:true});let prevT=null,dup=0,run=0,maxRun=0;
     let poolUp=false,rdr=null;
+    const dustOn=!isPlan&&$("#o_dust").checked;
     const initPool=async()=>{if(poolUp)return;poolUp=true;
       for(let k=1;k<POOL;k++){const e=document.createElement("video");e.muted=true;e.playsInline=true;e.preload="auto";e.src=url;e.setAttribute("playsinline","");e.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(e);els.push(e);e.load()}
       await Promise.all(els.slice(1).map(e=>new Promise(r=>{if(e.readyState>=2)r();else{e.onloadeddata=r;e.onerror=r}})))};
@@ -1010,14 +1036,18 @@ $("#ex").onclick=async()=>{
     if(!isPlan&&window.VideoDecoder&&!window.__noseq&&cv.width*cv.height<=2073600*1.2){
       rdr=await makeSeq(off,OFPS);
     }
-    if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i)}
+    if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
     poolMode=!rdr;const T0=performance.now();
     for(let i=0;i<total;i++){
       if(cancel||err)break;
-      const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;
+      const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;
       if(rdr){
         try{
           const ca=await rdr.need(pl.a);src=ca;q++;
+          if(dustOn&&pl.b==null){
+            const cn=await rdr.need(pl.a+1),pv=(pl.a>0&&rdr.peek(pl.a-1))||ca;
+            DUST.p=pv;DUST.n=cn;DUST.on=true;
+          }else DUST.on=false;
           if(pl.b!=null){const cb=await rdr.need(pl.b);q++;
             try{if(!(fcache&&fcache.j===pl.j&&i-fcache.i<2))fcache={j:pl.j,i,fl:mfFlow(ca,cb,v.videoWidth,v.videoHeight)};mfBlend(bx,ca,cb,pl.w,v.videoWidth,v.videoHeight,fcache.fl)}
             catch(e){bx.setTransform(1,0,0,1,0,0);bx.globalAlpha=1;bx.drawImage(ca,0,0);bx.globalAlpha=pl.w;bx.drawImage(cb,0,0);bx.globalAlpha=1}
@@ -1060,7 +1090,7 @@ $("#ex").onclick=async()=>{
       $("#pg").value=(i+1)/total;
       if(i%15===0){const el=(performance.now()-T0)/1000,rest=el/(i+1)*(total-i-1);msg("Image "+(i+1)+" sur "+total+" ("+Math.round((i+1)/total*100)+" %), reste environ "+(rest>90?Math.round(rest/60)+" min":Math.round(rest)+" s"))}
     }
-    poolMode=false;if(rdr)rdr.close();els.slice(1).forEach(e=>{e.removeAttribute("src");e.load();e.remove()});
+    DUST.on=false;DUST.p=DUST.n=null;poolMode=false;if(rdr)rdr.close();els.slice(1).forEach(e=>{e.removeAttribute("src");e.load();e.remove()});
     if(err)throw err;
     if(cancel){enc.close();msg("Export annulé.")}
     else{
@@ -1101,7 +1131,7 @@ $("#ex").onclick=async()=>{
     else if(/annul/i.test(m))msg("Export annulé.");
     else msg(friendly(m))}
   finally{
-    window.__plan=null;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
+    window.__plan=null;DUST.on=false;DUST.p=DUST.n=null;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}
   }
@@ -1553,7 +1583,7 @@ async function demuxVideo(file){
 }
 class SeqReader{
   constructor(file,info){
-    this.f=file;this.i=info;this.frames=new Map();this.waiters=[];this.err=null;this.closed=false;this.fed=0;this.lo=0;this.ring=[];this.drawn=[];
+    this.f=file;this.i=info;this.frames=new Map();this.waiters=[];this.err=null;this.closed=false;this.fed=0;this.lo=0;this.cache=[];this.fps=0;
     // ordre de présentation
     const idx=Array.from({length:info.ns},(_,k)=>k).sort((p,q)=>info.cts[p]-info.cts[q]);
     this.pres=idx;this.rank=new Map();idx.forEach((s,r)=>this.rank.set(info.cts[s],r));this.dec2rank=new Array(info.ns);idx.forEach((s,r)=>this.dec2rank[s]=r);
@@ -1592,26 +1622,35 @@ class SeqReader{
       if(!this.closed&&!this.err&&this.dec.state==="configured"){await this.dec.flush();this.done=true;this._wake()}
     }catch(e){this.err=e;this._wake()}
   }
-  /* rend un canvas (orientation corrigée) contenant l'image n° idx ; idx doit croître */
-  async need(idx){
-    idx=Math.min(idx,this.total-1);
+  setFps(f){this.fps=f>0?f:0}
+  /* numéro d'image « cadence fps » -> rang d'affichage dans le fichier (image visible à cet instant) */
+  map(a){
+    if(!this.fps)return Math.max(0,Math.min(a,this.total-1));
+    if(!this.presT)this.presT=this.pres.map(k=>this.i.cts[k]);
+    const tt=(a+.5)/this.fps*this.i.ts+1e-6,P=this.presT;let lo=0,hi=this.total-1;
+    while(lo<hi){const m=(lo+hi+1)>>1;if(P[m]<=tt)lo=m;else hi=m-1}
+    return lo;
+  }
+  peek(a){const r=this.map(a),e=this.cache.find(x=>x.r===r);return e?e.c:null}
+  /* rend un canvas (orientation corrigée) contenant l'image n° a (cadence fps) ; a doit croître */
+  async need(a){
+    let idx=this.map(a);
     if(idx<this.lo-1)throw new Error("retour en arrière");
     if(idx-1>this.lo){this.lo=idx-1;for(const [r,fr] of this.frames)if(r<this.lo){fr.close();this.frames.delete(r)}this._wake()}
-    const slot=idx%4;
-    if(this.drawn[slot]===idx)return this.ring[slot];
+    {const h=this.cache.find(x=>x.r===idx);if(h)return h.c}
     const t0=performance.now();
     while(!this.frames.has(idx)){
       if(this.err)throw this.err;
       if(typeof cancel!=="undefined"&&cancel)throw new Error("annulé");
       if(this.done){ // fin de flux : on réutilise la dernière image disponible
-        let best=-1;for(const r of this.frames.keys())if(r<=idx&&r>best)best=r;if(best<0)throw new Error("image absente");idx=best;break}
+        let best=-1;for(const r of this.frames.keys())if(r<=idx&&r>best)best=r;if(best<0)throw new Error("image absente");idx=best;{const h=this.cache.find(x=>x.r===idx);if(h)return h.c}break}
       await new Promise(r=>{this.waiters.push(r);setTimeout(r,200)});
       if(performance.now()-t0>20000)throw new Error("décodage trop lent");
     }
     const fr=this.frames.get(idx),i=this.i;
-    let c=this.ring[slot];if(!c){c=document.createElement("canvas");c.width=i.dw;c.height=i.dh;c.__x=c.getContext("2d");this.ring[slot]=c}
+    let c,ent;if(this.cache.length<6){c=document.createElement("canvas");c.width=i.dw;c.height=i.dh;c.__x=c.getContext("2d")}else{ent=this.cache.shift();c=ent.c}
     const x=c.__x;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);x.setTransform(...i.mat);x.drawImage(fr,0,0,i.W,i.H);x.setTransform(1,0,0,1,0,0);
-    this.drawn[slot]=idx;return c;
+    this.cache.push({r:idx,c});return c;
   }
   close(){this.closed=true;for(const fr of this.frames.values())fr.close();this.frames.clear();try{this.dec.close()}catch(e){}this._wake()}
 }
