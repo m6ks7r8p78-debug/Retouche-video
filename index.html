@@ -743,6 +743,7 @@ v.onloadedmetadata=()=>{
   $("#app").hidden=false;$("#st0").hidden=true;$("#pick .lbl").textContent="Autre vidéo";mode="video";setMode();clearTimeout(wd);
   size(PREVIEW);msg("");
   chips([v.videoWidth+"×"+v.videoHeight,fmtT(v.duration),(curFile.size/1048576).toFixed(0)+" Mo"]);$("#tc").hidden=false;$("#tc").textContent="0:00 / "+fmtT(v.duration);updateEst();
+  if(Math.max(v.videoWidth,v.videoHeight)>=1500){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Ta vidéo est déjà en haute définition : le Full HD est choisi (bien plus rapide, presque aussi net). Tu peux repasser en 4K ci-dessus.'}
   v.currentTime=Math.min(1,v.duration/3);
   if(!looping){looping=true;loop()}
 };
@@ -919,7 +920,7 @@ $("#ex").onclick=async()=>{
     if(cancel){enc.close();msg("Export annulé.")}
     else{
       await enc.flush();
-      try{const n=Math.max(1,total);window.__timing="attente image "+Math.round(tW/n)+" ms, traitement "+Math.round(tD/n)+" ms, encodage "+Math.round(tQ/n)+" ms par image"}catch(e){}
+      try{const n=Math.max(1,total);window.__timing=v.videoWidth+"×"+v.videoHeight+" à "+(Math.round(OFPS*10)/10)+" i/s, sortie "+cfg.width+"×"+cfg.height+" : attente image "+Math.round(tW/n)+" ms, traitement "+Math.round(tD/n)+" ms, encodage "+Math.round(tQ/n)+" ms par image"}catch(e){}
       try{const el=(performance.now()-T0)/1000;if(!plan&&el>3)localStorage.setItem("spd",JSON.stringify({r:total/el,p:cv.width*cv.height}))}catch(e){}
       const build=wa=>{
         const tg=new Mp4Muxer.ArrayBufferTarget();
