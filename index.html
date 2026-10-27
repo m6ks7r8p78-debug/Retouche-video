@@ -1291,9 +1291,11 @@ $("#ex").onclick=async()=>{
     }
     if(!voiceOK&&rawA&&trimmed){const a0=Math.round(tS*1e6),a1=Math.round(tE*1e6);rawA.samples=rawA.samples.filter(s=>s.ts>=a0&&s.ts<a1).map(s=>({data:s.data,ts:s.ts-a0,dur:s.dur}))}
     if(!voiceOK&&rawA&&rawA.samples.length){acfg={numberOfChannels:rawA.ch,sampleRate:rawA.sr}}
-    if(!voiceOK&&!rawA&&!window.AudioEncoder)audioWhy="ton iPhone ne sait pas encoder le son dans ce mode";
-    if(!voiceOK&&!rawA&&trimmed)audioWhy="le son n’est pas conservé avec la découpe sur cet appareil";
-    if(!voiceOK&&!rawA&&window.AudioEncoder&&!window.__plan&&!trimmed){
+    const snd=window.__plan?null:await hasSound(curFile);
+    if(snd===false)audioWhy="ta vidéo n’a pas de son";
+    else if(!voiceOK&&!rawA&&!window.AudioEncoder)audioWhy="ton iPhone ne sait pas encoder le son dans ce mode";
+    if(snd!==false&&!voiceOK&&!rawA&&trimmed)audioWhy="le son n’est pas conservé avec la découpe sur cet appareil";
+    if(snd!==false&&!voiceOK&&!rawA&&window.AudioEncoder&&!window.__plan&&!trimmed){
       try{
         const ctx=new (window.AudioContext||window.webkitAudioContext)();
         ab=await ctx.decodeAudioData(await curFile.arrayBuffer());ctx.close();
@@ -1397,7 +1399,7 @@ $("#ex").onclick=async()=>{
       while(enc.encodeQueueSize>6)await wait(8);
       tQ+=performance.now()-t2;
       $("#pg").value=(i+1)/total;
-      if(i%15===0){const el=(performance.now()-T0)/1000,rest=el/(i+1)*(total-i-1);msg("Image "+(i+1)+" sur "+total+" ("+Math.round((i+1)/total*100)+" %), reste environ "+(rest>90?Math.round(rest/60)+" min":Math.round(rest)+" s"))}
+      if(i%15===0){const el=(performance.now()-T0)/1000,rest=el/(i+1)*(total-i-1);msg("Image "+(i+1)+" sur "+total+" ("+Math.round((i+1)/total*100)+" %), "+(i<15||el<3?"calcul du temps restant…":"reste environ "+(rest>90?Math.round(rest/60)+" min":Math.round(rest)+" s")))}
     }
     DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;if(rdr)rdr.close();els.slice(1).forEach(e=>{e.removeAttribute("src");e.load();e.remove()});
     if(err)throw err;
@@ -1430,7 +1432,7 @@ $("#ex").onclick=async()=>{
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
       $("#rv").hidden=false;baShow(!isPlan,tS);$("#ri").hidden=true;if(!isPlan)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan;$("#out").hidden=false;$("#sv").hidden=false;
-      msg((wa?"Terminé !":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(plan?"":" Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+"."));
+      msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(plan?"":" Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+"."));
       try{$("#st1").textContent+=" ["+window.__timing+"]"}catch(e){}
       try{DIAG.send("export",{ok:true,wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
@@ -1775,6 +1777,20 @@ async function voiceClean(raw,file,t0,t1,trim,bed){
   return {sampleRate:48000,length:L,numberOfChannels:ch,getChannelData:i=>res[i]};
 }
 
+async function hasSound(file){
+  /* la vidéo a-t-elle une piste son ? (cherche une piste « soun » dans l'en-tête MP4/MOV) ; null si inconnu */
+  try{
+    let off=0;
+    while(off<file.size){
+      const d=new DataView(await file.slice(off,Math.min(off+16,file.size)).arrayBuffer());if(d.byteLength<8)break;
+      let size=d.getUint32(0);const type=String.fromCharCode(d.getUint8(4),d.getUint8(5),d.getUint8(6),d.getUint8(7));
+      if(size===1)size=Number(d.getBigUint64(8));else if(size===0)size=file.size-off;
+      if(type==="moov"){const b=new Uint8Array(await file.slice(off,off+size).arrayBuffer());
+        for(let i=8;i<b.length-12;i++)if(b[i]===104&&b[i+1]===100&&b[i+2]===108&&b[i+3]===114&&b[i+12]===115&&b[i+13]===111&&b[i+14]===117&&b[i+15]===110)return true;
+        return false}
+      if(size<8)break;off+=size}
+  }catch(e){}
+  return null}
 async function demuxAudio(file){
   const rd=async(a,b)=>new DataView(await file.slice(a,b).arrayBuffer());
   let off=0,moov=null;
