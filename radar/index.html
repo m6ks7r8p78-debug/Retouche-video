@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Radar Vidéo</title>
+<meta name="description" content="Trouve les vidéos qui t'intéressent sur YouTube, Bluesky et Mastodon à partir de tes mots-clés.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Radar">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F2F4F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1318" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout : une seule colonne étroite façon fil d'actualité ; panneau de recherche en haut, résultats en cartes-lignes. */
+:root{
+  --bg:#F2F4F6; --surface:#FFFFFF; --sunk:#E8ECF0; --ink:#16202B; --muted:#5B6773; --line:#D6DCE2;
+  --accent:#D9480F; --accent-ink:#FFFFFF; --accent-soft:#FBE3D8;
+  --yt:#C4302B; --bsky:#1170E6; --masto:#6046D6;
+  --ok:#2F7D4F; --warn:#A35F00; --bad:#B42318;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3",-apple-system,"Segoe UI",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:10px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0E1318; --surface:#161D24; --sunk:#1D262F; --ink:#E6EBF0; --muted:#93A0AD; --line:#29333D;
+    --accent:#FF6A33; --accent-ink:#1A0B04; --accent-soft:#3A1E12;
+    --yt:#FF5A52; --bsky:#4C9AFF; --masto:#9C88FF;
+    --ok:#5CC48A; --warn:#E6A23C; --bad:#FF7A70;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.45 var(--f-body);
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+img{max-width:100%;display:block}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* En-tête */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:21}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-block:10px}
+.brand{display:flex;align-items:center;gap:8px;font:700 24px/1 var(--f-display);letter-spacing:.01em;text-transform:uppercase;margin-right:auto}
+.brand svg{width:26px;height:26px;flex:none}
+.tabs{display:flex;gap:4px}
+.tab{border:0;background:none;padding:8px 10px;border-radius:8px;font:600 15px/1 var(--f-display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);cursor:pointer}
+.tab[aria-selected="true"]{color:var(--ink);background:var(--sunk)}
+.tab .n{font-family:var(--f-mono);font-size:11px;margin-left:3px;color:var(--accent)}
+
+main .wrap{display:flex;flex-direction:column;gap:16px;padding-block:16px}
+
+/* Panneaux */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px}
+.label{font:600 13px/1 var(--f-display);text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.hint{margin:0;font-size:14px;color:var(--muted)}
+h2{margin:0;font:700 22px/1.1 var(--f-display);text-transform:uppercase;letter-spacing:.02em;text-wrap:balance}
+h3{margin:0;font:700 18px/1.15 var(--f-display);text-transform:uppercase;letter-spacing:.03em}
+
+/* Mots-clés */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:0 4px 0 12px;min-height:34px;font-weight:600;font-size:15px;max-width:100%}
+.chip.neg{background:transparent;border-style:dashed;color:var(--muted)}
+.chip.off{opacity:.45;text-decoration:line-through}
+.chip button{border:0;background:none;cursor:pointer;padding:6px 6px;line-height:1}
+.chip .t{padding:6px 2px;overflow-wrap:anywhere;text-align:left}
+.chip .x{color:var(--muted);font-size:18px}
+.add{display:flex;gap:8px}
+.add input{flex:1;min-width:0}
+input[type=text],input[type=password],input:not([type]),textarea,select{
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px;width:100%;font-size:16px
+}
+textarea{min-height:96px;resize:vertical;font-family:var(--f-mono);font-size:14px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;min-height:44px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:disabled{opacity:.6;cursor:default}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font:700 20px/1 var(--f-display);text-transform:uppercase;letter-spacing:.06em;padding:14px}
+.btn.small{min-height:34px;padding:6px 10px;font-size:14px}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+
+/* Contrôles segmentés */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.opt{display:flex;flex-direction:column;gap:6px;min-width:0}
+.seg{display:flex;background:var(--sunk);border-radius:8px;padding:3px;gap:2px}
+.seg button{flex:1;border:0;background:none;border-radius:6px;padding:8px 6px;font-weight:600;font-size:14px;cursor:pointer;color:var(--muted);min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.srcs{display:flex;flex-wrap:wrap;gap:8px}
+.srcbtn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:6px 12px;min-height:36px;background:none;cursor:pointer;font-weight:600;font-size:14px;color:var(--muted)}
+.srcbtn .dot{width:10px;height:10px;border-radius:50%;border:2px solid currentColor}
+.srcbtn[aria-pressed="true"]{color:var(--ink)}
+.srcbtn[aria-pressed="true"] .dot{background:var(--c);border-color:var(--c)}
+.c-yt{--c:var(--yt)} .c-bsky{--c:var(--bsky)} .c-masto{--c:var(--masto)}
+
+/* État de la recherche */
+.status{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.status:empty{display:none}
+.st{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.st b{font:600 14px/1 var(--f-display);text-transform:uppercase;letter-spacing:.06em;min-width:76px;color:var(--c)}
+.st .n{font-family:var(--f-mono);font-size:13px}
+.st.warn .msg{color:var(--warn)} .st.bad .msg{color:var(--bad)}
+.st .msg{color:var(--muted);min-width:0;overflow-wrap:anywhere}
+.spin{display:inline-block;width:10px;height:10px;border:2px solid var(--muted);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+/* Barre de filtres */
+#resBar{scroll-margin-top:calc(72px + env(safe-area-inset-top,0px))}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.bar .grow{margin-right:auto;font:600 15px/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.06em}
+.bar .grow .n{font-family:var(--f-mono);color:var(--accent)}
+.bar select{width:auto;min-height:36px;padding:6px 10px;font-size:14px}
+.fchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.fchips::-webkit-scrollbar{display:none}
+.fchip{flex:none;border:1px solid var(--line);background:none;border-radius:999px;padding:5px 11px;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted)}
+.fchip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* Cartes vidéo */
+.list{display:flex;flex-direction:column;gap:10px}
+.card{display:grid;grid-template-columns:128px minmax(0,1fr);gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.thumb{position:relative;display:block;aspect-ratio:16/10;border-radius:7px;overflow:hidden;background:var(--sunk);align-self:start;max-width:100%}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.thumb .ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--c);font:700 13px var(--f-display);letter-spacing:.08em;text-transform:uppercase}
+.thumb .dur{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.78);color:#fff;font:500 11px/1 var(--f-mono);padding:3px 4px;border-radius:4px}
+.thumb .live{position:absolute;left:4px;top:4px;background:var(--yt);color:#fff;font:700 11px/1 var(--f-display);letter-spacing:.06em;padding:3px 5px;border-radius:4px}
+.body{display:flex;flex-direction:column;gap:5px;min-width:0}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.src{font:700 12px/1 var(--f-display);text-transform:uppercase;letter-spacing:.07em;color:var(--c)}
+.meta time{font-size:13px;font-variant-numeric:tabular-nums}
+.title{font-weight:700;font-size:16px;line-height:1.3;text-decoration:none;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.snip{margin:0;font-size:14px;color:var(--muted);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.who{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.who strong{color:var(--ink);font-weight:600}
+.foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px;color:var(--muted);margin-top:2px}
+.kw{background:var(--accent-soft);color:var(--ink);border-radius:5px;padding:2px 7px;font-weight:600}
+.num{font-family:var(--f-mono);font-size:12px}
+.hits{color:var(--accent);font-weight:700}
+.acts{margin-left:auto;display:flex;gap:4px}
+.icon{border:1px solid var(--line);background:none;border-radius:7px;min-width:36px;min-height:34px;padding:4px 8px;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.icon.on{color:var(--accent);border-color:var(--accent)}
+@media (max-width:420px){.card{grid-template-columns:104px minmax(0,1fr);gap:10px}}
+
+.empty{border:1px dashed var(--line);border-radius:var(--r);padding:22px 16px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:6px;align-items:center}
+.empty strong{color:var(--ink);font:700 18px/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.04em}
+
+/* Ailleurs */
+details.panel{gap:0}
+details.panel[open]{gap:14px}
+summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:600 22px/1 var(--f-mono);color:var(--muted)}
+details[open]>summary::after{content:"–"}
+.ext{display:flex;flex-direction:column;gap:12px}
+.extrow{display:flex;flex-direction:column;gap:6px}
+.extrow .k{font-weight:700;overflow-wrap:anywhere}
+.extlinks{display:flex;flex-wrap:wrap;gap:6px}
+
+/* Réglages */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:600;font-size:15px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ok{color:var(--ok);font-weight:600}
+.steps{margin:0;padding-left:20px;font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.steps b{color:var(--ink)}
+.note{font-size:13px;color:var(--muted);border-left:3px solid var(--line);padding-left:10px;margin:0}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--sunk);padding:1px 4px;border-radius:4px;overflow-wrap:anywhere}
+
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;max-width:calc(100% - 32px);z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand" aria-label="Radar Vidéo">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2" opacity=".35"/><circle cx="16" cy="16" r="8.5" fill="none" stroke="currentColor" stroke-width="2" opacity=".6"/><path d="M16 16 L16 2 A14 14 0 0 1 29.3 11.7 Z" fill="var(--accent)" opacity=".85"/><path d="M13.5 12.2v7.6l6.3-3.8z" fill="currentColor"/></svg>
+      Radar
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-view="radar" aria-selected="true">Radar</button>
+      <button class="tab" role="tab" data-view="favs" aria-selected="false">Favoris<span class="n" id="favCount"></span></button>
+      <button class="tab" role="tab" data-view="settings" aria-selected="false">Réglages</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+<!-- ============ RADAR ============ -->
+<section class="wrap" id="v-radar">
+  <div class="panel">
+    <div class="label">Mots-clés</div>
+    <div class="chips" id="chips"></div>
+    <form class="add" id="kwForm" autocomplete="off">
+      <input id="kwInput" type="text" placeholder="Ex. manifestation Lyon, rassemblement" enterkeyhint="done" aria-label="Ajouter des mots-clés">
+      <button class="btn" type="submit">Ajouter</button>
+    </form>
+    <p class="hint">Sépare plusieurs mots-clés par des virgules. Plusieurs mots ensemble doivent tous apparaître. Un « - » devant exclut un mot (ex. <code>-foot</code>). Touche un mot-clé pour le mettre en pause.</p>
+
+    <div class="opts">
+      <div class="opt">
+        <div class="label">Période</div>
+        <div class="seg" id="segPeriod">
+          <button type="button" data-v="1">24 h</button>
+          <button type="button" data-v="7">7 jours</button>
+          <button type="button" data-v="30">30 jours</button>
+        </div>
+      </div>
+      <div class="opt">
+        <div class="label">Où chercher</div>
+        <div class="seg" id="segMode">
+          <button type="button" data-v="all">Partout</button>
+          <button type="button" data-v="mine">Mes abonnements</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="opt">
+      <div class="label">Sources</div>
+      <div class="srcs" id="srcs">
+        <button type="button" class="srcbtn c-yt" data-src="yt"><span class="dot"></span>YouTube</button>
+        <button type="button" class="srcbtn c-bsky" data-src="bsky"><span class="dot"></span>Bluesky</button>
+        <button type="button" class="srcbtn c-masto" data-src="masto"><span class="dot"></span>Mastodon</button>
+      </div>
+    </div>
+
+    <button class="btn primary" id="runBtn" type="button">Lancer le radar</button>
+    <div class="status" id="status" aria-live="polite"></div>
+  </div>
+
+  <details class="panel" id="elsewhere">
+    <summary><h3>Chercher aussi sur X, TikTok, Instagram, Facebook</h3></summary>
+    <p class="hint">Ces réseaux n'autorisent pas les applis à lire leur contenu gratuitement. Ces boutons ouvrent directement leur recherche de vidéos avec ton mot-clé, dans leur appli si elle est installée.</p>
+    <div class="ext" id="extList"></div>
+  </details>
+
+  <div class="bar" id="resBar" hidden>
+    <span class="grow" id="resCount"></span>
+    <select id="sortSel" aria-label="Trier">
+      <option value="recent">Plus récentes</option>
+      <option value="popular">Plus partagées</option>
+    </select>
+  </div>
+  <div class="fchips" id="srcFilter" hidden></div>
+  <div class="fchips" id="kwFilter" hidden></div>
+  <div class="list" id="results"></div>
+  <div class="row" id="hiddenRow" hidden><button class="btn small" id="unhideBtn" type="button"></button></div>
+</section>
+
+<!-- ============ FAVORIS ============ -->
+<section class="wrap" id="v-favs" hidden>
+  <h2>Mes vidéos gardées</h2>
+  <div class="list" id="favList"></div>
+</section>
+
+<!-- ============ RÉGLAGES ============ -->
+<section class="wrap" id="v-settings" hidden>
+  <p class="note">Tout ce que tu entres ici reste sur ce téléphone, dans cette appli. Rien n'est envoyé ailleurs que vers le réseau concerné.</p>
+
+  <div class="panel">
+    <h3 style="color:var(--yt)">YouTube</h3>
+    <div class="field">
+      <label for="ytKey">Clé API gratuite</label>
+      <div class="row"><input id="ytKey" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false" style="flex:1;min-width:0"><button class="btn" id="ytSave" type="button">Enregistrer</button></div>
+      <span id="ytState" class="hint"></span>
+    </div>
+    <details>
+      <summary class="label">Comment obtenir la clé (5 min, sans carte bancaire)</summary>
+      <ol class="steps" style="margin-top:10px">
+        <li>Dans Safari, ouvre <b>console.cloud.google.com</b> et connecte-toi avec un compte Google.</li>
+        <li>En haut, choisis <b>Sélectionner un projet</b> puis <b>Nouveau projet</b> (nom : Radar).</li>
+        <li>Menu ☰ › <b>API et services</b> › <b>Bibliothèque</b>, cherche <b>YouTube Data API v3</b>, touche <b>Activer</b>.</li>
+        <li>Menu ☰ › <b>API et services</b> › <b>Identifiants</b> ›<b>Créer des identifiants</b> › <b>Clé API</b>. Copie la clé qui commence par <code>AIza</code>.</li>
+        <li>Conseillé : touche la clé › <b>Restrictions relatives aux API</b> › coche seulement YouTube Data API v3 › Enregistrer.</li>
+      </ol>
+      <p class="note" style="margin-top:10px">La clé est gratuite et permet environ 100 recherches YouTube par jour (le compteur se remet à zéro chaque matin vers 9 h). Chaque appui sur « Lancer le radar » en utilise une seule, quel que soit le nombre de mots-clés.</p>
+    </details>
+  </div>
+
+  <div class="panel">
+    <h3 style="color:var(--bsky)">Bluesky</h3>
+    <p class="hint">La recherche publique marche sans compte. Connecter ton compte (gratuit) permet de lire ton propre fil avec «&nbsp;Mes abonnements&nbsp;» et rend la recherche plus fiable.</p>
+    <div id="bskyOut">
+      <div class="field"><label for="bskyHandle">Ton identifiant</label><input id="bskyHandle" type="text" placeholder="toi.bsky.social" autocapitalize="off" autocomplete="username" spellcheck="false"></div>
+      <div class="field" style="margin-top:10px"><label for="bskyPass">Mot de passe d'application</label><input id="bskyPass" type="password" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off"></div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="bskyLogin" type="button">Connecter</button></div>
+      <details style="margin-top:10px">
+        <summary class="label">Créer un mot de passe d'application</summary>
+        <ol class="steps" style="margin-top:10px">
+          <li>Dans l'appli Bluesky : <b>Réglages</b> › <b>Confidentialité et sécurité</b> › <b>Mots de passe d'application</b>.</li>
+          <li>Touche <b>Ajouter</b>, nomme-le « Radar », copie le code affiché.</li>
+          <li>N'utilise jamais ton vrai mot de passe ici : le mot de passe d'application peut être supprimé à tout moment.</li>
+        </ol>
+      </details>
+    </div>
+    <div id="bskyIn" hidden>
+      <p class="ok" id="bskyWho"></p>
+      <div class="row"><button class="btn" id="bskyLogout" type="button">Déconnecter</button></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3 style="color:var(--masto)">Mastodon</h3>
+    <div class="field">
+      <label for="mastoInst">Serveurs à fouiller (un par ligne)</label>
+      <textarea id="mastoInst" spellcheck="false" autocapitalize="off"></textarea>
+      <span class="hint">Sans compte, l'appli cherche tes mots-clés sous forme de hashtags (#manifestation) sur ces serveurs.</span>
+    </div>
+    <div class="field">
+      <label for="mastoServer">Ton serveur (facultatif)</label>
+      <input id="mastoServer" type="text" placeholder="piaille.fr" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="field">
+      <label for="mastoToken">Ton jeton d'accès (facultatif)</label>
+      <input id="mastoToken" type="password" placeholder="Pour lire ton fil et chercher dans le texte" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="row"><button class="btn" id="mastoSave" type="button">Enregistrer</button><span id="mastoState" class="hint"></span></div>
+    <details>
+      <summary class="label">Obtenir un jeton d'accès</summary>
+      <ol class="steps" style="margin-top:10px">
+        <li>Ouvre ton serveur Mastodon dans Safari et connecte-toi.</li>
+        <li><b>Préférences</b> › <b>Développement</b> › <b>Nouvelle application</b>.</li>
+        <li>Nom : Radar. Dans les autorisations, laisse seulement <b>read</b> coché. Enregistre.</li>
+        <li>Ouvre l'application créée et copie <b>Votre jeton d'accès</b>.</li>
+      </ol>
+    </details>
+  </div>
+
+  <div class="panel">
+    <h3>Langue des résultats</h3>
+    <div class="seg" id="segLang">
+      <button type="button" data-v="fr">Français surtout</button>
+      <button type="button" data-v="any">Toutes les langues</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Données</h3>
+    <p class="hint">Efface mots-clés, résultats, favoris et connexions de cet appareil.</p>
+    <div class="row">
+      <button class="btn danger" id="wipeBtn" type="button">Tout effacer</button>
+      <button class="btn danger" id="wipeConfirm" type="button" hidden>Oui, tout effacer</button>
+      <button class="btn" id="wipeCancel" type="button" hidden>Annuler</button>
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+"use strict";
+/* ==================== FONCTIONS PURES (testables) ==================== */
+/*PURE-START*/
+const SRC_LABEL = { yt: "YouTube", bsky: "Bluesky", masto: "Mastodon" };
+
+function norm(s) {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[#@_]/g, " ");
+}
+function words(k) { return norm(k).split(/[\s,;]+/).filter(Boolean); }
+function isNeg(k) { return /^-\s*\S/.test(k); }
+function negTerm(k) { return k.replace(/^-\s*/, "").trim(); }
+
+/* Mots-clés (positifs) présents dans un texte : tous les mots d'une expression doivent y être. */
+function matchKw(text, pos) {
+  const n = norm(text);
+  return pos.filter(k => { const w = words(k); return w.length > 0 && w.every(x => n.includes(x)); });
+}
+function excluded(text, neg) {
+  const n = norm(text);
+  return neg.some(k => { const w = norm(negTerm(k)).trim(); return w && n.includes(w); });
+}
+
+function htmlToText(html) {
+  const s = String(html || "");
+  if (typeof DOMParser !== "undefined") {
+    const doc = new DOMParser().parseFromString(s.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>/gi, "\n"), "text/html");
+    return (doc.body.textContent || "").trim();
+  }
+  return s.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&nbsp;/g, " ").trim();
+}
+
+const VIDEO_HOSTS = /(^|\.)(youtube\.com|youtu\.be|tiktok\.com|vimeo\.com|dailymotion\.com|dai\.ly|twitch\.tv|streamable\.com|rumble\.com|odysee\.com|kick\.com|loops\.video|peertube\.[a-z.]+|tube\.[a-z.]+)$/;
+
+/* Si l'URL pointe vers une vidéo, renvoie une clé stable (pour dédoublonner). */
+function videoKeyFromUrl(u) {
+  let x;
+  try { x = new URL(u); } catch (e) { return null; }
+  if (!/^https?:$/.test(x.protocol)) return null;
+  const h = x.hostname.toLowerCase().replace(/^(www\.|m\.|mobile\.|music\.)/, "");
+  const p = x.pathname;
+  if (h === "youtu.be") { const id = p.slice(1).split("/")[0]; return id ? { key: "yt:" + id, yt: id } : null; }
+  if (h === "youtube.com" || h.endsWith(".youtube.com")) {
+    let id = x.searchParams.get("v");
+    if (!id) { const m = p.match(/\/(shorts|live|embed|v)\/([\w-]{6,})/); if (m) id = m[2]; }
+    return id ? { key: "yt:" + id, yt: id } : null;
+  }
+  if (/^(x|twitter)\.com$/.test(h)) { const m = p.match(/\/status\/(\d+)\/video/); return m ? { key: "x:" + m[1] } : null; }
+  if (h === "instagram.com") { const m = p.match(/^\/(reel|reels|tv)\/([\w-]+)/); return m ? { key: "ig:" + m[2] } : null; }
+  if (h === "fb.watch") return { key: "url:" + h + p };
+  if (h === "facebook.com") { return /(\/watch|\/reel|\/videos\/)/.test(p) ? { key: "url:" + h + p + (x.searchParams.get("v") || "") } : null; }
+  if (h === "tiktok.com") { const m = p.match(/\/video\/(\d+)/); return { key: m ? "tt:" + m[1] : "url:" + h + p }; }
+  if (VIDEO_HOSTS.test(h)) return { key: "url:" + h + p.replace(/\/$/, "") };
+  return null;
+}
+function ytThumb(id) { return "https://i.ytimg.com/vi/" + encodeURIComponent(id) + "/hqdefault.jpg"; }
+
+function isoDuration(iso) {
+  const m = /^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(iso || "");
+  if (!m) return "";
+  const h = (+m[1] || 0) * 24 + (+m[2] || 0), mi = +m[3] || 0, s = +m[4] || 0;
+  if (!h && !mi && !s) return "";
+  const pad = n => String(n).padStart(2, "0");
+  return h ? h + ":" + pad(mi) + ":" + pad(s) : mi + ":" + pad(s);
+}
+function secDuration(sec) {
+  sec = Math.round(+sec || 0); if (!sec) return "";
+  const h = Math.floor(sec / 3600), mi = Math.floor(sec % 3600 / 60), s = sec % 60, pad = n => String(n).padStart(2, "0");
+  return h ? h + ":" + pad(mi) + ":" + pad(s) : mi + ":" + pad(s);
+}
+
+/* ---------- Bluesky ---------- */
+function bskyPostUrl(handle, uri) { return "https://bsky.app/profile/" + handle + "/post/" + String(uri).split("/").pop(); }
+
+/* Cherche une vidéo dans l'objet « embed » d'un post (y compris dans un post cité). */
+function bskyVideo(embed, depth) {
+  depth = depth || 0;
+  if (!embed || depth > 3) return null;
+  const t = embed.$type || "";
+  if (t.startsWith("app.bsky.embed.video")) return { native: true, thumb: embed.thumbnail || "" };
+  if (t.startsWith("app.bsky.embed.external")) {
+    const ex = embed.external || {}; const v = videoKeyFromUrl(ex.uri);
+    if (!v) return null;
+    return { native: false, key: v.key, url: ex.uri, thumb: ex.thumb || (v.yt ? ytThumb(v.yt) : ""), title: ex.title || "", desc: ex.description || "" };
+  }
+  if (t.startsWith("app.bsky.embed.recordWithMedia")) {
+    return bskyVideo(embed.media, depth + 1) || bskyQuoted(embed.record && embed.record.record, depth);
+  }
+  if (t.startsWith("app.bsky.embed.record")) return bskyQuoted(embed.record, depth);
+  return null;
+}
+function bskyQuoted(rec, depth) {
+  if (!rec || !rec.embeds || !rec.author || !rec.uri) return null;
+  for (const e of rec.embeds) { const v = bskyVideo(e, depth + 1); if (v) return Object.assign({}, v, { quoted: v.quoted || rec }); }
+  return null;
+}
+
+function bskyToItem(post, repostedBy) {
+  if (!post || !post.author) return null;
+  const info = bskyVideo(post.embed);
+  if (!info) return null;
+  const text = (post.record && post.record.text) || "";
+  const a = post.author;
+  const date = Date.parse((post.record && post.record.createdAt) || post.indexedAt) || Date.now();
+  const postUrl = bskyPostUrl(a.handle, post.uri);
+  const reposts = (post.repostCount || 0) + (post.quoteCount || 0);
+  const sharedBy = repostedBy ? ["@" + repostedBy] : [];
+  let it;
+  if (info.quoted && info.native) {
+    const q = info.quoted, qt = (q.value && q.value.text) || "";
+    it = { key: "bsky:" + q.uri, url: bskyPostUrl(q.author.handle, q.uri), title: "", text: qt,
+      author: q.author.displayName || q.author.handle, handle: "@" + q.author.handle,
+      date: Date.parse((q.value && q.value.createdAt) || q.indexedAt) || date, thumb: info.thumb,
+      sharedBy: sharedBy.concat("@" + a.handle), postUrl, matchText: text + " " + qt };
+  } else if (info.native) {
+    it = { key: "bsky:" + post.uri, url: postUrl, title: "", text, author: a.displayName || a.handle, handle: "@" + a.handle,
+      date, thumb: info.thumb, sharedBy, matchText: text };
+  } else {
+    let host = ""; try { host = new URL(info.url).hostname.replace(/^www\./, ""); } catch (e) {}
+    const qt = info.quoted ? ((info.quoted.value && info.quoted.value.text) || "") : "";
+    it = { key: info.key, url: info.url, title: info.title, text, author: host, handle: "",
+      date, thumb: info.thumb, sharedBy: sharedBy.concat("@" + a.handle), postUrl,
+      matchText: [text, qt, info.title, info.desc].join(" ") };
+  }
+  it.src = "bsky"; it.reposts = reposts; it.duration = "";
+  return it;
+}
+
+/* ---------- Mastodon ---------- */
+function mastoToItem(st) {
+  if (!st) return null;
+  const s = st.reblog || st;
+  const sharer = st.reblog ? st.account : null;
+  const text = htmlToText(s.content);
+  const tags = (s.tags || []).map(t => t.name).join(" ");
+  const acc = s.account || {};
+  const vid = (s.media_attachments || []).find(m => m.type === "video" || m.type === "gifv");
+  let it;
+  if (vid) {
+    const meta = (vid.meta && (vid.meta.original || vid.meta)) || {};
+    it = { key: "masto:" + (s.uri || s.url), url: s.url || s.uri, title: "", text, thumb: vid.preview_url || "",
+      duration: secDuration(meta.duration), postUrl: "" };
+  } else if (s.card && s.card.url) {
+    const v = videoKeyFromUrl(s.card.url);
+    if (!v && s.card.type !== "video") return null;
+    it = { key: v ? v.key : "url:" + s.card.url, url: s.card.url, title: s.card.title || "", text,
+      thumb: s.card.image || (v && v.yt ? ytThumb(v.yt) : ""), duration: "", postUrl: s.url || s.uri };
+  } else return null;
+  const sharedBy = [];
+  if (sharer) sharedBy.push("@" + sharer.acct);
+  if (!vid) sharedBy.push("@" + acc.acct);
+  Object.assign(it, {
+    src: "masto",
+    author: vid ? (acc.display_name || acc.username || acc.acct) : ((() => { try { return new URL(it.url).hostname.replace(/^www\./, ""); } catch (e) { return ""; } })()),
+    handle: vid ? "@" + acc.acct : "",
+    date: Date.parse(s.created_at) || Date.now(),
+    sharedBy, reposts: (s.reblogs_count || 0) + (s.quotes_count || 0),
+    matchText: [text, tags, s.card ? s.card.title : "", s.card ? s.card.description : ""].join(" ")
+  });
+  if (sharer) it.last = Date.parse(st.created_at) || it.date;
+  return it;
+}
+function tagVariants(k) {
+  const clean = String(k).replace(/^#/, "").toLowerCase().replace(/[\s'’\-.]+/g, "").replace(/[^\p{L}\p{N}_]/gu, "");
+  const plain = clean.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  return [...new Set([clean, plain])].filter(Boolean);
+}
+function normHost(h) {
+  return String(h || "").trim().replace(/^@?[^@\s]*@(?=[^@]+\.)/, "").replace(/^https?:\/\//i, "").replace(/\/.*$/, "").toLowerCase();
+}
+
+/* ---------- Fusion / dédoublonnage ---------- */
+function mergeItems(list) {
+  const m = new Map();
+  for (const it of list) {
+    const ex = m.get(it.key);
+    const last = it.last || it.date;
+    if (!ex) {
+      m.set(it.key, Object.assign({}, it, { srcs: [it.src], hits: 1, last, sharedBy: [...(it.sharedBy || [])], kws: [...(it.kws || [])] }));
+      continue;
+    }
+    ex.hits++;
+    if (!ex.srcs.includes(it.src)) ex.srcs.push(it.src);
+    for (const s of it.sharedBy || []) if (!ex.sharedBy.includes(s)) ex.sharedBy.push(s);
+    for (const k of it.kws || []) if (!ex.kws.includes(k)) ex.kws.push(k);
+    if (it.src === "yt" && ex.src !== "yt") {
+      // la vidéo YouTube d'origine prend le dessus sur le simple partage du lien
+      Object.assign(ex, { src: "yt", url: it.url, title: it.title, text: it.text, author: it.author, handle: it.handle,
+        authorUrl: it.authorUrl, date: it.date, thumb: it.thumb || ex.thumb, duration: it.duration || ex.duration, views: it.views, live: it.live });
+    } else {
+      ex.thumb = ex.thumb || it.thumb; ex.title = ex.title || it.title; ex.text = ex.text || it.text;
+      ex.duration = ex.duration || it.duration; ex.postUrl = ex.postUrl || it.postUrl;
+      ex.date = Math.min(ex.date, it.date);
+    }
+    ex.reposts = Math.max(ex.reposts || 0, it.reposts || 0);
+    ex.last = Math.max(ex.last, last);
+  }
+  return [...m.values()];
+}
+function sortItems(list, how) {
+  const a = list.slice();
+  if (how === "popular") a.sort((x, y) => (y.hits - x.hits) || ((y.reposts || 0) - (x.reposts || 0)) || ((y.views || 0) - (x.views || 0)) || (y.last - x.last));
+  else a.sort((x, y) => y.last - x.last);
+  return a;
+}
+/*PURE-END*/
+
+/* ==================== ÉTAT ==================== */
+const STORE = "radar-video.v1";
+const DEFAULTS = {
+  keywords: [{ t: "manifestation", on: true }, { t: "rassemblement", on: true }],
+  period: 7, mode: "all", src: { yt: true, bsky: true, masto: true }, lang: "fr",
+  ytKey: "", bsky: null,
+  masto: { instances: ["mastodon.social", "piaille.fr", "mamot.fr", "mastodon.world"], server: "", token: "" },
+  favs: {}, hidden: {}, results: [], statuses: [], lastRun: 0,
+  view: { src: "all", kw: "all", sort: "recent" }
+};
+function isObj(v) { return v && typeof v === "object" && !Array.isArray(v); }
+function merge(def, o) {
+  const r = JSON.parse(JSON.stringify(def));
+  if (!isObj(o)) return r;
+  for (const k of Object.keys(o)) r[k] = isObj(r[k]) && isObj(o[k]) ? merge(r[k], o[k]) : o[k];
+  return r;
+}
+let S = (() => { try { return merge(DEFAULTS, JSON.parse(localStorage.getItem(STORE))); } catch (e) { return merge(DEFAULTS, null); } })();
+function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { toast("Impossible d'enregistrer sur cet appareil"); } }
+
+const pos = () => S.keywords.filter(k => k.on && !isNeg(k.t)).map(k => k.t);
+const neg = () => S.keywords.filter(k => k.on && isNeg(k.t)).map(k => k.t);
+
+/* ==================== OUTILS ==================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const enc = encodeURIComponent;
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function safeUrl(u) { return /^https?:\/\//i.test(String(u || "")) ? String(u) : ""; }
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
+function ago(t) {
+  const s = (Date.now() - t) / 1000;
+  if (s < 60) return "à l'instant";
+  if (s < 3600) return "il y a " + Math.floor(s / 60) + " min";
+  if (s < 86400) return "il y a " + Math.floor(s / 3600) + " h";
+  if (s < 86400 * 7) return "il y a " + Math.floor(s / 86400) + " j";
+  return new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+const fmt = n => { try { return new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 1 }).format(n); } catch (e) { return String(n); } };
+
+async function getJSON(url, opts, ms) {
+  const c = new AbortController(); const tm = setTimeout(() => c.abort(), ms || 20000);
+  try {
+    const r = await fetch(url, Object.assign({}, opts, { signal: c.signal }));
+    let body = null; try { body = await r.json(); } catch (e) {}
+    if (!r.ok) {
+      const em = body && ((body.error && body.error.message) || body.message || (typeof body.error === "string" ? body.error : ""));
+      const err = new Error(em || ("erreur " + r.status)); err.status = r.status; err.body = body; throw err;
+    }
+    return body;
+  } catch (e) {
+    if (e.name === "AbortError") throw new Error("le serveur met trop de temps à répondre");
+    if (e instanceof TypeError) throw new Error("connexion impossible (vérifie ton internet)");
+    throw e;
+  } finally { clearTimeout(tm); }
+}
+async function pool(tasks, n, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, tasks.length) }, async () => { while (i < tasks.length) await fn(tasks[i++]); }));
+}
+
+/* ==================== SOURCES ==================== */
+async function runYouTube(since) {
+  if (S.mode === "mine") return { items: [], skipped: true, note: "tes abonnements YouTube ne sont pas lisibles gratuitement : passe sur « Partout »" };
+  if (!S.ytKey) return { items: [], skipped: true, note: "ajoute ta clé gratuite dans Réglages" };
+  const p = pos();
+  const q = p.join("|") + neg().map(k => " -" + negTerm(k)).join("");
+  let url = "https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&order=date&maxResults=50&safeSearch=none"
+    + "&q=" + enc(q) + "&publishedAfter=" + enc(new Date(since).toISOString()) + "&key=" + enc(S.ytKey);
+  if (S.lang === "fr") url += "&relevanceLanguage=fr";
+  let d;
+  try { d = await getJSON(url); }
+  catch (e) {
+    const reason = e.body && e.body.error && e.body.error.errors && e.body.error.errors[0] && e.body.error.errors[0].reason;
+    if (reason === "quotaExceeded") throw new Error("plus de recherches gratuites aujourd'hui, réessaie demain");
+    if (reason === "keyInvalid" || /API key not valid/i.test(e.message)) throw new Error("la clé n'est pas valide, vérifie-la dans Réglages");
+    if (reason === "accessNotConfigured" || /has not been used|disabled/i.test(e.message)) throw new Error("active « YouTube Data API v3 » dans ton projet Google");
+    throw e;
+  }
+  const vids = (d.items || []).filter(x => x.id && x.id.videoId);
+  const extra = {};
+  if (vids.length) {
+    try {
+      const v = await getJSON("https://www.googleapis.com/youtube/v3/videos?part=contentDetails,statistics&id=" + vids.map(x => x.id.videoId).join(",") + "&key=" + enc(S.ytKey));
+      for (const x of v.items || []) extra[x.id] = x;
+    } catch (e) { /* durée et vues facultatives */ }
+  }
+  const items = vids.map(x => {
+    const id = x.id.videoId, sn = x.snippet || {}, ex = extra[id] || {};
+    const title = htmlToText(sn.title), desc = htmlToText(sn.description);
+    const th = sn.thumbnails || {};
+    const it = {
+      key: "yt:" + id, src: "yt", url: "https://www.youtube.com/watch?v=" + id, title, text: desc,
+      author: htmlToText(sn.channelTitle), handle: "", authorUrl: sn.channelId ? "https://www.youtube.com/channel/" + sn.channelId : "",
+      date: Date.parse(sn.publishedAt) || Date.now(), thumb: (th.high || th.medium || th.default || {}).url || ytThumb(id),
+      duration: isoDuration(ex.contentDetails && ex.contentDetails.duration), views: +(ex.statistics && ex.statistics.viewCount) || 0,
+      live: sn.liveBroadcastContent === "live", sharedBy: [], reposts: 0, matchText: title + " " + desc
+    };
+    it.kws = matchKw(it.matchText, p);
+    return it;
+  });
+  return { items };
+}
+
+const BSKY_ENTRY = "https://bsky.social";
+async function bskyLogin(handle, password) {
+  const id = handle.trim().replace(/^@/, "");
+  const r = await getJSON(BSKY_ENTRY + "/xrpc/com.atproto.server.createSession", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier: id, password: password.trim() })
+  });
+  const svc = ((r.didDoc && r.didDoc.service) || []).find(s => s.id === "#atproto_pds");
+  S.bsky = { handle: r.handle, did: r.did, access: r.accessJwt, refresh: r.refreshJwt, pds: (svc && svc.serviceEndpoint) || BSKY_ENTRY };
+  save();
+}
+async function bskyAuthed(path) {
+  const s = S.bsky;
+  const go = tok => getJSON(s.pds + "/xrpc/" + path, { headers: { Authorization: "Bearer " + tok } });
+  try { return await go(s.access); }
+  catch (e) {
+    if (e.status !== 400 && e.status !== 401) throw e;
+    if (e.status === 400 && !(e.body && /expired|token/i.test((e.body.error || "") + (e.body.message || "")))) throw e;
+    let r = null;
+    try { r = await getJSON(s.pds + "/xrpc/com.atproto.server.refreshSession", { method: "POST", headers: { Authorization: "Bearer " + s.refresh } }); } catch (x) {}
+    if (!r) { S.bsky = null; save(); renderSettings(); throw new Error("connexion expirée, reconnecte ton compte dans Réglages"); }
+    s.access = r.accessJwt; s.refresh = r.refreshJwt; save();
+    return await go(s.access);
+  }
+}
+async function runBluesky(since) {
+  const p = pos(), items = [];
+  if (S.mode === "mine") {
+    if (!S.bsky) return { items: [], skipped: true, note: "connecte ton compte dans Réglages pour lire ton fil" };
+    let cursor = "", read = 0;
+    for (let page = 0; page < 8; page++) {
+      const d = await bskyAuthed("app.bsky.feed.getTimeline?limit=100" + (cursor ? "&cursor=" + enc(cursor) : ""));
+      const feed = d.feed || []; read += feed.length;
+      for (const f of feed) {
+        const by = f.reason && /reasonRepost/.test(f.reason.$type || "") && f.reason.by ? f.reason.by.handle : null;
+        const it = bskyToItem(f.post, by);
+        if (!it) continue;
+        if (by && f.reason.indexedAt) it.last = Date.parse(f.reason.indexedAt) || it.date;
+        it.kws = matchKw(it.matchText, p);
+        if (it.kws.length) items.push(it);
+      }
+      const last = feed[feed.length - 1];
+      cursor = d.cursor;
+      if (!cursor || !last || (Date.parse(last.post.indexedAt) || 0) < since) break;
+    }
+    return { items, note: read + " posts de ton fil parcourus" };
+  }
+  const sinceIso = new Date(since).toISOString();
+  const lang = S.lang === "fr" ? "&lang=fr" : "";
+  const pages = S.bsky ? 3 : 1;
+  let errs = [];
+  await Promise.all(p.map(async k => {
+    let cursor = "";
+    for (let page = 0; page < pages; page++) {
+      const qs = "app.bsky.feed.searchPosts?q=" + enc(k) + "&sort=latest&limit=100&since=" + enc(sinceIso) + lang + (cursor ? "&cursor=" + enc(cursor) : "");
+      let d;
+      try { d = S.bsky ? await bskyAuthed(qs) : await getJSON("https://api.bsky.app/xrpc/" + qs); }
+      catch (e) { if (page === 0) errs.push(e); break; }
+      for (const post of d.posts || []) {
+        const it = bskyToItem(post, null);
+        if (!it) continue;
+        it.kws = matchKw(it.matchText, p);
+        if (!it.kws.includes(k)) it.kws.push(k);
+        items.push(it);
+      }
+      cursor = d.cursor;
+      if (!cursor || !(d.posts || []).length) break;
+    }
+  }));
+  if (errs.length && errs.length === p.length) {
+    if (!S.bsky) throw new Error("Bluesky refuse la recherche sans compte en ce moment : connecte ton compte gratuit dans Réglages");
+    throw errs[0];
+  }
+  return { items, note: errs.length ? errs.length + " mot(s)-clé(s) sans réponse" : "" };
+}
+
+async function runMastodon(since) {
+  const p = pos(), items = [], errs = [];
+  const m = S.masto, server = normHost(m.server);
+  const auth = m.token && server ? { Authorization: "Bearer " + m.token.trim() } : null;
+  const add = (st, k) => {
+    const lg = (st && (st.reblog || st).language) || "";
+    if (S.lang === "fr" && lg && !/^fr/i.test(lg)) return; // ex. « manifestation » en anglais = tout autre chose
+    const it = mastoToItem(st);
+    if (!it) return;
+    it.kws = matchKw(it.matchText, p);
+    if (k && !it.kws.includes(k)) it.kws.push(k);
+    if (it.kws.length) items.push(it);
+  };
+  if (S.mode === "mine") {
+    if (!auth) return { items: [], skipped: true, note: "ajoute ton serveur et ton jeton dans Réglages pour lire ton fil" };
+    let max = "", read = 0;
+    for (let page = 0; page < 6; page++) {
+      const list = await getJSON("https://" + server + "/api/v1/timelines/home?limit=40" + (max ? "&max_id=" + max : ""), { headers: auth });
+      if (!Array.isArray(list) || !list.length) break;
+      read += list.length;
+      list.forEach(st => add(st, null));
+      const last = list[list.length - 1]; max = last.id;
+      if ((Date.parse(last.created_at) || 0) < since) break;
+    }
+    return { items, note: read + " messages de ton fil parcourus" };
+  }
+  const insts = [...new Set((m.instances || []).map(normHost).filter(Boolean))];
+  const tasks = [];
+  for (const inst of insts) for (const k of p) for (const tag of tagVariants(k)) tasks.push({ inst, k, tag });
+  let ok = 0;
+  await pool(tasks.slice(0, 60), 4, async t => {
+    try {
+      const list = await getJSON("https://" + t.inst + "/api/v1/timelines/tag/" + enc(t.tag) + "?limit=40&only_media=true", null, 15000);
+      ok++;
+      (Array.isArray(list) ? list : []).forEach(st => add(st, t.k));
+    } catch (e) { errs.push(t.inst); }
+  });
+  if (auth) {
+    await pool(p, 3, async k => {
+      try {
+        const d = await getJSON("https://" + server + "/api/v2/search?type=statuses&limit=40&q=" + enc(k), { headers: auth });
+        ok++;
+        (d.statuses || []).forEach(st => add(st, k));
+      } catch (e) { errs.push(server); }
+    });
+  }
+  if (!ok && errs.length) throw new Error("aucun serveur n'a répondu (" + [...new Set(errs)].join(", ") + ")");
+  const bad = [...new Set(errs)];
+  return { items, note: bad.length ? "sans réponse : " + bad.join(", ") : "" };
+}
+
+/* ==================== LANCEMENT ==================== */
+const RUNNERS = [["yt", runYouTube], ["bsky", runBluesky], ["masto", runMastodon]];
+let running = false;
+async function run() {
+  if (running) return;
+  if (!pos().length) { toast("Ajoute au moins un mot-clé actif"); return; }
+  const active = RUNNERS.filter(([k]) => S.src[k]);
+  if (!active.length) { toast("Choisis au moins une source"); return; }
+  running = true;
+  const btn = $("#runBtn"); btn.disabled = true; btn.textContent = "Recherche en cours…";
+  const since = Date.now() - S.period * 864e5;
+  const live = active.map(([k]) => ({ k, state: "run" }));
+  renderStatus(live);
+  const settled = await Promise.allSettled(active.map(([, fn]) => fn(since)));
+  let all = []; const sts = [];
+  settled.forEach((r, i) => {
+    const k = active[i][0];
+    if (r.status === "fulfilled") {
+      const v = r.value;
+      all = all.concat(v.items.map(it => Object.assign(it, { src: k })));
+      sts.push({ k, state: v.skipped ? "warn" : "ok", n: v.items.length, note: v.note || "" });
+    } else sts.push({ k, state: "bad", n: 0, note: (r.reason && r.reason.message) || "erreur inconnue" });
+  });
+  const n = neg();
+  all = all.filter(it => (it.last || it.date) >= since && !excluded(it.matchText || "", n));
+  const merged = mergeItems(all);
+  S.results = sortItems(merged, "recent").slice(0, 400);
+  S.statuses = sts; S.lastRun = Date.now();
+  S.view.src = "all"; S.view.kw = "all";
+  save();
+  running = false; btn.disabled = false; btn.textContent = "Relancer le radar";
+  renderStatus(sts); renderResults();
+  if (merged.length) $("#resBar").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ==================== AFFICHAGE ==================== */
+function renderChips() {
+  const box = $("#chips");
+  if (!S.keywords.length) { box.innerHTML = '<span class="hint">Aucun mot-clé pour l\'instant.</span>'; }
+  else box.innerHTML = S.keywords.map((k, i) =>
+    `<span class="chip${isNeg(k.t) ? " neg" : ""}${k.on ? "" : " off"}"><button type="button" class="t" data-i="${i}" data-a="toggle" aria-pressed="${k.on}" title="Activer / mettre en pause">${esc(k.t)}</button><button type="button" class="x" data-i="${i}" data-a="del" aria-label="Supprimer ${esc(k.t)}">×</button></span>`
+  ).join("");
+  renderElsewhere();
+}
+function setSeg(sel, val) { document.querySelectorAll(sel + " button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === String(val)))); }
+function renderControls() {
+  setSeg("#segPeriod", S.period); setSeg("#segMode", S.mode); setSeg("#segLang", S.lang);
+  document.querySelectorAll("#srcs .srcbtn").forEach(b => b.setAttribute("aria-pressed", String(!!S.src[b.dataset.src])));
+  $("#runBtn").textContent = S.lastRun ? "Relancer le radar" : "Lancer le radar";
+}
+function renderStatus(list) {
+  const box = $("#status");
+  if (!list || !list.length) { box.innerHTML = ""; return; }
+  box.innerHTML = list.map(s => {
+    const label = `<b class="c-${s.k}">${SRC_LABEL[s.k]}</b>`;
+    if (s.state === "run") return `<div class="st">${label}<span class="spin" aria-hidden="true"></span><span class="msg">recherche…</span></div>`;
+    const cls = s.state === "ok" ? "" : s.state;
+    const count = s.state === "ok" ? `<span class="n">${s.n} vidéo${s.n > 1 ? "s" : ""}</span>` : "";
+    return `<div class="st ${cls}">${label}${count}${s.note ? `<span class="msg">${esc(s.note)}</span>` : ""}</div>`;
+  }).join("") + (S.lastRun && !running ? `<div class="st"><span class="msg">Dernière recherche ${esc(ago(S.lastRun))}</span></div>` : "");
+}
+
+function cardHTML(it, inFavs) {
+  const url = safeUrl(it.url);
+  const thumb = safeUrl(it.thumb);
+  const title = it.title || (it.text || "").split("\n")[0].slice(0, 160) || "Vidéo sans titre";
+  const snip = it.title ? (it.text || "") : (it.text || "").split("\n").slice(1).join(" ");
+  const srcs = (it.srcs || [it.src]).map(s => `<span class="src c-${s}">${SRC_LABEL[s]}</span>`).join("<span aria-hidden=\"true\">·</span>");
+  const shared = it.sharedBy || [];
+  const sharedTxt = shared.length ? ` · partagé par ${esc(shared.slice(0, 3).join(", "))}${shared.length > 3 ? " +" + (shared.length - 3) : ""}` : "";
+  const author = it.author ? `<strong>${esc(it.author)}</strong>${it.handle && it.handle !== "@" + it.author ? " " + esc(it.handle) : ""}` : "";
+  const fav = !!S.favs[it.key];
+  const kws = (it.kws || []).slice(0, 3).map(k => `<span class="kw">${esc(k)}</span>`).join("");
+  const stats = [
+    it.views ? `<span class="num">${fmt(it.views)} vue${it.views > 1 ? "s" : ""}</span>` : "",
+    it.reposts ? `<span class="num">${fmt(it.reposts)} partage${it.reposts > 1 ? "s" : ""}</span>` : "",
+    it.hits > 1 ? `<span class="hits">trouvée ${it.hits} fois</span>` : ""
+  ].join("");
+  const post = safeUrl(it.postUrl);
+  return `<article class="card">
+    <a class="thumb c-${it.src}" href="${esc(url)}" target="_blank" rel="noopener noreferrer" aria-label="Ouvrir la vidéo">
+      <span class="ph" aria-hidden="true">▶ ${SRC_LABEL[it.src]}</span>
+      ${thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}
+      ${it.duration ? `<span class="dur">${esc(it.duration)}</span>` : ""}
+      ${it.live ? '<span class="live">EN DIRECT</span>' : ""}
+    </a>
+    <div class="body">
+      <div class="meta">${srcs}<time datetime="${new Date(it.date).toISOString()}">${esc(ago(it.date))}</time></div>
+      <a class="title" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(title)}</a>
+      ${snip.trim() && !/^\S+$/.test(snip.trim()) ? `<p class="snip">${esc(snip)}</p>` : ""}
+      ${author || sharedTxt ? `<div class="who">${author}${sharedTxt}</div>` : ""}
+      <div class="foot">${kws}${stats}
+        <span class="acts">
+          ${post ? `<a class="icon" href="${esc(post)}" target="_blank" rel="noopener noreferrer" title="Voir le post qui la partage">Post</a>` : ""}
+          <button type="button" class="icon${fav ? " on" : ""}" data-a="fav" data-k="${esc(it.key)}" aria-pressed="${fav}" aria-label="${fav ? "Retirer des favoris" : "Garder en favori"}">${fav ? "★" : "☆"}</button>
+          ${inFavs ? "" : `<button type="button" class="icon" data-a="hide" data-k="${esc(it.key)}" aria-label="Masquer cette vidéo">Masquer</button>`}
+        </span>
+      </div>
+    </div>
+  </article>`;
+}
+
+function renderResults() {
+  const all = (S.results || []).filter(it => !S.hidden[it.key]);
+  const box = $("#results"), bar = $("#resBar"), sf = $("#srcFilter"), kf = $("#kwFilter");
+  const hiddenN = (S.results || []).filter(it => S.hidden[it.key]).length;
+  $("#hiddenRow").hidden = !hiddenN;
+  $("#unhideBtn").textContent = "Réafficher " + hiddenN + " vidéo" + (hiddenN > 1 ? "s" : "") + " masquée" + (hiddenN > 1 ? "s" : "");
+  if (!S.lastRun) {
+    bar.hidden = sf.hidden = kf.hidden = true;
+    box.innerHTML = `<div class="empty"><strong>Prêt à chercher</strong><span>Ajoute tes mots-clés puis lance le radar. Les vidéos trouvées sur YouTube, Bluesky et Mastodon s'afficheront ici, sans doublons.</span></div>`;
+    return;
+  }
+  const v = S.view;
+  const srcCounts = {}; all.forEach(it => (it.srcs || [it.src]).forEach(s => { srcCounts[s] = (srcCounts[s] || 0) + 1; }));
+  const kwCounts = {}; all.forEach(it => (it.kws || []).forEach(k => { kwCounts[k] = (kwCounts[k] || 0) + 1; }));
+  if (v.src !== "all" && !srcCounts[v.src]) v.src = "all";
+  if (v.kw !== "all" && !kwCounts[v.kw]) v.kw = "all";
+  let list = all.filter(it => (v.src === "all" || (it.srcs || [it.src]).includes(v.src)) && (v.kw === "all" || (it.kws || []).includes(v.kw)));
+  list = sortItems(list, v.sort);
+  bar.hidden = false;
+  $("#sortSel").value = v.sort;
+  $("#resCount").innerHTML = `<span class="n">${list.length}</span> vidéo${list.length > 1 ? "s" : ""} trouvée${list.length > 1 ? "s" : ""}`;
+  const srcKeys = Object.keys(srcCounts);
+  sf.hidden = srcKeys.length < 2;
+  sf.innerHTML = `<button class="fchip" data-f="src" data-v="all" aria-pressed="${v.src === "all"}">Toutes les sources</button>` +
+    srcKeys.map(s => `<button class="fchip" data-f="src" data-v="${s}" aria-pressed="${v.src === s}">${SRC_LABEL[s]} · ${srcCounts[s]}</button>`).join("");
+  const kwKeys = Object.keys(kwCounts).sort((a, b) => kwCounts[b] - kwCounts[a]);
+  kf.hidden = kwKeys.length < 2;
+  kf.innerHTML = `<button class="fchip" data-f="kw" data-v="all" aria-pressed="${v.kw === "all"}">Tous les mots-clés</button>` +
+    kwKeys.map(k => `<button class="fchip" data-f="kw" data-v="${esc(k)}" aria-pressed="${v.kw === k}">${esc(k)} · ${kwCounts[k]}</button>`).join("");
+  box.innerHTML = list.length ? list.map(it => cardHTML(it, false)).join("")
+    : `<div class="empty"><strong>Aucune vidéo trouvée</strong><span>Essaie une période plus longue, d'autres mots-clés, ou regarde les messages sous le bouton pour voir si une source a eu un souci.</span></div>`;
+}
+function renderFavs() {
+  const favs = Object.values(S.favs).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+  const n = favs.length;
+  $("#favCount").textContent = n ? String(n) : "";
+  $("#favList").innerHTML = n ? favs.map(it => cardHTML(it, true)).join("")
+    : `<div class="empty"><strong>Aucun favori</strong><span>Touche ☆ sur une vidéo pour la garder ici, même après une nouvelle recherche.</span></div>`;
+}
+function extLinks(k, negs) {
+  const q = k + negs.map(n => " -" + negTerm(n)).join("");
+  return [
+    ["X", "https://x.com/search?q=" + enc(q + " filter:videos") + "&f=live"],
+    ["TikTok", "https://www.tiktok.com/search/video?q=" + enc(k)],
+    ["Instagram", "https://www.instagram.com/explore/search/keyword/?q=" + enc(k)],
+    ["Facebook", "https://www.facebook.com/search/videos/?q=" + enc(k)],
+    ["YouTube", "https://www.youtube.com/results?search_query=" + enc(q) + "&sp=CAI%253D"]
+  ];
+}
+function renderElsewhere() {
+  const p = pos(), n = neg();
+  $("#extList").innerHTML = p.length ? p.map(k => `<div class="extrow"><span class="k">${esc(k)}</span><div class="extlinks">${
+    extLinks(k, n).map(([name, u]) => `<a class="btn small" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${name}</a>`).join("")}</div></div>`).join("")
+    : '<p class="hint">Ajoute un mot-clé actif pour voir les liens.</p>';
+}
+function renderSettings() {
+  $("#ytKey").value = S.ytKey || "";
+  $("#ytState").textContent = S.ytKey ? "Clé enregistrée sur cet appareil." : "Pas encore de clé : YouTube sera ignoré.";
+  $("#bskyOut").hidden = !!S.bsky; $("#bskyIn").hidden = !S.bsky;
+  if (S.bsky) $("#bskyWho").textContent = "Connecté en tant que @" + S.bsky.handle;
+  $("#mastoInst").value = (S.masto.instances || []).join("\n");
+  $("#mastoServer").value = S.masto.server || "";
+  $("#mastoToken").value = S.masto.token || "";
+  setSeg("#segLang", S.lang);
+}
+function show(view) {
+  for (const v of ["radar", "favs", "settings"]) $("#v-" + v).hidden = v !== view;
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.view === view)));
+  if (view === "favs") renderFavs();
+  if (view === "settings") renderSettings();
+  window.scrollTo(0, 0);
+}
+
+/* ==================== ÉVÉNEMENTS ==================== */
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => show(t.dataset.view)));
+
+$("#kwForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const inp = $("#kwInput");
+  const added = inp.value.split(/[,;\n]/).map(s => s.trim().replace(/\s+/g, " ")).filter(Boolean);
+  let n = 0;
+  for (const t of added) {
+    if (S.keywords.some(k => norm(k.t) === norm(t))) continue;
+    S.keywords.push({ t, on: true }); n++;
+  }
+  inp.value = "";
+  if (!n && added.length) toast("Ce mot-clé existe déjà");
+  save(); renderChips();
+});
+$("#chips").addEventListener("click", e => {
+  const b = e.target.closest("button[data-a]"); if (!b) return;
+  const i = +b.dataset.i;
+  if (b.dataset.a === "del") S.keywords.splice(i, 1);
+  else S.keywords[i].on = !S.keywords[i].on;
+  save(); renderChips();
+});
+$("#segPeriod").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.period = +b.dataset.v; save(); renderControls(); });
+$("#segMode").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return; S.mode = b.dataset.v; save(); renderControls();
+  if (S.mode === "mine" && !S.bsky && !(S.masto.token && S.masto.server)) toast("Pour lire tes abonnements, connecte Bluesky ou Mastodon dans Réglages");
+});
+$("#segLang").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.lang = b.dataset.v; save(); setSeg("#segLang", S.lang); });
+$("#srcs").addEventListener("click", e => { const b = e.target.closest(".srcbtn"); if (!b) return; S.src[b.dataset.src] = !S.src[b.dataset.src]; save(); renderControls(); });
+$("#runBtn").addEventListener("click", run);
+$("#sortSel").addEventListener("change", e => { S.view.sort = e.target.value; save(); renderResults(); });
+[$("#srcFilter"), $("#kwFilter")].forEach(el => el.addEventListener("click", e => {
+  const b = e.target.closest(".fchip"); if (!b) return;
+  S.view[b.dataset.f] = b.dataset.v; save(); renderResults();
+}));
+function onCardAction(e) {
+  const b = e.target.closest("button[data-a]"); if (!b) return;
+  const key = b.dataset.k;
+  if (b.dataset.a === "fav") {
+    if (S.favs[key]) { delete S.favs[key]; toast("Retirée des favoris"); }
+    else {
+      const it = (S.results || []).find(x => x.key === key);
+      if (it) { S.favs[key] = Object.assign({}, it, { savedAt: Date.now() }); toast("Gardée dans Favoris"); }
+    }
+  } else if (b.dataset.a === "hide") { S.hidden[key] = 1; toast("Vidéo masquée"); }
+  save(); renderResults(); renderFavs();
+}
+$("#results").addEventListener("click", onCardAction);
+$("#favList").addEventListener("click", onCardAction);
+$("#unhideBtn").addEventListener("click", () => { S.hidden = {}; save(); renderResults(); });
+
+$("#ytSave").addEventListener("click", () => { S.ytKey = $("#ytKey").value.trim(); save(); renderSettings(); toast(S.ytKey ? "Clé YouTube enregistrée" : "Clé YouTube retirée"); });
+$("#bskyLogin").addEventListener("click", async () => {
+  const h = $("#bskyHandle").value, p = $("#bskyPass").value;
+  if (!h.trim() || !p.trim()) { toast("Remplis ton identifiant et le mot de passe d'application"); return; }
+  const b = $("#bskyLogin"); b.disabled = true; b.textContent = "Connexion…";
+  try { await bskyLogin(h, p); $("#bskyPass").value = ""; toast("Bluesky connecté"); }
+  catch (e) { toast(/invalid|password|identifier/i.test(e.message) ? "Identifiant ou mot de passe d'application incorrect" : "Connexion impossible : " + e.message); }
+  b.disabled = false; b.textContent = "Connecter"; renderSettings();
+});
+$("#bskyLogout").addEventListener("click", () => { S.bsky = null; save(); renderSettings(); toast("Bluesky déconnecté"); });
+$("#mastoSave").addEventListener("click", async () => {
+  S.masto.instances = $("#mastoInst").value.split(/[\n,]/).map(normHost).filter(Boolean);
+  S.masto.server = normHost($("#mastoServer").value);
+  S.masto.token = $("#mastoToken").value.trim();
+  save(); renderSettings();
+  const st = $("#mastoState");
+  if (S.masto.server && S.masto.token) {
+    st.textContent = "Vérification…";
+    try {
+      const me = await getJSON("https://" + S.masto.server + "/api/v1/accounts/verify_credentials", { headers: { Authorization: "Bearer " + S.masto.token } });
+      st.textContent = "Connecté en tant que @" + me.acct;
+    } catch (e) { st.textContent = "Jeton refusé ou serveur injoignable : " + e.message; }
+  } else st.textContent = "Enregistré.";
+});
+$("#wipeBtn").addEventListener("click", () => { $("#wipeConfirm").hidden = false; $("#wipeCancel").hidden = false; $("#wipeBtn").hidden = true; });
+$("#wipeCancel").addEventListener("click", () => { $("#wipeConfirm").hidden = true; $("#wipeCancel").hidden = true; $("#wipeBtn").hidden = false; });
+$("#wipeConfirm").addEventListener("click", () => {
+  try { localStorage.removeItem(STORE); } catch (e) {}
+  S = merge(DEFAULTS, null); save();
+  $("#wipeCancel").click(); renderAll(); toast("Tout a été effacé");
+});
+
+function renderAll() { renderChips(); renderControls(); renderStatus(S.statuses); renderResults(); renderFavs(); renderSettings(); }
+renderAll();
+</script>
+</body>
+</html>
