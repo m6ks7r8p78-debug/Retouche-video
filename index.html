@@ -96,7 +96,7 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:10px 0 0}
 .seg button small{display:block;margin-top:3px;font:500 11px/1.1 var(--fm);color:var(--mut)}
 .seg button[aria-pressed="true"]{border-color:var(--acc);background:var(--acc-soft);box-shadow:inset 0 0 0 1px var(--acc)}
 #qhint{margin:10px 0 0;font-size:13px;color:var(--mut);min-height:2.6em}
-.pre{display:flex;gap:8px;margin-bottom:6px}
+.pre{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
 .pre .btn{flex:1;font-size:14px;padding:10px 6px}
 label.s{display:block;margin:14px 0 0}
 label.s span{display:flex;justify-content:space-between;font-size:14px;color:var(--mut)}
@@ -199,7 +199,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.12</span>
+  <span class="tag">sur ton téléphone · v2.18</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -221,7 +221,7 @@ input[type=range]{accent-color:var(--g2)}
     <button class="pickbtn" id="pickp"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg><span class="lbl">Choisir une photo</span></button>
   </div>
   <p class="st" id="st0"></p>
-  <p class="privacy">Rien n’est envoyé sur internet, sauf une image si tu utilises l’analyse IA.</p>
+  <p class="privacy">Tes vidéos et photos restent sur ton téléphone. Seule une image part si tu utilises l’analyse IA, et, dans la version Claude, des mesures techniques anonymes (vitesse, réglages) pour améliorer l’app.</p>
 
   <div class="note" id="inst" hidden>
     <strong>Ajouter à l’écran d’accueil</strong>
@@ -281,7 +281,8 @@ input[type=range]{accent-color:var(--g2)}
           <video id="rv" controls playsinline></video>
           <button class="btn main" id="sv" style="margin-top:10px" hidden>Enregistrer la vidéo</button>
           <button class="btn" id="rtb" style="margin-top:8px" hidden>Refaire avec le son (en temps réel)</button>
-          <button class="btn" id="diagb" style="margin-top:8px" hidden>Copier le diagnostic (pour améliorer l’app)</button>
+          <details id="tech" hidden style="margin-top:10px"><summary class="help" style="cursor:pointer;margin:0">Détails techniques</summary><p class="help mono" id="techt" style="margin:6px 0 0;font-size:12px;word-break:break-word"></p>
+            <button class="btn" id="diagb" style="margin-top:8px" hidden>Copier le diagnostic</button></details>
         </div>
         <button class="btn" id="ai" style="margin-top:12px" hidden>Analyse intelligente (IA)</button>
         <div id="bt" class="card" hidden style="margin-top:12px"><p class="help" id="btt" style="margin:0 0 8px"></p>
@@ -903,6 +904,7 @@ cv.addEventListener("pointermove",e=>{if(split&&e.buttons)spMove(e)});
 $("#pick").onclick=()=>$("#f").click();
 let batch=null;
 $("#f").onchange=e=>{
+  if(exporting||window.__exStarting){e.target.value="";msg("Un export est en cours : attends la fin ou touche « Annuler » avant de choisir une autre vidéo.");return}
   const fl=[...e.target.files].filter(x=>x.size>0);if(!fl.length)return;
   batch=fl.length>1?{todo:fl.slice(1),done:[],running:false,total:fl.length}:null;
   loadFile(fl[0]);btUpdate();
@@ -938,7 +940,7 @@ v.onloadedmetadata=()=>{
   STAB=null;stabOn=false;{let a="0",b="0";try{a=localStorage.getItem("o_stab")||"0";b=localStorage.getItem("o_fluid")||"0"}catch(e){}$('#o_stab').checked=a==="1";$('#o_fluid').checked=b==="1"}$('#t_in').value=0;$('#t_out').value=1000;$('#t_txt').textContent='tout';
   $("#app").hidden=false;$("#st0").hidden=true;$("#pick .lbl").textContent="Autre vidéo";mode="video";setMode();clearTimeout(wd);
   size(PREVIEW);msg("");
-  chips([v.videoWidth+"×"+v.videoHeight,fmtT(v.duration),(curFile.size/1048576).toFixed(0)+" Mo"]);$("#tc").hidden=false;$("#tc").textContent="0:00 / "+fmtT(v.duration);updateEst();
+  chips([v.videoWidth+"×"+v.videoHeight,fmtT(v.duration),(curFile.size<524288?"<1":(curFile.size/1048576).toFixed(0))+" Mo"]);$("#tc").hidden=false;$("#tc").textContent="0:00 / "+fmtT(v.duration);updateEst();
   if(Math.max(v.videoWidth,v.videoHeight)>=1500){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Ta vidéo est déjà en haute définition : le Full HD est choisi (bien plus rapide, presque aussi net). Tu peux repasser en 4K ci-dessus.'}
   v.currentTime=Math.min(1,v.duration/3);
   if(!looping){looping=true;loop()}
@@ -1045,7 +1047,7 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
     const ul=$("#rec_l");ul.textContent="";r.n.forEach(t=>{const li=document.createElement("li");li.textContent=t;ul.appendChild(li)})},
   async profile(){
     if(mode!=="video"||exporting)return;
-    const my=curFile,t0=v.currentTime,TA=performance.now();let ok=true;REC.stop=false;let done;REC.pr=new Promise(r=>done=r);
+    const my=curFile,t0=v.currentTime,TA=performance.now();let ok=true;REC.stop=false;let done;const pr=new Promise(r=>done=r);REC.pr=pr;
     $("#rec").hidden=false;$("#rec_t").textContent="Analyse de ta vidéo en cours…";$("#rec_l").textContent="";
     try{
       const fps=await measureFps();
@@ -1060,7 +1062,7 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       REC.apply(r);REC.show(r);
       try{DIAG.send("analyse",{ms:Math.round(performance.now()-TA),mesures:{bruit:+m.noise.toFixed(2),nettete:Math.round(m.sharp),poussieres:Math.round(m.dust),tremble:m.shake,dominante:m.gains&&m.gains.map(x=>+x.toFixed(2)),son:m.audio},scint:fl,reco:r.n})}catch(e){}
     }catch(e){ok=false;$("#rec").hidden=true}
-    finally{if(curFile===my){try{await seekEl(v,t0)}catch(e){}draw()}REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
+    finally{if(curFile===my){try{await seekEl(v,t0)}catch(e){}draw()}if(REC.pr===pr)REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
   }
 };
 
@@ -1248,18 +1250,19 @@ function friendly(m){
   return "Échec de l’export : "+(m||"erreur inconnue")+". Réessaie en Full HD ; si ça recommence, envoie-moi ce message.";
 }
 $("#ex").onclick=async()=>{
-  if(exporting){cancel=true;return}
+  if(window.__exStarting)return;
+  if(exporting){if(Date.now()-(window.__exT||0)<1500)return;cancel=true;return}
   if(mode==="photo"){exportPhoto();return}
   if(!v.videoWidth)return;
-  if(REC.pr){REC.stop=true;try{await REC.pr}catch(e){}}
+  if(REC.pr){window.__exStarting=true;msg("Fin de l’analyse, puis l’export démarre…");REC.stop=true;REC.redo=curFile;try{await REC.pr}catch(e){}finally{window.__exStarting=false}}
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
   exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp","1")}catch(e){}
-  const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
+  window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
   $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.17)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.18)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1431,9 +1434,9 @@ $("#ex").onclick=async()=>{
       vch.length=0;ach.length=0;
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
-      $("#rv").hidden=false;baShow(!isPlan,tS);$("#ri").hidden=true;if(!isPlan)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan;$("#out").hidden=false;$("#sv").hidden=false;
-      msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(plan?"":" Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+"."));
-      try{$("#st1").textContent+=" ["+window.__timing+"]"}catch(e){}
+      $("#rv").hidden=false;baShow(!isPlan,tS);$("#ri").hidden=true;if(!isPlan)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
+      msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(!plan&&maxRun>=3?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
+      try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
       try{DIAG.send("export",{ok:true,wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
@@ -1447,6 +1450,8 @@ $("#ex").onclick=async()=>{
     window.__plan=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}
+    if(window.__retryPending)try{$("#q").dispatchEvent(new Event("change"));document.querySelectorAll("[data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q===$("#q").value?"true":"false"))}catch(e){}
+    if(REC.redo===curFile&&mode==="video"&&!(batch&&batch.running)){REC.redo=null;setTimeout(()=>REC.profile(),400)}
   }
 };
 
@@ -2029,6 +2034,7 @@ $("#bat").onclick=()=>{
 /* Photos */
 $("#pickp").onclick=()=>$("#fp").click();
 $("#fp").onchange=e=>{
+  if(exporting||window.__exStarting){e.target.value="";msg("Un export est en cours : attends la fin ou touche « Annuler » avant de choisir une photo.");return}
   const f=e.target.files[0];if(!f)return;
   const u=URL.createObjectURL(f),im=new Image();msg("Chargement de la photo…");
   im.onload=()=>{
@@ -2053,7 +2059,7 @@ async function exportPhoto(){
   outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
   $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
   $("#out").hidden=false;$("#sv").hidden=false;
-  msg("Terminé ! "+W+"×"+H+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
+  msg("Terminé ! "+W+"×"+H+"."+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
   $("#out").scrollIntoView({behavior:"smooth"});
 }
 /* Raccourci écran d’accueil */
