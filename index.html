@@ -158,7 +158,7 @@ body.loaded .steps li{border-color:inherit}
 .btn{border:0;box-shadow:0 1px 0 var(--line),0 6px 16px -10px rgba(36,21,36,.4);transition:transform .12s}
 .btn:active{transform:scale(.97)}
 .btn.main{background:var(--grad);color:#fff;box-shadow:0 12px 26px -10px var(--glow)}
-.btn.big{position:relative;overflow:hidden;font-size:20px;padding:19px 16px;border-radius:18px}
+.btn.big{position:relative;overflow:hidden;font-size:clamp(16px,5vw,20px);line-height:1.2;white-space:normal;padding:19px 14px;border-radius:18px}
 .btn.big::before{content:"✨ "}
 .btn.big::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite}
 @keyframes shine{0%,55%{left:-80px}100%{left:120%}}
@@ -199,7 +199,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.18</span>
+  <span class="tag">sur ton téléphone · v2.19</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -294,14 +294,10 @@ input[type=range]{accent-color:var(--g2)}
       <div class="panel" id="tp2" hidden>
         <div class="card rec" id="rec" hidden><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul></div>
         <div class="card" id="flt" hidden><h2>Retirer un filtre Snapchat / Instagram <span class="mono" style="font-weight:400">(essai)</span></h2>
-          <p class="help" id="flt_h">Les filtres les plus probables pour ta vidéo sont en premier. Touche la miniature qui paraît la plus naturelle (peau, murs, vêtements). « Aucun » garde la vidéo telle quelle.</p>
+          <p class="help" id="flt_h">Les filtres les plus probables pour ta vidéo sont en premier, suivis de mélanges calculés automatiquement pour les filtres que l’app ne connaît pas. Touche la miniature qui paraît la plus naturelle (peau, murs, vêtements). « Aucun » garde la vidéo telle quelle.</p>
           <div id="flt_g" class="fgrid"></div>
           <div id="flt_s" hidden><label class="help" style="display:block;margin:10px 0 4px">Force du retrait <span class="mono" id="flt_v">100 %</span></label><input type="range" id="flt_r" min="0" max="1" step=".05" value="1" aria-label="Force du retrait">
-            <details id="flt_d" style="margin-top:10px"><summary class="help" style="cursor:pointer;margin:0">Aucun ne colle parfaitement ? Mélanger avec un 2<sup>e</sup> filtre</summary>
-              <p class="help" style="margin:8px 0">Utile quand ton filtre n’est pas dans la liste : un mélange de deux filtres proches s’en rapproche souvent.</p>
-              <div id="flt_g2" class="fgrid"></div>
-              <div id="flt_ms" hidden><label class="help" style="display:block;margin:10px 0 4px">Part du 2<sup>e</sup> filtre <span class="mono" id="flt_mv">50 %</span></label><input type="range" id="flt_m" min="0" max="1" step=".05" value=".5" aria-label="Part du deuxième filtre"></div>
-            </details></div>
+</div>
           <p class="help" style="margin:10px 0 0">Ce qui marche : les filtres de couleur (teintes, lumière, délavé). Ce qui ne s’enlève pas : autocollants, textes, masques, déformations du visage. Le noir et blanc ne peut pas retrouver ses couleurs.</p></div>
         <button class="btn" id="fltb" style="margin:10px 0">Retirer un filtre Snapchat / Instagram (essai)</button>
         <details id="adv"><summary>Réglages avancés <span class="mono" style="font-weight:400">(déjà réglés automatiquement)</span></summary>
@@ -1140,43 +1136,55 @@ const FLT={sel:-1,sel2:-1,mx:.5,f:1,n:0,tex:null,data:null,
       const go=grad(lum(o));let ne=0;for(let j=0;j<np;j++)ne+=Math.max(0,go[j]-1.6*gb[j]-.02);
       C.push({k,o,sc:rt/np+.5*ne/np*1000});if(k%3===2)await new Promise(r=>setTimeout(r,0))}
     C.sort((a,b)=>a.sc-b.sc);FLT.C=C;FLT.TW=TW;FLT.TH=TH;FLT.base=base;window.__fltOrder=C.map(c=>[c.k,+c.sc.toFixed(2)]);g.textContent="";
-    const mk=(k,o,label,par)=>{const b=document.createElement("button");b.type="button";const c=document.createElement("canvas");c.width=TW;c.height=TH;const x=c.getContext("2d");
-      if(k<0)x.putImageData(base,0,0);else x.putImageData(new ImageData(o,TW,TH),0,0);
-      const s=document.createElement("span");s.textContent=label;b.append(c,s);if(k===FLT.sel)b.classList.add("on");
-      b.onclick=()=>{if(k>=0&&FLT.sel<0){FLT.wbSave=P.wb;P.wb=0;sync()}else if(k<0&&FLT.sel>=0&&FLT.wbSave!=null){P.wb=FLT.wbSave;sync()}FLT.sel=k;FLT.sel2=-1;$("#flt").querySelectorAll(".fgrid button").forEach(z=>z.classList.remove("on"));b.classList.add("on");$("#flt_s").hidden=k<0;if(k>=0)FLT.second();draw()};par.appendChild(b)};
-    mk(-1,null,"Aucun",g);C.slice(0,7).forEach((c,j)=>mk(c.k,c.o,String(j+1),g));
-    const more=document.createElement("div");more.className="fgrid";more.style.marginTop="6px";more.hidden=true;C.slice(7).forEach((c,j)=>mk(c.k,c.o,String(j+8),more));
+    /* mélanges automatiques des filtres les plus probables (pour les filtres que l'app ne connaît pas) */
+    const top=C.slice(0,6),M=[],mix=(a,b,w)=>{const o=new Uint8ClampedArray(a.length);for(let i=0;i<a.length;i++)o[i]=w*a[i]+(1-w)*b[i];return o};
+    for(let i=0;i<top.length;i++)for(let j=i+1;j<top.length;j++){
+      for(const w of [.35,.5,.65]){const o=mix(top[i].o,top[j].o,w);let rt=0;
+        for(let p=0;p<d.length;p+=4){const z1=FLT.px(top[i].k+FLT.n,o[p]/255,o[p+1]/255,o[p+2]/255),z2=FLT.px(top[j].k+FLT.n,o[p]/255,o[p+1]/255,o[p+2]/255);
+          rt+=(Math.abs(w*z1[0]+(1-w)*z2[0]-d[p])+Math.abs(w*z1[1]+(1-w)*z2[1]-d[p+1])+Math.abs(w*z1[2]+(1-w)*z2[2]-d[p+2]))/3}
+        const go=grad(lum(o));let ne=0;for(let q=0;q<np;q++)ne+=Math.max(0,go[q]-1.6*gb[q]-.02);
+        M.push({k:top[i].k,k2:top[j].k,w,o,sc:rt/np+.5*ne/np*1000})}
+      await new Promise(r=>setTimeout(r,0))}
+    M.sort((a,b)=>a.sc-b.sc);FLT.M=M.slice(0,4);
+    const mk=(c,label,par)=>{const b=document.createElement("button");b.type="button";const cvs=document.createElement("canvas");cvs.width=TW;cvs.height=TH;const x=cvs.getContext("2d");
+      if(!c)x.putImageData(base,0,0);else x.putImageData(new ImageData(c.o,TW,TH),0,0);
+      const s=document.createElement("span");s.textContent=label;b.append(cvs,s);if(!c&&FLT.sel<0)b.classList.add("on");
+      b.onclick=()=>{const k=c?c.k:-1;if(k>=0&&FLT.sel<0){FLT.wbSave=P.wb;P.wb=0;sync()}else if(k<0&&FLT.sel>=0&&FLT.wbSave!=null){P.wb=FLT.wbSave;sync()}
+        FLT.sel=k;FLT.sel2=c&&c.k2!=null?c.k2:-1;FLT.mx=c&&c.k2!=null?1-c.w:0;
+        $("#flt").querySelectorAll(".fgrid button").forEach(z=>z.classList.remove("on"));b.classList.add("on");$("#flt_s").hidden=k<0;draw()};par.appendChild(b)};
+    mk(null,"Aucun",g);C.slice(0,7).forEach((c,j)=>mk(c,String(j+1),g));FLT.M.forEach((c,j)=>mk(c,"Mélange "+(j+1),g));
+    const more=document.createElement("div");more.className="fgrid";more.style.marginTop="6px";more.hidden=true;C.slice(7).forEach((c,j)=>mk(c,String(j+8),more));
     const mb=document.createElement("button");mb.className="btn";mb.type="button";mb.style.marginTop="8px";mb.textContent="Voir les "+(C.length-7)+" autres filtres (moins probables)";
     mb.onclick=()=>{more.hidden=false;mb.remove()};g.after(mb);mb.after(more);FLT.extra=[mb,more];
   },
-  second(){
-    const g=$("#flt_g2");g.textContent="";$("#flt_ms").hidden=true;
-    const mk=(c,label)=>{const b=document.createElement("button");b.type="button";const cv2=document.createElement("canvas");cv2.width=FLT.TW;cv2.height=FLT.TH;const x=cv2.getContext("2d");
-      if(c){const a=FLT.C.find(z=>z.k===FLT.sel).o,o=new Uint8ClampedArray(a.length);for(let i=0;i<a.length;i++)o[i]=(a[i]+c.o[i])/2;x.putImageData(new ImageData(o,FLT.TW,FLT.TH),0,0)}
-      else x.putImageData(new ImageData(FLT.C.find(z=>z.k===FLT.sel).o,FLT.TW,FLT.TH),0,0);
-      const s=document.createElement("span");s.textContent=label;b.append(cv2,s);if((c?c.k:-1)===FLT.sel2)b.classList.add("on");
-      b.onclick=()=>{FLT.sel2=c?c.k:-1;g.querySelectorAll("button").forEach(z=>z.classList.remove("on"));b.classList.add("on");$("#flt_ms").hidden=!c;draw()};g.appendChild(b)};
-    mk(null,"Seul");FLT.C.filter(c=>c.k!==FLT.sel).slice(0,7).forEach((c,j)=>mk(c,"+ "+(FLT.C.indexOf(c)+1)))},
-  reset(){(FLT.extra||[]).forEach(e=>e.remove());FLT.extra=null;FLT.sel=-1;FLT.sel2=-1;FLT.mx=.5;try{$("#flt_m").value=.5;$("#flt_mv").textContent="50 %";$("#flt_d").open=false}catch(e){}FLT.f=1;$("#flt").hidden=true;$("#fltb").hidden=false;$("#flt_s").hidden=true;$("#flt_r").value=1;$("#flt_v").textContent="100 %"}
+  reset(){(FLT.extra||[]).forEach(e=>e.remove());FLT.extra=null;FLT.sel=-1;FLT.sel2=-1;FLT.mx=0;FLT.f=1;$("#flt").hidden=true;$("#fltb").hidden=false;$("#flt_s").hidden=true;$("#flt_r").value=1;$("#flt_v").textContent="100 %"}
 };
 $("#fltb").onclick=()=>FLT.open();
-$("#flt_m").oninput=e=>{FLT.mx=+e.target.value;$("#flt_mv").textContent=Math.round(FLT.mx*100)+" %";draw()};
 $("#flt_r").oninput=e=>{FLT.f=+e.target.value;$("#flt_v").textContent=Math.round(FLT.f*100)+" %";draw()};
 
 /* ===== Diagnostic : chronos et contexte technique (aucune image, aucun son) ===== */
 const DIAG={last:null,
   ctx(){const o=id=>{const e=$("#"+id);return e?e.checked:null};
-    return{ver:(document.body.innerHTML.match(/\(v2\.\d+\)/)||[""])[0],ua:navigator.userAgent,ecran:screen.width+"x"+screen.height+"@"+(window.devicePixelRatio||1),coeurs:navigator.hardwareConcurrency||0,
+    return{ver:(($(".tag")||{}).textContent||"").replace(/.*·\s*/,""),ua:navigator.userAgent,ecran:screen.width+"x"+screen.height+"@"+(window.devicePixelRatio||1),coeurs:navigator.hardwareConcurrency||0,
       mode,src:mode==="video"?v.videoWidth+"x"+v.videoHeight+" "+(Math.round((v.duration||0)*10)/10)+"s "+(Math.round(OFPS*10)/10)+"i/s "+(curFile?(curFile.size/1048576).toFixed(0)+"Mo":""):"photo",
       taille:$("#q")?$("#q").value:"",options:{rapide:o("o_fast"),stab:o("o_stab"),scint:o("o_defl"),pouss:o("o_dust"),voix:o("o_voice"),fluide:o("o_fluid")},
       filtre:FLT.sel>=0?(FLT.sel+(FLT.sel2>=0?"+"+FLT.sel2+"@"+FLT.mx:"")):"aucun",
       timing:window.__timing||"",seq:window.__seqInfo||""}},
+  hist(){try{return JSON.parse(localStorage.getItem("diag_hist")||"[]")}catch(e){return[]}},
+  save(h){try{localStorage.setItem("diag_hist",JSON.stringify(h.slice(-300)))}catch(e){try{localStorage.setItem("diag_hist",JSON.stringify(h.slice(-60)))}catch(x){}}},
+  async db(){try{if(!window.claude||!claude.use)return null;return await claude.use("db")}catch(e){return null}},
+  /* chaque analyse et chaque export est gardé sur l'appareil ; dans la version Claude il est aussi envoyé dans la base privée (et les envois en retard sont rattrapés) */
   async send(kind,extra){
-    const d={kind,t:new Date().toISOString(),...DIAG.ctx(),...(extra||{})};DIAG.last=d;$("#diagb")&&($("#diagb").hidden=false);
-    try{if(!window.claude||!claude.use)return;const db=await claude.use("db");if(!db)return;await db.collection("diag").add(d)}catch(e){}
-  }
+    const d={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),kind,t:new Date().toISOString(),...DIAG.ctx(),...(extra||{}),sent:false};DIAG.last=d;
+    const h=DIAG.hist();h.push(d);DIAG.save(h);const b=$("#diagb");if(b){b.hidden=false;b.textContent="Copier le diagnostic ("+Math.min(h.length,300)+" mesures)"}
+    await DIAG.flush()},
+  async flush(){
+    const db=await DIAG.db();if(!db)return;const h=DIAG.hist();let ch=false;
+    for(const d of h){if(d.sent)continue;try{const {sent,...x}=d;await db.collection("diag").doc(d.id).set(x);d.sent=true;ch=true}catch(e){break}}
+    if(ch)DIAG.save(h)}
 };
-$("#diagb").onclick=async()=>{const t=DIAG.last?JSON.stringify(DIAG.last,null,1):"";try{await navigator.clipboard.writeText(t);msg("Diagnostic copié : colle-le dans la conversation avec Claude.")}catch(e){msg("Copie impossible ici. Fais une capture d’écran du texte sous le bouton Améliorer.")}};
+setTimeout(()=>{try{DIAG.flush()}catch(e){}},4000);
+$("#diagb").onclick=async()=>{const t=JSON.stringify(DIAG.hist().map(({sent,...x})=>x));try{await navigator.clipboard.writeText(t);msg("Diagnostic copié ("+DIAG.hist().length+" mesures) : colle-le dans la conversation avec Claude.")}catch(e){msg("Copie impossible ici.")}};
 /* Lecture */
 $("#pp").onclick=()=>{if(v.paused)v.play();else v.pause()};
 v.onplay=()=>{$("#pp").textContent="Pause"};
@@ -1262,7 +1270,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.18)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.19)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -2122,6 +2130,9 @@ $("#sv").onclick=async()=>{
   catch(e){msg("Appuie longuement sur la vidéo ci-dessus pour l’enregistrer.")}
 };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js"></script>
+<script src="mp4-muxer.js"></script>
+<script>if(!window.Mp4Muxer)document.write('<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js"><\/script>')</script>
+<script>/* hors ligne : l'app se garde sur le téléphone (version installée depuis Safari) ; en ligne, la dernière version est toujours chargée en premier */
+try{if("serviceWorker" in navigator&&location.protocol==="https:"&&/github\.io$/.test(location.hostname))navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}</script>
 </body>
 </html>
