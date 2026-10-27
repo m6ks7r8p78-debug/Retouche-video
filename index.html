@@ -199,7 +199,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.19</span>
+  <span class="tag">sur ton téléphone · v2.20</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -263,6 +263,7 @@ input[type=range]{accent-color:var(--g2)}
           <select id="q" hidden><option value="3840">4K</option><option value="1920" selected>Full HD</option><option value="-1">Taille d’origine (avant un autre outil)</option></select>
           <p id="qhint"></p>
         </div>
+        <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul></div>
         <button class="btn main big" id="ex" style="margin-top:12px">Améliorer en 4K</button>
         <progress id="pg" value="0" max="1" hidden></progress>
         <p class="st" id="st1" role="status"></p>
@@ -292,7 +293,6 @@ input[type=range]{accent-color:var(--g2)}
       </div>
 
       <div class="panel" id="tp2" hidden>
-        <div class="card rec" id="rec" hidden><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul></div>
         <div class="card" id="flt" hidden><h2>Retirer un filtre Snapchat / Instagram <span class="mono" style="font-weight:400">(essai)</span></h2>
           <p class="help" id="flt_h">Les filtres les plus probables pour ta vidéo sont en premier, suivis de mélanges calculés automatiquement pour les filtres que l’app ne connaît pas. Touche la miniature qui paraît la plus naturelle (peau, murs, vêtements). « Aucun » garde la vidéo telle quelle.</p>
           <div id="flt_g" class="fgrid"></div>
@@ -376,7 +376,7 @@ function dims(s){return [s.videoWidth||s.naturalWidth||s.width||0,s.videoHeight|
 function setMode(){
   const ph=mode==="photo";
   $("#app").hidden=false;$("#st0").hidden=true;
-  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#tabx").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);$("#qwrap").hidden=ph;document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
+  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#tabx").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);$("#qwrap").hidden=ph;if(ph)$("#rec").hidden=true;document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
   $("#ex").textContent=ph?"Améliorer la photo":($("#q").value==="-1"?"Nettoyer (taille d’origine)":$("#q").value==="3840"?"Améliorer en 4K":"Améliorer en Full HD");
   $("#out").hidden=true;
 }
@@ -1270,7 +1270,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.19)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.20)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
