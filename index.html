@@ -199,7 +199,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.23</span>
+  <span class="tag">sur ton téléphone · v2.24</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -219,6 +219,18 @@ input[type=range]{accent-color:var(--g2)}
   <div class="picks">
     <button class="pickbtn main" id="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span class="lbl">Choisir une vidéo</span></button>
     <button class="pickbtn" id="pickp"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg><span class="lbl">Choisir une photo</span></button>
+  </div>
+  <input type="file" id="fm" accept="video/*" multiple hidden>
+  <button class="btn" id="pickm" style="margin-top:10px">🧩 Regrouper plusieurs vidéos en une</button>
+  <div class="card" id="mg" hidden>
+    <h2>Regrouper des vidéos</h2>
+    <p class="help">Les vidéos seront mises bout à bout dans cet ordre. Utilise les flèches pour changer l’ordre.</p>
+    <div id="mgl" style="display:flex;flex-direction:column;gap:6px"></div>
+    <button class="btn" id="mgadd" style="margin-top:8px">+ Ajouter d’autres vidéos</button>
+    <button class="btn main" id="mggo" style="margin-top:8px">Regrouper en une seule vidéo</button>
+    <div id="mgres" hidden style="margin-top:12px"><video id="mgv" controls playsinline style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
+      <button class="btn main" id="mgimp" style="margin-top:8px">✨ Améliorer cette vidéo</button>
+      <button class="btn" id="mgsave" style="margin-top:8px">Enregistrer la vidéo regroupée</button></div>
   </div>
   <p class="st" id="st0"></p>
   <p class="privacy">Tes vidéos et photos restent sur ton téléphone. Seule une image part si tu utilises l’analyse IA, et, dans la version Claude, des mesures techniques anonymes (vitesse, réglages) pour améliorer l’app.</p>
@@ -282,6 +294,13 @@ input[type=range]{accent-color:var(--g2)}
           <video id="rv" controls playsinline></video>
           <button class="btn main" id="sv" style="margin-top:10px" hidden>Enregistrer la vidéo</button>
           <button class="btn" id="rtb" style="margin-top:8px" hidden>Refaire avec le son (en temps réel)</button>
+          <p class="help" id="dupn" hidden style="margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--line)"></p>
+          <button class="btn" id="bab" style="margin-top:8px" hidden>🎬 Créer un avant / après à partager (10 s)</button>
+          <button class="btn" id="kbb" style="margin-top:8px" hidden>🎞️ Animer la photo en vidéo (8 s, zoom lent)</button>
+          <div id="kbres" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Photo animée</h2><video id="kbv" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
+            <button class="btn main" id="kbs" style="margin-top:8px">Partager la vidéo animée</button></div>
+          <div id="bares" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Avant / après</h2><video id="bav" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
+            <button class="btn main" id="bas2" style="margin-top:8px">Partager l’avant / après</button></div>
           <details id="tech" hidden style="margin-top:10px"><summary class="help" style="cursor:pointer;margin:0">Détails techniques</summary><p class="help mono" id="techt" style="margin:6px 0 0;font-size:12px;word-break:break-word"></p>
             <button class="btn" id="diagb" style="margin-top:8px" hidden>Copier le diagnostic</button></details>
         </div>
@@ -932,7 +951,7 @@ function loadFile(f){
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
   curFile=f;az=false;try{FLT.reset()}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
-  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;
+  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","bab","bares","kbb","kbres"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
   });
 }
@@ -1213,6 +1232,152 @@ function uniqName(src,ext){
   const d=new Date(),z=x=>String(x).padStart(2,"0");
   const base=((src||"").replace(/\.[^.]+$/,"").replace(/[^A-Za-z0-9À-ÿ_-]+/g,"_").slice(0,30))||"video";
   return base+"-retouche-"+String(n).padStart(4,"0")+"-"+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+"-"+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+"."+ext}
+
+/* ===== Avant / après animé, prêt à partager ===== */
+const BA={cv:null,blob:null,url:null,
+  /* 0–15 % : l'original ; 15–60 % : le rideau dévoile la version améliorée ; ensuite : le résultat */
+  split(i,n){const t=i/Math.max(1,n-1);if(t<.15)return .999;if(t>.6)return 0;const u=(t-.15)/.45,e=u*u*(3-2*u);return Math.max(.0001,.999*(1-e))},
+  src(i,n){
+    if(!window.__baMode)return cv;
+    if(!BA.cv)BA.cv=document.createElement("canvas");const c=BA.cv;if(c.width!==cv.width||c.height!==cv.height){c.width=cv.width;c.height=cv.height}
+    const x=c.getContext("2d");x.drawImage(cv,0,0);const sp=BA.split(i,n),W=c.width,H=c.height,fs=Math.round(Math.min(W,H)*.055);
+    x.font="700 "+fs+"px -apple-system,system-ui,sans-serif";x.textBaseline="bottom";x.shadowColor="rgba(0,0,0,.7)";x.shadowBlur=fs*.3;x.fillStyle="#fff";
+    const y=H-fs*1.2;
+    if(sp>.02){x.textAlign="left";x.globalAlpha=Math.min(1,sp*4);x.fillText("AVANT",fs*.6,y)}
+    if(sp<.98){x.textAlign="right";x.globalAlpha=Math.min(1,(1-sp)*4);x.fillText("APRÈS",W-fs*.6,y)}
+    x.globalAlpha=.8;x.textAlign="right";x.font="600 "+Math.round(fs*.5)+"px -apple-system,system-ui,sans-serif";x.fillText("Retouche vidéo",W-fs*.6,fs*1.2);x.globalAlpha=1;x.shadowBlur=0;
+    return c},
+  async make(){
+    if(exporting||mode!=="video"||!v.duration)return;
+    const keep={a:$("#t_in").value,b:$("#t_out").value,q:$("#q").value,blob:outBlob,url:outUrl,off:window.__baLastOff||0},d=v.duration,len=Math.min(10,d),st=Math.max(0,(d-len)/2);
+    $("#t_in").value=Math.round(st/d*1000);$("#t_out").value=Math.round((st+len)/d*1000);if(+keep.q>1920||keep.q==="-1")$("#q").value="1920";
+    window.__baMode=true;outUrl=null;
+    try{await $("#ex").onclick()}finally{window.__baMode=false;split=0}
+    const nb=outBlob,okb=nb&&nb!==keep.blob;
+    if(okb){if(BA.url)URL.revokeObjectURL(BA.url);BA.blob=nb;BA.url=outUrl}
+    outBlob=keep.blob;outUrl=keep.url;$("#rv").src=outUrl||"";if(outUrl)baShow(true,keep.off,url,outUrl);$("#bab").hidden=!outUrl;$("#t_in").value=keep.a;$("#t_out").value=keep.b;$("#q").value=keep.q;
+    try{$("#t_out").oninput&&$("#t_out").oninput()}catch(e){}
+    if(okb){$("#bav").src=BA.url;$("#bares").hidden=false;$("#out").hidden=false;msg("Avant / après prêt : touche « Partager » pour l’envoyer ou l’enregistrer.");$("#bares").scrollIntoView({behavior:"smooth"})}
+  },
+  async share(){
+    if(!BA.blob)return;const name=uniqName((curFile&&curFile.name||"video").replace(/\.[^.]+$/,"")+"-avant-apres","mp4");
+    await shareBlob(BA.blob,name);
+  }
+};
+$("#bab").onclick=()=>BA.make();$("#bas2").onclick=()=>BA.share();
+
+/* ===== Photo ancienne → petite vidéo animée (zoom lent, léger déplacement, fondus) ===== */
+async function shareBlob(blob,name){
+  if(dl){try{await dl.save({filename:name,data:blob});msg("Enregistré.")}catch(e){}return}
+  try{const f=new File([blob],name,{type:blob.type});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e&&e.name==="AbortError")return}
+  try{const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),6e4)}catch(e){msg("Appuie longuement sur la vidéo pour l’enregistrer.")}
+}
+const KB={blob:null,url:null,busy:false,
+  async make(){
+    if(KB.busy||!photoEl)return;
+    if(!window.VideoEncoder||!window.Mp4Muxer){msg("La création de vidéo n’est pas disponible sur cet appareil (mets iOS à jour).");return}
+    KB.busy=true;const b=$("#kbb");b.disabled=true;
+    try{
+      msg("Préparation de la photo…");await wait(30);
+      const [w,h]=dims(photoEl),m=Math.max(w,h),s0=Math.min(2600/m,Math.max(1,2600/m));
+      cv.width=Math.round(w*s0);cv.height=Math.round(h*s0);show=1;draw(photoEl);
+      const src=document.createElement("canvas");src.width=cv.width;src.height=cv.height;src.getContext("2d").drawImage(cv,0,0);size(PREVIEW);
+      const L=1920,sc=Math.min(L/Math.max(w,h),1080/Math.min(w,h)),W=Math.round(w*sc/2)*2,H=Math.round(h*sc/2)*2;
+      const out=document.createElement("canvas");out.width=W;out.height=H;const x=out.getContext("2d");x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
+      const FPSk=30,N=FPSk*8;
+      const cfg={codec:W*H>2073600*1.2?"avc1.640033":"avc1.640028",width:W,height:H,bitrate:Math.round(W*H*FPSk*.08),framerate:FPSk,avc:{format:"avc"},latencyMode:"quality"};
+      if(!(await VideoEncoder.isConfigSupported(cfg)).supported)throw new Error("format non pris en charge");
+      const parts=[],starts=[];let end=0;
+      const put=(data,pos)=>{if(pos>=end){parts.push(data);starts.push(pos);end=pos+data.byteLength;return}
+        let lo=0,hi=starts.length-1;while(lo<hi){const mm=(lo+hi+1)>>1;if(starts[mm]<=pos)lo=mm;else hi=mm-1}
+        let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
+        if(pos+data.byteLength>end){parts.push(data.subarray(end-pos).slice());starts.push(end);end=pos+data.byteLength}};
+      const mx=new Mp4Muxer.Muxer({target:new Mp4Muxer.StreamTarget({onData:(d,p)=>put(d,p)}),fastStart:false,video:{codec:"avc",width:W,height:H}});
+      let err=null;const enc=new VideoEncoder({output:(c,md)=>mx.addVideoChunk(c,md),error:e=>{err=e}});enc.configure(cfg);
+      const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+      $("#pg").hidden=false;
+      for(let i=0;i<N;i++){
+        if(err)throw err;
+        const t=ease(i/(N-1)),z=1+.14*t,cw=src.width/z,ch=src.height/z;
+        const cx=src.width*(.5+.03*(1-2*t)),cy=src.height*(.47+.02*(1-2*t));
+        x.globalAlpha=1;x.fillStyle="#000";x.fillRect(0,0,W,H);
+        const fade=Math.min(1,i/(FPSk*.6),(N-1-i)/(FPSk*.6));x.globalAlpha=Math.max(0,fade);
+        x.drawImage(src,Math.max(0,Math.min(src.width-cw,cx-cw/2)),Math.max(0,Math.min(src.height-ch,cy-ch/2)),cw,ch,0,0,W,H);
+        const f=new VideoFrame(out,{timestamp:Math.round(i*1e6/FPSk),duration:Math.round(1e6/FPSk)});enc.encode(f,{keyFrame:i%60===0});f.close();
+        while(enc.encodeQueueSize>6)await wait(5);
+        if(i%10===0){$("#pg").value=i/N;msg("Création de la vidéo… "+Math.round(i/N*100)+" %");await wait(0)}
+      }
+      await enc.flush();enc.close();mx.finalize();
+      const blob=new Blob(parts,{type:"video/mp4"});parts.length=0;
+      if(KB.url)URL.revokeObjectURL(KB.url);KB.blob=blob;KB.url=URL.createObjectURL(blob);
+      $("#kbv").src=KB.url;$("#kbres").hidden=false;msg("Vidéo animée prête : touche « Partager » pour l’enregistrer ou l’envoyer.");$("#kbres").scrollIntoView({behavior:"smooth"});
+      try{DIAG.send("photo_video",{ok:true,out:W+"x"+H,mo:+(blob.size/1048576).toFixed(1)})}catch(e){}
+    }catch(e){msg("La vidéo animée n’a pas pu être créée ("+((e&&e.message)||"erreur")+").");try{DIAG.send("photo_video",{ok:false,err:String(e&&e.message)})}catch(x){}}
+    finally{KB.busy=false;b.disabled=false;$("#pg").hidden=true;size(PREVIEW);draw()}
+  }
+};
+$("#kbb").onclick=()=>KB.make();$("#kbs").onclick=()=>{if(KB.blob)shareBlob(KB.blob,uniqName((window.__photoName||"photo").replace(/\.[^.]+$/,"")+"-anime","mp4"))};
+
+/* ===== Regrouper plusieurs vidéos en une (bout à bout, sans perte de qualité quand elles ont le même format) ===== */
+const MG={files:[],blob:null,url:null,busy:false,
+  render(){
+    const L=$("#mgl");L.textContent="";
+    MG.files.forEach((f,i)=>{const r=document.createElement("div");r.style.cssText="display:flex;gap:6px;align-items:center";
+      const t=document.createElement("span");t.style.cssText="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px";t.textContent=(i+1)+". "+f.name+" ("+(f.size/1048576).toFixed(1)+" Mo)";
+      const mk=(lab,fn,dis)=>{const b=document.createElement("button");b.className="btn";b.style.cssText="width:auto;padding:8px 12px";b.textContent=lab;b.disabled=dis;b.onclick=fn;return b};
+      r.append(t,mk("↑",()=>{[MG.files[i-1],MG.files[i]]=[MG.files[i],MG.files[i-1]];MG.render()},i===0),mk("↓",()=>{[MG.files[i+1],MG.files[i]]=[MG.files[i],MG.files[i+1]];MG.render()},i===MG.files.length-1),mk("✕",()=>{MG.files.splice(i,1);MG.render()},false));
+      L.appendChild(r)});
+    $("#mggo").disabled=MG.files.length<2;$("#mg").hidden=!MG.files.length},
+  add(fl){const nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true});MG.files.push(...[...fl].filter(f=>f.size>0).sort(nat));MG.render();$("#mgres").hidden=true;$("#mg").scrollIntoView({behavior:"smooth"})},
+  async go(){
+    if(MG.busy||MG.files.length<2)return;MG.busy=true;$("#mggo").disabled=true;
+    try{
+      const info=[];
+      for(const f of MG.files){msg("Lecture de "+f.name+"…");const vi=await demuxVideo(f);if(!vi)throw new Error("« "+f.name+" » n’est pas une vidéo MP4/MOV lisible ici");let au=null;try{au=await demuxAudio(f)}catch(e){}info.push({f,vi,au})}
+      const v0=info[0].vi,same=(a,b)=>a&&b&&a.length===b.length&&a.every((x,i)=>x===b[i]);
+      const bad=info.find(x=>x.vi.codec!==v0.codec||x.vi.W!==v0.W||x.vi.H!==v0.H||!(v0.desc?same(x.vi.desc,v0.desc):!x.vi.desc)||x.vi.mat.slice(0,4).join()!==v0.mat.slice(0,4).join());
+      if(bad)throw new Error("« "+bad.f.name+" » n’a pas le même format que « "+info[0].f.name+" » (taille ou réglages de la caméra différents). Regroupe des morceaux venant de la même vidéo d’origine");
+      const a0=info.find(x=>x.au)?.au,withA=!!a0&&info.every(x=>!x.au||(x.au.sr===a0.sr&&x.au.ch===a0.ch));
+      const vc=v0.codec.startsWith("avc")?"avc":v0.codec.startsWith("hv")||v0.codec.startsWith("he")?"hevc":"vp9";
+      const rot=((Math.round(Math.atan2(v0.mat[1],v0.mat[0])*180/Math.PI)%360)+360)%360;
+      const parts=[],starts=[];let end=0;
+      const put=(data,pos)=>{if(pos>=end){parts.push(data);starts.push(pos);end=pos+data.byteLength;return}
+        let lo=0,hi=starts.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(starts[m]<=pos)lo=m;else hi=m-1}
+        let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
+        if(pos+data.byteLength>end){parts.push(data.subarray(end-pos).slice());starts.push(end);end=pos+data.byteLength}};
+      const mx=new Mp4Muxer.Muxer({target:new Mp4Muxer.StreamTarget({onData:(d,p)=>put(d,p)}),fastStart:false,firstTimestampBehavior:"offset",
+        video:{codec:vc,width:v0.W,height:v0.H,rotation:[0,90,180,270].includes(rot)?rot:0},...(withA?{audio:{codec:"aac",numberOfChannels:a0.ch,sampleRate:a0.sr}}:{})});
+      let T=0,firstV=true,firstA=true;
+      for(let k=0;k<info.length;k++){
+        const {f,vi,au}=info[k];msg("Assemblage "+(k+1)+" / "+info.length+" : "+f.name+"…");$("#pg0")&&($("#pg0").value=k/info.length);
+        const buf=new Uint8Array(await f.arrayBuffer()),us=x=>Math.round(x*1e6/vi.ts);
+        const t0=Math.min(...vi.cts.slice(0,Math.min(vi.ns,8)));
+        let vEnd=0;const vs=[];
+        for(let i=0;i<vi.ns;i++){const d=i+1<vi.ns?vi.dts[i+1]-vi.dts[i]:(vi.ns>1?vi.dts[i]-vi.dts[i-1]:vi.ts/30);
+          const pts=us(vi.cts[i]-t0),dts=us(vi.dts[i]-t0);vs.push({i,pts,off:pts-dts,dur:us(d)});vEnd=Math.max(vEnd,pts+us(d))}
+        const as=withA&&au?au.samples.filter(s=>s.ts>=0):[];let aEnd=0;for(const s of as)aEnd=Math.max(aEnd,s.ts+s.dur);
+        let ai=0;
+        for(const s of vs){
+          while(ai<as.length&&as[ai].ts<=s.pts-s.off){const a=as[ai++];mx.addAudioChunkRaw(a.data,"key",T+a.ts,a.dur,firstA?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:au.ch,sampleRate:au.sr,description:au.asc}}:undefined);firstA=false}
+          mx.addVideoChunkRaw(buf.subarray(vi.so[s.i],vi.so[s.i]+vi.sz[s.i]),vi.key[s.i]?"key":"delta",T+s.pts,s.dur,firstV?{decoderConfig:{codec:vi.codec,codedWidth:vi.W,codedHeight:vi.H,...(vi.desc?{description:vi.desc}:{})}}:undefined,s.off);firstV=false}
+        while(ai<as.length){const a=as[ai++];if(a.ts<vEnd+2e5){mx.addAudioChunkRaw(a.data,"key",T+a.ts,a.dur,firstA?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:au.ch,sampleRate:au.sr,description:au.asc}}:undefined);firstA=false}}
+        T+=Math.max(vEnd,Math.min(aEnd,vEnd+2e5));await wait(0)}
+      mx.finalize();
+      const blob=new Blob(parts,{type:"video/mp4"});parts.length=0;
+      if(MG.url)URL.revokeObjectURL(MG.url);MG.blob=blob;MG.url=URL.createObjectURL(blob);
+      $("#mgv").src=MG.url;$("#mgres").hidden=false;
+      msg("Vidéos regroupées sans perte de qualité ("+(blob.size/1048576).toFixed(1)+" Mo, "+fmtT(T/1e6)+")"+(withA?".":(a0?" — le son n’a pas pu être gardé (formats de son différents).":".")));
+      try{DIAG.send("regroupement",{ok:true,n:info.length,mo:+(blob.size/1048576).toFixed(1),son:withA,codec:v0.codec})}catch(e){}
+      $("#mgres").scrollIntoView({behavior:"smooth"});
+    }catch(e){msg("Regroupement impossible : "+((e&&e.message)||"erreur")+".");try{DIAG.send("regroupement",{ok:false,err:String(e&&e.message)})}catch(x){}}
+    finally{MG.busy=false;$("#mggo").disabled=MG.files.length<2}
+  }
+};
+$("#pickm").onclick=()=>$("#fm").click();$("#mgadd").onclick=()=>$("#fm").click();
+$("#fm").onchange=e=>{if(exporting){e.target.value="";return}MG.add(e.target.files);e.target.value=""};
+$("#mggo").onclick=()=>MG.go();
+$("#mgsave").onclick=()=>{if(MG.blob)shareBlob(MG.blob,uniqName((MG.files[0]&&MG.files[0].name||"video").replace(/\.[^.]+$/,"")+"-regroupee","mp4"))};
+$("#mgimp").onclick=()=>{if(!MG.blob)return;const f=new File([MG.blob],(MG.files[0].name||"video").replace(/\.[^.]+$/,"")+"-regroupee.mp4",{type:"video/mp4"});batch=null;loadFile(f);window.scrollTo({top:0,behavior:"smooth"})};
 /* Lecture */
 $("#pp").onclick=()=>{if(v.paused)v.play();else v.pause()};
 v.onplay=()=>{$("#pp").textContent="Pause"};
@@ -1295,11 +1460,11 @@ $("#ex").onclick=async()=>{
   exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
   try{DIAG.send("export_debut",{})}catch(e){}
   window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
-  $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;
+  $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;$("#dupn").hidden=true;
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.23)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.24)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1417,10 +1582,11 @@ $("#ex").onclick=async()=>{
       }
       const t1=performance.now();tW+=t1-t0;
       stabT=(isPlan?(pl.a+.5)/FPS:(pl.a+.5+(pl.b!=null?pl.w:0))/OFPS);
+      if(window.__baMode)split=BA.split(i,total);
       let f=null,p1=performance.now();
       try{
         const p0=performance.now();draw(src);p1=performance.now();tDr+=p1-p0;
-        if(rdr)f=new VideoFrame(cv,{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
+        if(rdr)f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       }catch(e){
         if(!rdr)throw e;
         window.__seqInfo="seq abandon image "+((e&&e.message)||e);rdr.close();rdr=null;
@@ -1433,7 +1599,7 @@ $("#ex").onclick=async()=>{
         if(prevT){let sm=true;for(let z=0;z<td.length;z++){if(td[z]!==prevT[z]){sm=false;break}}if(sm){dup++;run++;if(run>maxRun)maxRun=run}else run=0}
         prevT=td}
       tDu+=performance.now()-d0;
-      if(!f)f=new VideoFrame(cv,{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
+      if(!f)f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       const e0=performance.now();enc.encode(f,{keyFrame:i%60===0});f.close();tEn+=performance.now()-e0;if(!rdr&&qa>=0){go(qa+POOL);if(qb>=0)go(qb+POOL)}
       const t2=performance.now();tD+=t2-t1;
       while(enc.encodeQueueSize>6)await wait(8);
@@ -1479,7 +1645,7 @@ $("#ex").onclick=async()=>{
       vch.length=0;ach.length=0;
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
-      $("#rv").hidden=false;baShow(!isPlan,tS);$("#ri").hidden=true;if(!isPlan)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
+      $("#rv").hidden=false;baShow(!isPlan,tS);if(!window.__baMode){$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
       msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(!plan&&maxRun>=3?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
       try{DIAG.send("export",{ok:true,wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,msg:$("#st1").textContent.slice(0,400)})}catch(e){}
@@ -1954,7 +2120,7 @@ async function demuxVideo(file){
     const [a,b,,c,d,,tx,ty]=mt;
     const xs=[0,W,0,W].map((x,i)=>a*x+c*(i<2?0:H)),ys=[0,W,0,W].map((x,i)=>b*x+d*(i<2?0:H));
     const minx=Math.min(...xs),miny=Math.min(...ys),dw=Math.round(Math.max(...xs)-minx),dh=Math.round(Math.max(...ys)-miny);
-    return {codec,desc,W,H,ts,ns,so,sz,cts,key,mat:[a,b,c,d,-minx,-miny],dw,dh};
+    return {codec,desc,W,H,ts,ns,so,sz,cts,dts,key,mat:[a,b,c,d,-minx,-miny],dw,dh};
   }
   return null;
 }
@@ -2103,7 +2269,7 @@ async function exportPhoto(){
   if(!blob){msg("Impossible de créer la photo.");return}
   outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
   $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
-  $("#out").hidden=false;$("#sv").hidden=false;
+  $("#out").hidden=false;$("#sv").hidden=false;$("#kbb").hidden=false;$("#kbres").hidden=true;$("#bab").hidden=true;$("#bares").hidden=true;
   msg("Terminé ! "+W+"×"+H+"."+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
   $("#out").scrollIntoView({behavior:"smooth"});
 }
@@ -2152,6 +2318,8 @@ $("#svall").onclick=async()=>{
 };
 $("#sv").onclick=async()=>{
   if(!outBlob)return;
+  try{const isI=outBlob.type.startsWith("image"),on=isI?(window.__photoName||""):(curFile&&curFile.name||"");
+    if(on){const n=$("#dupn");n.textContent="Pour éviter les doublons : une fois la nouvelle version enregistrée, supprime l’original « "+on+" » dans Photos (ouvre-le, puis la corbeille). Pour ta sécurité, l’iPhone interdit aux apps web de supprimer tes photos et vidéos elles-mêmes.";n.hidden=false}}catch(e){}
   const isImg=outBlob.type.startsWith("image"),name=isImg?uniqName(window.__photoName||"photo","jpg"):uniqName(curFile&&curFile.name,outBlob.type.includes("webm")?"webm":"mp4");
   if(dl){
     try{await dl.save({filename:name,data:outBlob});msg(isImg?"Photo enregistrée.":"Vidéo enregistrée.")}
