@@ -11,14 +11,14 @@
 <title>Retouche vidéo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&display=swap">
 <style>
 /* Layout : bande d'en-tête façon pellicule, puis une colonne (écran) ou deux colonnes (aperçu fixe + commandes). */
-:root{--bg:#eef1f0;--panel:#fbfcfb;--ink:#14211f;--mut:#566764;--line:#d1dad7;--acc:#0b7a80;--accink:#ffffff;--acc-soft:#dcefef;--tc:#a4620f;--stage:#0a0f10;--ok:#2c7a4b;
+:root{--bg:#e6eaec;--panel:#f5f7f7;--ink:#1b2230;--mut:#5b6573;--line:#c9d1d6;--acc:#b02d61;--accink:#ffffff;--acc-soft:#f3e3ea;--cy:#0b7d8a;--am:#c98a1f;--tc:#0b7d8a;--stage:#0e1116;--ok:#0b7d8a;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
---fd:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;--fb:"Instrument Sans","Avenir Next","Segoe UI",system-ui,sans-serif;--fm:"DM Mono",ui-monospace,"SF Mono",Menlo,monospace}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1112;--panel:#121b1c;--ink:#e3eeec;--mut:#8ea29e;--line:#233134;--acc:#52c7cc;--accink:#04282b;--acc-soft:#14292b;--tc:#e0a64a;--stage:#050808;--ok:#6cc58c;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0b1112;--panel:#121b1c;--ink:#e3eeec;--mut:#8ea29e;--line:#233134;--acc:#52c7cc;--accink:#04282b;--acc-soft:#14292b;--tc:#e0a64a;--stage:#050808;--ok:#6cc58c;color-scheme:dark}
+--fd:"Archivo","Avenir Next Condensed","Helvetica Neue",system-ui,sans-serif;--fb:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;--fm:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111418;--panel:#191e24;--ink:#e6eaee;--mut:#97a1ac;--line:#2a3139;--acc:#e0608c;--accink:#1d0710;--acc-soft:#33202a;--cy:#42b8c4;--am:#e7ae4c;--tc:#42b8c4;--stage:#07090b;--ok:#42b8c4;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111418;--panel:#191e24;--ink:#e6eaee;--mut:#97a1ac;--line:#2a3139;--acc:#e0608c;--accink:#1d0710;--acc-soft:#33202a;--cy:#42b8c4;--am:#e7ae4c;--tc:#42b8c4;--stage:#07090b;--ok:#42b8c4;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--fb);-webkit-text-size-adjust:100%}
@@ -127,61 +127,71 @@ progress::-moz-progress-bar{background:var(--acc)}
   #cv{max-height:62vh}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
-/* === Plus de peps === */
-:root{--g1:#ff7a59;--g2:#ff3d8b;--g3:#7b5cff;--g4:#17c3b2;--grad:linear-gradient(120deg,var(--g1),var(--g2) 45%,var(--g3));--grad2:linear-gradient(120deg,var(--g4),#2b8cff);--glow:rgba(255,61,139,.35)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--glow:rgba(255,61,139,.45);--bg:#0d0a17;--panel:#171329;--line:#2b2447;--acc-soft:#241c44;--mut:#a79fc4;--ink:#f4f0ff;--stage:#07050f}}
-:root[data-theme="dark"]{--glow:rgba(255,61,139,.45);--bg:#0d0a17;--panel:#171329;--line:#2b2447;--acc-soft:#241c44;--mut:#a79fc4;--ink:#f4f0ff;--stage:#07050f}
-:root{--bg:#fff7f2;--panel:#ffffff;--line:#f0dcd2;--mut:#7a6670;--ink:#241524;--acc:#7b5cff;--accink:#fff;--acc-soft:#efe9ff;--tc:#e8590c}
-body{background:radial-gradient(520px 320px at 90% -40px,rgba(255,61,139,.22),transparent 70%),radial-gradient(480px 360px at -10% 220px,rgba(23,195,178,.2),transparent 70%),radial-gradient(500px 400px at 100% 640px,rgba(123,92,255,.16),transparent 70%),var(--bg);background-attachment:fixed}
-body::before{background:transparent}
-.brand span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.brand svg rect:first-child{fill:url(#lg)}
-.sprock{background:repeating-linear-gradient(90deg,transparent 0 6px,rgba(255,61,139,.45) 6px 16px,transparent 16px 22px);border-color:transparent;animation:roll 3s linear infinite}
-@keyframes roll{to{background-position:22px 0}}
-.eyebrow{display:inline-block;padding:6px 11px;border-radius:999px;background:var(--grad);color:#fff;letter-spacing:.07em}
-h1{font-size:clamp(34px,9.5vw,50px)}
-h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.steps li{border-top:0;border-radius:14px;background:var(--panel);padding:10px;box-shadow:0 1px 0 var(--line),0 8px 20px -12px rgba(123,92,255,.35)}
-.steps li:nth-child(1){border-left:4px solid var(--g1)}.steps li:nth-child(2){border-left:4px solid var(--g2)}.steps li:nth-child(3){border-left:4px solid var(--g3)}
-.steps .em{display:block;font-size:22px;margin-bottom:4px}
-body.loaded .steps li{border-color:inherit}
-.pickbtn{border:0;box-shadow:0 10px 24px -14px rgba(123,92,255,.55);transition:transform .15s}
-.pickbtn:active{transform:scale(.97)}
-.pickbtn.main{background:var(--grad);color:#fff;box-shadow:0 14px 30px -12px var(--glow)}
-#pickp{background:var(--grad2);color:#fff;box-shadow:0 14px 30px -12px rgba(43,140,255,.5)}
-.pickbtn svg{width:34px;height:34px}
-.note{border-style:solid;border-color:transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,var(--grad) border-box;border:2px solid transparent}
-.stage{border:0;box-shadow:0 0 0 2px transparent,0 22px 44px -18px var(--glow);background:var(--stage);outline:3px solid transparent;background-clip:padding-box}
-.stage::after{content:"";position:absolute;inset:0;border-radius:16px;padding:2px;background:var(--grad);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
-.bdg{background:var(--grad);color:#fff;box-shadow:0 4px 14px var(--glow)}
-.bdg.orig{background:#fff;color:#241524}
-.btn{border:0;box-shadow:0 1px 0 var(--line),0 6px 16px -10px rgba(36,21,36,.4);transition:transform .12s}
-.btn:active{transform:scale(.97)}
-.btn.main{background:var(--grad);color:#fff;box-shadow:0 12px 26px -10px var(--glow)}
-.btn.big{position:relative;overflow:hidden;font-size:clamp(16px,5vw,20px);line-height:1.2;white-space:normal;padding:19px 14px;border-radius:18px}
-.btn.big::before{content:"✨ "}
-.btn.big::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite}
-@keyframes shine{0%,55%{left:-80px}100%{left:120%}}
-#cmp{background:var(--grad2);color:#fff}
-#cmp:active{background:var(--grad);border-color:transparent}
-#pp{background:var(--panel)}
-.meta span{background:var(--panel);border:0;box-shadow:0 1px 0 var(--line);color:var(--ink)}
-.tabs{background:var(--panel);border:0;box-shadow:0 10px 24px -16px rgba(123,92,255,.5)}
-.tab[aria-selected="true"]{background:var(--grad);color:#fff;box-shadow:0 8px 16px -8px var(--glow)}
-.seg button{border:2px solid transparent;box-shadow:0 1px 0 var(--line)}
-.seg button[aria-pressed="true"]{border-color:transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,var(--grad) border-box;border:2px solid transparent;box-shadow:0 10px 20px -12px var(--glow)}
-.seg button:nth-child(1)::before{content:"🚀";display:block;font-size:20px;margin-bottom:2px}
-.seg button:nth-child(2)::before{content:"⚡";display:block;font-size:20px;margin-bottom:2px}
-.seg button:nth-child(3)::before{content:"🧼";display:block;font-size:20px;margin-bottom:2px}
-.card{border:0;box-shadow:0 12px 28px -16px rgba(123,92,255,.45)}
-progress{height:12px}
-progress::-webkit-progress-value{background:var(--grad);border-radius:99px;box-shadow:0 0 12px var(--glow)}
-progress::-moz-progress-bar{background:var(--grad)}
-input[type=range]{accent-color:var(--g2)}
-.panel h2::before{content:"🎬 "}
-.hero,.picks,.work{animation:pop .5s ease both}
-@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.sprock,.btn.big::after,.hero,.picks,.work{animation:none!important}}
+/* === Identité : table lumineuse et couches de pellicule (cyan, magenta, jaune) === */
+body{font-size:16px;line-height:1.5}
+.mono{font-family:var(--fb);font-variant-numeric:tabular-nums}
+.top{padding-block:14px 10px}
+.brand{font:780 19px/1 var(--fd);font-stretch:112%;letter-spacing:0}
+.top .tag{font:500 12px/1 var(--fb);letter-spacing:0;text-transform:none;color:var(--mut)}
+/* signature : les trois couches de la pellicule */
+.sprock{height:6px;border:0;opacity:1;background:linear-gradient(90deg,var(--cy) 0 33.3%,var(--acc) 33.3% 66.6%,var(--am) 66.6%)}
+.hero{padding-block:30px 8px}
+.eyebrow{display:none}
+h1{font:800 clamp(34px,10vw,58px)/.98 var(--fd);font-stretch:118%;letter-spacing:-.01em;margin:0 0 14px;max-width:13ch}
+.lead{font-size:17px;max-width:40ch;margin-bottom:22px}
+.steps{display:none}
+.picks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pickbtn{display:flex;flex-direction:row;align-items:center;gap:12px;min-height:64px;padding:14px 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel);font:700 16px/1.15 var(--fd);font-stretch:100%;text-align:left;transition:transform .12s,border-color .15s}
+.pickbtn:active{transform:scale(.98)}
+.pickbtn svg{width:28px;height:28px;stroke-width:1.8;flex:none}
+.pickbtn.main{grid-column:1/-1;min-height:96px;padding:18px 20px;font-size:21px;font-stretch:112%;background:var(--acc);border-color:var(--acc);color:var(--accink)}
+.pickbtn.main svg{width:36px;height:36px}
+#pickp svg{color:var(--cy)}#pickm svg{color:var(--am)}
+.pickbtn .sub{display:block;font:500 13px/1.25 var(--fb);opacity:.8;margin-top:3px}
+/* une fois la vidéo choisie : l'aperçu passe en premier, les choix deviennent une barre compacte */
+body.loaded .hero{display:none}
+body.loaded .picks{grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+body.loaded .pickbtn,body.loaded .pickbtn.main{grid-column:auto;min-height:0;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;font:650 13px/1.15 var(--fb);text-align:center}
+body.loaded .pickbtn svg,body.loaded .pickbtn.main svg{width:22px;height:22px}
+body.loaded .pickbtn .sub{display:none}
+.privacy{font-size:14px}
+.stage{border-radius:14px;border:0;box-shadow:0 0 0 1px var(--line)}
+.bdg{background:var(--cy);color:#fff;font:600 12px/1 var(--fb);letter-spacing:0;text-transform:none}
+.bdg.orig{background:var(--am);color:#241703}
+.tcb{color:#f2d79c}
+.btn{border-radius:12px;border:1.5px solid var(--line);background:var(--panel);font-weight:650;transition:transform .12s}
+.btn:active{transform:scale(.98)}
+.btn.main{background:var(--acc);border-color:var(--acc);color:var(--accink)}
+.btn.big{font:780 20px/1.15 var(--fd);font-stretch:108%;padding:18px 14px;border-radius:14px;white-space:normal}
+#cmp:active{background:var(--am);border-color:var(--am);color:#241703}
+.meta span{font:500 13px/1.1 var(--fb);font-variant-numeric:tabular-nums;border-color:var(--line);background:transparent}
+.tabs{gap:0;padding:0;border:0;border-radius:0;background:transparent;border-bottom:1.5px solid var(--line)}
+.tab{border-radius:0;padding:12px 4px;font:700 15px/1.1 var(--fd);color:var(--mut);border-bottom:3px solid transparent;margin-bottom:-1.5px}
+.tab[aria-selected="true"]{background:transparent;color:var(--ink);border-bottom-color:var(--acc)}
+.panel h2{font:780 19px/1.2 var(--fd);font-stretch:106%}
+.seg button{border:1.5px solid var(--line);border-radius:12px;font:700 16px/1.15 var(--fd)}
+.seg button small{font:500 12px/1.2 var(--fb);margin-top:4px}
+.seg button[aria-pressed="true"]{border-color:var(--acc);background:var(--acc-soft);box-shadow:none}
+.card{border:1.5px solid var(--line);border-radius:14px;box-shadow:none}
+.card h2{font:780 18px/1.2 var(--fd);font-stretch:106%}
+/* fiche d'analyse : bande cyan, comme une étiquette de bobine */
+.card.rec{border-left:5px solid var(--cy)}
+.rec ul li.learn{color:var(--mut);font-size:13px;margin-top:6px}
+progress{height:8px}
+input[type=range]{accent-color:var(--acc)}
+.chk{display:flex;gap:12px;align-items:flex-start;padding:12px 0;margin:0;border-bottom:1px solid var(--line)}
+.chk input{accent-color:var(--acc)}
+/* comptes rendus : pastille de couleur selon l'importance */
+.frep{margin-top:10px;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel)}
+.frep summary{cursor:pointer;font-weight:650;font-size:14px;list-style:none}
+.frep summary::-webkit-details-marker{display:none}
+.frep summary::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--cy);margin-right:8px;vertical-align:1px}
+.frep.warn summary::before{background:var(--am)}
+.frep ul{list-style:none;margin:8px 0 0;padding:0;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.frep li{padding-left:16px;position:relative;color:var(--ink)}
+.frep li::before{content:"";position:absolute;left:0;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--cy)}
+.frep li.warn::before{background:var(--am)}.frep li.bad::before{background:var(--acc)}
+@media (prefers-reduced-motion:reduce){.btn,.pickbtn{transition:none}}
 .opts{margin-bottom:6px}
 .chk{display:flex;gap:12px;align-items:flex-start;padding:12px;margin:0 0 8px;border-radius:14px;background:var(--panel);box-shadow:0 1px 0 var(--line)}
 .chk input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--g2);flex:none}
@@ -196,17 +206,16 @@ input[type=range]{accent-color:var(--g2)}
 <body>
 <header class="wrap wide top">
   <div class="brand">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="5" width="28" height="22" rx="4" fill="var(--ink)"/><rect x="7" y="10" width="5" height="12" rx="1" fill="var(--cy)"/><rect x="13.5" y="10" width="5" height="12" rx="1" fill="var(--acc)"/><rect x="20" y="10" width="5" height="12" rx="1" fill="var(--am)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.27</span>
+  <span class="tag">v2.28</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
   <section class="hero">
-    <p class="eyebrow">Vidéos et photos anciennes</p>
-    <h1>Redonne de l’<em>éclat</em> à tes vieux films de famille 🎞️</h1>
-    <p class="lead">Moins de blocs et de bruit, des couleurs plus justes, une image plus nette. Tout est calculé sur ton téléphone : gratuit, sans filigrane, sans inscription, et ça marche même en mode avion.</p>
+    <h1>Tes vieilles vidéos, comme filmées hier.</h1>
+    <p class="lead">Image plus nette, couleurs justes, son plus clair, sans visage retouché. Tout se fait sur ton téléphone : gratuit, sans filigrane, sans inscription, même en mode avion.</p>
     <ol class="steps">
       <li><span class="em">📱</span><b>Choisir</b>une vidéo ou une photo</li>
       <li><span class="em">👀</span><b>Comparer</b>maintiens « Original »</li>
@@ -217,11 +226,11 @@ input[type=range]{accent-color:var(--g2)}
   <input type="file" id="f" accept="video/*" multiple hidden>
   <input type="file" id="fp" accept="image/*" hidden>
   <div class="picks">
-    <button class="pickbtn main" id="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span class="lbl">Choisir une vidéo</span></button>
+    <button class="pickbtn main" id="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span><span class="lbl">Choisir une vidéo</span><span class="sub">Vieux téléphone, messagerie, réseaux</span></span></button>
     <button class="pickbtn" id="pickp"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg><span class="lbl">Choisir une photo</span></button>
+    <button class="pickbtn" id="pickm"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="7" height="10" rx="1.5"/><rect x="14.5" y="7" width="7" height="10" rx="1.5"/><path d="M9.5 12h5"/></svg><span class="lbl">Regrouper des vidéos</span></button>
   </div>
   <input type="file" id="fm" accept="video/*" multiple hidden>
-  <button class="btn" id="pickm" style="margin-top:10px">🧩 Regrouper plusieurs vidéos en une</button>
   <div class="card" id="mg" hidden>
     <h2>Regrouper des vidéos</h2>
     <p class="help">Les vidéos seront mises bout à bout dans cet ordre. Utilise les flèches pour changer l’ordre.</p>
@@ -229,7 +238,7 @@ input[type=range]{accent-color:var(--g2)}
     <button class="btn" id="mgadd" style="margin-top:8px">+ Ajouter d’autres vidéos</button>
     <button class="btn main" id="mggo" style="margin-top:8px">Regrouper en une seule vidéo</button>
     <div id="mgres" hidden style="margin-top:12px"><video id="mgv" controls playsinline style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
-      <button class="btn main" id="mgimp" style="margin-top:8px">✨ Améliorer cette vidéo</button>
+      <button class="btn main" id="mgimp" style="margin-top:8px">Améliorer cette vidéo</button>
       <button class="btn" id="mgsave" style="margin-top:8px">Enregistrer la vidéo regroupée</button></div>
   </div>
   <p class="st" id="st0"></p>
@@ -255,13 +264,14 @@ input[type=range]{accent-color:var(--g2)}
         <button class="btn" id="spl" aria-pressed="false">Curseur</button>
       </div>
       <div class="meta" id="meta"></div>
+      <details class="frep" id="frep" hidden><summary id="frep_s">Rapport du fichier</summary><ul id="frep_l"></ul></details>
     </div>
 
     <div class="ctlcol">
       <div class="tabs" role="tablist">
-        <button class="tab" role="tab" data-t="tp1" aria-selected="true">✨ Améliorer</button>
-        <button class="tab" role="tab" data-t="tp2" aria-selected="false">🎛️ Réglages</button>
-        <button class="tab" role="tab" data-t="tp3" id="tabx" aria-selected="false">⏩ Prolonger</button>
+        <button class="tab" role="tab" data-t="tp1" aria-selected="true">Améliorer</button>
+        <button class="tab" role="tab" data-t="tp2" aria-selected="false">Réglages</button>
+        <button class="tab" role="tab" data-t="tp3" id="tabx" aria-selected="false">Prolonger</button>
       </div>
 
       <div class="panel" id="tp1">
@@ -296,12 +306,13 @@ input[type=range]{accent-color:var(--g2)}
           <button class="btn" id="rtb" style="margin-top:8px" hidden>Refaire avec le son (en temps réel)</button>
           <p class="help" id="socn" hidden style="margin:10px 0 0">Pour publier sur TikTok ou Instagram : active « Importer en haute qualité » dans l’app au moment de publier, sinon elle recompresse fortement la vidéo.</p>
           <p class="help" id="dupn" hidden style="margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--line)"></p>
-          <button class="btn" id="bab" style="margin-top:8px" hidden>🎬 Créer un avant / après à partager (10 s)</button>
-          <button class="btn" id="kbb" style="margin-top:8px" hidden>🎞️ Animer la photo en vidéo (8 s, zoom lent)</button>
+          <button class="btn" id="bab" style="margin-top:8px" hidden>Créer un avant / après à partager (10 s)</button>
+          <button class="btn" id="kbb" style="margin-top:8px" hidden>Animer la photo en vidéo (8 s, zoom lent)</button>
           <div id="kbres" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Photo animée</h2><video id="kbv" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
             <button class="btn main" id="kbs" style="margin-top:8px">Partager la vidéo animée</button></div>
           <div id="bares" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Avant / après</h2><video id="bav" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
             <button class="btn main" id="bas2" style="margin-top:8px">Partager l’avant / après</button></div>
+          <details class="frep" id="orep" hidden><summary id="orep_s">Compte rendu de l’export</summary><ul id="orep_l"></ul></details>
           <details id="tech" hidden style="margin-top:10px"><summary class="help" style="cursor:pointer;margin:0">Détails techniques</summary><p class="help mono" id="techt" style="margin:6px 0 0;font-size:12px;word-break:break-word"></p>
             <button class="btn" id="diagb" style="margin-top:8px" hidden>Copier le diagnostic</button></details>
         </div>
@@ -372,23 +383,27 @@ const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,ai:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],
 let show=1,looping=false,exporting=false,cancel=false,az=false,dl=null,url=null,outUrl=null,outBlob=null,curFile=null;
 const PREVIEW=1280,FPS=30;let OFPS=30;
 let fpsC=null;
-function measureFps(){
-  if(fpsC&&fpsC.f===curFile)return Promise.resolve(fpsC.v);
-  return new Promise(res=>{
+/* cadence de la vidéo : lue dans le fichier lui-même (fiable, et sans lancer la lecture, donc sans dépenser de batterie) ;
+   la mesure pendant la lecture ne sert qu'en secours (formats que l'app ne sait pas lire) */
+const snapFps=f=>{let best=f,bd=1e9;for(const s of [24000/1001,24,25,30000/1001,30,48,50,60000/1001,60]){const e=Math.abs(s-f);if(e<bd){bd=e;best=s}}return Math.max(5,Math.min(60,bd<.6?best:Math.round(f*100)/100))};
+async function containerFps(file){try{const vi=await demuxVideo(file);if(!vi||vi.ns<3)return null;const span=(vi.dts[vi.ns-1]-vi.dts[0])/vi.ts;if(!(span>0))return null;return snapFps((vi.ns-1)/span)}catch(e){return null}}
+async function measureFps(){
+  if(fpsC&&fpsC.f===curFile)return fpsC.v;
+  const cf=await containerFps(curFile);
+  if(cf){fpsC={f:curFile,v:cf};return cf}
+  const mf=await new Promise(res=>{
     if(!v.requestVideoFrameCallback){res(FPS);return}
     const ts=[];let done=false;
     const fin=()=>{
       if(done)return;done=true;v.pause();
       const d=[];for(let i=1;i<ts.length;i++){const x=ts[i]-ts[i-1];if(x>.008&&x<.2)d.push(x)}
-      d.sort((a,b)=>a-b);let f=d.length>5?1/d[d.length>>1]:FPS,best=f,bd=1e9;
-      for(const s of [24000/1001,24,25,30000/1001,30,48,50,60000/1001,60]){const e=Math.abs(s-f);if(e<bd){bd=e;best=s}}
-      f=bd<.6?best:Math.round(f*100)/100;{const fv=Math.max(5,Math.min(60,f));fpsC={f:curFile,v:fv};res(fv)}
-    };
+      d.sort((a,b)=>a-b);res(d.length>5?snapFps(1/d[d.length>>1]):FPS)};
     const cb=(n,md)=>{ts.push(md.mediaTime);if(ts.length>=45)fin();else v.requestVideoFrameCallback(cb)};
     v.muted=true;
     seekEl(v,0).then(()=>v.play()).then(()=>v.requestVideoFrameCallback(cb)).catch(fin);
     setTimeout(fin,3000);
   });
+  fpsC={f:curFile,v:mf};return mf;
 }
 let mode="video",photoEl=null,wd;
 function cur(){return mode==="photo"&&photoEl?photoEl:v}
@@ -1007,6 +1022,7 @@ v.onloadedmetadata=()=>{
   chips([v.videoWidth+"×"+v.videoHeight,fmtT(v.duration),(curFile.size<524288?"<1":(curFile.size/1048576).toFixed(0))+" Mo"]);$("#tc").hidden=false;$("#tc").textContent="0:00 / "+fmtT(v.duration);updateEst();
   if(Math.max(v.videoWidth,v.videoHeight)>=1500){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Ta vidéo est déjà en haute définition : le Full HD est choisi (bien plus rapide, presque aussi net). Tu peux repasser en 4K ci-dessus.'}
   window.__safe=null;
+  try{FREP.run(curFile)}catch(e){}
   try{const c=JSON.parse(localStorage.getItem("crash_last")||"null");
     if(c&&c.name===curFile.name&&c.size===curFile.size&&Date.now()-c.t<12*3600e3){window.__safe=c;localStorage.removeItem("crash_last");
       if(c.q==="3840"){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));document.querySelectorAll("[data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q==="1920"?"true":"false"))}
@@ -1120,15 +1136,17 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
     set("o_dust",o.dust);set("o_voice",o.voice);set("o_defl",o.defl);set("o_stab",o.stab);
     try{stabEnable(o.stab)}catch(e){}
     if(o.wb){WBG=o.wb;P.wb=.85}else{WBG=[1,1,1];P.wb=0}
-    P.dn=o.dn;P.sh=o.sh;P.db=o.db;DB.ph=o.ph;sync()},
+    P.dn=o.dn;P.sh=o.sh;P.db=o.db;DB.ph=o.ph;if(o.cs!=null)P.cs=o.cs;sync()},
   show(r,title){
     $("#rec").hidden=false;$("#rec_t").textContent=title||(r.n.length?"Voici ce que j’ai repéré et réglé pour toi :":"Ta vidéo est déjà en bon état : réglages doux appliqués.");
     const ul=$("#rec_l");ul.textContent="";REC.img={br:P.br,co:P.co,sa:P.sa};
     r.n.forEach((t,i)=>{const k=r.it?r.it[i]:null,li=document.createElement("li");
       if(!k){li.textContent=t;ul.appendChild(li);return}
-      const lb=document.createElement("label"),cb=document.createElement("input");cb.type="checkbox";cb.checked=true;cb.setAttribute("aria-label",t);
+      const lb=document.createElement("label"),cb=document.createElement("input");cb.type="checkbox";cb.checked=!(r.off&&r.off[i]);cb.setAttribute("aria-label",t);
       cb.onchange=()=>REC.toggle(k,cb.checked,r);lb.append(cb,document.createTextNode(" "+t));li.appendChild(lb);ul.appendChild(li)});
-    $("#rec_hint").hidden=!r.n.length},
+    $("#rec_hint").hidden=!r.n.length;
+    if(r.learn&&r.learn.length){const li=document.createElement("li");li.className="learn";li.textContent="Adapté à tes habitudes : "+r.learn.join(", ")+".";ul.appendChild(li)}
+    if(r.off&&Object.keys(r.off).length){const li=document.createElement("li");li.className="learn";li.textContent="Les cases décochées le sont d’après tes choix précédents : coche-les si tu veux.";ul.appendChild(li)}},
   toggle(k,on,r){
     const set=(id,v)=>{const e=$("#"+id);if(e)e.checked=v};
     if(k==="voice")set("o_voice",on);else if(k==="dust")set("o_dust",on);else if(k==="defl")set("o_defl",on);
@@ -1150,7 +1168,11 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       const au=await REC.audio();m.audio=au;
       if(curFile!==my)return;
       const r=REC.recommend(m,fl);REC.last={m,fl,r};window.__prof={m,fl};
-      REC.apply(r);REC.show(r);
+      const ad=LEARN.adapt(r.o);r.learn=ad.notes;
+      REC.apply(r);
+      if(r.o.bias){for(const k in r.o.bias)P[k]=Math.max(k==="co"||k==="sa"?.8:-.3,Math.min(k==="co"||k==="sa"?1.4:.3,P[k]+r.o.bias[k]));sync()}
+      if(r.o.skip)r.it&&r.it.forEach((k,i)=>{const id={dust:"o_dust",defl:"o_defl",stab:"o_stab",voice:"o_voice"}[k];if(id&&r.o.skip[id]){REC.toggle(k,false,r);(r.off=r.off||{})[i]=true}});
+      REC.show(r);LEARN.snap();
       try{DIAG.send("analyse",{ms:Math.round(performance.now()-TA),mesures:{bruit:+m.noise.toFixed(2),nettete:Math.round(m.sharp),poussieres:Math.round(m.dust),tremble:m.shake,blocs:m.blk&&+m.blk.r.toFixed(2),dominante:m.gains&&m.gains.map(x=>+x.toFixed(2)),son:m.audio},scint:fl,reco:r.n})}catch(e){}
     }catch(e){ok=false;$("#rec").hidden=true}
     finally{if(curFile===my){try{await seekEl(v,t0)}catch(e){}draw()}if(REC.pr===pr)REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
@@ -1434,10 +1456,97 @@ $("#fm").onchange=e=>{if(exporting){e.target.value="";return}MG.add(e.target.fil
 $("#mggo").onclick=()=>MG.go();
 $("#mgsave").onclick=()=>{if(MG.blob)shareBlob(MG.blob,uniqName((MG.files[0]&&MG.files[0].name||"video").replace(/\.[^.]+$/,"")+"-regroupee","mp4"))};
 $("#mgimp").onclick=()=>{if(!MG.blob)return;const f=new File([MG.blob],(MG.files[0].name||"video").replace(/\.[^.]+$/,"")+"-regroupee.mp4",{type:"video/mp4"});batch=null;loadFile(f);window.scrollTo({top:0,behavior:"smooth"})};
+
+/* ===== Compte rendu du fichier : ce qu'il contient, ce qui peut poser problème, et pourquoi ===== */
+const FREP={info:null,
+  async inspect(file){
+    const r={nom:file.name,taille:file.size,type:file.type||"",conteneur:"inconnu",vcodec:null,acodec:null,hdr:null,bits:8,son:null};
+    try{
+      const h=new Uint8Array(await file.slice(0,64).arrayBuffer()),s4=o=>String.fromCharCode(h[o],h[o+1],h[o+2],h[o+3]);
+      if(h[0]===0x1A&&h[1]===0x45&&h[2]===0xDF&&h[3]===0xA3)r.conteneur="WebM/MKV";
+      else if(s4(0)==="RIFF")r.conteneur="AVI";
+      else if(s4(4)==="ftyp"){const b=s4(8);r.conteneur=b==="qt  "?"MOV (iPhone)":/3g/.test(b)?"3GP (vieux téléphone)":"MP4"}
+      if(/MOV|MP4|3GP/.test(r.conteneur)){
+        let off=0,moov=null;
+        while(off<file.size){const d=new DataView(await file.slice(off,Math.min(off+16,file.size)).arrayBuffer());if(d.byteLength<8)break;
+          let sz=d.getUint32(0);const t=String.fromCharCode(d.getUint8(4),d.getUint8(5),d.getUint8(6),d.getUint8(7));if(sz===1)sz=Number(d.getBigUint64(8));else if(sz===0)sz=file.size-off;
+          if(t==="moov"){moov=new Uint8Array(await file.slice(off,off+sz).arrayBuffer());break}if(sz<8)break;off+=sz}
+        r.moovFin=!!moov&&off>file.size/2;
+        if(moov){const has=t=>{for(let i=4;i<moov.length-4;i++)if(moov[i]===t.charCodeAt(0)&&moov[i+1]===t.charCodeAt(1)&&moov[i+2]===t.charCodeAt(2)&&moov[i+3]===t.charCodeAt(3))return i;return-1};
+          for(const [k,n] of [["avc1","H.264"],["avc3","H.264"],["hvc1","HEVC"],["hev1","HEVC"],["dvh1","HEVC Dolby Vision"],["dvhe","HEVC Dolby Vision"],["vp09","VP9"],["av01","AV1"],["mp4v","MPEG-4 (ancien)"],["s263","H.263 (très ancien)"],["jpeg","Motion JPEG"],["apcn","ProRes"],["apch","ProRes"]])if(has(k)>0){r.vcodec=n;break}
+          for(const [k,n] of [["mp4a","AAC"],["alac","ALAC"],["lpcm","PCM"],["sowt","PCM"],["Opus","Opus"],["ac-3","Dolby AC-3"],["ec-3","Dolby E-AC-3"],["samr","AMR (vieux téléphone)"]])if(has(k)>0){r.acodec=n;break}
+          if(has("dvcC")>0||has("dvvC")>0)r.hdr="Dolby Vision";
+          const c=has("colr");if(c>0&&String.fromCharCode(moov[c+4],moov[c+5],moov[c+6],moov[c+7])==="nclx"){const tr=(moov[c+10]<<8)|moov[c+11];if(tr===16)r.hdr=r.hdr||"HDR10 (PQ)";if(tr===18)r.hdr=r.hdr||"HLG"}
+          const hv=has("hvcC");if(hv>0&&(moov[hv+5]&31)===2)r.bits=10}}
+      r.son=await hasSound(file);
+    }catch(e){r.err=String(e&&e.message||e)}
+    return r},
+  issues(r,el){
+    const o=[],dur=el&&el.duration||0,w=el&&el.videoWidth||0,h=el&&el.videoHeight||0,mbps=dur?r.taille*8/dur/1e6:0;
+    const ok=(t)=>o.push(["ok",t]),warn=(t)=>o.push(["warn",t]),bad=(t)=>o.push(["bad",t]);
+    ok("Vidéo "+w+"×"+h+", "+fmtT(dur)+", "+(r.taille/1048576).toFixed(1)+" Mo"+(mbps?" ("+mbps.toFixed(1)+" Mbit/s)":"")+".");
+    ok("Format : "+r.conteneur+(r.vcodec?", image "+r.vcodec:"")+(r.acodec?", son "+r.acodec:"")+".");
+    if(r.conteneur==="inconnu")warn("Format de fichier non reconnu : la lecture dépend de l’iPhone. Si ça bloque, enregistre d’abord la vidéo dans Photos puis rechoisis-la.");
+    if(/WebM|AVI/.test(r.conteneur))warn("Fichier "+r.conteneur+" : l’image est traitée, mais le son pourra être réencodé et certaines vérifications sont limitées.");
+    if(r.vcodec&&/MPEG-4|H.263|Motion JPEG|ProRes|AV1/.test(r.vcodec))warn("Image au format "+r.vcodec+" : la lecture rapide image par image n’est pas possible, l’app utilisera la méthode plus lente (même qualité).");
+    if(r.hdr)warn("Vidéo HDR ("+r.hdr+(r.bits===10?", 10 bits":"")+") : le résultat sera en couleurs standard (SDR), comme la plupart des vidéos partagées. Les zones très lumineuses peuvent paraître un peu moins éclatantes.");
+    if(r.son===false)ok("Pas de piste son dans le fichier : le résultat sera muet.");
+    else if(r.acodec&&!/AAC/.test(r.acodec))warn("Son au format "+r.acodec+" : il sera converti, ce qui peut prendre plus de mémoire.");
+    if(r.moovFin)ok("Index du fichier placé à la fin (fréquent après un envoi par messagerie) : aucun problème.");
+    if(dur>300)warn("Vidéo longue ("+fmtT(dur)+") : l’export prendra du temps et l’app adaptera la taille ou le débit pour ne pas saturer la mémoire de l’iPhone. Garde l’écran allumé et l’app au premier plan.");
+    if(w*h>3840*2160*1.01)warn("Très grande définition : l’export se fera au maximum en 4K.");
+    if(w&&Math.max(w,h)<500)ok("Petite définition (vieux téléphone) : l’agrandissement et l’anti-blocs seront les plus utiles.");
+    if(mbps&&mbps<1&&w*h>=640*360)warn("Vidéo très compressée (débit faible) : les carrés de compression et le flou viennent de là ; l’app les atténue, mais ne peut pas recréer ce qui a été perdu.");
+    return o},
+  show(o,title){const d=$("#frep"),l=$("#frep_l");l.textContent="";let nb=0;
+    o.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
+    $("#frep_s").textContent=title||(nb?"Rapport du fichier : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Rapport du fichier : tout est en ordre");d.classList.toggle("warn",nb>0);d.hidden=false},
+  async run(file){try{const r=await FREP.inspect(file);if(curFile!==file)return;FREP.info=r;const o=FREP.issues(r,v);FREP.show(o);try{DIAG.send("fichier",{fichier:r,points:o.filter(x=>x[0]!=="ok").map(x=>x[1])})}catch(e){}}catch(e){}},
+  /* rapport de sortie : ce qui a été produit, et pourquoi si quelque chose manque */
+  out(x){const o=[];const ok=(t)=>o.push(["ok",t]),warn=(t)=>o.push(["warn",t]),bad=(t)=>o.push(["bad",t]);
+    ok("Fichier créé : "+x.w+"×"+x.h+", "+x.mo+" Mo, format "+(x.codec.startsWith("hvc")?"HEVC (compact)":"H.264 (classique)")+", "+x.mbps+" Mbit/s.");
+    ok("Images : "+x.frames+" sur "+x.expected+" attendues"+(x.frames>=x.expected-1?" ✓":"")+".");
+    if(x.frames<x.expected-1)bad("Il manque "+(x.expected-x.frames)+" images : réessaie, et garde l’app au premier plan pendant l’export.");
+    if(x.son)ok("Son : présent ✓");else if(x.why==="ta vidéo n’a pas de son")ok("Son : la vidéo d’origine n’en a pas.");else bad("Son absent : "+(x.why||"raison inconnue")+".");
+    if(x.memDown)warn("Taille réduite automatiquement pour ne pas saturer la mémoire de l’iPhone.");
+    if(x.retry4k)warn("La 4K n’a pas tenu sur cet iPhone : export refait en Full HD.");
+    if(x.dupRun>=3)warn("Quelques images semblent figées (série de "+x.dupRun+") : si la vidéo saccade, réessaie.");
+    if(x.slow)warn("Lecture rapide image par image indisponible pour ce fichier : méthode plus lente utilisée (même qualité).");
+    return o}
+};
+
+/* ===== Apprendre des retouches de l'utilisateur =====
+   On garde ce que l'app avait réglé seule, on regarde ce que la personne a changé avant d'exporter,
+   et on en tient compte (avec mesure) pour les vidéos suivantes. Les bornes gardent toujours un rendu naturel. */
+const LEARN={K:["br","co","sa","wa","sh","dn","cs","db"],O:["o_dust","o_defl","o_stab","o_voice"],auto:null,
+  B:{br:[-.06,.06],co:[-.12,.12],sa:[-.15,.15],wa:[-.04,.04],sh:[-.3,.3],dn:[-.25,.25],cs:[-.4,.3],db:[-.5,.2]},
+  get(){try{return JSON.parse(localStorage.getItem("learn")||"{}")}catch(e){return{}}},
+  put(d){try{localStorage.setItem("learn",JSON.stringify(d))}catch(e){}},
+  snap(){const o={};LEARN.K.forEach(k=>o[k]=P[k]);LEARN.O.forEach(k=>{const e=$("#"+k);o[k]=!!(e&&e.checked)});o.wb=P.wb;LEARN.auto=o},
+  /* au moment d'exporter : qu'est-ce qui a changé depuis le réglage automatique ? */
+  record(){
+    const a=LEARN.auto;if(!a||mode!=="video")return null;const d=LEARN.get(),ch={};d.n=(d.n||0)+1;d.bias=d.bias||{};d.opt=d.opt||{};
+    LEARN.K.forEach(k=>{const dv=P[k]-a[k];if(Math.abs(dv)>.005)ch[k]=+dv.toFixed(3);const b=d.bias[k]||0;d.bias[k]=+(b*.7+dv*.3).toFixed(4)});
+    LEARN.O.forEach(k=>{const e=$("#"+k),now=!!(e&&e.checked);if(a[k]){const st=d.opt[k]||{on:0,off:0};now?st.on++:st.off++;d.opt[k]=st;if(!now)ch[k]="décoché"}else if(now)ch[k]="coché"});
+    if((P.wb>0)!==(a.wb>0))ch.wb=P.wb>0?"activé":"désactivé";
+    if(FLT.sel>=0)ch.filtre=FLT.sel;
+    LEARN.put(d);LEARN.auto=null;return ch},
+  /* appliqué au réglage automatique suivant : décalage moyen, borné ; une option décochée la plupart du temps n'est plus cochée d'office */
+  adapt(o){const d=LEARN.get(),notes=[];if(!d.n||d.n<2)return{o,notes};
+    const lab={sh:"netteté",dn:"réduction du bruit",sa:"couleurs",co:"contraste",br:"luminosité",cs:"nettoyage des couleurs",db:"anti-blocs"};
+    for(const k of ["sh","dn","cs","db"]){const b=d.bias&&d.bias[k]||0,[lo,hi]=LEARN.B[k];const c=Math.max(lo,Math.min(hi,b));if(Math.abs(c)>.04){o[k]=Math.max(0,Math.min(k==="sh"?.6:k==="dn"?.5:1,(o[k]!=null?o[k]:P[k])+c));notes.push(lab[k]+(c>0?" un peu plus forte":" un peu plus douce"))}}
+    o.bias={};for(const k of ["br","co","sa","wa"]){const b=d.bias&&d.bias[k]||0,[lo,hi]=LEARN.B[k];const c=Math.max(lo,Math.min(hi,b));if(Math.abs(c)>.01){o.bias[k]=c;notes.push(lab[k]||"chaleur")}}
+    o.skip={};for(const k of LEARN.O){const st=d.opt&&d.opt[k];if(st&&st.on+st.off>=3&&st.off/(st.on+st.off)>.6)o.skip[k]=true}
+    return{o,notes}}
+};
 /* Lecture */
 $("#pp").onclick=()=>{if(v.paused)v.play();else v.pause()};
-v.onplay=()=>{$("#pp").textContent="Pause"};
-v.onpause=()=>{$("#pp").textContent="Lecture"};
+/* économie de batterie : pendant la lecture, l'aperçu est calculé un peu plus petit (l'export, lui, reste en pleine qualité) ;
+   à l'arrêt, il repasse en pleine définition pour bien juger le résultat */
+const PREVIEW_PLAY=960;
+v.onplay=()=>{$("#pp").textContent="Pause";if(!exporting&&mode==="video"&&!window.__baMode)size(PREVIEW_PLAY)};
+v.onpause=()=>{$("#pp").textContent="Lecture";if(!exporting&&mode==="video")size(PREVIEW)};
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&!exporting&&!v.paused)v.pause()});
 v.ontimeupdate=()=>{if(v.duration&&!exporting)$("#tm").value=v.currentTime/v.duration*1000;$("#tc").textContent=fmtT(v.currentTime)+" / "+fmtT(v.duration)};
 $("#tm").oninput=e=>{if(v.duration&&!exporting)v.currentTime=e.target.value/1000*v.duration};
 
@@ -1514,13 +1623,13 @@ $("#ex").onclick=async()=>{
   if(REC.pr){window.__exStarting=true;msg("Fin de l’analyse, puis l’export démarre…");REC.stop=true;REC.redo=curFile;try{await REC.pr}catch(e){}finally{window.__exStarting=false}}
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
   exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
-  try{DIAG.send("export_debut",{})}catch(e){}
+  try{const ch=window.__baMode||window.__plan?null:LEARN.record();DIAG.send("export_debut",ch&&Object.keys(ch).length?{ajustements:ch}:{})}catch(e){}
   window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
   $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;$("#dupn").hidden=true;
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.27)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.28)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1528,7 +1637,7 @@ $("#ex").onclick=async()=>{
     const dT=Math.max(.2,tE-tS);
     msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde");
     /* résolution et encodeur */
-    let cfg=null;
+    let cfg=null,rdr0=false;window.__memDown=false;
     for(const L of [+$("#q").value,1920,1280]){
       if(window.__plan&&L>1920&&window.__plan.length/FPS>60){msg("Version longue : export en Full HD pour ne pas saturer la mémoire de l’iPhone.");continue}
       size(L);
@@ -1542,6 +1651,7 @@ $("#ex").onclick=async()=>{
           bitrate:Math.round(px*Math.max(.03,Math.min(bpp,bud*8/(px*Math.max(1,dd))))),framerate:OUTF,...(hv?{hevc:{format:"hevc"}}:{avc:{format:"avc"}}),latencyMode:"quality"}};
       let c=mk(false);
       if(hevcOK&&!window.__plan){const ch=mk(true);try{if((await VideoEncoder.isConfigSupported(ch)).supported)c=ch}catch(e){}}
+      if(c.bitrate*(window.__plan?window.__plan.length/OFPS:dT)/8>(window.__safe?2e8:3.2e8)&&L!==1280){msg("Vidéo longue : export en "+(L>1920?"Full HD":"taille réduite")+" pour ne pas saturer la mémoire de l’iPhone.");window.__memDown=true;continue}
       if((await VideoEncoder.isConfigSupported(c)).supported){cfg=c;break}
     }
     if(!cfg)throw new Error("Encodage vidéo non pris en charge.");
@@ -1607,7 +1717,7 @@ $("#ex").onclick=async()=>{
     if(!isPlan&&$("#o_defl").checked&&window.VideoDecoder){msg("Mesure du scintillement…");const Ltr=await lumaTrace(off,total,OFPS);if(Ltr&&Ltr.length===total){dfg=flickerGains(Ltr);window.__dfgL=Ltr;window.__dfg=Array.from(dfg)}else msg("Anti-scintillement indisponible pour cette vidéo : elle est traitée sans.")}
     /* lecture séquentielle (bien plus rapide que de chercher chaque image) */
     if(!isPlan&&window.VideoDecoder&&!window.__noseq&&cv.width*cv.height<=2073600*1.2){
-      rdr=await makeSeq(off,OFPS);
+      rdr=await makeSeq(off,OFPS);rdr0=!!rdr;
     }
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
     poolMode=!rdr;const T0=performance.now();
@@ -1707,13 +1817,16 @@ $("#ex").onclick=async()=>{
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
       $("#rv").hidden=false;baShow(!isPlan,tS);if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
       msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(!plan&&maxRun>=3?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
+      try{const ro=FREP.out({w:cfg.width,h:cfg.height,mo:(outBlob.size/1048576).toFixed(1),codec:cfg.codec,mbps:(cfg.bitrate/1e6).toFixed(1),frames:total,expected:plan?total:Math.max(1,Math.round(dT*OUTF)),son:!!wa,why:audioWhy,memDown:!!window.__memDown,retry4k:!!window.__retried4k,dupRun:maxRun+1,slow:!rdr0});
+        const l=$("#orep_l");l.textContent="";let nb=0;ro.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
+        $("#orep_s").textContent=nb?"Compte rendu de l’export : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu de l’export : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro;window.__retried4k=false}catch(e){}
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
       try{DIAG.send("export",{ok:true,codec:cfg.codec,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
   }catch(e){
     const m=(e&&e.message)||"";
-    if(/encod/i.test(m)&&!window.__plan&&+$("#q").value>1920&&!window.__retried){window.__retried=true;window.__retryPending=true;$("#q").value="1920";msg("L’encodeur de l’iPhone n’a pas tenu le 4K : nouvel essai en Full HD…");if(!(batch&&batch.running))setTimeout(()=>{window.__retried=false;$("#ex").onclick()},600);else window.__retried=false}
+    if(/encod/i.test(m)&&!window.__plan&&+$("#q").value>1920&&!window.__retried){window.__retried=true;window.__retried4k=true;window.__retryPending=true;$("#q").value="1920";msg("L’encodeur de l’iPhone n’a pas tenu le 4K : nouvel essai en Full HD…");if(!(batch&&batch.running))setTimeout(()=>{window.__retried=false;$("#ex").onclick()},600);else window.__retried=false}
     else if(/hevc illisible/.test(m)&&!(batch&&batch.running)){msg("Ton iPhone ne relit pas le format compact : nouvel essai au format classique…");setTimeout(()=>$("#ex").onclick(),600)}
     else if(/annul/i.test(m))msg("Export annulé.");
     else msg(friendly(m));
