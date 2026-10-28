@@ -290,8 +290,8 @@ code{font-size:.9em;background:var(--fill);padding:1px 5px;border-radius:4px}
 <section id="v-settings" hidden>
   <header class="top"><div class="hrow gut"><h1>Réglages</h1></div></header>
   <div class="page gut set">
-    <h3>Contenu explicite</h3>
-    <label class="cell"><span class="lb">Afficher le contenu explicite (18+)<small>Vidéos marquées adultes ou sensibles (nudité, violence…) par les réseaux.</small></span><input class="sw" type="checkbox" id="expSw"></label>
+    <h3 hidden>Contenu explicite</h3>
+    <label class="cell" hidden><span class="lb">Afficher le contenu explicite (18+)<small>Vidéos marquées adultes ou sensibles (nudité, violence…) par les réseaux.</small></span><input class="sw" type="checkbox" id="expSw"></label>
     <div class="ask" id="expAsk" hidden>
       <p>Ce contenu est réservé aux adultes. Confirmes-tu avoir <b>18 ans ou plus</b> ?</p>
       <div class="fl" style="padding:0"><button class="pill sm" type="button" id="expYes">Oui, j'ai 18 ans ou plus</button><button class="pill sm out" type="button" id="expNo">Non</button></div>
@@ -735,6 +735,7 @@ let S = (() => {
   if (raw && (raw.ver || 1) < 3) { s.lang = "any"; s.ver = 3; s.lastRun = s.lastRun ? 1 : 0; } // nouvelle version : toutes langues + nouvelles sources
   return s;
 })();
+S.explicit = false; S.adultOk = false;
 function save() { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { toast("Impossible d'enregistrer sur cet appareil"); } }
 const pos = () => S.keywords.filter(k => k.on && !isNeg(k.t)).map(k => k.t);
 const neg = () => S.keywords.filter(k => k.on && isNeg(k.t)).map(k => k.t);
