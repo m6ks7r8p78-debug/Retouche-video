@@ -199,7 +199,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.26</span>
+  <span class="tag">sur ton téléphone · v2.27</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -1339,14 +1339,15 @@ const KB={blob:null,url:null,busy:false,
       const L=1920,sc=Math.min(L/Math.max(w,h),1080/Math.min(w,h)),W=Math.round(w*sc/2)*2,H=Math.round(h*sc/2)*2;
       const out=document.createElement("canvas");out.width=W;out.height=H;const x=out.getContext("2d");x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
       const FPSk=30,N=FPSk*8;
-      const cfg={codec:W*H>2073600*1.2?"avc1.640033":"avc1.640028",width:W,height:H,bitrate:Math.round(W*H*FPSk*.08),framerate:FPSk,avc:{format:"avc"},latencyMode:"quality"};
+      const bg=W*H>2073600*1.2;let cfg={codec:bg?"avc1.640033":"avc1.640028",width:W,height:H,bitrate:Math.round(W*H*FPSk*.055),framerate:FPSk,avc:{format:"avc"},latencyMode:"quality"};
+      try{const hv={codec:bg?"hvc1.1.6.L153.B0":"hvc1.1.6.L123.B0",width:W,height:H,bitrate:Math.round(W*H*FPSk*.04),framerate:FPSk,hevc:{format:"hevc"},latencyMode:"quality"};if(localStorage.getItem("nohevc")!=="1"&&(await VideoEncoder.isConfigSupported(hv)).supported)cfg=hv}catch(e){}
       if(!(await VideoEncoder.isConfigSupported(cfg)).supported)throw new Error("format non pris en charge");
       const parts=[],starts=[];let end=0;
       const put=(data,pos)=>{if(pos>=end){parts.push(data);starts.push(pos);end=pos+data.byteLength;return}
         let lo=0,hi=starts.length-1;while(lo<hi){const mm=(lo+hi+1)>>1;if(starts[mm]<=pos)lo=mm;else hi=mm-1}
         let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
         if(pos+data.byteLength>end){parts.push(data.subarray(end-pos).slice());starts.push(end);end=pos+data.byteLength}};
-      const mx=new Mp4Muxer.Muxer({target:new Mp4Muxer.StreamTarget({onData:(d,p)=>put(d,p)}),fastStart:false,video:{codec:"avc",width:W,height:H}});
+      const mx=new Mp4Muxer.Muxer({target:new Mp4Muxer.StreamTarget({onData:(d,p)=>put(d,p)}),fastStart:false,video:{codec:cfg.codec.startsWith("hvc")?"hevc":"avc",width:W,height:H}});
       let err=null;const enc=new VideoEncoder({output:(c,md)=>mx.addVideoChunk(c,md),error:e=>{err=e}});enc.configure(cfg);
       const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
       $("#pg").hidden=false;
@@ -1519,7 +1520,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.26)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.27)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1531,9 +1532,16 @@ $("#ex").onclick=async()=>{
     for(const L of [+$("#q").value,1920,1280]){
       if(window.__plan&&L>1920&&window.__plan.length/FPS>60){msg("Version longue : export en Full HD pour ne pas saturer la mémoire de l’iPhone.");continue}
       size(L);
-      const c={codec:cv.width*cv.height>2073600*1.2?"avc1.640033":"avc1.640028",width:cv.width,height:cv.height,
-        bitrate:(()=>{const px=cv.width*cv.height*OUTF,dd=window.__plan?window.__plan.length/OFPS:dT,bud=window.__safe?2e8:3e8;/* débit élevé (les réseaux recompressent : mieux vaut leur donner une source riche), réduit seulement si la vidéo est longue */return Math.round(px*Math.max(.05,Math.min(window.__safe?.08:.14,bud*8/(px*Math.max(1,dd)))))})(),framerate:OUTF,avc:{format:"avc"},latencyMode:"quality"};
-      if(c.bitrate*(window.__plan?window.__plan.length/OFPS:dT)/8>(window.__safe?2e8:3.2e8)&&L!==1280){msg("Vidéo longue : export en "+(L>1920?"Full HD":"taille réduite")+" pour ne pas saturer la mémoire de l’iPhone.");window.__memDown=true;continue}
+      /* fichier le plus léger possible sans perte visible : HEVC (H.265) quand l'iPhone sait l'encoder, sinon H.264.
+         Débit mesuré sur de vraies vidéos : au-delà, le fichier grossit sans gain visible ; une vidéo agrandie (vieux téléphone) contient moins de vrai détail, donc moins de débit */
+      const big=cv.width*cv.height>2073600*1.2,srcPx=Math.max(1,v.videoWidth*v.videoHeight),up=cv.width*cv.height/srcPx;
+      let hevcOK=false;try{hevcOK=localStorage.getItem("nohevc")!=="1"}catch(e){}
+      const mk=hv=>{const px=cv.width*cv.height*OUTF,dd=window.__plan?window.__plan.length/OFPS:dT,bud=window.__safe?2e8:3e8;
+        const bpp=(hv?.04:.055)*(up>=4?.8:1)*(window.__safe?.85:1);
+        return{codec:hv?(big?"hvc1.1.6.L153.B0":"hvc1.1.6.L123.B0"):(big?"avc1.640033":"avc1.640028"),width:cv.width,height:cv.height,
+          bitrate:Math.round(px*Math.max(.03,Math.min(bpp,bud*8/(px*Math.max(1,dd))))),framerate:OUTF,...(hv?{hevc:{format:"hevc"}}:{avc:{format:"avc"}}),latencyMode:"quality"}};
+      let c=mk(false);
+      if(hevcOK&&!window.__plan){const ch=mk(true);try{if((await VideoEncoder.isConfigSupported(ch)).supported)c=ch}catch(e){}}
       if((await VideoEncoder.isConfigSupported(c)).supported){cfg=c;break}
     }
     if(!cfg)throw new Error("Encodage vidéo non pris en charge.");
@@ -1563,10 +1571,6 @@ $("#ex").onclick=async()=>{
         if(!(await AudioEncoder.isConfigSupported(acfg)).supported){acfg=null;audioWhy="format de son non pris en charge"}
       }catch(e){acfg=null;audioWhy="le son de la vidéo n’a pas pu être lu ("+((e&&e.name)||"erreur")+")"}
     }
-    const target=new Mp4Muxer.ArrayBufferTarget();
-    const mux=new Mp4Muxer.Muxer({target,fastStart:"in-memory",
-      video:{codec:"avc",width:cfg.width,height:cfg.height},
-      ...(acfg?{audio:{codec:"aac",numberOfChannels:acfg.numberOfChannels,sampleRate:acfg.sampleRate}}:{})});
     const vch=[],ach=[];
     const enc=new VideoEncoder({output:(c,m)=>{vch.push([c,m])},error:e=>{err=e}});
     enc.configure(cfg);
@@ -1679,7 +1683,7 @@ $("#ex").onclick=async()=>{
           let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
           if(pos+data.byteLength>end){const tail=data.subarray(end-pos);parts.push(tail.slice());starts.push(end);end=pos+data.byteLength}};
         const tg=new Mp4Muxer.StreamTarget({onData:(data,pos)=>put(data,pos)});
-        const mx=new Mp4Muxer.Muxer({target:tg,fastStart:false,video:{codec:"avc",width:cfg.width,height:cfg.height},
+        const mx=new Mp4Muxer.Muxer({target:tg,fastStart:false,video:{codec:cfg.codec.startsWith("hvc")?"hevc":"avc",width:cfg.width,height:cfg.height},
           ...(wa?{audio:{codec:"aac",numberOfChannels:acfg.numberOfChannels,sampleRate:acfg.sampleRate}}:{})});
         vch.forEach(([c,m])=>mx.addVideoChunk(c,m));
         if(wa&&rawA)rawA.samples.forEach((s,i)=>mx.addAudioChunkRaw(s.data,"key",s.ts,s.dur,i===0?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:rawA.ch,sampleRate:rawA.sr,description:rawA.asc}}:undefined));
@@ -1690,6 +1694,7 @@ $("#ex").onclick=async()=>{
       try{outBlob=build(wa)}catch(e){audioWhy="l’ajout du son a échoué ("+((e&&e.message)||"erreur")+")";wa=false;outBlob=build(false)}
       let pr=await probe(outBlob);
       if(pr!==true&&wa){audioWhy="le fichier avec le son était refusé par l’iPhone (code "+pr+")";wa=false;outBlob=build(false);pr=await probe(outBlob)}
+      if(pr!==true&&cfg.codec.startsWith("hvc")){try{localStorage.setItem("nohevc","1")}catch(e){}throw new Error("hevc illisible")}
       if(pr!==true&&window.__plan)throw new Error("le fichier est illisible (code "+pr+")");
       if(pr!==true){
         msg("Le fichier image par image n’est pas lisible ici (code "+pr+"). Passage à la méthode de secours en temps réel : garde l’écran allumé…");
@@ -1703,12 +1708,13 @@ $("#ex").onclick=async()=>{
       $("#rv").hidden=false;baShow(!isPlan,tS);if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
       msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(!plan&&maxRun>=3?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
-      try{DIAG.send("export",{ok:true,wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,msg:$("#st1").textContent.slice(0,400)})}catch(e){}
+      try{DIAG.send("export",{ok:true,codec:cfg.codec,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
   }catch(e){
     const m=(e&&e.message)||"";
     if(/encod/i.test(m)&&!window.__plan&&+$("#q").value>1920&&!window.__retried){window.__retried=true;window.__retryPending=true;$("#q").value="1920";msg("L’encodeur de l’iPhone n’a pas tenu le 4K : nouvel essai en Full HD…");if(!(batch&&batch.running))setTimeout(()=>{window.__retried=false;$("#ex").onclick()},600);else window.__retried=false}
+    else if(/hevc illisible/.test(m)&&!(batch&&batch.running)){msg("Ton iPhone ne relit pas le format compact : nouvel essai au format classique…");setTimeout(()=>$("#ex").onclick(),600)}
     else if(/annul/i.test(m))msg("Export annulé.");
     else msg(friendly(m));
     try{DIAG.send("export",{ok:false,err:m.slice(0,300)})}catch(x){}}
