@@ -199,7 +199,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.20</span>
+  <span class="tag">sur ton téléphone · v2.21</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -381,7 +381,10 @@ function setMode(){
   $("#out").hidden=true;
 }
 if(!gl){msg("Ton navigateur ne gère pas le traitement vidéo (WebGL).");$("#pick").disabled=true}
-try{if(sessionStorage.getItem("exp")){sessionStorage.removeItem("exp");msg("La page s’est rechargée pendant l’export : la mémoire de l’iPhone était saturée. Essaie en Full HD ou avec une vidéo plus courte.")}}catch(e){}
+try{const ex=sessionStorage.getItem("exp");if(ex){sessionStorage.removeItem("exp");let info={};try{info=JSON.parse(ex)}catch(e){}
+  try{localStorage.setItem("crash_last",JSON.stringify({...info,t:Date.now()}))}catch(e){}
+  setTimeout(()=>{try{DIAG.send("plantage",{info})}catch(e){}},1500);
+  msg("L’export précédent a été interrompu : la mémoire de l’iPhone était saturée. Choisis à nouveau ta vidéo : l’app réglera automatiquement l’export pour qu’il passe.")}}catch(e){}
 
 const VS="attribute vec2 p;varying vec2 uv;void main(){uv=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}";
 const FS=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float on,br,co,sa,wa,sp;uniform vec3 tr,gn;uniform float ex,lf,lrow,lrow2,lmx,lnb;uniform sampler2D t0,tl;
@@ -847,7 +850,9 @@ async function stabAnalyze(){
   const sm=a=>{const sg=Math.max(2,Math.round(.7*R)),o=new Float64Array(N);for(let i=0;i<N;i++){let s=0,w=0;for(let k=-3*sg;k<=3*sg;k++){const j=i+k;if(j<0||j>=N)continue;const q=Math.exp(-k*k/(2*sg*sg));s+=q*a[j];w+=q}o[i]=s/w}return o};
   const Cx=cum(dx),Cy=cum(dy),Sx=sm(Cx),Sy=sm(Cy),ox=new Float32Array(N),oy=new Float32Array(N);let mxv=0;
   for(let i=0;i<N;i++){ox[i]=(Cx[i]-Sx[i])/TW;oy[i]=(Cy[i]-Sy[i])/TH;mxv=Math.max(mxv,Math.abs(ox[i]),Math.abs(oy[i]))}
-  const m=Math.min(.09,mxv+.01);
+  /* vidéo déjà stable : on ne touche à rien (aucun recadrage) ; sinon recadrage limité à 10 % pour ne pas cacher les bords */
+  if(mxv<.004){ox.fill(0);oy.fill(0);return{R,N,ox,oy,sc:1,m:0,mx:mxv}}
+  const m=Math.min(.05,mxv+.005);
   for(let i=0;i<N;i++){ox[i]=Math.max(-m,Math.min(m,ox[i]));oy[i]=Math.max(-m,Math.min(m,oy[i]))}
   return{R,N,ox,oy,sc:1-2*m,m,mx:mxv};
 }
@@ -933,11 +938,16 @@ function loadFile(f){
 }
 v.onloadedmetadata=()=>{
   if(window.__metaDone){const f=window.__metaDone;window.__metaDone=null;setTimeout(f,0)}
-  STAB=null;stabOn=false;{let a="0",b="0";try{a=localStorage.getItem("o_stab")||"0";b=localStorage.getItem("o_fluid")||"0"}catch(e){}$('#o_stab').checked=a==="1";$('#o_fluid').checked=b==="1"}$('#t_in').value=0;$('#t_out').value=1000;$('#t_txt').textContent='tout';
+  STAB=null;stabOn=false;{let b="0";try{b=localStorage.getItem("o_fluid")||"0"}catch(e){}$('#o_fluid').checked=b==="1";["o_stab","o_dust","o_defl","o_voice"].forEach(i=>{$("#"+i).checked=false})/* réglés par l'analyse de CETTE vidéo */}$('#t_in').value=0;$('#t_out').value=1000;$('#t_txt').textContent='tout';
   $("#app").hidden=false;$("#st0").hidden=true;$("#pick .lbl").textContent="Autre vidéo";mode="video";setMode();clearTimeout(wd);
   size(PREVIEW);msg("");
   chips([v.videoWidth+"×"+v.videoHeight,fmtT(v.duration),(curFile.size<524288?"<1":(curFile.size/1048576).toFixed(0))+" Mo"]);$("#tc").hidden=false;$("#tc").textContent="0:00 / "+fmtT(v.duration);updateEst();
   if(Math.max(v.videoWidth,v.videoHeight)>=1500){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Ta vidéo est déjà en haute définition : le Full HD est choisi (bien plus rapide, presque aussi net). Tu peux repasser en 4K ci-dessus.'}
+  window.__safe=null;
+  try{const c=JSON.parse(localStorage.getItem("crash_last")||"null");
+    if(c&&c.name===curFile.name&&c.size===curFile.size&&Date.now()-c.t<12*3600e3){window.__safe=c;localStorage.removeItem("crash_last");
+      if(c.q==="3840"){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));document.querySelectorAll("[data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q==="1920"?"true":"false"))}
+      $('#qhint').textContent="La dernière fois, cette vidéo a saturé la mémoire de l’iPhone : l’export est réglé en mode économe"+(c.q==="3840"?" (Full HD au lieu de 4K)":"")+" pour qu’il aille au bout."}}catch(e){}
   v.currentTime=Math.min(1,v.duration/3);
   if(!looping){looping=true;loop()}
 };
@@ -1024,14 +1034,14 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
     if(m.audio&&m.audio.peak>-45&&m.audio.floor>REC.T.hiss){o.voice=true;n.push("Son avec souffle ou bruit de fond constant : voix clarifiée activée.")}
     if(m.dust>=REC.T.dust){o.dust=true;n.push("Poussières ou points noirs détectés (≈"+Math.round(m.dust)+" par image) : effacement activé.")}
     if(fl&&(fl.frac>=REC.T.flick||fl.mean>=REC.T.flickMean)){o.defl=true;n.push("Scintillement détecté ("+Math.round(fl.frac*100)+" % des images) : anti-scintillement activé.")}
-    if(m.shake>=REC.T.shake){o.stab=true;n.push("Image tremblante : stabilisation activée.")}
+    if(m.shake>=REC.T.shake){o.stab=true;n.push("Image très tremblante : stabilisation activée (l’image est légèrement recadrée, 10 % au plus).")}
     if(m.gains){const sp=Math.max(...m.gains)-Math.min(...m.gains);if(sp>=REC.T.cast){o.wb=m.gains;n.push("Dominante de couleur détectée : couleurs équilibrées.")}}
     if(m.noise>=REC.T.noiseHi){o.dn=.5;n.push("Image bruitée ou granuleuse : réduction du bruit renforcée.")}
     else if(m.noise>=REC.T.noiseMid){o.dn=.35;n.push("Un peu de bruit : réduction du bruit moyenne.")}
     if(m.p98-m.p2<.45)n.push("Image peu contrastée : contraste relevé.");
     else if(m.p50<.22)n.push("Image sombre : éclaircie légèrement.");
     return{o,n}},
-  T:{hiss:-52,dust:15,flick:.25,flickMean:.008,shake:1.2,cast:.08,noiseMid:1.6,noiseHi:3,blur:30},
+  T:{hiss:-52,dust:15,flick:.25,flickMean:.008,shake:2.5,cast:.08,noiseMid:1.6,noiseHi:3,blur:30},
   apply(r){
     const o=r.o,set=(id,v)=>{const e=$("#"+id);if(e){e.checked=v;try{localStorage.setItem(id,v?"1":"0")}catch(x){}}};
     set("o_dust",o.dust);set("o_voice",o.voice);set("o_defl",o.defl);set("o_stab",o.stab);
@@ -1264,13 +1274,14 @@ $("#ex").onclick=async()=>{
   if(!v.videoWidth)return;
   if(REC.pr){window.__exStarting=true;msg("Fin de l’analyse, puis l’export démarre…");REC.stop=true;REC.redo=curFile;try{await REC.pr}catch(e){}finally{window.__exStarting=false}}
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
-  exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp","1")}catch(e){}
+  exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
+  try{DIAG.send("export_debut",{})}catch(e){}
   window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
   $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.20)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.21)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1283,8 +1294,8 @@ $("#ex").onclick=async()=>{
       if(window.__plan&&L>1920&&window.__plan.length/FPS>60){msg("Version longue : export en Full HD pour ne pas saturer la mémoire de l’iPhone.");continue}
       size(L);
       const c={codec:cv.width*cv.height>2073600*1.2?"avc1.640033":"avc1.640028",width:cv.width,height:cv.height,
-        bitrate:Math.round(cv.width*cv.height*OUTF*.07),framerate:OUTF,avc:{format:"avc"},latencyMode:"quality"};
-      if(c.bitrate*(window.__plan?window.__plan.length/OFPS:dT)/8>7e8&&L!==1280){msg("Vidéo longue : taille réduite pour ne pas saturer la mémoire.");continue}
+        bitrate:Math.round(cv.width*cv.height*OUTF*(window.__safe?.05:.07)),framerate:OUTF,avc:{format:"avc"},latencyMode:"quality"};
+      if(c.bitrate*(window.__plan?window.__plan.length/OFPS:dT)/8>(window.__safe?2e8:3.2e8)&&L!==1280){msg("Vidéo longue : export en "+(L>1920?"Full HD":"taille réduite")+" pour ne pas saturer la mémoire de l’iPhone.");window.__memDown=true;continue}
       if((await VideoEncoder.isConfigSupported(c)).supported){cfg=c;break}
     }
     if(!cfg)throw new Error("Encodage vidéo non pris en charge.");
@@ -1420,13 +1431,21 @@ $("#ex").onclick=async()=>{
       try{const n=Math.max(1,total);window.__timing=v.videoWidth+"×"+v.videoHeight+" à "+(Math.round(OFPS*10)/10)+" i/s, sortie "+cfg.width+"×"+cfg.height+" : attente image "+Math.round(tW/n)+" ms, traitement "+Math.round(tD/n)+" ms (dessin "+Math.round(tDr/n)+", image "+Math.round(tVF/n)+", contrôle "+Math.round(tDu/n)+", envoi "+Math.round(tEn/n)+"), encodage "+Math.round(tQ/n)+" ms par image"+(window.__seqInfo?" ["+window.__seqInfo+"]":(rdr?"":" [lecture classique]"))}catch(e){}
       try{const el=(performance.now()-T0)/1000;if(!plan&&el>3)localStorage.setItem("spd",JSON.stringify({r:total/el,p:cv.width*cv.height}))}catch(e){}
       const build=wa=>{
-        const tg=new Mp4Muxer.ArrayBufferTarget();
-        const mx=new Mp4Muxer.Muxer({target:tg,fastStart:"in-memory",video:{codec:"avc",width:cfg.width,height:cfg.height},
+        /* écriture par morceaux (moins de mémoire qu'un seul gros tampon : évite que l'iPhone recharge la page sur les longues vidéos) */
+        const parts=[],starts=[];let end=0;
+        const put=(data,pos)=>{
+          if(pos>=end){parts.push(data);starts.push(pos);end=pos+data.byteLength;return}
+          /* réécriture d'un en-tête déjà écrit : on la recopie dans les morceaux concernés */
+          let lo=0,hi=starts.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(starts[m]<=pos)lo=m;else hi=m-1}
+          let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
+          if(pos+data.byteLength>end){const tail=data.subarray(end-pos);parts.push(tail.slice());starts.push(end);end=pos+data.byteLength}};
+        const tg=new Mp4Muxer.StreamTarget({onData:(data,pos)=>put(data,pos)});
+        const mx=new Mp4Muxer.Muxer({target:tg,fastStart:false,video:{codec:"avc",width:cfg.width,height:cfg.height},
           ...(wa?{audio:{codec:"aac",numberOfChannels:acfg.numberOfChannels,sampleRate:acfg.sampleRate}}:{})});
         vch.forEach(([c,m])=>mx.addVideoChunk(c,m));
         if(wa&&rawA)rawA.samples.forEach((s,i)=>mx.addAudioChunkRaw(s.data,"key",s.ts,s.dur,i===0?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:rawA.ch,sampleRate:rawA.sr,description:rawA.asc}}:undefined));
         else if(wa)ach.forEach(([c,m])=>mx.addAudioChunk(c,m));
-        mx.finalize();return new Blob([tg.buffer],{type:"video/mp4"});
+        mx.finalize();const b=new Blob(parts,{type:"video/mp4"});parts.length=0;return b;
       };
       var wa=!!acfg;msg("Vérification du fichier…");
       try{outBlob=build(wa)}catch(e){audioWhy="l’ajout du son a échoué ("+((e&&e.message)||"erreur")+")";wa=false;outBlob=build(false)}
