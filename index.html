@@ -199,7 +199,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.21</span>
+  <span class="tag">sur ton téléphone · v2.22</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -1195,6 +1195,12 @@ const DIAG={last:null,
 };
 setTimeout(()=>{try{DIAG.flush()}catch(e){}},4000);
 $("#diagb").onclick=async()=>{const t=JSON.stringify(DIAG.hist().map(({sent,...x})=>x));try{await navigator.clipboard.writeText(t);msg("Diagnostic copié ("+DIAG.hist().length+" mesures) : colle-le dans la conversation avec Claude.")}catch(e){msg("Copie impossible ici.")}};
+/* nom de fichier unique : nom d'origine + numéro qui augmente à chaque export + date et heure (jamais deux fois le même nom) */
+function uniqName(src,ext){
+  let n=1;try{n=(+localStorage.getItem("fileno")||0)+1;localStorage.setItem("fileno",n)}catch(e){n=Math.floor(Math.random()*9000)+1000}
+  const d=new Date(),z=x=>String(x).padStart(2,"0");
+  const base=((src||"").replace(/\.[^.]+$/,"").replace(/[^A-Za-z0-9À-ÿ_-]+/g,"_").slice(0,30))||"video";
+  return base+"-retouche-"+String(n).padStart(4,"0")+"-"+d.getFullYear()+z(d.getMonth()+1)+z(d.getDate())+"-"+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds())+"."+ext}
 /* Lecture */
 $("#pp").onclick=()=>{if(v.paused)v.play();else v.pause()};
 v.onplay=()=>{$("#pp").textContent="Pause"};
@@ -1281,7 +1287,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.21)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.22)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -2062,7 +2068,7 @@ $("#bat").onclick=()=>{
 $("#pickp").onclick=()=>$("#fp").click();
 $("#fp").onchange=e=>{
   if(exporting||window.__exStarting){e.target.value="";msg("Un export est en cours : attends la fin ou touche « Annuler » avant de choisir une photo.");return}
-  const f=e.target.files[0];if(!f)return;
+  const f=e.target.files[0];if(!f)return;window.__photoName=f.name;
   const u=URL.createObjectURL(f),im=new Image();msg("Chargement de la photo…");
   im.onload=()=>{
     const k=Math.min(1,4096/Math.max(im.naturalWidth,im.naturalHeight));
@@ -2108,7 +2114,7 @@ $("#exall").onclick=async()=>{
       await $("#ex").onclick();
       if(window.__retryPending){window.__retryPending=false;await wait(800);continue}
       if(!outBlob)break; /* annulé ou échec */
-      const nm=(curFile.name||"video").replace(/\.[^.]+$/,"")+"-retouche."+(outBlob.type.includes("webm")?"webm":"mp4");
+      const nm=uniqName(curFile.name,outBlob.type.includes("webm")?"webm":"mp4");
       batch.done.push({blob:outBlob,name:nm,src:curFile,off:(window.__baLastOff||0),ok:!window.__plan});outBlob=null;btUpdate();
       if(!batch.todo.length)break;
       await loadFile(batch.todo.shift());await wait(300);
@@ -2134,7 +2140,7 @@ $("#svall").onclick=async()=>{
 };
 $("#sv").onclick=async()=>{
   if(!outBlob)return;
-  const isImg=outBlob.type.startsWith("image"),name=isImg?"photo-retouchee.jpg":"retouche."+(outBlob.type.includes("webm")?"webm":"mp4");
+  const isImg=outBlob.type.startsWith("image"),name=isImg?uniqName(window.__photoName||"photo","jpg"):uniqName(curFile&&curFile.name,outBlob.type.includes("webm")?"webm":"mp4");
   if(dl){
     try{await dl.save({filename:name,data:outBlob});msg(isImg?"Photo enregistrée.":"Vidéo enregistrée.")}
     catch(e){if(!e||e.code!=="declined")msg("Enregistrement impossible : "+((e&&e.message)||"erreur inconnue"))}
