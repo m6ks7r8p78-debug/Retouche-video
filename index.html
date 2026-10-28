@@ -206,7 +206,7 @@ input[type=range]{accent-color:var(--g2)}
   <section class="hero">
     <p class="eyebrow">Vidéos et photos anciennes</p>
     <h1>Redonne de l’<em>éclat</em> à tes vieux films de famille 🎞️</h1>
-    <p class="lead">Moins de blocs et de bruit, des couleurs plus justes, une image plus nette. Tout est calculé sur ton téléphone.</p>
+    <p class="lead">Moins de blocs et de bruit, des couleurs plus justes, une image plus nette. Tout est calculé sur ton téléphone : gratuit, sans filigrane, sans inscription, et ça marche même en mode avion.</p>
     <ol class="steps">
       <li><span class="em">📱</span><b>Choisir</b>une vidéo ou une photo</li>
       <li><span class="em">👀</span><b>Comparer</b>maintiens « Original »</li>
@@ -266,7 +266,7 @@ input[type=range]{accent-color:var(--g2)}
 
       <div class="panel" id="tp1">
         <div id="qwrap">
-          <p class="help">Choisis la taille du résultat. Les réglages d’image sont faits tout seuls.</p>
+          <p class="help">Choisis la taille du résultat. Les réglages d’image sont faits tout seuls. Astuce : pars toujours de la vidéo la plus originale possible (celle de la galerie, pas une copie renvoyée par une messagerie).</p>
           <div class="seg" role="group" aria-label="Taille du résultat">
             <button data-q="3840" aria-pressed="false">4K<small>plus net, plus long</small></button>
             <button data-q="1920" aria-pressed="true">Full HD<small>conseillé</small></button>
@@ -294,6 +294,7 @@ input[type=range]{accent-color:var(--g2)}
           <video id="rv" controls playsinline></video>
           <button class="btn main" id="sv" style="margin-top:10px" hidden>Enregistrer la vidéo</button>
           <button class="btn" id="rtb" style="margin-top:8px" hidden>Refaire avec le son (en temps réel)</button>
+          <p class="help" id="socn" hidden style="margin:10px 0 0">Pour publier sur TikTok ou Instagram : active « Importer en haute qualité » dans l’app au moment de publier, sinon elle recompresse fortement la vidéo.</p>
           <p class="help" id="dupn" hidden style="margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--line)"></p>
           <button class="btn" id="bab" style="margin-top:8px" hidden>🎬 Créer un avant / après à partager (10 s)</button>
           <button class="btn" id="kbb" style="margin-top:8px" hidden>🎞️ Animer la photo en vidéo (8 s, zoom lent)</button>
@@ -367,7 +368,7 @@ const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||
 const cv=$("#cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:false});
 const v=document.createElement("video");v.playsInline=true;v.muted=true;v.setAttribute("playsinline","");v.preload="auto";
 v.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(v);
-const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,ai:0,cs:.7,wb:0};let WBG=[1,1,1],DFG=1;
+const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,ai:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],r:1};let WBG=[1,1,1],DFG=1;
 let show=1,looping=false,exporting=false,cancel=false,az=false,dl=null,url=null,outUrl=null,outBlob=null,curFile=null;
 const PREVIEW=1280,FPS=30;let OFPS=30;
 let fpsC=null;
@@ -576,6 +577,42 @@ for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++){vec3 n=texture2D(t,uv+vec2(float(i)
 float k=exp(-dy*dy/.0177-float(i*i+j*j)*4./18.);acc+=k*vec2(n.b-yn,n.r-yn);ws+=k;}
 vec2 u=mix(u0,acc/ws,cs);c.r=y+u.y;c.b=y+u.x;c.g=(y-.299*c.r-.114*c.b)/.587;}
 gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
+/* anti-blocs : adoucit les frontières des carrés de compression 8×8 (vieux téléphones, vidéos très compressées),
+   seulement là où l'écart est petit (un vrai contour, plus marqué, est laissé intact) */
+const FSKM=`precision highp float;uniform sampler2D t;uniform vec2 px,ph;
+float L(vec3 c){return dot(c,vec3(.299,.587,.114));}
+void main(){vec2 k=floor(gl_FragCoord.xy);vec2 o=ph+8.*(k-1.);vec3 s=vec3(0.);float s2=0.,n=0.;
+  for(int i=0;i<8;i++)for(int j=0;j<8;j++){vec2 q=o+vec2(float(i),float(j))+.5;if(q.x<0.||q.y<0.||q.x*px.x>1.||q.y*px.y>1.)continue;vec3 c=texture2D(t,q*px).rgb;s+=c;float y=L(c);s2+=y*y;n+=1.;}
+  if(n<1.){gl_FragColor=vec4(0.);return;}s/=n;float m=L(s);float sd=sqrt(max(0.,s2/n-m*m));gl_FragColor=vec4(s,clamp(sd*4.,0.,1.));}`;
+const FSK=`precision highp float;varying vec2 uv;uniform sampler2D t,tm;uniform vec2 px,ph,bs;uniform float db;
+float L(vec3 c){return dot(c,vec3(.299,.587,.114));}
+vec3 S(vec2 o){return texture2D(t,uv+o*px).rgb;}
+vec3 edge(float m,vec2 d,vec3 c){
+  /* m : position du pixel dans son bloc (0..7) le long de la direction d */
+  if(m>.5&&m<6.5)return c;
+  float side=m<.5?1.:-1.;              /* 0 : premier pixel du bloc (côté q) ; 7 : dernier (côté p) */
+  vec3 p0,p1,q0,q1;
+  if(side>0.){q0=c;q1=S(d);p0=S(-d);p1=S(-2.*d);}else{p0=c;p1=S(-d);q0=S(d);q1=S(2.*d);}
+  /* on ne corrige que la « marche » en trop : l'écart à la frontière moins la pente naturelle de l'image de part et d'autre */
+  vec3 ex=(q0-p0)-.5*((q1-q0)+(p0-p1));
+  float a=abs(L(ex)),bp=abs(L(p1)-L(p0)),bq=abs(L(q1)-L(q0));
+  float al=.11*db,be=.035;
+  if(a<.006||a>=al||bp>=be||bq>=be||a<1.5*max(bp,bq))return c;
+  float k=(1.-a/al)*db;
+  return side>0.?c-ex*.375*k:c+ex*.375*k;}
+void main(){vec3 c=texture2D(t,uv).rgb;vec2 pp=uv/px;vec2 q=floor(pp)-ph;
+  vec2 m=q-8.*floor(q/8.);
+  /* zones plates : on remplace l'escalier des carrés par une pente douce (moyennes des blocs interpolées),
+     sauf sur les vrais contours (gros écart entre blocs) et les blocs texturés */
+  vec2 u=(pp-ph)/8.+1.;vec4 it=texture2D(tm,u/bs);vec2 kc=(floor(u)+.5)/bs,d1=vec2(1.,0.)/bs,d2=vec2(0.,1.)/bs;
+  vec4 c0=texture2D(tm,kc);float st=max(max(abs(L(texture2D(tm,kc+d1).rgb)-L(c0.rgb)),abs(L(texture2D(tm,kc-d1).rgb)-L(c0.rgb))),max(abs(L(texture2D(tm,kc+d2).rgb)-L(c0.rgb)),abs(L(texture2D(tm,kc-d2).rgb)-L(c0.rgb))));
+  /* un vrai « escalier » : blocs plats à l'intérieur mais marches entre eux ; une pente douce (dégradé de peau) a des blocs qui varient autant que leurs marches → on n'y touche pas */
+  float sdv=c0.a*.25+.002,stair=smoothstep(5.,9.,st/sdv);
+  float w=db*stair*(1.-smoothstep(.06,.16,max(it.a,c0.a)))*(1.-smoothstep(.09,.18,st));
+  vec3 sm=c+(it.rgb-c0.rgb);             /* garde le détail du pixel, remplace seulement la marche du bloc */
+  c=mix(c,sm,w);
+  c=edge(m.x,vec2(1.,0.),c);c=edge(m.y,vec2(0.,1.),c);
+  gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
 const FSD=`precision highp float;varying vec2 uv;uniform sampler2D t,tp,tn;uniform vec2 px;uniform float thr;
 vec3 med3(vec3 a,vec3 b,vec3 c){return max(min(a,b),min(max(a,b),c));}
 float mx(vec3 v){return max(v.r,max(v.g,v.b));}
@@ -587,11 +624,11 @@ if(mx(abs(c-med3(c,p,n)))>thr){cnt+=1.;if(abs(float(i))<1.5&&abs(float(j))<1.5)n
 vec3 m0=med3(c0,texture2D(tp,uv).rgb,texture2D(tn,uv).rgb);float d0=mx(abs(c0-m0));
 float k=(mov<.5&&near>.5&&cnt<=40.)?smoothstep(thr*.35,thr*.7,d0):0.;
 gl_FragColor=vec4(mix(c0,m0,k),1.);}`;
-const U={},UA={},UB={},UP={},UD={};let DUST={on:false,p:null,n:null};let tex,tex2,tex3,tex4,tex16,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progA,progB,progP,aiOK=true,wide=true;
+const U={},UA={},UB={},UP={},UD={},UK={};let progK=null,texK=null,progKM=null,texKM=null;const UKM={};let kmW=0,kmH=0;let DUST={on:false,p:null,n:null};let tex,tex2,tex3,tex4,tex16,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progA,progB,progP,aiOK=true,wide=true;
 if(gl){
   const mk=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
   const pg=(vs,fs)=>{const g=gl.createProgram();gl.attachShader(g,mk(gl.VERTEX_SHADER,vs));gl.attachShader(g,mk(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(g,0,"p");gl.linkProgram(g);return g};
-  prog=pg(VS,FS);progA=pg(VSA,FSA);progB=pg(VSA,FSB);progP=pg(VSA,FSP);progD=pg(VSA,FSD);
+  prog=pg(VS,FS);progA=pg(VSA,FSA);progB=pg(VSA,FSB);progP=pg(VSA,FSP);progD=pg(VSA,FSD);progK=pg(VSA,FSK);progKM=pg(VSA,FSKM);
   if(!gl.getProgramParameter(progA,gl.LINK_STATUS)||!gl.getProgramParameter(progP,gl.LINK_STATUS)){wide=false;progA=pg(VSA,FSA0)}
   aiOK=!!gl.getProgramParameter(progA,gl.LINK_STATUS);
   if(!aiOK)setTimeout(()=>msg("La restauration IA n’est pas disponible sur cet appareil : les autres réglages restent actifs."),800);
@@ -600,9 +637,9 @@ if(gl){
   gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
   const mt=()=>{const x=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,x);
     [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,c])=>gl.texParameteri(gl.TEXTURE_2D,a,c));return x};
-  tex=mt();tex2=mt();tex3=mt();tex4=mt();tex16=mt();texP=mt();texN=mt();texD=mt();fbo=gl.createFramebuffer();
+  texK=mt();texKM=mt();tex=mt();tex2=mt();tex3=mt();tex4=mt();tex16=mt();texP=mt();texN=mt();texD=mt();fbo=gl.createFramebuffer();
   const loc=(g,o,n)=>n.forEach(k=>{o[k]=gl.getUniformLocation(g,k)});
-  loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex","lf","lrow","lrow2","lmx","lnb","tl"]);loc(progA,UA,["t","t4","t16","px","s4","s16","ai"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progP,UP,["t","sz"]);loc(progD,UD,["t","tp","tn","px","thr"]);
+  loc(progK,UK,["t","tm","px","ph","bs","db"]);loc(progKM,UKM,["t","px","ph"]);loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex","lf","lrow","lrow2","lmx","lnb","tl"]);loc(progA,UA,["t","t4","t16","px","s4","s16","ai"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progP,UP,["t","sz"]);loc(progD,UD,["t","tp","tn","px","thr"]);
 }
 function pass(pg,src,dst,w,h,set){
   gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
@@ -618,8 +655,14 @@ function draw(el){
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,s0);
   const w4=Math.ceil(w/4),h4=Math.ceil(h/4),w16=Math.ceil(w4/4),h16=Math.ceil(h4/4);
-  if(fw!==w||fh!==h){fw=w;fh=h;[[tex2,w,h],[tex3,w,h],[tex4,w4,h4],[tex16,w16,h16],[texD,w,h]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
-  let dustSwap=false;
+  if(fw!==w||fh!==h){fw=w;fh=h;[[tex2,w,h],[tex3,w,h],[tex4,w4,h4],[tex16,w16,h16],[texD,w,h],[texK,w,h]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
+  let dustSwap=false,dbSwap=false;const tex0=tex;
+  if(show&&P.db>0&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
+    const bw=Math.ceil(w/8)+2,bh=Math.ceil(h/8)+2;
+    if(kmW!==bw||kmH!==bh){kmW=bw;kmH=bh;gl.bindTexture(gl.TEXTURE_2D,texKM);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,bw,bh,0,gl.RGBA,gl.UNSIGNED_BYTE,null)}
+    pass(progKM,tex,texKM,bw,bh,()=>{gl.uniform1i(UKM.t,0);gl.uniform2f(UKM.px,1/w,1/h);gl.uniform2f(UKM.ph,DB.ph[0],DB.ph[1])});
+    gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,texKM);gl.activeTexture(gl.TEXTURE0);
+    pass(progK,tex,texK,w,h,()=>{gl.uniform1i(UK.t,0);gl.uniform1i(UK.tm,5);gl.uniform2f(UK.px,1/w,1/h);gl.uniform2f(UK.bs,bw,bh);gl.uniform2f(UK.ph,DB.ph[0],DB.ph[1]);gl.uniform1f(UK.db,P.db)});const k=tex;tex=texK;texK=k;dbSwap=true}
   if(show&&DUST.on&&DUST.p&&DUST.n&&progD&&gl.getProgramParameter(progD,gl.LINK_STATUS)){
     try{
       gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,texP);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,DUST.p);
@@ -644,13 +687,14 @@ function draw(el){
   gl.uniform2f(U.px,1/w,1/h);gl.uniform1f(U.on,show);
   {const T=stabTR();gl.uniform3f(U.tr,T[0],T[1],T[2])}
   gl.uniform1f(U.sp,show&&split?split:0);
-  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tex);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
+  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tex0);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
   for(const k of ["br","co","sa","wa"])gl.uniform1f(U[k],P[k]);
   gl.uniform1f(U.ex,show?(exporting?DFG:REC.pv()):1);
   {const on=show&&FLT.tex&&FLT.sel>=0?FLT.f:0;gl.uniform1f(U.lf,on);if(on>0){gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,FLT.tex);gl.uniform1i(U.tl,4);gl.activeTexture(gl.TEXTURE0);gl.uniform1f(U.lrow,FLT.sel);gl.uniform1f(U.lrow2,FLT.sel2>=0?FLT.sel2:FLT.sel);gl.uniform1f(U.lmx,FLT.sel2>=0?FLT.mx:0);gl.uniform1f(U.lnb,FLT.nb)}}
   {const w=show?P.wb:0;gl.uniform3f(U.gn,1+(WBG[0]-1)*w,1+(WBG[1]-1)*w,1+(WBG[2]-1)*w)}
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   if(dustSwap){const k=tex;tex=texD;texD=k}
+  if(dbSwap){const k=tex;tex=texK;texK=k}
 }
 function size(L){
   const [w,h]=dims(cur());if(!w)return;
@@ -951,13 +995,13 @@ function loadFile(f){
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
   curFile=f;az=false;try{FLT.reset()}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
-  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","bab","bares","kbb","kbres"].forEach(i=>$("#"+i).hidden=true);
+  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbres"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
   });
 }
 v.onloadedmetadata=()=>{
   if(window.__metaDone){const f=window.__metaDone;window.__metaDone=null;setTimeout(f,0)}
-  STAB=null;stabOn=false;{let b="0";try{b=localStorage.getItem("o_fluid")||"0"}catch(e){}$('#o_fluid').checked=b==="1";["o_stab","o_dust","o_defl","o_voice"].forEach(i=>{$("#"+i).checked=false})/* réglés par l'analyse de CETTE vidéo */}$('#t_in').value=0;$('#t_out').value=1000;$('#t_txt').textContent='tout';
+  STAB=null;stabOn=false;{let b="0";try{b=localStorage.getItem("o_fluid")||"0"}catch(e){}$('#o_fluid').checked=b==="1";["o_stab","o_dust","o_defl","o_voice"].forEach(i=>{$("#"+i).checked=false});P.db=0/* réglés par l'analyse de CETTE vidéo */}$('#t_in').value=0;$('#t_out').value=1000;$('#t_txt').textContent='tout';
   $("#app").hidden=false;$("#st0").hidden=true;$("#pick .lbl").textContent="Autre vidéo";mode="video";setMode();clearTimeout(wd);
   size(PREVIEW);msg("");
   chips([v.videoWidth+"×"+v.videoHeight,fmtT(v.duration),(curFile.size<524288?"<1":(curFile.size/1048576).toFixed(0))+" Mo"]);$("#tc").hidden=false;$("#tc").textContent="0:00 / "+fmtT(v.duration);updateEst();
@@ -991,6 +1035,15 @@ const AZ={
       res.push([g,l/(bs*bs)])}
     res.sort((a,b)=>a[0]-b[0]);const n=Math.max(1,Math.floor(res.length*.3));let m=0;for(let i=0;i<n;i++)m+=res[i][1];m/=n;
     return Math.sqrt(Math.PI/2)*m/6},
+  /* carrés de compression : compare les sauts de luminosité sur la grille 8×8 (et son décalage) aux sauts ailleurs */
+  block(el){const w=el.videoWidth||el.naturalWidth,h=el.videoHeight||el.naturalHeight;if(!w||w*h>2.2e6)return null;
+    if(!AZ.bc)AZ.bc=document.createElement("canvas");const c=AZ.bc;c.width=w;c.height=h;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(el,0,0,w,h);
+    const d=x.getImageData(0,0,w,h).data,y=new Float32Array(w*h);for(let i=0,k=0;i<d.length;i+=4,k++)y[k]=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+    const ex=new Float64Array(8),ey=new Float64Array(8),nx=new Float64Array(8),ny=new Float64Array(8);
+    for(let j=1;j<h-1;j+=2)for(let i=1;i<w;i++){const g=Math.abs(y[j*w+i]-y[j*w+i-1]);if(g<24){ex[i&7]+=g;nx[i&7]++}}
+    for(let j=1;j<h;j++)for(let i=1;i<w-1;i+=2){const g=Math.abs(y[j*w+i]-y[(j-1)*w+i]);if(g<24){ey[j&7]+=g;ny[j&7]++}}
+    const an=(e,n)=>{let b=0,bv=0,sum=0;for(let p=0;p<8;p++){const m=e[p]/Math.max(1,n[p]);sum+=m;if(m>bv){bv=m;b=p}}const rest=(sum-bv)/7;return[b,bv/Math.max(.01,rest)]};
+    const [px_,rx]=an(ex,nx),[py_,ry]=an(ey,ny);return{px:px_,py:py_,r:Math.sqrt(rx*ry)}},
   /* netteté : gradient fort (95e centile), en niveaux de gris 0..255 */
   sharp(f){const{W,H,y}=f,g=[];for(let j=1;j<H-1;j+=2)for(let i=1;i<W-1;i+=2){const k=j*W+i;g.push(Math.abs(y[k+1]-y[k-1])+Math.abs(y[k+W]-y[k-W]))}
     g.sort((a,b)=>a-b);return g[Math.floor(g.length*.95)]},
@@ -1022,7 +1075,7 @@ const AZ={
     const pc=q=>{let a=0;for(let i=0;i<256;i++){a+=h[i];if(a>=q*n)return i/255}return 1};
     return{p2:pc(.02),p50:pc(.5),p98:pc(.98),sat:sat/(n*255)}},
   async run(el,o){
-    o=o||{};const dur=el.duration||1,fps=o.fps||30,dt=1/fps,P={n:0,dust:[],noise:[],sharp:[],p2:[],p50:[],p98:[],sat:[],gains:[],acc:[]};
+    o=o||{};const dur=el.duration||1,fps=o.fps||30,dt=1/fps,P={n:0,blk:[],dust:[],noise:[],sharp:[],p2:[],p50:[],p98:[],sat:[],gains:[],acc:[]};
     const pos=[.1,.22,.34,.46,.58,.7,.82,.92],tri=new Set([1,3,5]);
     for(let s=0;s<pos.length;s++){
       if(o.cancel&&o.cancel())return null;
@@ -1031,7 +1084,7 @@ const AZ={
       P.noise.push(AZ.noise(f));P.sharp.push(AZ.sharp(f));const g=AZ.gains(f);if(g)P.gains.push(g);P.n++;
       if(tri.has(s)&&dur>1){
         const a=AZ.grab(el,640);await AZ.seek(el,t+dt);const b=AZ.grab(el,640);await AZ.seek(el,t+2*dt);const c=AZ.grab(el,640);
-        P.dust.push(AZ.dust(a,b,c));
+        P.dust.push(AZ.dust(a,b,c));try{const bk=AZ.block(el);if(bk)P.blk.push(bk)}catch(e){}
         /* secousses : écart entre deux déplacements consécutifs sur miniatures */
         const ta=AZ.small(a,160),tb=AZ.small(b,160),tc=AZ.small(c,160);
         const s1=AZ.shift(ta,tb,6),s2=AZ.shift(tb,tc,6);P.acc.push(Math.hypot(s2[0]-s1[0],s2[1]-s1[1]));
@@ -1040,7 +1093,7 @@ const AZ={
     }
     const M=AZ.med,mg=k=>P.gains.length?M(P.gains.map(g=>g[k])):1;
     return{n:P.n,noise:M(P.noise),sharp:M(P.sharp),p2:M(P.p2),p50:M(P.p50),p98:M(P.p98),sat:M(P.sat),
-      dust:P.dust.length?M(P.dust):0,shake:P.acc.length?M(P.acc):0,gains:P.gains.length>=3?[mg(0),mg(1),mg(2)]:null};
+      blk:P.blk.length?{r:M(P.blk.map(b=>b.r)),px:M(P.blk.map(b=>b.px)),py:M(P.blk.map(b=>b.py))}:null,dust:P.dust.length?M(P.dust):0,shake:P.acc.length?M(P.acc):0,gains:P.gains.length>=3?[mg(0),mg(1),mg(2)]:null};
   },
   small(f,W){const k=f.W/W,H=Math.round(f.H/k),y=new Float32Array(W*H);for(let j=0;j<H;j++)for(let i=0;i<W;i++){let s=0,c=0;for(let dj=0;dj<k;dj++)for(let di=0;di<k;di++){s+=f.y[Math.min(f.H-1,Math.floor(j*k)+dj)*f.W+Math.min(f.W-1,Math.floor(i*k)+di)];c++}y[j*W+i]=s/c}return{W,H,y}}
 };
@@ -1049,7 +1102,8 @@ const AZ={
 /* ===== Recommandation automatique ===== */
 const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$("#o_defl").checked)return 1;const i=Math.round(v.currentTime*REC.ffps);return i>=0&&i<REC.fg.length?REC.fg[i]:1}catch(e){return 1}},
   recommend(m,fl){
-    const o={dust:false,defl:false,stab:false,voice:false,wb:null,dn:.2,sh:.3},n=[],it=[];
+    const o={dust:false,defl:false,stab:false,voice:false,wb:null,dn:.2,sh:.3,db:0,ph:[0,0]},n=[],it=[];
+    if(m.blk&&m.blk.r>=REC.T.blk){o.db=Math.max(.35,Math.min(1,(m.blk.r-1.15)/.45));o.ph=[m.blk.px,m.blk.py];n.push("Carrés de compression visibles (vieux téléphone, vidéo très compressée) : lissés.");it.push("db")}
     if(m.audio&&m.audio.peak>-45&&m.audio.floor>REC.T.hiss){o.voice=true;n.push("Son avec souffle ou bruit de fond constant : voix clarifiée.");it.push("voice")}
     if(m.dust>=REC.T.dust){o.dust=true;n.push("Poussières ou points noirs (≈"+Math.round(m.dust)+" par image) : effacement.");it.push("dust")}
     if(fl&&(fl.frac>=REC.T.flick||fl.mean>=REC.T.flickMean)){o.defl=true;n.push("Scintillement ("+Math.round(fl.frac*100)+" % des images) : anti-scintillement.");it.push("defl")}
@@ -1060,13 +1114,13 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
     if(m.p98-m.p2<.45){n.push("Image peu contrastée : contraste relevé.");it.push("img")}
     else if(m.p50<.22){n.push("Image sombre : éclaircie légèrement.");it.push("img")}
     return{o,n,it}},
-  T:{hiss:-52,dust:15,flick:.25,flickMean:.008,shake:2.5,cast:.08,noiseMid:1.6,noiseHi:3,blur:30},
+  T:{blk:1.25,hiss:-52,dust:15,flick:.25,flickMean:.008,shake:2.5,cast:.08,noiseMid:1.6,noiseHi:3,blur:30},
   apply(r){
     const o=r.o,set=(id,v)=>{const e=$("#"+id);if(e){e.checked=v;try{localStorage.setItem(id,v?"1":"0")}catch(x){}}};
     set("o_dust",o.dust);set("o_voice",o.voice);set("o_defl",o.defl);set("o_stab",o.stab);
     try{stabEnable(o.stab)}catch(e){}
     if(o.wb){WBG=o.wb;P.wb=.85}else{WBG=[1,1,1];P.wb=0}
-    P.dn=o.dn;P.sh=o.sh;sync()},
+    P.dn=o.dn;P.sh=o.sh;P.db=o.db;DB.ph=o.ph;sync()},
   show(r,title){
     $("#rec").hidden=false;$("#rec_t").textContent=title||(r.n.length?"Voici ce que j’ai repéré et réglé pour toi :":"Ta vidéo est déjà en bon état : réglages doux appliqués.");
     const ul=$("#rec_l");ul.textContent="";REC.img={br:P.br,co:P.co,sa:P.sa};
@@ -1079,7 +1133,7 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
     const set=(id,v)=>{const e=$("#"+id);if(e)e.checked=v};
     if(k==="voice")set("o_voice",on);else if(k==="dust")set("o_dust",on);else if(k==="defl")set("o_defl",on);
     else if(k==="stab"){set("o_stab",on);try{stabEnable(on)}catch(e){}}
-    else if(k==="wb"){P.wb=on?.85:0}else if(k==="dn"){P.dn=on?r.o.dn:.2}
+    else if(k==="wb"){P.wb=on?.85:0}else if(k==="db"){P.db=on?r.o.db:0}else if(k==="dn"){P.dn=on?r.o.dn:.2}
     else if(k==="img"){const g=REC.img||{br:0,co:1,sa:1};Object.assign(P,on?g:{br:0,co:1.04,sa:1})}
     sync()},
   async profile(){
@@ -1097,7 +1151,7 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       if(curFile!==my)return;
       const r=REC.recommend(m,fl);REC.last={m,fl,r};window.__prof={m,fl};
       REC.apply(r);REC.show(r);
-      try{DIAG.send("analyse",{ms:Math.round(performance.now()-TA),mesures:{bruit:+m.noise.toFixed(2),nettete:Math.round(m.sharp),poussieres:Math.round(m.dust),tremble:m.shake,dominante:m.gains&&m.gains.map(x=>+x.toFixed(2)),son:m.audio},scint:fl,reco:r.n})}catch(e){}
+      try{DIAG.send("analyse",{ms:Math.round(performance.now()-TA),mesures:{bruit:+m.noise.toFixed(2),nettete:Math.round(m.sharp),poussieres:Math.round(m.dust),tremble:m.shake,blocs:m.blk&&+m.blk.r.toFixed(2),dominante:m.gains&&m.gains.map(x=>+x.toFixed(2)),son:m.audio},scint:fl,reco:r.n})}catch(e){}
     }catch(e){ok=false;$("#rec").hidden=true}
     finally{if(curFile===my){try{await seekEl(v,t0)}catch(e){}draw()}if(REC.pr===pr)REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
   }
@@ -1478,7 +1532,7 @@ $("#ex").onclick=async()=>{
       if(window.__plan&&L>1920&&window.__plan.length/FPS>60){msg("Version longue : export en Full HD pour ne pas saturer la mémoire de l’iPhone.");continue}
       size(L);
       const c={codec:cv.width*cv.height>2073600*1.2?"avc1.640033":"avc1.640028",width:cv.width,height:cv.height,
-        bitrate:Math.round(cv.width*cv.height*OUTF*(window.__safe?.05:.07)),framerate:OUTF,avc:{format:"avc"},latencyMode:"quality"};
+        bitrate:(()=>{const px=cv.width*cv.height*OUTF,dd=window.__plan?window.__plan.length/OFPS:dT,bud=window.__safe?2e8:3e8;/* débit élevé (les réseaux recompressent : mieux vaut leur donner une source riche), réduit seulement si la vidéo est longue */return Math.round(px*Math.max(.05,Math.min(window.__safe?.08:.14,bud*8/(px*Math.max(1,dd)))))})(),framerate:OUTF,avc:{format:"avc"},latencyMode:"quality"};
       if(c.bitrate*(window.__plan?window.__plan.length/OFPS:dT)/8>(window.__safe?2e8:3.2e8)&&L!==1280){msg("Vidéo longue : export en "+(L>1920?"Full HD":"taille réduite")+" pour ne pas saturer la mémoire de l’iPhone.");window.__memDown=true;continue}
       if((await VideoEncoder.isConfigSupported(c)).supported){cfg=c;break}
     }
@@ -1646,7 +1700,7 @@ $("#ex").onclick=async()=>{
       vch.length=0;ach.length=0;
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
-      $("#rv").hidden=false;baShow(!isPlan,tS);if(!window.__baMode){$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
+      $("#rv").hidden=false;baShow(!isPlan,tS);if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
       msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(!plan&&maxRun>=3?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
       try{DIAG.send("export",{ok:true,wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,msg:$("#st1").textContent.slice(0,400)})}catch(e){}
