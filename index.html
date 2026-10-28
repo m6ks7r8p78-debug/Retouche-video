@@ -88,7 +88,7 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:10px 0 0}
 .tab[aria-selected="true"]{background:var(--acc);color:var(--accink)}
 .panel{padding-top:14px}
 .panel h2{font:700 17px/1.2 var(--fd);margin:0 0 6px}
-.rec ul{margin:8px 0 0;padding-left:18px;font-size:14px;line-height:1.5}#adv>summary{cursor:pointer;font-weight:700;padding:12px 2px}
+.rec ul label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}.rec ul label input{margin-top:3px;flex:none;width:18px;height:18px}.rec ul:has(label){list-style:none;padding-left:0}.rec ul{margin:8px 0 0;padding-left:18px;font-size:14px;line-height:1.5}#adv>summary{cursor:pointer;font-weight:700;padding:12px 2px}
 .fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.fgrid button{padding:0;border:2px solid transparent;border-radius:10px;background:none;overflow:hidden;position:relative;cursor:pointer}.fgrid button.on{border-color:var(--acc,#7b5cff)}.fgrid canvas{width:100%;display:block}.fgrid span{position:absolute;left:4px;bottom:3px;font:600 11px/1 system-ui;color:#fff;text-shadow:0 1px 2px #000}
 .help{margin:0 0 12px;font-size:14px;color:var(--mut)}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -199,7 +199,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.22</span>
+  <span class="tag">sur ton téléphone · v2.23</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -263,7 +263,7 @@ input[type=range]{accent-color:var(--g2)}
           <select id="q" hidden><option value="3840">4K</option><option value="1920" selected>Full HD</option><option value="-1">Taille d’origine (avant un autre outil)</option></select>
           <p id="qhint"></p>
         </div>
-        <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul></div>
+        <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><p class="help" id="rec_hint" hidden style="margin:6px 0 0">Tout est déjà appliqué. Décoche ce que tu ne veux pas, puis touche le bouton ci-dessous pour valider.</p></div>
         <button class="btn main big" id="ex" style="margin-top:12px">Améliorer en 4K</button>
         <progress id="pg" value="0" max="1" hidden></progress>
         <p class="st" id="st1" role="status"></p>
@@ -1030,17 +1030,17 @@ const AZ={
 /* ===== Recommandation automatique ===== */
 const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$("#o_defl").checked)return 1;const i=Math.round(v.currentTime*REC.ffps);return i>=0&&i<REC.fg.length?REC.fg[i]:1}catch(e){return 1}},
   recommend(m,fl){
-    const o={dust:false,defl:false,stab:false,voice:false,wb:null,dn:.2,sh:.3},n=[];
-    if(m.audio&&m.audio.peak>-45&&m.audio.floor>REC.T.hiss){o.voice=true;n.push("Son avec souffle ou bruit de fond constant : voix clarifiée activée.")}
-    if(m.dust>=REC.T.dust){o.dust=true;n.push("Poussières ou points noirs détectés (≈"+Math.round(m.dust)+" par image) : effacement activé.")}
-    if(fl&&(fl.frac>=REC.T.flick||fl.mean>=REC.T.flickMean)){o.defl=true;n.push("Scintillement détecté ("+Math.round(fl.frac*100)+" % des images) : anti-scintillement activé.")}
-    if(m.shake>=REC.T.shake){o.stab=true;n.push("Image très tremblante : stabilisation activée (l’image est légèrement recadrée, 10 % au plus).")}
-    if(m.gains){const sp=Math.max(...m.gains)-Math.min(...m.gains);if(sp>=REC.T.cast){o.wb=m.gains;n.push("Dominante de couleur détectée : couleurs équilibrées.")}}
-    if(m.noise>=REC.T.noiseHi){o.dn=.5;n.push("Image bruitée ou granuleuse : réduction du bruit renforcée.")}
-    else if(m.noise>=REC.T.noiseMid){o.dn=.35;n.push("Un peu de bruit : réduction du bruit moyenne.")}
-    if(m.p98-m.p2<.45)n.push("Image peu contrastée : contraste relevé.");
-    else if(m.p50<.22)n.push("Image sombre : éclaircie légèrement.");
-    return{o,n}},
+    const o={dust:false,defl:false,stab:false,voice:false,wb:null,dn:.2,sh:.3},n=[],it=[];
+    if(m.audio&&m.audio.peak>-45&&m.audio.floor>REC.T.hiss){o.voice=true;n.push("Son avec souffle ou bruit de fond constant : voix clarifiée.");it.push("voice")}
+    if(m.dust>=REC.T.dust){o.dust=true;n.push("Poussières ou points noirs (≈"+Math.round(m.dust)+" par image) : effacement.");it.push("dust")}
+    if(fl&&(fl.frac>=REC.T.flick||fl.mean>=REC.T.flickMean)){o.defl=true;n.push("Scintillement ("+Math.round(fl.frac*100)+" % des images) : anti-scintillement.");it.push("defl")}
+    if(m.shake>=REC.T.shake){o.stab=true;n.push("Image très tremblante : stabilisation (image légèrement recadrée, 10 % au plus).");it.push("stab")}
+    if(m.gains){const sp=Math.max(...m.gains)-Math.min(...m.gains);if(sp>=REC.T.cast){o.wb=m.gains;n.push("Dominante de couleur : couleurs équilibrées.");it.push("wb")}}
+    if(m.noise>=REC.T.noiseHi){o.dn=.5;n.push("Image bruitée ou granuleuse : réduction du bruit renforcée.");it.push("dn")}
+    else if(m.noise>=REC.T.noiseMid){o.dn=.35;n.push("Un peu de bruit : réduction du bruit moyenne.");it.push("dn")}
+    if(m.p98-m.p2<.45){n.push("Image peu contrastée : contraste relevé.");it.push("img")}
+    else if(m.p50<.22){n.push("Image sombre : éclaircie légèrement.");it.push("img")}
+    return{o,n,it}},
   T:{hiss:-52,dust:15,flick:.25,flickMean:.008,shake:2.5,cast:.08,noiseMid:1.6,noiseHi:3,blur:30},
   apply(r){
     const o=r.o,set=(id,v)=>{const e=$("#"+id);if(e){e.checked=v;try{localStorage.setItem(id,v?"1":"0")}catch(x){}}};
@@ -1050,7 +1050,19 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
     P.dn=o.dn;P.sh=o.sh;sync()},
   show(r,title){
     $("#rec").hidden=false;$("#rec_t").textContent=title||(r.n.length?"Voici ce que j’ai repéré et réglé pour toi :":"Ta vidéo est déjà en bon état : réglages doux appliqués.");
-    const ul=$("#rec_l");ul.textContent="";r.n.forEach(t=>{const li=document.createElement("li");li.textContent=t;ul.appendChild(li)})},
+    const ul=$("#rec_l");ul.textContent="";REC.img={br:P.br,co:P.co,sa:P.sa};
+    r.n.forEach((t,i)=>{const k=r.it?r.it[i]:null,li=document.createElement("li");
+      if(!k){li.textContent=t;ul.appendChild(li);return}
+      const lb=document.createElement("label"),cb=document.createElement("input");cb.type="checkbox";cb.checked=true;cb.setAttribute("aria-label",t);
+      cb.onchange=()=>REC.toggle(k,cb.checked,r);lb.append(cb,document.createTextNode(" "+t));li.appendChild(lb);ul.appendChild(li)});
+    $("#rec_hint").hidden=!r.n.length},
+  toggle(k,on,r){
+    const set=(id,v)=>{const e=$("#"+id);if(e)e.checked=v};
+    if(k==="voice")set("o_voice",on);else if(k==="dust")set("o_dust",on);else if(k==="defl")set("o_defl",on);
+    else if(k==="stab"){set("o_stab",on);try{stabEnable(on)}catch(e){}}
+    else if(k==="wb"){P.wb=on?.85:0}else if(k==="dn"){P.dn=on?r.o.dn:.2}
+    else if(k==="img"){const g=REC.img||{br:0,co:1,sa:1};Object.assign(P,on?g:{br:0,co:1.04,sa:1})}
+    sync()},
   async profile(){
     if(mode!=="video"||exporting)return;
     const my=curFile,t0=v.currentTime,TA=performance.now();let ok=true;REC.stop=false;let done;const pr=new Promise(r=>done=r);REC.pr=pr;
@@ -1287,7 +1299,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.22)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.23)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
