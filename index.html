@@ -199,7 +199,7 @@ input[type=range]{accent-color:var(--g2)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.24</span>
+  <span class="tag">sur ton téléphone · v2.25</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -1347,21 +1347,22 @@ const MG={files:[],blob:null,url:null,busy:false,
         if(pos+data.byteLength>end){parts.push(data.subarray(end-pos).slice());starts.push(end);end=pos+data.byteLength}};
       const mx=new Mp4Muxer.Muxer({target:new Mp4Muxer.StreamTarget({onData:(d,p)=>put(d,p)}),fastStart:false,firstTimestampBehavior:"offset",
         video:{codec:vc,width:v0.W,height:v0.H,rotation:[0,90,180,270].includes(rot)?rot:0},...(withA?{audio:{codec:"aac",numberOfChannels:a0.ch,sampleRate:a0.sr}}:{})});
-      let T=0,firstV=true,firstA=true;
+      let T=0,prevD=-1,firstV=true,firstA=true;
       for(let k=0;k<info.length;k++){
         const {f,vi,au}=info[k];msg("Assemblage "+(k+1)+" / "+info.length+" : "+f.name+"…");$("#pg0")&&($("#pg0").value=k/info.length);
         const buf=new Uint8Array(await f.arrayBuffer()),us=x=>Math.round(x*1e6/vi.ts);
-        const t0=Math.min(...vi.cts.slice(0,Math.min(vi.ns,8)));
-        let vEnd=0;const vs=[];
+        const t0=Math.min(...vi.cts);/* origine = première image affichée : pas de trou entre deux vidéos */
+        const fo=us(t0-vi.dts[0]);T=Math.max(T,prevD+1+fo);/* les temps de décodage doivent rester croissants d'une vidéo à l'autre */
+        let vEnd=0,lastD=0;const vs=[];
         for(let i=0;i<vi.ns;i++){const d=i+1<vi.ns?vi.dts[i+1]-vi.dts[i]:(vi.ns>1?vi.dts[i]-vi.dts[i-1]:vi.ts/30);
           const pts=us(vi.cts[i]-t0),dts=us(vi.dts[i]-t0);vs.push({i,pts,off:pts-dts,dur:us(d)});vEnd=Math.max(vEnd,pts+us(d))}
         const as=withA&&au?au.samples.filter(s=>s.ts>=0):[];let aEnd=0;for(const s of as)aEnd=Math.max(aEnd,s.ts+s.dur);
         let ai=0;
         for(const s of vs){
           while(ai<as.length&&as[ai].ts<=s.pts-s.off){const a=as[ai++];mx.addAudioChunkRaw(a.data,"key",T+a.ts,a.dur,firstA?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:au.ch,sampleRate:au.sr,description:au.asc}}:undefined);firstA=false}
-          mx.addVideoChunkRaw(buf.subarray(vi.so[s.i],vi.so[s.i]+vi.sz[s.i]),vi.key[s.i]?"key":"delta",T+s.pts,s.dur,firstV?{decoderConfig:{codec:vi.codec,codedWidth:vi.W,codedHeight:vi.H,...(vi.desc?{description:vi.desc}:{})}}:undefined,s.off);firstV=false}
-        while(ai<as.length){const a=as[ai++];if(a.ts<vEnd+2e5){mx.addAudioChunkRaw(a.data,"key",T+a.ts,a.dur,firstA?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:au.ch,sampleRate:au.sr,description:au.asc}}:undefined);firstA=false}}
-        T+=Math.max(vEnd,Math.min(aEnd,vEnd+2e5));await wait(0)}
+          lastD=s.pts-s.off;mx.addVideoChunkRaw(buf.subarray(vi.so[s.i],vi.so[s.i]+vi.sz[s.i]),vi.key[s.i]?"key":"delta",T+s.pts,s.dur,firstV?{decoderConfig:{codec:vi.codec,codedWidth:vi.W,codedHeight:vi.H,...(vi.desc?{description:vi.desc}:{})}}:undefined,s.off);firstV=false}
+        while(ai<as.length){const a=as[ai++];if(a.ts+a.dur<=vEnd+25000){mx.addAudioChunkRaw(a.data,"key",T+a.ts,a.dur,firstA?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:au.ch,sampleRate:au.sr,description:au.asc}}:undefined);firstA=false}}
+        prevD=T+lastD;T+=vEnd;await wait(0)}
       mx.finalize();
       const blob=new Blob(parts,{type:"video/mp4"});parts.length=0;
       if(MG.url)URL.revokeObjectURL(MG.url);MG.blob=blob;MG.url=URL.createObjectURL(blob);
@@ -1464,7 +1465,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.24)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.25)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1957,7 +1958,7 @@ async function toRate(ab,rate){
 let rnnMod=null;
 async function voiceClean(raw,file,t0,t1,trim,bed){
   bed=bed==null?.04:bed;
-  let ab=await decodeAudioAny(raw,file);ab=await toRate(ab,48000);
+  let ab=await decodeAudioAny(raw,file);if(ab.sampleRate!==48000)ab=await toRate(ab,48000);
   if(!rnnMod){const m=await import("./rnnoise.mjs");rnnMod=await m.default()}
   const M=rnnMod,ch=Math.min(2,ab.numberOfChannels),N=ab.length,LAG=960,inP=M._malloc(480*4),outP=M._malloc(480*4);
   const a0=trim?Math.max(0,Math.round(t0*48000)):0,a1=trim?Math.min(N,Math.round(t1*48000)):N,L=Math.max(1,a1-a0),res=[];
@@ -1976,20 +1977,27 @@ async function voiceClean(raw,file,t0,t1,trim,bed){
       res.push(o2);
     }
   }finally{M._free(inP);M._free(outP)}
-  /* netteté : coupe les graves parasites, renforce la présence de la voix, compresse légèrement, normalise */
-  try{
-    const oc=new OfflineAudioContext(ch,L,48000),b=oc.createBuffer(ch,L,48000);for(let c=0;c<ch;c++)b.copyToChannel(res[c],c);
-    const src=oc.createBufferSource();src.buffer=b;
-    const hp=oc.createBiquadFilter();hp.type="highpass";hp.frequency.value=90;hp.Q.value=.7;
-    const pr=oc.createBiquadFilter();pr.type="peaking";pr.frequency.value=3000;pr.Q.value=.9;pr.gain.value=3;
-    const ar=oc.createBiquadFilter();ar.type="highshelf";ar.frequency.value=7000;ar.gain.value=1.5;
-    const cp=oc.createDynamicsCompressor();cp.threshold.value=-26;cp.knee.value=18;cp.ratio.value=3;cp.attack.value=.005;cp.release.value=.2;
-    src.connect(hp);hp.connect(pr);pr.connect(ar);ar.connect(cp);cp.connect(oc.destination);src.start();
-    const o=await oc.startRendering(),out=[];let pk=1e-6;
-    for(let c=0;c<ch;c++){const d=o.getChannelData(c).slice();out.push(d);for(let i=0;i<d.length;i+=3){const v=Math.abs(d[i]);if(v>pk)pk=v}}
-    const g=Math.min(8,.89/pk);for(const d of out)for(let i=0;i<d.length;i++)d[i]=Math.max(-1,Math.min(1,d[i]*g));
-    return {sampleRate:48000,length:L,numberOfChannels:ch,getChannelData:i=>out[i]};
-  }catch(e){}
+  ab=null;
+  /* netteté : coupe les graves parasites, renforce la présence de la voix, compresse légèrement, normalise.
+     Calculé sur place, morceau par morceau, sans copier tout le son (évite de saturer la mémoire sur les longues vidéos). */
+  /* même chaîne qu'avant (filtres + compresseur du navigateur), mais calculée par tranches de 20 s avec 1,5 s de recouvrement :
+     le résultat est le même qu'en une fois, sans copier tout le son en mémoire */
+  {const R=48000,C=R*20,PRE=Math.round(R*1.5);let keep=null;
+    for(let st=0;st<L;st+=C){
+      const n=Math.min(C,L-st),pre=Math.min(st,PRE),len=n+pre;
+      const oc=new OfflineAudioContext(ch,len,R),b=oc.createBuffer(ch,len,R);
+      for(let c=0;c<ch;c++){const d=b.getChannelData(c);if(pre)d.set(keep[c],0);d.set(res[c].subarray(st,st+n),pre)}
+      const nk=[];for(let c=0;c<ch;c++)nk.push(res[c].slice(Math.max(0,st+n-PRE),st+n));keep=nk;
+      const src=oc.createBufferSource();src.buffer=b;
+      const hp=oc.createBiquadFilter();hp.type="highpass";hp.frequency.value=90;hp.Q.value=.7;
+      const pr=oc.createBiquadFilter();pr.type="peaking";pr.frequency.value=3000;pr.Q.value=.9;pr.gain.value=3;
+      const ar=oc.createBiquadFilter();ar.type="highshelf";ar.frequency.value=7000;ar.gain.value=1.5;
+      const cp=oc.createDynamicsCompressor();cp.threshold.value=-26;cp.knee.value=18;cp.ratio.value=3;cp.attack.value=.005;cp.release.value=.2;
+      src.connect(hp);hp.connect(pr);pr.connect(ar);ar.connect(cp);cp.connect(oc.destination);src.start();
+      const o=await oc.startRendering();for(let c=0;c<ch;c++)res[c].set(o.getChannelData(c).subarray(pre,pre+n),st);
+    }}
+  {let pk=1e-6;for(let c=0;c<ch;c++){const d=res[c];for(let i=0;i<L;i+=3){const v=Math.abs(d[i]);if(v>pk)pk=v}}
+    const g=Math.min(8,.89/pk);for(let c=0;c<ch;c++){const d=res[c];for(let i=0;i<L;i++)d[i]=Math.max(-1,Math.min(1,d[i]*g))}}
   return {sampleRate:48000,length:L,numberOfChannels:ch,getChannelData:i=>res[i]};
 }
 
