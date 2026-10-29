@@ -11,14 +11,14 @@
 <title>Retouche vidéo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout : bande d'en-tête façon pellicule, puis une colonne (écran) ou deux colonnes (aperçu fixe + commandes). */
-:root{--bg:#e6eaec;--panel:#f5f7f7;--ink:#1b2230;--mut:#5b6573;--line:#c9d1d6;--acc:#b02d61;--accink:#ffffff;--acc-soft:#f3e3ea;--cy:#0b7d8a;--am:#c98a1f;--tc:#0b7d8a;--stage:#0e1116;--ok:#0b7d8a;
+:root{--bg:#eef1f0;--panel:#fbfcfb;--ink:#14211f;--mut:#566764;--line:#d1dad7;--acc:#0b7a80;--accink:#ffffff;--acc-soft:#dcefef;--tc:#a4620f;--stage:#0a0f10;--ok:#2c7a4b;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
---fd:"Archivo","Avenir Next Condensed","Helvetica Neue",system-ui,sans-serif;--fb:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;--fm:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111418;--panel:#191e24;--ink:#e6eaee;--mut:#97a1ac;--line:#2a3139;--acc:#e0608c;--accink:#1d0710;--acc-soft:#33202a;--cy:#42b8c4;--am:#e7ae4c;--tc:#42b8c4;--stage:#07090b;--ok:#42b8c4;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#111418;--panel:#191e24;--ink:#e6eaee;--mut:#97a1ac;--line:#2a3139;--acc:#e0608c;--accink:#1d0710;--acc-soft:#33202a;--cy:#42b8c4;--am:#e7ae4c;--tc:#42b8c4;--stage:#07090b;--ok:#42b8c4;color-scheme:dark}
+--fd:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;--fb:"Instrument Sans","Avenir Next","Segoe UI",system-ui,sans-serif;--fm:"DM Mono",ui-monospace,"SF Mono",Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1112;--panel:#121b1c;--ink:#e3eeec;--mut:#8ea29e;--line:#233134;--acc:#52c7cc;--accink:#04282b;--acc-soft:#14292b;--tc:#e0a64a;--stage:#050808;--ok:#6cc58c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0b1112;--panel:#121b1c;--ink:#e3eeec;--mut:#8ea29e;--line:#233134;--acc:#52c7cc;--accink:#04282b;--acc-soft:#14292b;--tc:#e0a64a;--stage:#050808;--ok:#6cc58c;color-scheme:dark}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--fb);-webkit-text-size-adjust:100%}
@@ -127,79 +127,61 @@ progress::-moz-progress-bar{background:var(--acc)}
   #cv{max-height:62vh}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
-/* === Identité : table lumineuse et couches de pellicule (cyan, magenta, jaune) === */
-body{font-size:16px;line-height:1.5}
-.mono{font-family:var(--fb);font-variant-numeric:tabular-nums}
-.top{padding-block:14px 10px}
-.brand{font:780 19px/1 var(--fd);font-stretch:112%;letter-spacing:0}
-.top .tag{font:500 12px/1 var(--fb);letter-spacing:0;text-transform:none;color:var(--mut)}
-/* signature : les trois couches de la pellicule */
-.sprock{height:6px;border:0;opacity:1;background:linear-gradient(90deg,var(--cy) 0 33.3%,var(--acc) 33.3% 66.6%,var(--am) 66.6%)}
-.hero{padding-block:30px 8px}
-.eyebrow{display:none}
-h1{font:800 clamp(34px,10vw,58px)/.98 var(--fd);font-stretch:118%;letter-spacing:-.01em;margin:0 0 14px;max-width:13ch}
-.lead{font-size:17px;max-width:40ch;margin-bottom:22px}
-.steps{display:none}
-.picks{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.pickbtn{display:flex;flex-direction:row;align-items:center;gap:12px;min-height:64px;padding:14px 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel);font:700 16px/1.15 var(--fd);font-stretch:100%;text-align:left;transition:transform .12s,border-color .15s}
-.pickbtn:active{transform:scale(.98)}
-.pickbtn svg{width:28px;height:28px;stroke-width:1.8;flex:none}
-.pickbtn.main{grid-column:1/-1;min-height:96px;padding:18px 20px;font-size:21px;font-stretch:112%;background:var(--acc);border-color:var(--acc);color:var(--accink)}
-.pickbtn.main svg{width:36px;height:36px}
-#pickp svg{color:var(--cy)}#pickm svg{color:var(--am)}
-.pickbtn .sub{display:block;font:500 13px/1.25 var(--fb);opacity:.8;margin-top:3px}
-/* une fois la vidéo choisie : l'aperçu passe en premier, les choix deviennent une barre compacte */
-body.loaded .hero{display:none}
-body.loaded .picks{grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
-body.loaded .pickbtn,body.loaded .pickbtn.main{grid-column:auto;min-height:0;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;font:650 13px/1.15 var(--fb);text-align:center}
-body.loaded .pickbtn svg,body.loaded .pickbtn.main svg{width:22px;height:22px}
-body.loaded .pickbtn .sub{display:none}
-.lnk{display:flex;gap:8px;margin-top:10px;align-items:stretch}
-.lnk svg{width:22px;height:22px;flex:none;align-self:center;stroke:var(--mut);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.lnk input{flex:1;min-width:0;padding:12px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font:500 16px/1.2 var(--fb)}
-.lnk input:focus{outline:2px solid var(--cy);outline-offset:1px}
-.lnk .btn{width:auto;padding:12px 16px;flex:none}
-.lnkh{font-size:13px;color:var(--mut);margin:6px 0 0}
-body.loaded .lnkh{display:none}
-.lnkmsg{margin:8px 0 0;font-size:14px;color:var(--ink)}
-.privacy{font-size:14px}
-.stage{border-radius:14px;border:0;box-shadow:0 0 0 1px var(--line)}
-.bdg{background:var(--cy);color:#fff;font:600 12px/1 var(--fb);letter-spacing:0;text-transform:none}
-.bdg.orig{background:var(--am);color:#241703}
-.tcb{color:#f2d79c}
-.btn{border-radius:12px;border:1.5px solid var(--line);background:var(--panel);font-weight:650;transition:transform .12s}
-.btn:active{transform:scale(.98)}
-.btn.main{background:var(--acc);border-color:var(--acc);color:var(--accink)}
-.btn.big{font:780 20px/1.15 var(--fd);font-stretch:108%;padding:18px 14px;border-radius:14px;white-space:normal}
-#cmp:active{background:var(--am);border-color:var(--am);color:#241703}
-.meta span{font:500 13px/1.1 var(--fb);font-variant-numeric:tabular-nums;border-color:var(--line);background:transparent}
-.tabs{gap:0;padding:0;border:0;border-radius:0;background:transparent;border-bottom:1.5px solid var(--line)}
-.tab{border-radius:0;padding:12px 4px;font:700 15px/1.1 var(--fd);color:var(--mut);border-bottom:3px solid transparent;margin-bottom:-1.5px}
-.tab[aria-selected="true"]{background:transparent;color:var(--ink);border-bottom-color:var(--acc)}
-.panel h2{font:780 19px/1.2 var(--fd);font-stretch:106%}
-.seg button{border:1.5px solid var(--line);border-radius:12px;font:700 16px/1.15 var(--fd)}
-.seg button small{font:500 12px/1.2 var(--fb);margin-top:4px}
-.seg button[aria-pressed="true"]{border-color:var(--acc);background:var(--acc-soft);box-shadow:none}
-.card{border:1.5px solid var(--line);border-radius:14px;box-shadow:none}
-.card h2{font:780 18px/1.2 var(--fd);font-stretch:106%}
-/* fiche d'analyse : bande cyan, comme une étiquette de bobine */
-.card.rec{border-left:5px solid var(--cy)}
-.rec ul li.learn{color:var(--mut);font-size:13px;margin-top:6px}
-progress{height:8px}
-input[type=range]{accent-color:var(--acc)}
-.chk{display:flex;gap:12px;align-items:flex-start;padding:12px 0;margin:0;border-bottom:1px solid var(--line)}
-.chk input{accent-color:var(--acc)}
-/* comptes rendus : pastille de couleur selon l'importance */
-.frep{margin-top:10px;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel)}
-.frep summary{cursor:pointer;font-weight:650;font-size:14px;list-style:none}
-.frep summary::-webkit-details-marker{display:none}
-.frep summary::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--cy);margin-right:8px;vertical-align:1px}
-.frep.warn summary::before{background:var(--am)}
-.frep ul{list-style:none;margin:8px 0 0;padding:0;font-size:14px;display:flex;flex-direction:column;gap:6px}
-.frep li{padding-left:16px;position:relative;color:var(--ink)}
-.frep li::before{content:"";position:absolute;left:0;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--cy)}
-.frep li.warn::before{background:var(--am)}.frep li.bad::before{background:var(--acc)}
-@media (prefers-reduced-motion:reduce){.btn,.pickbtn{transition:none}}
+/* === Plus de peps === */
+:root{--g1:#ff7a59;--g2:#ff3d8b;--g3:#7b5cff;--g4:#17c3b2;--grad:linear-gradient(120deg,var(--g1),var(--g2) 45%,var(--g3));--grad2:linear-gradient(120deg,var(--g4),#2b8cff);--glow:rgba(255,61,139,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--glow:rgba(255,61,139,.45);--bg:#0d0a17;--panel:#171329;--line:#2b2447;--acc-soft:#241c44;--mut:#a79fc4;--ink:#f4f0ff;--stage:#07050f}}
+:root[data-theme="dark"]{--glow:rgba(255,61,139,.45);--bg:#0d0a17;--panel:#171329;--line:#2b2447;--acc-soft:#241c44;--mut:#a79fc4;--ink:#f4f0ff;--stage:#07050f}
+:root{--bg:#fff7f2;--panel:#ffffff;--line:#f0dcd2;--mut:#7a6670;--ink:#241524;--acc:#7b5cff;--accink:#fff;--acc-soft:#efe9ff;--tc:#e8590c}
+body{background:radial-gradient(520px 320px at 90% -40px,rgba(255,61,139,.22),transparent 70%),radial-gradient(480px 360px at -10% 220px,rgba(23,195,178,.2),transparent 70%),radial-gradient(500px 400px at 100% 640px,rgba(123,92,255,.16),transparent 70%),var(--bg);background-attachment:fixed}
+body::before{background:transparent}
+.brand span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand svg rect:first-child{fill:url(#lg)}
+.sprock{background:repeating-linear-gradient(90deg,transparent 0 6px,rgba(255,61,139,.45) 6px 16px,transparent 16px 22px);border-color:transparent;animation:roll 3s linear infinite}
+@keyframes roll{to{background-position:22px 0}}
+.eyebrow{display:inline-block;padding:6px 11px;border-radius:999px;background:var(--grad);color:#fff;letter-spacing:.07em}
+h1{font-size:clamp(34px,9.5vw,50px)}
+h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.steps li{border-top:0;border-radius:14px;background:var(--panel);padding:10px;box-shadow:0 1px 0 var(--line),0 8px 20px -12px rgba(123,92,255,.35)}
+.steps li:nth-child(1){border-left:4px solid var(--g1)}.steps li:nth-child(2){border-left:4px solid var(--g2)}.steps li:nth-child(3){border-left:4px solid var(--g3)}
+.steps .em{display:block;font-size:22px;margin-bottom:4px}
+body.loaded .steps li{border-color:inherit}
+.pickbtn{border:0;box-shadow:0 10px 24px -14px rgba(123,92,255,.55);transition:transform .15s}
+.pickbtn:active{transform:scale(.97)}
+.pickbtn.main{background:var(--grad);color:#fff;box-shadow:0 14px 30px -12px var(--glow)}
+#pickp{background:var(--grad2);color:#fff;box-shadow:0 14px 30px -12px rgba(43,140,255,.5)}
+.pickbtn svg{width:34px;height:34px}
+.note{border-style:solid;border-color:transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,var(--grad) border-box;border:2px solid transparent}
+.stage{border:0;box-shadow:0 0 0 2px transparent,0 22px 44px -18px var(--glow);background:var(--stage);outline:3px solid transparent;background-clip:padding-box}
+.stage::after{content:"";position:absolute;inset:0;border-radius:16px;padding:2px;background:var(--grad);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.bdg{background:var(--grad);color:#fff;box-shadow:0 4px 14px var(--glow)}
+.bdg.orig{background:#fff;color:#241524}
+.btn{border:0;box-shadow:0 1px 0 var(--line),0 6px 16px -10px rgba(36,21,36,.4);transition:transform .12s}
+.btn:active{transform:scale(.97)}
+.btn.main{background:var(--grad);color:#fff;box-shadow:0 12px 26px -10px var(--glow)}
+.btn.big{position:relative;overflow:hidden;font-size:clamp(16px,5vw,20px);line-height:1.2;white-space:normal;padding:19px 14px;border-radius:18px}
+.btn.big::before{content:"✨ "}
+.btn.big::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite}
+@keyframes shine{0%,55%{left:-80px}100%{left:120%}}
+#cmp{background:var(--grad2);color:#fff}
+#cmp:active{background:var(--grad);border-color:transparent}
+#pp{background:var(--panel)}
+.meta span{background:var(--panel);border:0;box-shadow:0 1px 0 var(--line);color:var(--ink)}
+.tabs{background:var(--panel);border:0;box-shadow:0 10px 24px -16px rgba(123,92,255,.5)}
+.tab[aria-selected="true"]{background:var(--grad);color:#fff;box-shadow:0 8px 16px -8px var(--glow)}
+.seg button{border:2px solid transparent;box-shadow:0 1px 0 var(--line)}
+.seg button[aria-pressed="true"]{border-color:transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,var(--grad) border-box;border:2px solid transparent;box-shadow:0 10px 20px -12px var(--glow)}
+.seg button:nth-child(1)::before{content:"🚀";display:block;font-size:20px;margin-bottom:2px}
+.seg button:nth-child(2)::before{content:"⚡";display:block;font-size:20px;margin-bottom:2px}
+.seg button:nth-child(3)::before{content:"🧼";display:block;font-size:20px;margin-bottom:2px}
+.card{border:0;box-shadow:0 12px 28px -16px rgba(123,92,255,.45)}
+progress{height:12px}
+progress::-webkit-progress-value{background:var(--grad);border-radius:99px;box-shadow:0 0 12px var(--glow)}
+progress::-moz-progress-bar{background:var(--grad)}
+input[type=range]{accent-color:var(--g2)}
+.panel h2::before{content:"🎬 "}
+.hero,.picks,.work{animation:pop .5s ease both}
+@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.sprock,.btn.big::after,.hero,.picks,.work{animation:none!important}}
 .opts{margin-bottom:6px}
 .chk{display:flex;gap:12px;align-items:flex-start;padding:12px;margin:0 0 8px;border-radius:14px;background:var(--panel);box-shadow:0 1px 0 var(--line)}
 .chk input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--g2);flex:none}
@@ -209,21 +191,48 @@ input[type=range]{accent-color:var(--acc)}
 .trim b{display:block;font-family:var(--fd)}
 .trim .mono{display:block;font-size:13px;color:var(--mut);margin-bottom:2px}
 #spl[aria-pressed="true"]{background:var(--grad);color:#fff}
+
+/* v2.29 : éléments ajoutés depuis la v2.27, dans le même style */
+.picks{grid-template-columns:repeat(3,1fr);gap:8px}
+.pickbtn{padding:14px 12px;min-height:104px;font-size:15px;line-height:1.2}
+#pickm{background:linear-gradient(120deg,#ffb53d,#ff7a59);color:#fff;box-shadow:0 14px 30px -12px rgba(255,140,60,.5)}
+.lnk input{border:0;box-shadow:0 10px 24px -14px rgba(123,92,255,.55)}
+body.loaded .picks{gap:6px}
+body.loaded .pickbtn{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;padding:8px 4px;font-size:13px}
+.lnk{display:flex;gap:8px;margin-top:10px;align-items:stretch}
+.lnk svg{width:22px;height:22px;flex:none;align-self:center;stroke:var(--mut);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.lnk input{flex:1;min-width:0;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:500 16px/1.2 var(--fb)}
+.lnk input:focus{outline:2px solid var(--acc);outline-offset:1px}
+.lnk .btn{width:auto;padding:12px 16px;flex:none}
+.lnkh{font-size:13px;color:var(--mut);margin:6px 0 0}
+body.loaded .lnkh{display:none}
+.lnkmsg{margin:8px 0 0;font-size:14px}
+.frep{margin-top:10px;border-radius:14px;padding:10px 12px;background:var(--panel);box-shadow:0 1px 0 var(--line)}
+.frep summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none}
+.frep summary::-webkit-details-marker{display:none}
+.frep summary::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:8px;vertical-align:1px}
+.frep.warn summary::before{background:var(--tc)}
+.frep ul{list-style:none;margin:8px 0 0;padding:0;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.frep li{padding-left:16px;position:relative}
+.frep li::before{content:"";position:absolute;left:0;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.frep li.warn::before{background:var(--tc)}.frep li.bad::before{background:#d8455d}
+.rec ul li.learn{color:var(--mut);font-size:13px;margin-top:6px}
 </style>
 </head>
 <body>
 <header class="wrap wide top">
   <div class="brand">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="5" width="28" height="22" rx="4" fill="var(--ink)"/><rect x="7" y="10" width="5" height="12" rx="1" fill="var(--cy)"/><rect x="13.5" y="10" width="5" height="12" rx="1" fill="var(--acc)"/><rect x="20" y="10" width="5" height="12" rx="1" fill="var(--am)"/></svg>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">v2.29</span>
+  <span class="tag">sur ton téléphone · v2.30</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
   <section class="hero">
-    <h1>Tes vieilles vidéos, comme filmées hier.</h1>
-    <p class="lead">Image plus nette, couleurs justes, son plus clair, sans visage retouché. Tout se fait sur ton téléphone : gratuit, sans filigrane, sans inscription, même en mode avion.</p>
+    <p class="eyebrow">Vidéos et photos anciennes</p>
+    <h1>Redonne de l’<em>éclat</em> à tes vieux films de famille 🎞️</h1>
+    <p class="lead">Moins de blocs et de bruit, des couleurs plus justes, une image plus nette. Tout est calculé sur ton téléphone : gratuit, sans filigrane, sans inscription, et ça marche même en mode avion.</p>
     <ol class="steps">
       <li><span class="em">📱</span><b>Choisir</b>une vidéo ou une photo</li>
       <li><span class="em">👀</span><b>Comparer</b>maintiens « Original »</li>
@@ -234,13 +243,13 @@ input[type=range]{accent-color:var(--acc)}
   <input type="file" id="f" accept="video/*" multiple hidden>
   <input type="file" id="fp" accept="image/*" hidden>
   <div class="picks">
-    <button class="pickbtn main" id="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span><span class="lbl">Choisir une vidéo</span><span class="sub">Vieux téléphone, messagerie, réseaux</span></span></button>
+    <button class="pickbtn main" id="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span class="lbl">Choisir une vidéo</span></button>
     <button class="pickbtn" id="pickp"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg><span class="lbl">Choisir une photo</span></button>
     <button class="pickbtn" id="pickm"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="7" height="10" rx="1.5"/><rect x="14.5" y="7" width="7" height="10" rx="1.5"/><path d="M9.5 12h5"/></svg><span class="lbl">Regrouper des vidéos</span></button>
   </div>
   <form class="lnk" id="lnkf" autocomplete="off" novalidate>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
-    <input id="lnk" type="url" inputmode="url" enterkeyhint="go" placeholder="Coller un lien TikTok, Instagram, X…" aria-label="Lien d’une vidéo TikTok, Instagram, Twitter / X, Reddit ou Tumblr">
+    <input id="lnk" type="url" inputmode="url" enterkeyhint="go" placeholder="Coller un lien vidéo" aria-label="Lien d’une vidéo TikTok, Instagram, Twitter / X, Reddit ou Tumblr">
     <button class="btn" id="lnkgo" type="submit">Charger</button>
   </form>
   <div id="lnkc" class="row" hidden style="margin-top:8px"></div>
@@ -254,7 +263,7 @@ input[type=range]{accent-color:var(--acc)}
     <button class="btn" id="mgadd" style="margin-top:8px">+ Ajouter d’autres vidéos</button>
     <button class="btn main" id="mggo" style="margin-top:8px">Regrouper en une seule vidéo</button>
     <div id="mgres" hidden style="margin-top:12px"><video id="mgv" controls playsinline style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
-      <button class="btn main" id="mgimp" style="margin-top:8px">Améliorer cette vidéo</button>
+      <button class="btn main" id="mgimp" style="margin-top:8px">✨ Améliorer cette vidéo</button>
       <button class="btn" id="mgsave" style="margin-top:8px">Enregistrer la vidéo regroupée</button></div>
   </div>
   <p class="st" id="st0"></p>
@@ -285,9 +294,9 @@ input[type=range]{accent-color:var(--acc)}
 
     <div class="ctlcol">
       <div class="tabs" role="tablist">
-        <button class="tab" role="tab" data-t="tp1" aria-selected="true">Améliorer</button>
-        <button class="tab" role="tab" data-t="tp2" aria-selected="false">Réglages</button>
-        <button class="tab" role="tab" data-t="tp3" id="tabx" aria-selected="false">Prolonger</button>
+        <button class="tab" role="tab" data-t="tp1" aria-selected="true">✨ Améliorer</button>
+        <button class="tab" role="tab" data-t="tp2" aria-selected="false">🎛️ Réglages</button>
+        <button class="tab" role="tab" data-t="tp3" id="tabx" aria-selected="false">⏩ Prolonger</button>
       </div>
 
       <div class="panel" id="tp1">
@@ -322,8 +331,8 @@ input[type=range]{accent-color:var(--acc)}
           <button class="btn" id="rtb" style="margin-top:8px" hidden>Refaire avec le son (en temps réel)</button>
           <p class="help" id="socn" hidden style="margin:10px 0 0">Pour publier sur TikTok ou Instagram : active « Importer en haute qualité » dans l’app au moment de publier, sinon elle recompresse fortement la vidéo.</p>
           <p class="help" id="dupn" hidden style="margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--line)"></p>
-          <button class="btn" id="bab" style="margin-top:8px" hidden>Créer un avant / après à partager (10 s)</button>
-          <button class="btn" id="kbb" style="margin-top:8px" hidden>Animer la photo en vidéo (8 s, zoom lent)</button>
+          <button class="btn" id="bab" style="margin-top:8px" hidden>🎬 Créer un avant / après à partager (10 s)</button>
+          <button class="btn" id="kbb" style="margin-top:8px" hidden>🎞️ Animer la photo en vidéo (8 s, zoom lent)</button>
           <div id="kbres" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Photo animée</h2><video id="kbv" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
             <button class="btn main" id="kbs" style="margin-top:8px">Partager la vidéo animée</button></div>
           <div id="bares" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Avant / après</h2><video id="bav" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
@@ -1798,7 +1807,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.29)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.30)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
