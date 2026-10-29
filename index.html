@@ -615,7 +615,10 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
   badge(on){const b=$("#bdg");if(!b||!show)return;b.textContent=on===1?"Amélioré · IA":on===2?"Amélioré · IA en cours…":"Amélioré"},
   fits(el){const [w,h]=dims(el);return w>0&&!!window.SR&&SR.fits(w,h)},
   ck(){return mode==="video"?"v:"+(curFile&&curFile.name)+":"+v.currentTime:"p:"+window.__photoName},
-  async run(el,s,onTile,key){const job=SRX.lock.then(()=>SR.run(el,s,SRX.dn(),onTile,key));SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed)localStorage.setItem("srspd",SR.speed)}catch(e){}return c},
+  async run(el,s,onTile,key){
+    /* copie immédiate de l'image (avant toute attente) : l'image d'une vidéo change ou est libérée entre-temps, et WebGPU ne lit pas toujours une vidéo directement */
+    if(!(el instanceof HTMLCanvasElement)&&!(el instanceof HTMLImageElement)){const [w,h]=dims(el),c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(el,0,0,w,h);el=c}
+    const job=SRX.lock.then(()=>SR.run(el,s,SRX.dn(),onTile,key));SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed)localStorage.setItem("srspd",SR.speed)}catch(e){}return c},
   /* dessine el restaurée par l'IA ; renvoie false si l'IA n'est pas utilisable (l'appelant dessine alors normalement) */
   async render(el,onTile,key){
     if(!SRX.on())return false;
@@ -625,8 +628,6 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     if(DUST.on){/* poussières retirées AVANT le réseau (sinon l'IA les rendrait plus nettes) */
       const [w,h]=dims(el),W0=cv.width,H0=cv.height;cv.width=w;cv.height=h;dustOnly=true;try{draw(el)}finally{dustOnly=false}
       if(!SRX.dc)SRX.dc=document.createElement("canvas");SRX.dc.width=w;SRX.dc.height=h;SRX.dc.getContext("2d").drawImage(cv,0,0);cv.width=W0;cv.height=H0;inp=SRX.dc}
-    /* copie immédiate de l'image (avant toute attente) : une image de vidéo en cours de lecture peut être libérée entre-temps */
-    if(!(inp instanceof HTMLCanvasElement)&&!(inp instanceof HTMLImageElement)){const [w,h]=dims(inp);if(!SRX.sc)SRX.sc=document.createElement("canvas");if(SRX.sc.width!==w||SRX.sc.height!==h){SRX.sc.width=w;SRX.sc.height=h}SRX.sc.getContext("2d").drawImage(inp,0,0,w,h);inp=SRX.sc}
     let c;try{c=await SRX.run(inp,cv.width/dims(el)[0],onTile,key)}
     catch(e){SRX.off=true;msg("La qualité maximale n’est pas disponible sur cet appareil ("+((e&&e.message)||"erreur")+") : l’amélioration standard est utilisée.");return false}
     srIn=true;srOrig=el;try{draw(c)}finally{srIn=false;srOrig=null}return true},
