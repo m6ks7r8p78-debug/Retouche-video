@@ -3,7 +3,7 @@
 // trouver le fichier vidéo de meilleure qualité et le renvoyer à l'app, avec les bons en-têtes.
 // Aucune vidéo n'est stockée : elle transite seulement.
 
-const VERSION = "1";
+const VERSION = "2";
 const UA_PC = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 // hôtes que /proxy accepte de relayer (rien d'autre : pas de relais ouvert)
 const PROXY_OK = /^(www\.reddit\.com|old\.reddit\.com|v\.redd\.it|video\.twimg\.com|api\.fxtwitter\.com|[a-z0-9-]+\.media\.tumblr\.com)$/i;
@@ -72,32 +72,56 @@ async function tiktok(u) {
 }
 
 /* ---------- Instagram (le plus fermé : plusieurs méthodes, la meilleure qualité d'abord) ---------- */
-async function instagram(u) {
+const IG_HDR = { "user-agent": UA_PC, "x-ig-app-id": "936619743392459", "x-asbd-id": "129477", "sec-fetch-site": "same-origin", "accept-language": "fr-FR,fr;q=0.9,en;q=0.8", referer: "https://www.instagram.com/" };
+const IG_DOCS = ["8845758582119845", "9510064595728286", "25531498899829322"];
+function igMediaId(sc) { // code court (11 premiers caractères) -> identifiant numérique
+  const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  let id = 0n; for (const c of sc.slice(0, 11)) id = id * 64n + BigInt(A.indexOf(c)); return id.toString();
+}
+function igPick(md) {
+  let node = md;
+  if (md && !md.is_video && md.edge_sidecar_to_children) node = (md.edge_sidecar_to_children.edges || []).map(e => e.node).find(n => n.is_video) || md;
+  if (md && md.carousel_media) node = md.carousel_media.find(n => n.video_versions) || md;
+  if (node && node.video_url) return { url: node.video_url, q: node.dimensions ? node.dimensions.width + "x" + node.dimensions.height : "" };
+  if (node && node.video_versions && node.video_versions.length) { const v = [...node.video_versions].sort((a, b) => (b.width * b.height) - (a.width * a.height))[0]; return { url: v.url, q: v.width + "x" + v.height } }
+  return null;
+}
+async function igFind(sc, log) {
+  const codes = [...new Set([sc, sc.slice(0, 11)])];
+  // 1) l'interface publique des publications (plusieurs versions connues)
+  for (const code of codes) for (const doc of IG_DOCS) {
+    try {
+      const body = new URLSearchParams({ variables: JSON.stringify({ shortcode: code, fetch_tagged_user_count: null, hoisted_comment_id: null, hoisted_reply_id: null }), doc_id: doc, lsd: "AVqbxe3J_YA" });
+      const r = await fetch("https://www.instagram.com/graphql/query", { method: "POST", body, headers: { ...IG_HDR, "content-type": "application/x-www-form-urlencoded", "x-fb-lsd": "AVqbxe3J_YA" } });
+      const t = await r.text(); let md = null;
+      try { const j = JSON.parse(t); md = j && j.data && (j.data.xdt_shortcode_media || j.data.shortcode_media) } catch (e) {}
+      log.push("graphql " + code.length + "c doc" + doc.slice(0, 4) + " : " + r.status + (md ? " média" : " vide"));
+      if (md) { const v = igPick(md); if (v) return v; if (!md.is_video) throw new Err("pas_video", "Cette publication Instagram ne contient pas de vidéo.") }
+    } catch (e) { if (e instanceof Err) throw e; log.push("graphql erreur " + e.message) }
+  }
+  // 2) l'interface de l'app (fonctionne parfois sans compte)
+  try {
+    const r = await fetch("https://i.instagram.com/api/v1/media/" + igMediaId(sc) + "/info/", { headers: { ...IG_HDR, "user-agent": "Instagram 337.0.0.35.102 Android (34/14; 420dpi; 1080x2340; samsung; SM-S918B; dm3q; qcom; fr_FR; 619285474)" } });
+    const t = await r.text(); log.push("api app : " + r.status);
+    try { const j = JSON.parse(t); const it = j.items && j.items[0]; const v = it && igPick(it); if (v) return v } catch (e) {}
+  } catch (e) { log.push("api app erreur " + e.message) }
+  // 3) les pages « intégrées »
+  for (const path of ["/p/" + sc + "/embed/captioned/", "/reel/" + sc + "/embed/", "/p/" + sc.slice(0, 11) + "/embed/captioned/"]) {
+    try {
+      const r = await fetch("https://www.instagram.com" + path, { headers: { "user-agent": UA_PC } });
+      const t = await r.text();
+      const m = t.match(/"video_url\\?"\s*:\s*\\?"([^"\\]*(?:\\.[^"\\]*)*)\\?"/) || t.match(/<video[^>]+src="([^"]+)"/);
+      log.push("intégrée " + path.split("/")[1] + " : " + r.status + (m ? " vidéo" : " sans vidéo"));
+      if (m) return { url: JSON.parse('"' + m[1].replace(/\\\//g, "/").replace(/\\\\/g, "\\") + '"').replace(/&amp;/g, "&"), q: "" };
+    } catch (e) { log.push("intégrée erreur " + e.message) }
+  }
+  return null;
+}
+async function instagram(u, log = []) {
   const sc = (u.pathname.match(/\/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/) || [])[1];
   if (!sc) throw new Err("lien", "Lien Instagram non reconnu : copie le lien d'une publication ou d'un reel (… → Copier le lien).");
-  const name = "instagram-" + sc + ".mp4";
-  // 1) l'interface publique des publications
-  try {
-    const body = new URLSearchParams({ variables: JSON.stringify({ shortcode: sc, fetch_tagged_user_count: null, hoisted_comment_id: null, hoisted_reply_id: null }), doc_id: "8845758582119845", lsd: "AVqbxe3J_YA" });
-    const r = await fetch("https://www.instagram.com/graphql/query", { method: "POST", body, headers: {
-      "user-agent": UA_PC, "content-type": "application/x-www-form-urlencoded", "x-ig-app-id": "936619743392459", "x-fb-lsd": "AVqbxe3J_YA", "x-asbd-id": "129477", "sec-fetch-site": "same-origin", referer: "https://www.instagram.com/" } });
-    if (r.ok) {
-      const j = await r.json(), md = j && j.data && j.data.xdt_shortcode_media;
-      if (md) {
-        let node = md;
-        if (!md.is_video && md.edge_sidecar_to_children) node = (md.edge_sidecar_to_children.edges || []).map(e => e.node).find(n => n.is_video) || md;
-        if (!node.is_video || !node.video_url) throw new Err("pas_video", "Cette publication Instagram ne contient pas de vidéo.");
-        return await stream(node.video_url, { "user-agent": UA_PC, referer: "https://www.instagram.com/" }, name, node.dimensions ? node.dimensions.width + "x" + node.dimensions.height : "");
-      }
-    }
-  } catch (e) { if (e instanceof Err && e.code === "pas_video") throw e }
-  // 2) la page « intégrée »
-  try {
-    const r = await fetch("https://www.instagram.com/p/" + sc + "/embed/captioned/", { headers: { "user-agent": UA_PC } });
-    const t = await r.text();
-    const m = t.match(/"video_url\\?"\s*:\s*\\?"([^"\\]*(?:\\.[^"\\]*)*)\\?"/) || t.match(/<video[^>]+src="([^"]+)"/);
-    if (m) { const v = JSON.parse('"' + m[1].replace(/\\\//g, "/").replace(/\\\\/g, "\\") + '"').replace(/&amp;/g, "&"); return await stream(v, { "user-agent": UA_PC, referer: "https://www.instagram.com/" }, name, "") }
-  } catch (e) {}
+  const v = await igFind(sc, log);
+  if (v) return stream(v.url, { "user-agent": UA_PC, referer: "https://www.instagram.com/" }, "instagram-" + sc.slice(0, 11) + ".mp4", v.q);
   throw new Err("bloque", "Instagram bloque l'accès à cette vidéo pour l'instant (compte privé, ou protection d'Instagram). Enregistre-la depuis l'app Instagram puis choisis-la dans Retouche.", 502);
 }
 
@@ -140,6 +164,13 @@ export default {
     try {
       if (u.pathname === "/" || u.pathname === "/etat") return json({ ok: true, service: "retouche-serveur", version: VERSION });
       if (u.pathname === "/video") return await video(u.searchParams.get("url") || "");
+      if (u.pathname === "/test") { // diagnostic lisible : ce que chaque méthode a obtenu (sans télécharger la vidéo)
+        const link = u.searchParams.get("url") || ""; const log = [];
+        try { const l = new URL(link); if (!/instagram\.com$/i.test(l.hostname)) return json({ ok: false, msg: "test réservé à Instagram" });
+          const sc = (l.pathname.match(/\/(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/) || [])[1]; const v = await igFind(sc, log);
+          return json({ ok: !!v, qualite: v && v.q, etapes: log });
+        } catch (e) { return json({ ok: false, erreur: e.message, etapes: log }) }
+      }
       if (u.pathname === "/proxy") {
         let t; try { t = new URL(u.searchParams.get("u") || "") } catch (e) { return fail("lien", "Adresse invalide.", 400) }
         if (t.protocol !== "https:" || !PROXY_OK.test(t.hostname)) return fail("refuse", "Adresse non autorisée.", 403);
