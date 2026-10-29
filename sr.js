@@ -197,7 +197,17 @@ o=vec4(s/float(k*k),1.);}`;
 
   /* src : vidéo, image, canevas ou VideoFrame ; s : échelle de sortie ; key : identifiant de l'image (null = pas de réutilisation).
      Renvoie un canevas de W·s × H·s. */
+  /* moteur choisi : WebGPU s'il marche sur cet appareil (plus rapide), sinon WebGL2 ; un échec WebGPU bascule définitivement en WebGL2 */
+  let engine = null;
   async function run(src, s, dn, onTile, key) {
+    let noGpu = false; try { noGpu = window.__srgl || localStorage.getItem("srgl") === "1" } catch (e) {}
+    if (engine !== "gl" && !noGpu && window.SRGPU && navigator.gpu) {
+      try { const c = await SRGPU.run(src, s, dn, onTile, key); engine = "gpu"; stats = { ms: SRGPU.speed, px: 1e6 }; return c }
+      catch (e) { if (/trop grande/.test(e && e.message)) throw e; engine = "gl"; why = "WebGPU : " + ((e && e.message) || "erreur") }
+    }
+    return runGL(src, s, dn, onTile, key);
+  }
+  async function runGL(src, s, dn, onTile, key) {
     if (!(await init())) throw new Error(why);
     const W = src.videoWidth || src.displayWidth || src.naturalWidth || src.width, H = src.videoHeight || src.displayHeight || src.naturalHeight || src.height;
     if (W * H > MAXPX) throw new Error("image trop grande");
@@ -224,7 +234,7 @@ o=vec4(s/float(k*k),1.);}`;
   }
   return {
     init, run, MAXPX,
-    get ok() { return st }, get why() { return why },
+    get ok() { return engine === "gpu" ? true : st }, get why() { return why }, get engine() { return engine || "?" },
     /* vitesse mesurée du dernier calcul : millisecondes par mégapixel d'image d'origine */
     get speed() { return stats.px ? Math.round(stats.ms / stats.px * 1e6) : 0 },
     fits(W, H) { return W * H <= MAXPX },
