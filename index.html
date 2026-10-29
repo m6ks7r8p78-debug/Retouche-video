@@ -178,7 +178,7 @@ progress{height:12px}
 progress::-webkit-progress-value{background:var(--grad);border-radius:99px;box-shadow:0 0 12px var(--glow)}
 progress::-moz-progress-bar{background:var(--grad)}
 input[type=range]{accent-color:var(--g2)}
-.panel h2::before{content:"🎬 "}
+.panel h2::before{content:none}
 .hero,.picks,.work{animation:pop .5s ease both}
 @keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.sprock,.btn.big::after,.hero,.picks,.work{animation:none!important}}
@@ -225,7 +225,7 @@ body.loaded .lnkh{display:none}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.34</span>
+  <span class="tag">sur ton téléphone · v2.35</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -296,12 +296,12 @@ body.loaded .lnkh{display:none}
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" data-t="tp1" aria-selected="true">✨ Améliorer</button>
         <button class="tab" role="tab" data-t="tp2" aria-selected="false">🎛️ Réglages</button>
-        <button class="tab" role="tab" data-t="tp3" id="tabx" aria-selected="false">⏩ Prolonger</button>
+        <button class="tab" role="tab" data-t="tp3" id="tabx" aria-selected="false">🧰 Outils</button>
       </div>
 
       <div class="panel" id="tp1">
         <div id="qwrap">
-          <p class="help">Choisis la taille du résultat. Les réglages d’image sont faits tout seuls. Astuce : pars toujours de la vidéo la plus originale possible (celle de la galerie, pas une copie renvoyée par une messagerie).</p>
+          <p class="help">Choisis la taille du résultat. Tout le reste est réglé automatiquement.</p>
           <div class="seg" role="group" aria-label="Taille du résultat">
             <button data-q="3840" aria-pressed="false">4K<small>plus net, plus long</small></button>
             <button data-q="1920" aria-pressed="true">Full HD<small>conseillé</small></button>
@@ -310,7 +310,7 @@ body.loaded .lnkh{display:none}
           <select id="q" hidden><option value="3840">4K</option><option value="1920" selected>Full HD</option><option value="-1">Taille d’origine (avant un autre outil)</option></select>
           <p id="qhint"></p>
         </div>
-        <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><p class="help" id="rec_hint" hidden style="margin:6px 0 0">Tout est déjà appliqué. Décoche ce que tu ne veux pas, puis touche le bouton ci-dessous pour valider.</p></div>
+        <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><p class="help" id="rec_hint" hidden style="margin:6px 0 0">Déjà appliqué. Décoche ce que tu ne veux pas.</p></div>
         <button class="btn main big" id="ex" style="margin-top:12px">Améliorer en 4K</button>
         <progress id="pg" value="0" max="1" hidden></progress>
         <p class="st" id="st1" role="status"></p>
@@ -349,27 +349,20 @@ body.loaded .lnkh{display:none}
       </div>
 
       <div class="panel" id="tp2" hidden>
-        <div class="card" id="flt" hidden><h2>Retirer un filtre Snapchat / Instagram <span class="mono" style="font-weight:400">(essai)</span></h2>
-          <p class="help" id="flt_h">Les filtres les plus probables pour ta vidéo sont en premier, suivis de mélanges calculés automatiquement pour les filtres que l’app ne connaît pas. Touche la miniature qui paraît la plus naturelle (peau, murs, vêtements). « Aucun » garde la vidéo telle quelle.</p>
-          <div id="flt_g" class="fgrid"></div>
-          <div id="flt_s" hidden><label class="help" style="display:block;margin:10px 0 4px">Force du retrait <span class="mono" id="flt_v">100 %</span></label><input type="range" id="flt_r" min="0" max="1" step=".05" value="1" aria-label="Force du retrait">
-</div>
-          <p class="help" style="margin:10px 0 0">Ce qui marche : les filtres de couleur (teintes, lumière, délavé). Ce qui ne s’enlève pas : autocollants, textes, masques, déformations du visage. Le noir et blanc ne peut pas retrouver ses couleurs.</p></div>
-        <button class="btn" id="fltb" style="margin:10px 0">Retirer un filtre Snapchat / Instagram (essai)</button>
-        <details id="adv"><summary>Réglages avancés <span class="mono" style="font-weight:400">(déjà réglés automatiquement)</span></summary>
+        <div id="adv">
         <div class="opts vonly">
           <h2>Options de la vidéo</h2>
-          <label class="chk"><input type="checkbox" id="o_fast"><span><b>Mode rapide</b>Ignore la stabilisation et le mouvement fluide pour exporter plus vite. Idéal pour les vidéos longues.</span></label>
-          <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Réduit les tremblements de la main. L’image est un peu recadrée.</span></label>
-          <label class="chk"><input type="checkbox" id="o_defl"><span><b>Anti-scintillement</b>Visible dans l’aperçu sur les 5 premières secondes. Pour les vieux films et caméscopes dont la luminosité clignote d’une image à l’autre. Les vrais changements de lumière sont conservés.</span></label>
-          <label class="chk"><input type="checkbox" id="o_dust"><span><b>Retirer poussières et points noirs</b>Pour les films 8 mm et les pellicules numérisées : efface les petites taches qui apparaissent sur une seule image. Les zones en mouvement ne sont pas touchées.</span></label>
-          <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Isole la voix, supprime souffle et bruits de fond, la rend plus nette puis réencode le son. La musique est atténuée.</span></label>
-          <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe une vidéo à 15 ou 24 images par seconde à 30, comme un iPhone récent.</span></label>
+          <label class="chk"><input type="checkbox" id="o_fast"><span><b>Mode rapide</b>Plus rapide pour les longues vidéos (sans stabilisation ni fluidité).</span></label>
+          <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Moins de tremblements (image un peu recadrée).</span></label>
+          <label class="chk"><input type="checkbox" id="o_defl"><span><b>Anti-scintillement</b>Pour les vieux films dont la lumière clignote.</span></label>
+          <label class="chk"><input type="checkbox" id="o_dust"><span><b>Poussières et points noirs</b>Efface les petites taches des films numérisés.</span></label>
+          <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Retire le souffle et les bruits de fond.</span></label>
+          <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe les vidéos saccadées à 30 images par seconde.</span></label>
           <div class="trim"><b>Partie à traiter</b><span class="mono" id="t_txt">tout</span>
             <input type="range" id="t_in" min="0" max="1000" value="0" aria-label="Début"><input type="range" id="t_out" min="0" max="1000" value="1000" aria-label="Fin"></div>
           <h2 style="margin-top:18px">Réglages d’image</h2>
         </div>
-        <p class="help">Facultatif. Tu peux partir d’un préréglage, puis affiner.</p>
+        <p class="help">Facultatif : pars d’un préréglage, puis affine.</p>
         <button class="btn" id="wbb" style="margin-bottom:8px">Équilibrer les couleurs (analyse la vidéo)</button>
         <div class="pre">
           <button class="btn" data-p="auto">Auto</button>
@@ -379,17 +372,24 @@ body.loaded .lnkh{display:none}
           <button class="btn" data-p="beauty">Vidéo avec filtre beauté</button>
         </div>
         <div id="sl"></div>
-        </details>
+        </div>
       </div>
 
       <div class="panel" id="tp3" hidden>
+        <div class="card" id="flt" hidden><h2>Retirer un filtre Snapchat / Instagram <span class="mono" style="font-weight:400">(essai)</span></h2>
+          <p class="help" id="flt_h">Touche la miniature qui paraît la plus naturelle (peau, murs, vêtements). « Aucun » garde la vidéo telle quelle.</p>
+          <div id="flt_g" class="fgrid"></div>
+          <div id="flt_s" hidden><label class="help" style="display:block;margin:10px 0 4px">Force du retrait <span class="mono" id="flt_v">100 %</span></label><input type="range" id="flt_r" min="0" max="1" step=".05" value="1" aria-label="Force du retrait">
+</div>
+          <p class="help" style="margin:10px 0 0">Retire les filtres de couleur et de lumière. Pas les autocollants, textes, masques ou déformations.</p></div>
+        <button class="btn" id="fltb" style="margin:10px 0">Retirer un filtre Snapchat / Instagram (essai)</button>
         <div id="plc">
           <h2>Prolonger la vidéo (essai)</h2>
-          <p class="help">L’app regarde ta vidéo, repère les moments où les gestes se répètent (un geste de la main, un mouvement…) et les enchaîne pour continuer l’action, avec des raccords adoucis. Le résultat commence par ta vidéo entière puis se prolonge, sans le son. Elle réorganise ce qui existe : elle n’invente pas de nouveaux gestes, donc plus ta vidéo contient de répétitions, plus c’est réussi. Vidéo de 2 minutes maximum.</p>
+          <p class="help">Continue l’action en réutilisant les gestes qui se répètent dans ta vidéo. Sans le son, vidéo de 2 minutes maximum.</p>
           <select id="pl" aria-label="Durée voulue"><option value="30">30 secondes</option><option value="60" selected>1 minute</option><option value="120">2 minutes</option><option value="180">3 minutes</option><option value="240">4 minutes</option></select>
           <button class="btn main" id="plb" style="margin-top:10px">Créer la version prolongée</button>
           <button class="btn" id="lfb" style="margin-top:8px">Enregistrer la dernière image</button>
-          <p class="help" style="margin:8px 0 0">La dernière image peut servir de départ à un service de génération vidéo en ligne, qui invente une vraie suite.</p>
+
         </div>
       </div>
 
@@ -436,7 +436,7 @@ function dims(s){return [s.videoWidth||s.naturalWidth||s.width||0,s.videoHeight|
 function setMode(){
   const ph=mode==="photo";
   $("#app").hidden=false;$("#st0").hidden=true;
-  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#tabx").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);$("#qwrap").hidden=ph;if(ph)$("#rec").hidden=true;document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
+  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#plc").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);$("#qwrap").hidden=ph;if(ph)$("#rec").hidden=true;document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
   $("#ex").textContent=ph?"Améliorer la photo":($("#q").value==="-1"?"Nettoyer (taille d’origine)":$("#q").value==="3840"?"Améliorer en 4K":"Améliorer en Full HD");
   $("#out").hidden=true;
 }
@@ -843,9 +843,9 @@ function showTab(id){
   activeTab=id;
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.t===id?"true":"false"));
   /* toutes les options restent visibles ; les onglets servent de raccourcis */
-  ["tp1","tp2","tp3"].forEach(p=>{$("#"+p).hidden=(p==="tp3"&&$("#tabx").hidden)});
+  ["tp1","tp2","tp3"].forEach(p=>{$("#"+p).hidden=p!==id});
 }
-document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{showTab(t.dataset.t);try{$("#"+t.dataset.t).scrollIntoView({behavior:"smooth",block:"start"})}catch(e){}});
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showTab(t.dataset.t));
 const fmtT=s=>{s=Math.max(0,Math.round(s||0));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
 function chips(a){const m=$("#meta");m.textContent="";a.forEach(t=>{const s=document.createElement("span");s.textContent=t;m.appendChild(s)})}
 const HINTS={"3840":"Agrandit jusqu’à la 4K : le plus net, mais le plus long.","1920":"Environ deux fois plus rapide qu’en 4K, avec une très bonne netteté.","-1":"Nettoie sans agrandir. À utiliser avant un outil d’agrandissement par IA."};
@@ -1697,12 +1697,15 @@ const FREP={info:null,
     if(dur>300)warn("Vidéo longue ("+fmtT(dur)+") : l’export prendra du temps et l’app adaptera la taille ou le débit pour ne pas saturer la mémoire de l’iPhone. Garde l’écran allumé et l’app au premier plan.");
     if(w*h>3840*2160*1.01)warn("Très grande définition : l’export se fera au maximum en 4K.");
     if(w&&Math.max(w,h)<500)ok("Petite définition (vieux téléphone) : l’agrandissement et l’anti-blocs seront les plus utiles.");
-    if(mbps&&mbps<1&&w*h>=640*360)warn("Vidéo très compressée (débit faible) : les carrés de compression et le flou viennent de là ; l’app les atténue, mais ne peut pas recréer ce qui a été perdu.");
+    /* compression jugée par image et par pixel (et non par un débit fixe) : une vidéo de réseau social bien encodée n'est pas signalée */
+    if(mbps&&w*h){const fps=r.fps||30,bpp=mbps*1e6/(w*h*fps),lim=/HEVC/.test(r.vcodec||"")?.025:.035;
+      if(bpp<lim*.6)warn("Vidéo fortement compressée lors d’un envoi (réseau social ou messagerie) : des détails fins ont été perdus. L’app atténue les défauts, mais n’invente pas les détails disparus.");
+      else if(bpp<lim)ok("Vidéo assez compressée, comme la plupart des vidéos partagées : l’app adoucira les défauts si besoin.");}
     return o},
   show(o,title){const d=$("#frep"),l=$("#frep_l");l.textContent="";let nb=0;
     o.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
     $("#frep_s").textContent=title||(nb?"Rapport du fichier : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Rapport du fichier : tout est en ordre");d.classList.toggle("warn",nb>0);d.hidden=false},
-  async run(file){try{const r=await FREP.inspect(file);if(curFile!==file)return;FREP.info=r;const o=FREP.issues(r,v);FREP.show(o);try{DIAG.send("fichier",{fichier:r,points:o.filter(x=>x[0]!=="ok").map(x=>x[1])})}catch(e){}}catch(e){}},
+  async run(file){try{const r=await FREP.inspect(file);if(curFile!==file)return;try{r.fps=await containerFps(file)}catch(e){}if(curFile!==file)return;FREP.info=r;const o=FREP.issues(r,v);FREP.show(o);try{DIAG.send("fichier",{fichier:r,points:o.filter(x=>x[0]!=="ok").map(x=>x[1])})}catch(e){}}catch(e){}},
   /* rapport de sortie : ce qui a été produit, et pourquoi si quelque chose manque */
   out(x){const o=[];const ok=(t)=>o.push(["ok",t]),warn=(t)=>o.push(["warn",t]),bad=(t)=>o.push(["bad",t]);
     ok("Fichier créé : "+x.w+"×"+x.h+", "+x.mo+" Mo, format "+(x.codec.startsWith("hvc")?"HEVC (compact)":"H.264 (classique)")+", "+x.mbps+" Mbit/s.");
@@ -1830,7 +1833,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.34)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.35)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
