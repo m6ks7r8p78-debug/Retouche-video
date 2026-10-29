@@ -225,7 +225,7 @@ body.loaded .lnkh{display:none}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · <span id="ver">v2.42</span></span>
+  <span class="tag">sur ton téléphone · <span id="ver">v2.43</span></span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -332,7 +332,8 @@ body.loaded .lnkh{display:none}
           <p class="help" id="socn" hidden style="margin:10px 0 0">Pour publier sur TikTok ou Instagram : active « Importer en haute qualité » dans l’app au moment de publier, sinon elle recompresse fortement la vidéo.</p>
           <p class="help" id="dupn" hidden style="margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--line)"></p>
           <button class="btn" id="bab" style="margin-top:8px" hidden>🎬 Créer un avant / après à partager (10 s)</button>
-          <button class="btn" id="kbb" style="margin-top:8px" hidden>🎞️ Animer la photo en vidéo (8 s, zoom lent)</button>
+          <button class="btn" id="kbb" style="margin-top:8px" hidden>🎞️ Animer la photo en vidéo (8 s)</button>
+          <label class="chk" id="kbo" hidden style="margin-top:8px"><input type="checkbox" id="o_relief" checked><span><b>Effet de relief</b>La caméra se déplace doucement dans la photo : le premier plan bouge plus que le fond. Rien n’est modifié dans la photo. Télécharge 27 Mo la première fois.</span></label>
           <div id="kbres" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Photo animée</h2><video id="kbv" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
             <button class="btn main" id="kbs" style="margin-top:8px">Partager la vidéo animée</button></div>
           <div id="bares" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Avant / après</h2><video id="bav" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
@@ -401,8 +402,9 @@ body.loaded .lnkh{display:none}
 </main>
 
 <script src="sr.js"></script>
+<script src="depth.js"></script>
 <script>
-const VER="v2.42";/* seul endroit où changer le numéro de version */
+const VER="v2.43";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -535,7 +537,7 @@ if(mx(abs(c-med3(c,p,n)))>thr){cnt+=1.;if(abs(float(i))<1.5&&abs(float(j))<1.5)n
 vec3 m0=med3(c0,texture2D(tp,uv).rgb,texture2D(tn,uv).rgb);float d0=mx(abs(c0-m0));
 float k=(mov<.5&&near>.5&&cnt<=40.)?smoothstep(thr*.35,thr*.7,d0):0.;
 gl_FragColor=vec4(mix(c0,m0,k),1.);}`;
-const U={},UB={},UD={},UK={};let progK=null,texK=null,progKM=null,texKM=null;const UKM={};let kmW=0,kmH=0;let DUST={on:false,p:null,n:null};let srIn=false,srOrig=null,texO;let tex,tex3,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progB;
+const U={},UB={},UD={},UK={};let progK=null,texK=null,progKM=null,texKM=null;const UKM={};let kmW=0,kmH=0;let DUST={on:false,p:null,n:null};let srIn=false,srOrig=null,texO,dustOnly=false;let tex,tex3,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progB;
 if(gl){
   const mk=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
   const pg=(vs,fs)=>{const g=gl.createProgram();gl.attachShader(g,mk(gl.VERTEX_SHADER,vs));gl.attachShader(g,mk(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(g,0,"p");gl.linkProgram(g);return g};
@@ -565,7 +567,7 @@ function draw(el){
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,s0);
   if(fw!==w||fh!==h){fw=w;fh=h;[[tex3,w,h],[texD,w,h],[texK,w,h]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
   let dustSwap=false,dbSwap=false;const tex0=tex;
-  if(show&&!srIn&&P.db>0&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
+  if(show&&!srIn&&!dustOnly&&P.db>0&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
     const bw=Math.ceil(w/8)+2,bh=Math.ceil(h/8)+2;
     if(kmW!==bw||kmH!==bh){kmW=bw;kmH=bh;gl.bindTexture(gl.TEXTURE_2D,texKM);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,bw,bh,0,gl.RGBA,gl.UNSIGNED_BYTE,null)}
     pass(progKM,tex,texKM,bw,bh,()=>{gl.uniform1i(UKM.t,0);gl.uniform2f(UKM.px,1/w,1/h);gl.uniform2f(UKM.ph,DB.ph[0],DB.ph[1])});
@@ -581,12 +583,12 @@ function draw(el){
     }catch(e){gl.activeTexture(gl.TEXTURE0)}
   }
   let src=tex;
-  if(show&&!srIn&&(P.sh>0||P.dn>0||P.cs>0)){pass(progB,src,tex3,w,h,()=>{gl.uniform1i(UB.t,0);gl.uniform2f(UB.px,1/w,1/h);gl.uniform1f(UB.sh,P.sh);gl.uniform1f(UB.dn,P.dn);gl.uniform1f(UB.cs,P.cs)});src=tex3}
+  if(show&&!srIn&&!dustOnly&&(P.sh>0||P.dn>0||P.cs>0)){pass(progB,src,tex3,w,h,()=>{gl.uniform1i(UB.t,0);gl.uniform2f(UB.px,1/w,1/h);gl.uniform1f(UB.sh,P.sh);gl.uniform1f(UB.dn,P.dn);gl.uniform1f(UB.cs,P.cs)});src=tex3}
   gl.useProgram(prog);gl.bindTexture(gl.TEXTURE_2D,src);gl.uniform1i(U.t,0);
   gl.viewport(0,0,cv.width,cv.height);
-  gl.uniform2f(U.px,1/w,1/h);gl.uniform1f(U.on,show);
+  gl.uniform2f(U.px,1/w,1/h);gl.uniform1f(U.on,dustOnly?0:show);
   {const T=stabTR();gl.uniform3f(U.tr,T[0],T[1],T[2])}
-  gl.uniform1f(U.sp,show&&split?split:0);
+  gl.uniform1f(U.sp,show&&split&&!dustOnly?split:0);
   gl.activeTexture(gl.TEXTURE3);if(srIn&&srOrig&&show&&split){gl.bindTexture(gl.TEXTURE_2D,texO);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srOrig)}else gl.bindTexture(gl.TEXTURE_2D,tex0);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
   for(const k of ["br","co","sa","wa"])gl.uniform1f(U[k],P[k]);
   gl.uniform1f(U.ex,show?(exporting?DFG:REC.pv()):1);
@@ -607,13 +609,17 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
   badge(on){const b=$("#bdg");if(!b||!show)return;b.textContent=on===1?"Amélioré · IA":on===2?"Amélioré · IA en cours…":"Amélioré"},
   fits(el){const [w,h]=dims(el);return w>0&&!!window.SR&&SR.fits(w,h)},
   ck(){return mode==="video"?"v:"+(curFile&&curFile.name)+":"+v.currentTime:"p:"+window.__photoName},
-  async run(el,s,onTile,key){const job=SRX.lock.then(()=>SR.run(el,s,SRX.dn(),onTile,key));SRX.lock=job.catch(()=>{});return job},
+  async run(el,s,onTile,key){const job=SRX.lock.then(()=>SR.run(el,s,SRX.dn(),onTile,key));SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed)localStorage.setItem("srspd",SR.speed)}catch(e){}return c},
   /* dessine el restaurée par l'IA ; renvoie false si l'IA n'est pas utilisable (l'appelant dessine alors normalement) */
   async render(el,onTile,key){
     if(!SRX.on())return false;
     /* photos comme vidéos : l'IA sert aux images de petite taille ; une photo récente (12 Mpx) prendrait des minutes pour un gain nul */
     if(!SRX.fits(el)){if(!SRX.warned){SRX.warned=true;msg("Qualité maximale : "+(el===photoEl?"cette photo":"cette vidéo")+" est déjà en haute définition, l’IA n’y apporterait rien et serait très longue. L’amélioration standard est utilisée.")}return false}
-    let c;try{c=await SRX.run(el,cv.width/dims(el)[0],onTile,key)}
+    let inp=el;
+    if(DUST.on){/* poussières retirées AVANT le réseau (sinon l'IA les rendrait plus nettes) */
+      const [w,h]=dims(el),W0=cv.width,H0=cv.height;cv.width=w;cv.height=h;dustOnly=true;try{draw(el)}finally{dustOnly=false}
+      if(!SRX.dc)SRX.dc=document.createElement("canvas");SRX.dc.width=w;SRX.dc.height=h;SRX.dc.getContext("2d").drawImage(cv,0,0);cv.width=W0;cv.height=H0;inp=SRX.dc}
+    let c;try{c=await SRX.run(inp,cv.width/dims(el)[0],onTile,key)}
     catch(e){SRX.off=true;msg("La qualité maximale n’est pas disponible sur cet appareil ("+((e&&e.message)||"erreur")+") : l’amélioration standard est utilisée.");return false}
     srIn=true;srOrig=el;try{draw(c)}finally{srIn=false;srOrig=null}return true},
   preview(){clearTimeout(SRX.pt);if(!SRX.on()||exporting)return;
@@ -682,13 +688,17 @@ function analyze(){
     if(y>26&&y<230){r+=R;g+=G;b+=B;k++}   /* tons moyens seulement : ni noirs ni blancs brûlés */
   }
   const pc=q=>{let a=0;for(let i=0;i<256;i++){a+=hist[i];if(a>=q*n)return i/255}return 1};
-  const p2=pc(.02),p50=pc(.5),p98=pc(.98),spread=Math.max(.05,p98-p2);
+  const p2=pc(.02),p50=pc(.5),p98=pc(.98),lo=pc(.005),hi=pc(.995);
   sat/=n*255;
   const cl=(v,a,z)=>Math.max(a,Math.min(z,v));
   const wa=0,wb=0;
+  /* contraste : on rapproche le noir et le blanc les plus extrêmes de l'image du vrai noir / vrai blanc, d'un tiers de l'écart.
+     Mesuré sur le banc (images délavées et normales) : meilleur partout que l'ancienne règle, qui ajoutait 13 à 18 % de contraste
+     même aux images bien exposées. */
+  const K=.35,lo2=lo>.02?lo-(lo-.02)*K:lo,hi2=hi<.98?hi+(.98-hi)*K:hi,co=cl((hi2-lo2)/Math.max(.05,hi-lo),1,1.6);
   Object.assign(P,{
-    br:cl((.45-p50)*.35,-.05,.08),
-    co:spread<.85?cl(1+(.85-spread)*.45,1.04,1.25):1.04,
+    br:(lo2-.5)/co+.5-lo,
+    co,
     sa:cl(1.2-sat*1.6,1,1.14),
     wa,wb,sh:.3,dn:.2});
   sync();
@@ -744,8 +754,11 @@ function updateEst(){
     if(sp&&sp.r>0){
       const w=v.videoWidth,h=v.videoHeight;let px=w*h;
       if(q>0){const s=Math.min(q/Math.max(w,h),q*9/16/Math.min(w,h));px=Math.round(w*s/2)*2*Math.round(h*s/2)*2}
-      const sec=v.duration*30*(px/sp.p)/sp.r;
-      t+=" Durée estimée : "+(sec>90?"environ "+Math.round(sec/60)+" min":"moins de 2 min")+" (d’après ton dernier export).";
+      let sec=v.duration*30*(px/sp.p)/sp.r,ia="";
+      /* qualité maximale : temps du réseau mesuré sur cet appareil (millisecondes par mégapixel d'image d'origine) */
+      if(SRX.on()&&SRX.fits(v)){let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}
+        if(ms>0)sec+=v.duration*(OFPS||30)*(w*h/1e6)*ms/1000;else ia=" L’IA ajoutera du temps : il sera connu après un premier essai (aperçu en pause)."}
+      t+=" Durée estimée : "+(sec>90?"environ "+(sec>5400?Math.round(sec/3600*10)/10+" h":Math.round(sec/60)+" min"):"moins de 2 min")+" (d’après ton dernier export)."+ia;
     }else t+=" La durée estimée s’affichera après ton premier export.";
   }
   $("#qhint").textContent=t;
@@ -871,7 +884,7 @@ try{$("#o_dust").checked=localStorage.getItem("o_dust")==="1"}catch(e){}
 $("#o_fast").addEventListener("change",e=>{try{localStorage.setItem("o_fast",e.target.checked?"1":"0")}catch(x){}});
 try{$("#o_fast").checked=localStorage.getItem("o_fast")==="1"}catch(e){}
 {let m="1";try{m=localStorage.getItem("o_max")||"1"}catch(e){}$("#o_max").checked=m==="1"}
-$("#o_max").addEventListener("change",e=>{try{localStorage.setItem("o_max",e.target.checked?"1":"0")}catch(x){}SRX.pc=null;SRX.key="";draw()});
+$("#o_max").addEventListener("change",e=>{try{localStorage.setItem("o_max",e.target.checked?"1":"0")}catch(x){}SRX.pc=null;SRX.key="";updateEst();draw()});
 $("#o_fluid").addEventListener("change",e=>{try{localStorage.setItem("o_fluid",e.target.checked?"1":"0")}catch(x){}});
 /* ===== Découpe début/fin ===== */
 function trimRange(){const d=v.duration||0;return[$("#t_in").value/1000*d,$("#t_out").value/1000*d]}
@@ -925,7 +938,7 @@ function loadFile(f){
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
   curFile=f;az=false;try{FLT.reset()}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
-  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbres"].forEach(i=>$("#"+i).hidden=true);
+  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
   });
 }
@@ -1271,7 +1284,7 @@ const KB={blob:null,url:null,busy:false,
     try{
       msg("Préparation de la photo…");await wait(30);
       const [w,h]=dims(photoEl),m=Math.max(w,h),s0=Math.min(2600/m,Math.max(1,2600/m));
-      cv.width=Math.round(w*s0);cv.height=Math.round(h*s0);show=1;draw(photoEl);
+      cv.width=Math.round(w*s0);cv.height=Math.round(h*s0);show=1;if(!(await SRX.render(photoEl,f=>msg("Restauration IA de la photo… "+Math.round(f*100)+" %"),SRX.ck())))draw(photoEl);
       const src=document.createElement("canvas");src.width=cv.width;src.height=cv.height;src.getContext("2d").drawImage(cv,0,0);size(PREVIEW);
       const L=1920,sc=Math.min(L/Math.max(w,h),1080/Math.min(w,h)),W=Math.round(w*sc/2)*2,H=Math.round(h*sc/2)*2;
       const out=document.createElement("canvas");out.width=W;out.height=H;const x=out.getContext("2d");x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
@@ -1288,13 +1301,22 @@ const KB={blob:null,url:null,busy:false,
       let err=null;const enc=new VideoEncoder({output:(c,md)=>mx.addVideoChunk(c,md),error:e=>{err=e}});enc.configure(cfg);
       const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
       $("#pg").hidden=false;
+      /* relief : profondeur estimée par l'IA sur le téléphone ; en cas d'échec, simple zoom comme avant */
+      let rel=null;
+      if(window.DEPTH&&$("#o_relief")&&$("#o_relief").checked){
+        try{const dep=await DEPTH.estimate(src,f=>msg("Préparation du relief : téléchargement du modèle (27 Mo, une seule fois)… "+Math.round(f*100)+" %"));
+          msg("Calcul du relief…");rel={focus:DEPTH.setup(src,dep,W,H)}}
+        catch(e){rel=null;msg("Relief indisponible ("+((e&&e.message)||"erreur")+") : la vidéo est faite avec un zoom simple.");await wait(1200)}}
       for(let i=0;i<N;i++){
         if(err)throw err;
+        const fade=Math.min(1,i/(FPSk*.6),(N-1-i)/(FPSk*.6));
+        if(rel){x.globalAlpha=1;x.drawImage(DEPTH.frame(i/(N-1),rel.focus,.035,Math.max(0,fade)),0,0)}
+        else{
         const t=ease(i/(N-1)),z=1+.14*t,cw=src.width/z,ch=src.height/z;
         const cx=src.width*(.5+.03*(1-2*t)),cy=src.height*(.47+.02*(1-2*t));
         x.globalAlpha=1;x.fillStyle="#000";x.fillRect(0,0,W,H);
-        const fade=Math.min(1,i/(FPSk*.6),(N-1-i)/(FPSk*.6));x.globalAlpha=Math.max(0,fade);
-        x.drawImage(src,Math.max(0,Math.min(src.width-cw,cx-cw/2)),Math.max(0,Math.min(src.height-ch,cy-ch/2)),cw,ch,0,0,W,H);
+        x.globalAlpha=Math.max(0,fade);
+        x.drawImage(src,Math.max(0,Math.min(src.width-cw,cx-cw/2)),Math.max(0,Math.min(src.height-ch,cy-ch/2)),cw,ch,0,0,W,H);}
         const f=new VideoFrame(out,{timestamp:Math.round(i*1e6/FPSk),duration:Math.round(1e6/FPSk)});enc.encode(f,{keyFrame:i%60===0});f.close();
         while(enc.encodeQueueSize>6)await wait(5);
         if(i%10===0){$("#pg").value=i/N;msg("Création de la vidéo… "+Math.round(i/N*100)+" %");await wait(0)}
@@ -1740,7 +1762,7 @@ $("#ex").onclick=async()=>{
       const big=cv.width*cv.height>2073600*1.2,srcPx=Math.max(1,v.videoWidth*v.videoHeight),up=cv.width*cv.height/srcPx;
       let hevcOK=false;try{hevcOK=localStorage.getItem("nohevc")!=="1"}catch(e){}
       const mk=hv=>{const px=cv.width*cv.height*OUTF,dd=window.__plan?window.__plan.length/OFPS:dT,bud=window.__safe?2e8:3e8;
-        const bpp=(hv?.04:.055)*(up>=4?.8:1)*(window.__safe?.85:1);
+        const bpp=(hv?.04:.055)*(up>=4&&!SRX.on()?.8:1)*(window.__safe?.85:1);
         return{codec:hv?(big?"hvc1.1.6.L153.B0":"hvc1.1.6.L123.B0"):(big?"avc1.640033":"avc1.640028"),width:cv.width,height:cv.height,
           bitrate:Math.round(px*Math.max(.03,Math.min(bpp,bud*8/(px*Math.max(1,dd))))),framerate:OUTF,...(hv?{hevc:{format:"hevc"}}:{avc:{format:"avc"}}),latencyMode:"quality"}};
       let c=mk(false);
@@ -1767,7 +1789,8 @@ $("#ex").onclick=async()=>{
     if(snd===false)audioWhy="ta vidéo n’a pas de son";
     else if(!voiceOK&&!rawA&&!window.AudioEncoder)audioWhy="ton iPhone ne sait pas encoder le son dans ce mode";
     if(snd!==false&&!voiceOK&&!rawA&&trimmed)audioWhy="le son n’est pas conservé avec la découpe sur cet appareil";
-    if(snd!==false&&!voiceOK&&!rawA&&window.AudioEncoder&&!window.__plan&&!trimmed){
+    if(snd!==false&&!voiceOK&&!rawA&&window.AudioEncoder&&!window.__plan&&!trimmed&&curFile.size>350*1048576)audioWhy="le son de ce très gros fichier n’a pas pu être lu sans saturer la mémoire";
+    else if(snd!==false&&!voiceOK&&!rawA&&window.AudioEncoder&&!window.__plan&&!trimmed){
       try{
         const ctx=new (window.AudioContext||window.webkitAudioContext)();
         ab=await ctx.decodeAudioData(await curFile.arrayBuffer());ctx.close();
@@ -1876,7 +1899,7 @@ $("#ex").onclick=async()=>{
     else{
       await enc.flush();
       try{const n=Math.max(1,total);window.__timing=v.videoWidth+"×"+v.videoHeight+" à "+(Math.round(OFPS*10)/10)+" i/s, sortie "+cfg.width+"×"+cfg.height+" : attente image "+Math.round(tW/n)+" ms, traitement "+Math.round(tD/n)+" ms (dessin "+Math.round(tDr/n)+", image "+Math.round(tVF/n)+", contrôle "+Math.round(tDu/n)+", envoi "+Math.round(tEn/n)+"), encodage "+Math.round(tQ/n)+" ms par image"+(window.__seqInfo?" ["+window.__seqInfo+"]":(rdr?"":" [lecture classique]"))}catch(e){}
-      try{const el=(performance.now()-T0)/1000;if(!plan&&el>3)localStorage.setItem("spd",JSON.stringify({r:total/el,p:cv.width*cv.height}))}catch(e){}
+      try{const el=(performance.now()-T0)/1000;if(!plan&&!srUse&&el>3)localStorage.setItem("spd",JSON.stringify({r:total/el,p:cv.width*cv.height}))}catch(e){}
       const build=wa=>{
         /* écriture par morceaux (moins de mémoire qu'un seul gros tampon : évite que l'iPhone recharge la page sur les longues vidéos) */
         const parts=[],starts=[];let end=0;
@@ -2545,7 +2568,7 @@ async function exportPhoto(){
   if(!blob){msg("Impossible de créer la photo.");return}
   outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
   $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
-  $("#out").hidden=false;$("#sv").hidden=false;$("#kbb").hidden=false;$("#kbres").hidden=true;$("#bab").hidden=true;$("#bares").hidden=true;
+  $("#out").hidden=false;$("#sv").hidden=false;$("#kbb").hidden=false;$("#kbo").hidden=false;$("#kbres").hidden=true;$("#bab").hidden=true;$("#bares").hidden=true;
   msg("Terminé ! "+W+"×"+H+"."+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
   $("#out").scrollIntoView({behavior:"smooth"});
 }

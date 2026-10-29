@@ -10,6 +10,7 @@ avant / après à partager. Tout est calculé sur le téléphone : les vidéos n
 |---|---|
 | `index.html` | l'application entière (interface, traitement d'image en WebGL, export vidéo) |
 | `sr.js`, `sr.bin` | « Qualité maximale » : réseau de restauration Real-ESRGAN general v3 exécuté en WebGL2 (poids en demi-précision, 4,9 Mo) |
+| `depth.js`, `ort/` | « Effet de relief » des photos animées : profondeur estimée par Depth Anything V2 Small (Apache-2.0, téléchargé une fois depuis Hugging Face) avec ONNX Runtime Web (MIT) |
 | `filtres.png` | bibliothèque de filtres Snapchat / Instagram (tables de couleur 17³, aller et retour), apprise sur de vraies paires avec / sans filtre |
 | `rnnoise.mjs` | nettoyage de la voix |
 | `mp4-muxer.js` | écriture du fichier MP4 |
@@ -19,5 +20,7 @@ avant / après à partager. Tout est calculé sur le téléphone : les vidéos n
 ## Licences des composants
 
 - Real-ESRGAN : BSD-3 (`LICENSE-Real-ESRGAN.txt`)
+- Depth Anything V2 Small : Apache-2.0
+- ONNX Runtime Web : MIT (`ort/LICENSE-onnxruntime.txt`)
 - mp4-muxer : MIT (`LICENSE-mp4-muxer.txt`)
 - RNNoise (wasm) : BSD (`LICENSE-rnnoise-wasm.txt`)

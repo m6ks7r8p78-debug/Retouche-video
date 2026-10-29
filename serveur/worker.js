@@ -3,13 +3,18 @@
 // trouver le fichier vidéo de meilleure qualité et le renvoyer à l'app, avec les bons en-têtes.
 // Aucune vidéo n'est stockée : elle transite seulement.
 
-const VERSION = "3";
+const VERSION = "4";
 const UA_PC = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 // hôtes que /proxy accepte de relayer (rien d'autre : pas de relais ouvert)
 const PROXY_OK = /^(www\.reddit\.com|old\.reddit\.com|v\.redd\.it|video\.twimg\.com|api\.fxtwitter\.com|[a-z0-9-]+\.media\.tumblr\.com)$/i;
 
+// sites autorisés à appeler ce serveur depuis un navigateur (l'app sur GitHub Pages, sa version dans Claude, les tests locaux) :
+// un autre site ne peut plus s'en servir comme téléchargeur sur ton quota gratuit
+const ORIGINS = /^https:\/\/(m6ks7r8p78-debug\.github\.io|[a-z0-9-]+\.claudeusercontent\.com|claude\.ai)$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+let ORIGIN = "";
 const cors = (h = {}) => ({
-  "access-control-allow-origin": "*",
+  "access-control-allow-origin": ORIGIN || "null",
+  vary: "origin",
   "access-control-allow-methods": "GET, OPTIONS",
   "access-control-expose-headers": "x-nom, x-qualite, content-length",
   ...h,
@@ -288,9 +293,22 @@ async function video(link, opt = {}) {
   throw new Err("site", "Ce site n'est pas encore pris en charge.");
 }
 
+// limite simple par adresse IP (au mieux : chaque instance du serveur compte de son côté)
+const HITS = new Map();
+function tooMany(ip) {
+  const now = Date.now(), w = 60000, max = 40;
+  const a = (HITS.get(ip) || []).filter(t => now - t < w); a.push(now); HITS.set(ip, a);
+  if (HITS.size > 5000) HITS.clear();
+  return a.length > max;
+}
+
 export default {
   async fetch(req) {
     const u = new URL(req.url);
+    const origin = req.headers.get("origin") || "";
+    ORIGIN = ORIGINS.test(origin) ? origin : "";
+    if (origin && !ORIGIN) return new Response("Origine non autorisée.", { status: 403 });
+    if (u.pathname !== "/" && u.pathname !== "/etat" && tooMany(req.headers.get("cf-connecting-ip") || "?")) return fail("limite", "Trop de demandes : réessaie dans une minute.", 429);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors({ "access-control-max-age": "86400" }) });
     try {
       if (u.pathname === "/" || u.pathname === "/etat") return json({ ok: true, service: "retouche-serveur", version: VERSION });
@@ -306,7 +324,17 @@ export default {
         let t; try { t = new URL(u.searchParams.get("u") || "") } catch (e) { return fail("lien", "Adresse invalide.", 400) }
         if (t.protocol !== "https:" || !PROXY_OK.test(t.hostname)) return fail("refuse", "Adresse non autorisée.", 403);
         const ref = /twimg|fxtwitter/.test(t.hostname) ? "https://x.com/" : /tumblr/.test(t.hostname) ? "https://www.tumblr.com/" : "https://www.reddit.com/";
-        const r = await fetch(t.href, { headers: { "user-agent": UA_PC, referer: ref, accept: "*/*" }, redirect: "follow" });
+        // redirections suivies une par une : chaque nouvelle adresse doit rester dans la liste autorisée
+        let r, cur = t.href;
+        for (let hop = 0; ; hop++) {
+          r = await fetch(cur, { headers: { "user-agent": UA_PC, referer: ref, accept: "*/*" }, redirect: "manual" });
+          const loc = r.status >= 300 && r.status < 400 && r.headers.get("location");
+          if (!loc) break;
+          if (hop >= 5) return fail("redirections", "Trop de redirections.", 502);
+          const n = new URL(loc, cur);
+          if (n.protocol !== "https:" || !PROXY_OK.test(n.hostname)) return fail("refuse", "Redirection vers une adresse non autorisée.", 403);
+          cur = n.href;
+        }
         const h = cors({ "content-type": r.headers.get("content-type") || "application/octet-stream", "cache-control": "no-store" });
         const len = r.headers.get("content-length"); if (len) h["content-length"] = len;
         return new Response(r.body, { status: r.status, headers: h });
