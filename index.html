@@ -154,6 +154,14 @@ body.loaded .picks{grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
 body.loaded .pickbtn,body.loaded .pickbtn.main{grid-column:auto;min-height:0;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px;font:650 13px/1.15 var(--fb);text-align:center}
 body.loaded .pickbtn svg,body.loaded .pickbtn.main svg{width:22px;height:22px}
 body.loaded .pickbtn .sub{display:none}
+.lnk{display:flex;gap:8px;margin-top:10px;align-items:stretch}
+.lnk svg{width:22px;height:22px;flex:none;align-self:center;stroke:var(--mut);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.lnk input{flex:1;min-width:0;padding:12px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font:500 16px/1.2 var(--fb)}
+.lnk input:focus{outline:2px solid var(--cy);outline-offset:1px}
+.lnk .btn{width:auto;padding:12px 16px;flex:none}
+.lnkh{font-size:13px;color:var(--mut);margin:6px 0 0}
+body.loaded .lnkh{display:none}
+.lnkmsg{margin:8px 0 0;font-size:14px;color:var(--ink)}
 .privacy{font-size:14px}
 .stage{border-radius:14px;border:0;box-shadow:0 0 0 1px var(--line)}
 .bdg{background:var(--cy);color:#fff;font:600 12px/1 var(--fb);letter-spacing:0;text-transform:none}
@@ -209,7 +217,7 @@ input[type=range]{accent-color:var(--acc)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="5" width="28" height="22" rx="4" fill="var(--ink)"/><rect x="7" y="10" width="5" height="12" rx="1" fill="var(--cy)"/><rect x="13.5" y="10" width="5" height="12" rx="1" fill="var(--acc)"/><rect x="20" y="10" width="5" height="12" rx="1" fill="var(--am)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">v2.28</span>
+  <span class="tag">v2.29</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -230,6 +238,14 @@ input[type=range]{accent-color:var(--acc)}
     <button class="pickbtn" id="pickp"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg><span class="lbl">Choisir une photo</span></button>
     <button class="pickbtn" id="pickm"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="7" height="10" rx="1.5"/><rect x="14.5" y="7" width="7" height="10" rx="1.5"/><path d="M9.5 12h5"/></svg><span class="lbl">Regrouper des vidéos</span></button>
   </div>
+  <form class="lnk" id="lnkf" autocomplete="off" novalidate>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
+    <input id="lnk" type="url" inputmode="url" enterkeyhint="go" placeholder="Coller un lien TikTok, Instagram, X…" aria-label="Lien d’une vidéo TikTok, Instagram, Twitter / X, Reddit ou Tumblr">
+    <button class="btn" id="lnkgo" type="submit">Charger</button>
+  </form>
+  <div id="lnkc" class="row" hidden style="margin-top:8px"></div>
+  <p class="lnkmsg" id="lnkst" hidden aria-live="polite"></p>
+  <p class="lnkh">La vidéo est récupérée dans sa meilleure qualité, puis s’ouvre ici pour être retouchée ou enregistrée.</p>
   <input type="file" id="fm" accept="video/*" multiple hidden>
   <div class="card" id="mg" hidden>
     <h2>Regrouper des vidéos</h2>
@@ -1455,6 +1471,159 @@ $("#pickm").onclick=()=>$("#fm").click();$("#mgadd").onclick=()=>$("#fm").click(
 $("#fm").onchange=e=>{if(exporting){e.target.value="";return}MG.add(e.target.files);e.target.value=""};
 $("#mggo").onclick=()=>MG.go();
 $("#mgsave").onclick=()=>{if(MG.blob)shareBlob(MG.blob,uniqName((MG.files[0]&&MG.files[0].name||"video").replace(/\.[^.]+$/,"")+"-regroupee","mp4"))};
+/* ===== Import par lien (Twitter / X, Reddit) : tout se fait depuis le téléphone, sans serveur ===== */
+const LINK={busy:false,SRV:"https://retouche-serveur.nfchb5hd9z.workers.dev",
+  px(u){return LINK.SRV+"/proxy?u="+encodeURIComponent(u)},
+  say(t){const e=$("#lnkst");e.textContent=t||"";e.hidden=!t},
+  site(u){if(/(^|\.)(twitter|x|fxtwitter|vxtwitter|fixupx|fixvx|twittpr)\.com$/i.test(u.hostname))return "twitter";
+    if(/(^|\.)(reddit\.com|redd\.it)$/i.test(u.hostname))return "reddit";
+    if(/(^|\.)tiktok\.com$/i.test(u.hostname))return "tiktok";
+    if(/(^|\.)instagram\.com$/i.test(u.hostname))return "instagram";
+    if(/(^|\.)tumblr\.com$/i.test(u.hostname))return "tumblr";
+    if(/(^|\.)(youtube\.com|youtu\.be|facebook\.com|fb\.watch|snapchat\.com|threads\.net)$/i.test(u.hostname))return "autre";
+    return null},
+  async json(url,site){let r;try{r=await fetch(url,{credentials:"omit"})}catch(e){throw new Error(!navigator.onLine?"RESEAU":site==="reddit"?"BLOQUE":"INTROUVABLE")}
+    if(r.status===404)throw new Error("INTROUVABLE");if(!r.ok)throw new Error("HTTP"+r.status);return r.json()},
+  async dl(url,name,lab){
+    let r=null;
+    for(let k=0;k<3;k++){if(k)await wait(900*k);try{r=await fetch(url,{credentials:"omit",referrerPolicy:"no-referrer"})}catch(e){r=null;continue}if(r.ok||!/^(403|429|5)/.test(String(r.status)))break}
+    if(!r)throw new Error(url.startsWith(LINK.SRV)?"SRV":"RESEAU");
+    if(!r.ok){if(/json/.test(r.headers.get("content-type")||"")){let j=null;try{j=await r.json()}catch(e){}if(j&&j.msg)throw new Error("MSG:"+j.msg)}throw new Error("HTTP"+r.status)}
+    name=r.headers.get("x-nom")||name;
+    const n=+r.headers.get("content-length")||0,rd=r.body&&r.body.getReader(),ch=[];let got=0,last=0;
+    if(!rd){const b=await r.blob();return new File([b],name,{type:"video/mp4"})}
+    for(;;){const {done,value}=await rd.read();if(done)break;ch.push(value);got+=value.byteLength;
+      const now=Date.now();if(now-last>250){last=now;LINK.say(lab+" : "+(got/1048576).toFixed(1)+(n?" / "+(n/1048576).toFixed(1):"")+" Mo"+(n?" ("+Math.round(got/n*100)+" %)":"")+"…")}}
+    return new File(ch,name,{type:"video/mp4"})},
+  async twitter(u,pick){
+    const m=u.pathname.match(/\/status(?:es)?\/(\d+)/);if(!m)throw new Error("Ce lien ne pointe pas vers un tweet. Copie le lien du tweet qui contient la vidéo (bouton Partager → Copier le lien)");
+    LINK.say("Recherche de la vidéo du tweet…");
+    const j=await LINK.json("https://api.fxtwitter.com/i/status/"+m[1],"twitter");
+    if(j.code&&j.code!==200)throw new Error(j.code===401?"PRIVE":"INTROUVABLE");
+    const t=j.tweet||{},vids=[...((t.media&&t.media.videos)||[]),...((t.quote&&t.quote.media&&t.quote.media.videos)||[])];
+    if(!vids.length)throw new Error("Ce tweet ne contient pas de vidéo (seulement du texte ou des photos)");
+    if(vids.length>1&&pick==null){LINK.choose(vids.length,k=>LINK.go(u.href,k));LINK.say("Ce tweet contient "+vids.length+" vidéos : choisis celle à charger.");return null}
+    const v=vids[pick||0];
+    /* de la meilleure qualité à la moins bonne : on descend seulement si le site refuse la meilleure */
+    const c=(v.formats||[]).filter(f=>f.url&&(f.container==="mp4"||/\.mp4(\?|$)/.test(f.url))).sort((a,b)=>((b.bitrate||0)+(b.width||0)*(b.height||0))-((a.bitrate||0)+(a.width||0)*(a.height||0))).map(f=>f.url);
+    if(v.url&&!c.includes(v.url))c.unshift(v.url);
+    const who=((t.author&&t.author.screen_name)||"tweet").replace(/[^\w-]/g,""),nm="twitter-"+who+"-"+m[1]+(vids.length>1?"-"+((pick||0)+1):"")+".mp4";
+    let err=null;for(const u2 of c){try{const f=await LINK.dl(u2,nm,"Téléchargement depuis Twitter / X");if(u2!==c[0])f.__lower=true;return f}catch(e){err=e;if(e.message==="RESEAU")break}}
+    /* le site refuse ce réseau : on passe par le serveur de l'app */
+    try{return await LINK.dl(LINK.px(c[0]),nm,"Téléchargement depuis Twitter / X (via le serveur)")}catch(e){}
+    throw err||new Error("INTROUVABLE")},
+  async viaSrv(u,site){
+    const nom={tiktok:"TikTok",instagram:"Instagram",tumblr:"Tumblr"}[site];
+    LINK.say("Recherche de la vidéo "+nom+"…");
+    return LINK.dl(LINK.SRV+"/video?url="+encodeURIComponent(u.href),site+".mp4","Téléchargement depuis "+nom)},
+  async reddit(u){
+    let base=null,id="post";
+    if(/v\.redd\.it$/i.test(u.hostname)){id=u.pathname.split("/").filter(Boolean)[0];base="https://v.redd.it/"+id+"/"}
+    else{
+      if(/\/s\/[^/]+/.test(u.pathname)&&!/\/comments\//.test(u.pathname))throw new Error("Ce lien Reddit est un lien de partage raccourci. Ouvre-le, puis copie le lien complet de la publication (il contient « /comments/ »)");
+      LINK.say("Recherche de la vidéo Reddit…");
+      const path=u.pathname.replace(/\/+$/,"");
+      const ju="https://www.reddit.com"+(/redd\.it$/i.test(u.hostname)&&!/\/comments\//.test(path)?"/comments"+path:path)+".json?raw_json=1";
+      let j;try{j=await LINK.json(ju,"reddit")}catch(e){if(e.message!=="BLOQUE"&&!/^HTTP(403|429)/.test(e.message))throw e;LINK.via=true;j=await LINK.json(LINK.px(ju),"reddit")}
+      let p=j&&j[0]&&j[0].data&&j[0].data.children[0]&&j[0].data.children[0].data;if(!p)throw new Error("INTROUVABLE");
+      if(p.crosspost_parent_list&&p.crosspost_parent_list.length)p=p.crosspost_parent_list[0];
+      const rv=(p.secure_media&&p.secure_media.reddit_video)||(p.media&&p.media.reddit_video)||(p.preview&&p.preview.reddit_video_preview);
+      if(!rv)throw new Error("Cette publication Reddit ne contient pas de vidéo hébergée par Reddit (photo, texte, ou vidéo d’un autre site)");
+      id=p.id||id;const fb=(rv.fallback_url||"").split("?")[0];base=fb.replace(/[^/]*$/,"");
+      if(!base)throw new Error("INTROUVABLE");
+    }
+    // la meilleure image et le meilleur son, décrits dans le manifeste DASH
+    let vUrl=null,aUrl=null;
+    try{let r=null;try{r=await fetch(base+"DASHPlaylist.mpd",{credentials:"omit"})}catch(e){}if(!r||!r.ok){LINK.via=true;r=await fetch(LINK.px(base+"DASHPlaylist.mpd"))}if(r.ok){const x=new DOMParser().parseFromString(await r.text(),"application/xml");
+      let bv=-1,ba=-1;for(const as of x.getElementsByTagName("AdaptationSet")){const ty=(as.getAttribute("contentType")||as.getAttribute("mimeType")||"");
+        for(const rep of as.getElementsByTagName("Representation")){const bu=rep.getElementsByTagName("BaseURL")[0];if(!bu)continue;const b=+rep.getAttribute("bandwidth")||0,mt=ty+(rep.getAttribute("mimeType")||"");
+          if(/audio/.test(mt)){if(b>ba){ba=b;aUrl=base+bu.textContent.trim()}}else if(b>bv){bv=b;vUrl=base+bu.textContent.trim()}}}}}catch(e){}
+    if(!vUrl){for(const q of [1080,720,480,360,240]){try{const r=await fetch(base+"DASH_"+q+".mp4",{method:"HEAD",credentials:"omit"});if(r.ok){vUrl=base+"DASH_"+q+".mp4";break}}catch(e){}}}
+    if(!vUrl)throw new Error("INTROUVABLE");
+    const dl2=async(x,lab)=>{if(!LINK.via){try{return await LINK.dl(x,"v.mp4",lab)}catch(e){if(e.message==="RESEAU"&&!navigator.onLine)throw e}}return LINK.dl(LINK.px(x),"v.mp4",lab)};
+    const vf=await dl2(vUrl,"Téléchargement de l’image depuis Reddit");
+    let af=null;const tries=aUrl?[aUrl]:[base+"DASH_AUDIO_128.mp4",base+"DASH_audio.mp4",base+"audio"];
+    for(const a of tries){try{af=await dl2(a,"Téléchargement du son depuis Reddit");break}catch(e){}}
+    LINK.say("Assemblage de l’image et du son…");
+    return LINK.remux(vf,af,"reddit-"+id+".mp4")},
+  /* lit les échantillons d'un MP4 fragmenté (cas des vidéos DASH de Reddit) */
+  async frag(file,kind){
+    const buf=new Uint8Array(await file.arrayBuffer()),dv=new DataView(buf.buffer);
+    const tp=o=>String.fromCharCode(buf[o],buf[o+1],buf[o+2],buf[o+3]);
+    const kids=(s,e)=>{const r=[];let o=s;while(o+8<=e){let sz=dv.getUint32(o);const t=tp(o+4);let h=8;if(sz===1){sz=Number(dv.getBigUint64(o+8));h=16}else if(sz===0)sz=e-o;if(sz<8||o+sz>e)break;r.push({t,s:o+h,e:o+sz,b:o});o+=sz}return r};
+    const top=kids(0,buf.length),moov=top.find(k=>k.t==="moov");if(!moov)return null;
+    let tid=0,ts=0,dd=0,ds=0,df=0;
+    for(const tr of kids(moov.s,moov.e).filter(k=>k.t==="trak")){const ks=kids(tr.s,tr.e),th=ks.find(k=>k.t==="tkhd"),md=ks.find(k=>k.t==="mdia");if(!th||!md)continue;
+      const mk=kids(md.s,md.e),hd=mk.find(k=>k.t==="hdlr"),mh=mk.find(k=>k.t==="mdhd");if(!hd||tp(hd.s+8)!==kind)continue;
+      tid=dv.getUint32(th.s+(buf[th.s]===1?20:12));ts=buf[mh.s]===1?dv.getUint32(mh.s+20):dv.getUint32(mh.s+12);break}
+    if(!tid)return null;
+    const mv=kids(moov.s,moov.e).find(k=>k.t==="mvex");if(mv)for(const tx of kids(mv.s,mv.e).filter(k=>k.t==="trex"))if(dv.getUint32(tx.s+4)===tid){dd=dv.getUint32(tx.s+12);ds=dv.getUint32(tx.s+16);df=dv.getUint32(tx.s+20)}
+    const out=[];let t=0;
+    for(const m of top.filter(k=>k.t==="moof"))for(const tf of kids(m.s,m.e).filter(k=>k.t==="traf")){
+      const ks=kids(tf.s,tf.e),h=ks.find(k=>k.t==="tfhd");if(!h||dv.getUint32(h.s+4)!==tid)continue;
+      const fl=dv.getUint32(h.s)&0xffffff;let p=h.s+8,base=m.b,fdur=dd,fsz=ds,ffl=df;
+      if(fl&1){base=Number(dv.getBigUint64(p));p+=8}if(fl&2)p+=4;if(fl&8){fdur=dv.getUint32(p);p+=4}if(fl&16){fsz=dv.getUint32(p);p+=4}if(fl&32){ffl=dv.getUint32(p);p+=4}
+      const d=ks.find(k=>k.t==="tfdt");if(d)t=buf[d.s]===1?Number(dv.getBigUint64(d.s+4)):dv.getUint32(d.s+4);
+      for(const r of ks.filter(k=>k.t==="trun")){const v=buf[r.s],f=dv.getUint32(r.s)&0xffffff,n=dv.getUint32(r.s+4);let q=r.s+8,off=base,fsf=null;
+        if(f&1){off=base+dv.getInt32(q);q+=4}if(f&4){fsf=dv.getUint32(q);q+=4}
+        for(let i=0;i<n;i++){let du=fdur,sz=fsz,sf=ffl,co=0;if(f&256){du=dv.getUint32(q);q+=4}if(f&512){sz=dv.getUint32(q);q+=4}if(f&1024){sf=dv.getUint32(q);q+=4}else if(i===0&&fsf!==null)sf=fsf;if(f&2048){co=v?dv.getInt32(q):dv.getUint32(q);q+=4}
+          out.push({o:off,sz,dts:t,cto:co,dur:du,key:!(sf&0x10000)});off+=sz;t+=du}}}
+    return {ts,s:out,buf}},
+  async remux(vf,af,name){
+    let vi=await demuxVideo(vf);if(!vi)throw new Error("FORMAT");
+    let vbuf=null,frag=false;
+    if(!vi.ns){frag=true;const fr=await LINK.frag(vf,"vide");if(!fr||!fr.s.length)throw new Error("FORMAT");vbuf=fr.buf;
+      vi={...vi,ts:fr.ts,ns:fr.s.length,so:fr.s.map(x=>x.o),sz:fr.s.map(x=>x.sz),dts:fr.s.map(x=>x.dts),cts:fr.s.map(x=>x.dts+x.cto),key:fr.s.map(x=>x.key)}}
+    else vbuf=new Uint8Array(await vf.arrayBuffer());
+    let au=null;if(af){try{au=await demuxAudio(af);if(au&&!au.samples.length){const fr=await LINK.frag(af,"soun");if(fr)au.samples=fr.s.map(x=>({data:fr.buf.slice(x.o,x.o+x.sz),ts:Math.round(x.dts*1e6/fr.ts),dur:Math.round(x.dur*1e6/fr.ts)}))}if(au&&!au.samples.length)au=null}catch(e){au=null}}
+    if(!au&&!frag)return new File([vbuf],name,{type:"video/mp4"});/* pas de son et fichier classique : tel quel */
+    const parts=[],starts=[];let end=0;
+    const put=(data,pos)=>{if(pos>=end){parts.push(data);starts.push(pos);end=pos+data.byteLength;return}
+      let lo=0,hi=starts.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(starts[m]<=pos)lo=m;else hi=m-1}
+      let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
+      if(pos+data.byteLength>end){parts.push(data.subarray(end-pos).slice());starts.push(end);end=pos+data.byteLength}};
+    const vc=vi.codec.startsWith("avc")?"avc":vi.codec.startsWith("hv")||vi.codec.startsWith("he")?"hevc":"vp9";
+    const mx=new Mp4Muxer.Muxer({target:new Mp4Muxer.StreamTarget({onData:(d,p)=>put(d,p)}),fastStart:false,firstTimestampBehavior:"offset",
+      video:{codec:vc,width:vi.W,height:vi.H},...(au?{audio:{codec:"aac",numberOfChannels:au.ch,sampleRate:au.sr}}:{})});
+    const us=x=>Math.round(x*1e6/vi.ts),t0=Math.min(...vi.cts),as=au?au.samples:[];let ai=0,fv=true,fa=true;
+    const addA=a=>{mx.addAudioChunkRaw(a.data,"key",a.ts,a.dur,fa?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:au.ch,sampleRate:au.sr,description:au.asc}}:undefined);fa=false};
+    for(let i=0;i<vi.ns;i++){const pts=us(vi.cts[i]-t0),dts=us(vi.dts[i]-t0),d=i+1<vi.ns?vi.dts[i+1]-vi.dts[i]:(vi.ns>1?vi.dts[i]-vi.dts[i-1]:vi.ts/30);
+      while(ai<as.length&&as[ai].ts<=dts)addA(as[ai++]);
+      mx.addVideoChunkRaw(vbuf.subarray(vi.so[i],vi.so[i]+vi.sz[i]),vi.key[i]?"key":"delta",pts,us(d),fv?{decoderConfig:{codec:vi.codec,codedWidth:vi.W,codedHeight:vi.H,...(vi.desc?{description:vi.desc}:{})}}:undefined,pts-dts);fv=false}
+    while(ai<as.length)addA(as[ai++]);
+    mx.finalize();return new File(parts,name,{type:"video/mp4"})},
+  choose(n,fn){const c=$("#lnkc");c.textContent="";c.hidden=false;for(let k=0;k<n;k++){const b=document.createElement("button");b.type="button";b.className="btn";b.textContent="Vidéo "+(k+1);b.onclick=()=>{c.hidden=true;fn(k)};c.appendChild(b)}},
+  err(e,site){const m=(e&&e.message)||"";
+    if(m.startsWith("MSG:"))return m.slice(4);
+    if(m==="SRV")return "Le serveur de l’app ne répond pas"+(navigator.onLine?" (il n’est peut-être pas encore en ligne). Réessaie un peu plus tard.":" : vérifie ta connexion internet.");
+    if(m==="RESEAU")return "Impossible de joindre "+(site==="reddit"?"Reddit":"Twitter / X")+". Vérifie ta connexion"+(site==="reddit"?" ; Reddit bloque parfois l’accès direct, dans ce cas enregistre la vidéo depuis l’app Reddit puis choisis-la ici":"")+".";
+    if(m==="BLOQUE")return "Reddit refuse l’accès direct depuis ce réseau pour l’instant. Réessaie plus tard, ou enregistre la vidéo depuis l’app Reddit puis touche « Choisir une vidéo ».";
+    if(m==="INTROUVABLE")return "Vidéo introuvable : la publication a peut-être été supprimée, ou le lien est incomplet.";
+    if(m==="PRIVE")return "Ce compte est privé : sa vidéo ne peut pas être récupérée.";
+    if(m==="FORMAT")return "La vidéo a été téléchargée mais son format n’est pas lisible ici.";
+    if(/^HTTP(403|429)/.test(m))return "Le site a refusé le téléchargement pour l’instant (trop de demandes ou accès bloqué). Réessaie dans quelques minutes.";
+    if(/^HTTP/.test(m))return "Le site a répondu par une erreur ("+m.slice(4)+"). Réessaie plus tard.";
+    return m||"erreur inconnue"},
+  async go(raw,pick){
+    if(LINK.busy)return;if(exporting||window.__exStarting){LINK.say("Un export est en cours : attends la fin avant de charger une autre vidéo.");return}
+    let s=(raw||"").trim();const mm=s.match(/https?:\/\/\S+/);if(mm)s=mm[0];else if(s&&!/^https?:/i.test(s))s="https://"+s;
+    let u;try{u=new URL(s)}catch(e){LINK.say("Colle d’abord le lien d’une vidéo (il commence par https://).");return}
+    const site=LINK.site(u);
+    if(site==="autre"){LINK.say("Ce site n’est pas encore pris en charge par le lien. Enregistre la vidéo depuis son app (Partager → Enregistrer la vidéo), puis touche « Choisir une vidéo ».");return}
+    if(!site){LINK.say("Lien non reconnu : colle un lien Twitter / X, TikTok, Instagram, Reddit ou Tumblr.");return}
+    LINK.busy=true;$("#lnkgo").disabled=true;if(pick==null)$("#lnkc").hidden=true;const t0=Date.now();
+    try{
+      LINK.via=false;
+      const f=site==="twitter"?await LINK.twitter(u,pick):site==="reddit"?await LINK.reddit(u):await LINK.viaSrv(u,site);
+      if(!f)return;
+      if(f.size<1000)throw new Error("FORMAT");
+      try{DIAG.send("lien",{site,ok:true,mo:+(f.size/1048576).toFixed(1),s:+((Date.now()-t0)/1000).toFixed(1)})}catch(e){}
+      batch=null;try{btUpdate()}catch(e){}$("#lnk").value="";LINK.say(f.__lower?"La meilleure qualité a été refusée par le site : version un peu moins définie chargée.":"");await loadFile(f);
+    }catch(e){LINK.say("Lien : "+LINK.err(e,site));try{DIAG.send("lien",{site,ok:false,err:String(e&&e.message).slice(0,120)})}catch(x){}}
+    finally{LINK.busy=false;$("#lnkgo").disabled=false}}
+};
+$("#lnkf").onsubmit=e=>{e.preventDefault();$("#lnk").blur();LINK.go($("#lnk").value)};
+$("#lnk").addEventListener("paste",()=>setTimeout(()=>{try{const x=$("#lnk").value,m=x.match(/https?:\/\/\S+/);if(m&&LINK.site(new URL(m[0])))LINK.go(x)}catch(e){}},60));
 $("#mgimp").onclick=()=>{if(!MG.blob)return;const f=new File([MG.blob],(MG.files[0].name||"video").replace(/\.[^.]+$/,"")+"-regroupee.mp4",{type:"video/mp4"});batch=null;loadFile(f);window.scrollTo({top:0,behavior:"smooth"})};
 
 /* ===== Compte rendu du fichier : ce qu'il contient, ce qui peut poser problème, et pourquoi ===== */
@@ -1629,7 +1798,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.28)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.29)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;

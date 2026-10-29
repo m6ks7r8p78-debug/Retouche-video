@@ -1,0 +1,7 @@
+{
+  // Serveur gratuit de Retouche vidéo (Cloudflare Workers) : récupère les vidéos à partir d'un lien
+  "name": "retouche-serveur",
+  "main": "worker.js",
+  "compatibility_date": "2026-10-01",
+  "observability": { "enabled": true }
+}
