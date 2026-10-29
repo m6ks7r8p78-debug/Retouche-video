@@ -225,7 +225,7 @@ body.loaded .lnkh{display:none}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.38</span>
+  <span class="tag">sur ton téléphone · v2.39</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -356,6 +356,7 @@ body.loaded .lnkh{display:none}
           <label class="chk"><input type="checkbox" id="o_defl"><span><b>Anti-scintillement</b>Pour les vieux films dont la lumière clignote.</span></label>
           <label class="chk"><input type="checkbox" id="o_dust"><span><b>Poussières et points noirs</b>Efface les petites taches des films numérisés.</span></label>
           <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Retire le souffle et les bruits de fond.</span></label>
+          <label class="chk"><input type="checkbox" id="o_max" checked><span><b>Qualité maximale (IA)</b>Restauration par intelligence artificielle : retire les blocs de compression, le bruit et le flou, et recrée le détail. Calculée sur ton téléphone, beaucoup plus lente.</span></label>
           <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe les vidéos saccadées à 30 images par seconde.</span></label>
           <div class="trim"><b>Partie à traiter</b><span class="mono" id="t_txt">tout</span>
             <input type="range" id="t_in" min="0" max="1000" value="0" aria-label="Début"><input type="range" id="t_out" min="0" max="1000" value="1000" aria-label="Fin"></div>
@@ -397,6 +398,7 @@ body.loaded .lnkh{display:none}
   </div>
 </main>
 
+<script src="sr.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -674,7 +676,7 @@ if(mx(abs(c-med3(c,p,n)))>thr){cnt+=1.;if(abs(float(i))<1.5&&abs(float(j))<1.5)n
 vec3 m0=med3(c0,texture2D(tp,uv).rgb,texture2D(tn,uv).rgb);float d0=mx(abs(c0-m0));
 float k=(mov<.5&&near>.5&&cnt<=40.)?smoothstep(thr*.35,thr*.7,d0):0.;
 gl_FragColor=vec4(mix(c0,m0,k),1.);}`;
-const U={},UA={},UB={},UP={},UD={},UK={};let progK=null,texK=null,progKM=null,texKM=null;const UKM={};let kmW=0,kmH=0;let DUST={on:false,p:null,n:null};let tex,tex2,tex3,tex4,tex16,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progA,progB,progP,aiOK=true,wide=true;
+const U={},UA={},UB={},UP={},UD={},UK={};let progK=null,texK=null,progKM=null,texKM=null;const UKM={};let kmW=0,kmH=0;let DUST={on:false,p:null,n:null};let srIn=false,srOrig=null,texO;let tex,tex2,tex3,tex4,tex16,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progA,progB,progP,aiOK=true,wide=true;
 if(gl){
   const mk=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
   const pg=(vs,fs)=>{const g=gl.createProgram();gl.attachShader(g,mk(gl.VERTEX_SHADER,vs));gl.attachShader(g,mk(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(g,0,"p");gl.linkProgram(g);return g};
@@ -687,7 +689,7 @@ if(gl){
   gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
   const mt=()=>{const x=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,x);
     [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,c])=>gl.texParameteri(gl.TEXTURE_2D,a,c));return x};
-  texK=mt();texKM=mt();tex=mt();tex2=mt();tex3=mt();tex4=mt();tex16=mt();texP=mt();texN=mt();texD=mt();fbo=gl.createFramebuffer();
+  texK=mt();texKM=mt();tex=mt();tex2=mt();tex3=mt();tex4=mt();tex16=mt();texP=mt();texN=mt();texD=mt();texO=mt();fbo=gl.createFramebuffer();
   const loc=(g,o,n)=>n.forEach(k=>{o[k]=gl.getUniformLocation(g,k)});
   loc(progK,UK,["t","tm","px","ph","bs","db"]);loc(progKM,UKM,["t","px","ph"]);loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex","lf","lrow","lrow2","lmx","lnb","tl"]);loc(progA,UA,["t","t4","t16","px","s4","s16","ai"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progP,UP,["t","sz"]);loc(progD,UD,["t","tp","tn","px","thr"]);
 }
@@ -699,6 +701,7 @@ function pass(pg,src,dst,w,h,set){
 }
 function draw(el){
   if(poolMode&&!el)return;
+  if(!el&&!srIn&&show&&SRX&&SRX.pc&&SRX.key===SRX.k()){srIn=true;srOrig=cur();try{draw(SRX.pc)}finally{srIn=false;srOrig=null}SRX.badge(1);return}
   const s0=el||cur();if(!poolMode)stabT=v.currentTime;
   if(!gl||!dims(s0)[0]||s0.readyState<2)return;
   const [w,h]=dims(s0);
@@ -707,13 +710,13 @@ function draw(el){
   const w4=Math.ceil(w/4),h4=Math.ceil(h/4),w16=Math.ceil(w4/4),h16=Math.ceil(h4/4);
   if(fw!==w||fh!==h){fw=w;fh=h;[[tex2,w,h],[tex3,w,h],[tex4,w4,h4],[tex16,w16,h16],[texD,w,h],[texK,w,h]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
   let dustSwap=false,dbSwap=false;const tex0=tex;
-  if(show&&P.db>0&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
+  if(show&&!srIn&&P.db>0&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
     const bw=Math.ceil(w/8)+2,bh=Math.ceil(h/8)+2;
     if(kmW!==bw||kmH!==bh){kmW=bw;kmH=bh;gl.bindTexture(gl.TEXTURE_2D,texKM);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,bw,bh,0,gl.RGBA,gl.UNSIGNED_BYTE,null)}
     pass(progKM,tex,texKM,bw,bh,()=>{gl.uniform1i(UKM.t,0);gl.uniform2f(UKM.px,1/w,1/h);gl.uniform2f(UKM.ph,DB.ph[0],DB.ph[1])});
     gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,texKM);gl.activeTexture(gl.TEXTURE0);
     pass(progK,tex,texK,w,h,()=>{gl.uniform1i(UK.t,0);gl.uniform1i(UK.tm,5);gl.uniform2f(UK.px,1/w,1/h);gl.uniform2f(UK.bs,bw,bh);gl.uniform2f(UK.ph,DB.ph[0],DB.ph[1]);gl.uniform1f(UK.db,P.db)});const k=tex;tex=texK;texK=k;dbSwap=true}
-  if(show&&DUST.on&&DUST.p&&DUST.n&&progD&&gl.getProgramParameter(progD,gl.LINK_STATUS)){
+  if(show&&!srIn&&DUST.on&&DUST.p&&DUST.n&&progD&&gl.getProgramParameter(progD,gl.LINK_STATUS)){
     try{
       gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,texP);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,DUST.p);
       gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,texN);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,DUST.n);
@@ -723,7 +726,7 @@ function draw(el){
     }catch(e){gl.activeTexture(gl.TEXTURE0)}
   }
   let src=tex;
-  if(show&&aiOK&&P.ai>0){
+  if(show&&!srIn&&aiOK&&P.ai>0){
     if(wide){
       pass(progP,tex,tex4,w4,h4,()=>{gl.uniform1i(UP.t,0);gl.uniform2f(UP.sz,w,h)});
       pass(progP,tex4,tex16,w16,h16,()=>{gl.uniform1i(UP.t,0);gl.uniform2f(UP.sz,w4,h4)});
@@ -731,13 +734,13 @@ function draw(el){
       pass(progA,tex,tex2,w,h,()=>{gl.uniform1i(UA.t,0);gl.uniform1i(UA.t4,1);gl.uniform1i(UA.t16,2);gl.uniform2f(UA.px,1/w,1/h);gl.uniform2f(UA.s4,w4,h4);gl.uniform2f(UA.s16,w16,h16);gl.uniform1f(UA.ai,P.ai)});
     }else{pass(progA,src,tex2,w,h,()=>{gl.uniform1i(UA.t,0);gl.uniform2f(UA.px,1/w,1/h);gl.uniform1f(UA.ai,P.ai)})}
     src=tex2}
-  if(show&&(P.sh>0||P.dn>0||P.cs>0)){pass(progB,src,tex3,w,h,()=>{gl.uniform1i(UB.t,0);gl.uniform2f(UB.px,1/w,1/h);gl.uniform1f(UB.sh,P.sh);gl.uniform1f(UB.dn,P.dn);gl.uniform1f(UB.cs,P.cs)});src=tex3}
+  if(show&&!srIn&&(P.sh>0||P.dn>0||P.cs>0)){pass(progB,src,tex3,w,h,()=>{gl.uniform1i(UB.t,0);gl.uniform2f(UB.px,1/w,1/h);gl.uniform1f(UB.sh,P.sh);gl.uniform1f(UB.dn,P.dn);gl.uniform1f(UB.cs,P.cs)});src=tex3}
   gl.useProgram(prog);gl.bindTexture(gl.TEXTURE_2D,src);gl.uniform1i(U.t,0);
   gl.viewport(0,0,cv.width,cv.height);
   gl.uniform2f(U.px,1/w,1/h);gl.uniform1f(U.on,show);
   {const T=stabTR();gl.uniform3f(U.tr,T[0],T[1],T[2])}
   gl.uniform1f(U.sp,show&&split?split:0);
-  gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,tex0);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
+  gl.activeTexture(gl.TEXTURE3);if(srIn&&srOrig&&show&&split){gl.bindTexture(gl.TEXTURE_2D,texO);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srOrig)}else gl.bindTexture(gl.TEXTURE_2D,tex0);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
   for(const k of ["br","co","sa","wa"])gl.uniform1f(U[k],P[k]);
   gl.uniform1f(U.ex,show?(exporting?DFG:REC.pv()):1);
   {const on=show&&FLT.tex&&FLT.sel>=0?FLT.f:0;gl.uniform1f(U.lf,on);if(on>0){gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,FLT.tex);gl.uniform1i(U.tl,4);gl.activeTexture(gl.TEXTURE0);gl.uniform1f(U.lrow,FLT.sel);gl.uniform1f(U.lrow2,FLT.sel2>=0?FLT.sel2:FLT.sel);gl.uniform1f(U.lmx,FLT.sel2>=0?FLT.mx:0);gl.uniform1f(U.lnb,FLT.nb)}}
@@ -745,7 +748,34 @@ function draw(el){
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   if(dustSwap){const k=tex;tex=texD;texD=k}
   if(dbSwap){const k=tex;tex=texK;texK=k}
+  if(!el&&!srIn&&SRX){SRX.badge(0);SRX.preview()}
 }
+/* ===== Qualité maximale : restauration IA (sr.js) =====
+   À l'export : chaque image passe par le réseau, puis par les réglages de couleur habituels.
+   Dans l'aperçu : calculée quand la vidéo est en pause (ou pour une photo), puis gardée tant que l'image ne change pas. */
+var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
+  on(){return !SRX.off&&!!window.SR&&$("#o_max").checked},
+  dn(){return Math.min(.8,.3+.5*Math.max(0,P.dn-.2))},
+  k(){const e=cur();return mode+":"+(mode==="video"?v.currentTime+"|"+(curFile&&curFile.name):window.__photoName)+":"+cv.width+"x"+cv.height+":"+SRX.dn()},
+  badge(on){const b=$("#bdg");if(!b||!show)return;b.textContent=on===1?"Amélioré · IA":on===2?"Amélioré · IA en cours…":"Amélioré"},
+  fits(el,mx){const [w,h]=dims(el);return w>0&&!!window.SR&&SR.fits(w,h,mx)},
+  async run(el,s,onTile,mx){const job=SRX.lock.then(()=>SR.run(el,s,SRX.dn(),onTile,mx));SRX.lock=job.catch(()=>{});return job},
+  /* dessine el restaurée par l'IA ; renvoie false si l'IA n'est pas utilisable (l'appelant dessine alors normalement) */
+  async render(el,onTile){
+    if(!SRX.on())return false;
+    const mx=el===photoEl?SR.PHOTO:0;
+    if(!SRX.fits(el,mx)){if(!SRX.warned){SRX.warned=true;msg("Qualité maximale : cette vidéo est déjà en haute définition, son traitement par l’IA serait trop long sur le téléphone. L’amélioration standard est utilisée.")}return false}
+    let c;try{c=await SRX.run(el,cv.width/dims(el)[0],onTile,mx)}
+    catch(e){SRX.off=true;msg("La qualité maximale n’est pas disponible sur cet appareil ("+((e&&e.message)||"erreur")+") : l’amélioration standard est utilisée.");return false}
+    srIn=true;srOrig=el;try{draw(c)}finally{srIn=false;srOrig=null}return true},
+  preview(){clearTimeout(SRX.pt);if(!SRX.on()||exporting)return;
+    SRX.pt=setTimeout(async()=>{
+      const el=cur();if(!el||exporting||!show||(mode==="video"&&!v.paused)||!SRX.fits(el))return;
+      const key=SRX.k();if(SRX.key===key&&SRX.pc)return;SRX.badge(2);
+      let c;try{c=await SRX.run(el,cv.width/dims(el)[0])}catch(e){SRX.off=true;SRX.badge(0);return}
+      if(key!==SRX.k()||exporting||(mode==="video"&&!v.paused)){SRX.badge(0);return}
+      if(!SRX.pc)SRX.pc=document.createElement("canvas");SRX.pc.width=c.width;SRX.pc.height=c.height;SRX.pc.getContext("2d").drawImage(c,0,0);
+      SRX.key=key;draw()},700)}};
 function size(L){
   const [w,h]=dims(cur());if(!w)return;
   if(L<0){cv.width=w&~1;cv.height=h&~1;draw();return}
@@ -992,6 +1022,8 @@ $("#o_dust").addEventListener("change",e=>{try{localStorage.setItem("o_dust",e.t
 try{$("#o_dust").checked=localStorage.getItem("o_dust")==="1"}catch(e){}
 $("#o_fast").addEventListener("change",e=>{try{localStorage.setItem("o_fast",e.target.checked?"1":"0")}catch(x){}});
 try{$("#o_fast").checked=localStorage.getItem("o_fast")==="1"}catch(e){}
+{let m="1";try{m=localStorage.getItem("o_max")||"1"}catch(e){}$("#o_max").checked=m==="1"}
+$("#o_max").addEventListener("change",e=>{try{localStorage.setItem("o_max",e.target.checked?"1":"0")}catch(x){}SRX.pc=null;SRX.key="";draw()});
 $("#o_fluid").addEventListener("change",e=>{try{localStorage.setItem("o_fluid",e.target.checked?"1":"0")}catch(x){}});
 /* ===== Découpe début/fin ===== */
 function trimRange(){const d=v.duration||0;return[$("#t_in").value/1000*d,$("#t_out").value/1000*d]}
@@ -1319,7 +1351,7 @@ const DIAG={last:null,
   ctx(){const o=id=>{const e=$("#"+id);return e?e.checked:null};
     return{ver:(($(".tag")||{}).textContent||"").replace(/.*·\s*/,""),ua:navigator.userAgent,ecran:screen.width+"x"+screen.height+"@"+(window.devicePixelRatio||1),coeurs:navigator.hardwareConcurrency||0,
       mode,src:mode==="video"?v.videoWidth+"x"+v.videoHeight+" "+(Math.round((v.duration||0)*10)/10)+"s "+(Math.round(OFPS*10)/10)+"i/s "+(curFile?(curFile.size/1048576).toFixed(0)+"Mo":""):"photo",
-      taille:$("#q")?$("#q").value:"",options:{rapide:o("o_fast"),stab:o("o_stab"),scint:o("o_defl"),pouss:o("o_dust"),voix:o("o_voice"),fluide:o("o_fluid")},
+      taille:$("#q")?$("#q").value:"",options:{ia:o("o_max"),rapide:o("o_fast"),stab:o("o_stab"),scint:o("o_defl"),pouss:o("o_dust"),voix:o("o_voice"),fluide:o("o_fluid")},
       filtre:FLT.sel>=0?(FLT.sel+(FLT.sel2>=0?"+"+FLT.sel2+"@"+FLT.mx:"")):"aucun",
       timing:window.__timing||"",seq:window.__seqInfo||""}},
   hist(){try{return JSON.parse(localStorage.getItem("diag_hist")||"[]")}catch(e){return[]}},
@@ -1843,7 +1875,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.38)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.39)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1934,7 +1966,7 @@ $("#ex").onclick=async()=>{
       rdr=await makeSeq(off,OFPS);rdr0=!!rdr;
     }
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
-    poolMode=!rdr;const T0=performance.now();
+    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();
     for(let i=0;i<total;i++){
       if(cancel||err)break;
       const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
@@ -1968,7 +2000,7 @@ $("#ex").onclick=async()=>{
       if(window.__baMode)split=BA.split(i,total);
       let f=null,p1=performance.now();
       try{
-        const p0=performance.now();draw(src);p1=performance.now();tDr+=p1-p0;
+        const p0=performance.now();if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
         if(rdr)f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       }catch(e){
         if(!rdr)throw e;
@@ -1988,7 +2020,7 @@ $("#ex").onclick=async()=>{
       while(enc.encodeQueueSize>6)await wait(8);
       tQ+=performance.now()-t2;
       $("#pg").value=(i+1)/total;
-      if(i%15===0){const el=(performance.now()-T0)/1000,rest=el/(i+1)*(total-i-1);msg("Image "+(i+1)+" sur "+total+" ("+Math.round((i+1)/total*100)+" %), "+(i<15||el<3?"calcul du temps restant…":"reste environ "+(rest>90?Math.round(rest/60)+" min":Math.round(rest)+" s")))}
+      if(i%15===0||srUse){const el=(performance.now()-T0)/1000,rest=el/(i+1)*(total-i-1);msg("Image "+(i+1)+" sur "+total+" ("+Math.round((i+1)/total*100)+" %), "+((srUse?i<2:i<15)||el<3?"calcul du temps restant…":"reste environ "+(rest>90?Math.round(rest/60)+" min":Math.round(rest)+" s")))}
     }
     DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;if(rdr)rdr.close();els.slice(1).forEach(e=>{e.removeAttribute("src");e.load();e.remove()});
     if(err)throw err;
@@ -2658,7 +2690,7 @@ async function exportPhoto(){
   let s=m<1500?3:m<2500?2:1;s=Math.min(s,4096/m);
   cv.width=Math.round(w*s);cv.height=Math.round(h*s);show=1;
   msg("Traitement de la photo…");await wait(30);
-  draw(photoEl);
+  if(!(await SRX.render(photoEl,f=>msg("Restauration IA de la photo… "+Math.round(f*100)+" %"))))draw(photoEl);
   const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",.95)),W=cv.width,H=cv.height;
   size(PREVIEW);
   if(!blob){msg("Impossible de créer la photo.");return}
