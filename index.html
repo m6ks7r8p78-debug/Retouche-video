@@ -225,7 +225,7 @@ body.loaded .lnkh{display:none}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · <span id="ver">v2.45</span></span>
+  <span class="tag">sur ton téléphone · <span id="ver">v2.46</span></span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -404,7 +404,7 @@ body.loaded .lnkh{display:none}
 <script src="sr.js"></script>
 <script src="depth.js"></script>
 <script>
-const VER="v2.45";/* seul endroit où changer le numéro de version */
+const VER="v2.46";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -699,7 +699,10 @@ function analyze(){
   /* contraste : on rapproche le noir et le blanc les plus extrêmes de l'image du vrai noir / vrai blanc, d'un tiers de l'écart.
      Mesuré sur le banc (images délavées et normales) : meilleur partout que l'ancienne règle, qui ajoutait 13 à 18 % de contraste
      même aux images bien exposées. */
-  const K=.35,lo2=lo>.02?lo-(lo-.02)*K:lo,hi2=hi<.98?hi+(.98-hi)*K:hi,co=cl((hi2-lo2)/Math.max(.05,hi-lo),1,1.6);
+  /* le blanc n'est remonté que si l'image est voilée (noirs gris, vieille vidéo délavée) : une scène sombre voulue
+     (soirée, intérieur tamisé) a de vrais noirs et doit rester sombre. Mesuré : scènes sombres +6,5 → −1 de luminosité. */
+  const K=.35,veil=cl((lo-.04)/.12,0,1),
+    lo2=lo>.02?lo-(lo-.02)*K:lo,hi2=hi<.98?hi+(.98-hi)*K*veil:hi,co=cl((hi2-lo2)/Math.max(.05,hi-lo),1,1.6);
   Object.assign(P,{
     br:(lo2-.5)/co+.5-lo,
     co,
