@@ -225,7 +225,7 @@ body.loaded .lnkh{display:none}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.36</span>
+  <span class="tag">sur ton téléphone · v2.37</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -410,6 +410,17 @@ let fpsC=null;
 /* cadence de la vidéo : lue dans le fichier lui-même (fiable, et sans lancer la lecture, donc sans dépenser de batterie) ;
    la mesure pendant la lecture ne sert qu'en secours (formats que l'app ne sait pas lire) */
 const snapFps=f=>{let best=f,bd=1e9;for(const s of [24000/1001,24,25,30000/1001,30,48,50,60000/1001,60]){const e=Math.abs(s-f);if(e<bd){bd=e;best=s}}return Math.max(5,Math.min(60,bd<.6?best:Math.round(f*100)/100))};
+// Safari (iPhone) fournit parfois toute la boîte « esds » au lieu de la seule configuration AAC (2 octets) :
+// le fichier exporté devenait alors muet ou illisible ailleurs. On extrait la vraie configuration.
+function ascOnly(desc){
+  let b=desc instanceof ArrayBuffer?new Uint8Array(desc):new Uint8Array(desc.buffer,desc.byteOffset||0,desc.byteLength);
+  let p=0;if(b.length>4&&b[0]===0&&b[1]===0&&b[2]===0&&b[3]===0&&b[4]===3)p=4;
+  if(b[p]!==3)return b.slice();
+  const len=q=>{let l=0,x;do{x=b[q++];l=(l<<7)|(x&127)}while(x&128&&q<b.length);return [l,q]};
+  try{let l;[l,p]=len(p+1);const fl=b[p+2];p+=3;if(fl&128)p+=2;if(fl&64)p+=1+b[p];if(fl&32)p+=2;
+    if(b[p]!==4)return b.slice();[l,p]=len(p+1);p+=13;if(b[p]!==5)return b.slice();[l,p]=len(p+1);
+    return p+l<=b.length&&l>=2?b.slice(p,p+l):b.slice()}catch(e){return b.slice()}
+}
 async function containerFps(file){try{const vi=await demuxVideo(file);if(!vi||vi.ns<3)return null;const span=(vi.dts[vi.ns-1]-vi.dts[0])/vi.ts;if(!(span>0))return null;return snapFps((vi.ns-1)/span)}catch(e){return null}}
 async function measureFps(){
   if(fpsC&&fpsC.f===curFile)return fpsC.v;
@@ -1832,7 +1843,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.36)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.37)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1888,7 +1899,7 @@ $("#ex").onclick=async()=>{
     const enc=new VideoEncoder({output:(c,m)=>{vch.push([c,m])},error:e=>{err=e}});
     enc.configure(cfg);
     if(acfg&&!rawA){
-      const ae=new AudioEncoder({output:(c,m)=>{ach.push([c,m])},error:e=>{err=e}});
+      const ae=new AudioEncoder({output:(c,m)=>{if(m&&m.decoderConfig&&m.decoderConfig.description)m={...m,decoderConfig:{...m.decoderConfig,description:ascOnly(m.decoderConfig.description)}};ach.push([c,m])},error:e=>{err=e}});
       ae.configure(acfg);
       const ch=acfg.numberOfChannels,N=ab.length,B=16384,d=[];
       for(let i=0;i<ch;i++)d.push(ab.getChannelData(i));
