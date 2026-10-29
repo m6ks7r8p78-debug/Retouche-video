@@ -225,7 +225,7 @@ body.loaded .lnkh{display:none}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · <span id="ver">v2.46</span></span>
+  <span class="tag">sur ton téléphone · <span id="ver">v2.47</span></span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -385,6 +385,7 @@ body.loaded .lnkh{display:none}
           <div id="flt_s" hidden><label class="help" style="display:block;margin:10px 0 4px">Force du retrait <span class="mono" id="flt_v">100 %</span></label><input type="range" id="flt_r" min="0" max="1" step=".05" value="1" aria-label="Force du retrait">
 </div>
           <p class="help" style="margin:10px 0 0">Retire les filtres de couleur et de lumière. Pas les autocollants, textes, masques ou déformations.</p></div>
+        <button class="btn" id="diagb2" style="margin:0 0 10px">📋 Copier le diagnostic pour Claude</button>
         <button class="btn" id="fltb" style="margin:10px 0">Retirer un filtre Snapchat / Instagram (essai)</button>
         <div id="plc">
           <h2>Prolonger la vidéo (essai)</h2>
@@ -404,7 +405,7 @@ body.loaded .lnkh{display:none}
 <script src="sr.js"></script>
 <script src="depth.js"></script>
 <script>
-const VER="v2.46";/* seul endroit où changer le numéro de version */
+const VER="v2.47";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -1233,6 +1234,10 @@ const DIAG={last:null,
     if(ch)DIAG.save(h)}
 };
 setTimeout(()=>{try{DIAG.flush()}catch(e){}},4000);
+$("#diagb2").onclick=async()=>{const b=$("#diagb2");try{DIAG.send("diagnostic",{})}catch(e){}/* réglages de l'instant ajoutés */
+  const t=JSON.stringify(DIAG.hist().map(({sent,...x})=>x));
+  try{await navigator.clipboard.writeText(t);b.textContent="✓ Copié : colle-le dans la conversation avec Claude"}catch(e){b.textContent="Copie impossible ici"}
+  setTimeout(()=>{b.textContent="📋 Copier le diagnostic pour Claude"},4000)};
 $("#diagb").onclick=async()=>{const t=JSON.stringify(DIAG.hist().map(({sent,...x})=>x));try{await navigator.clipboard.writeText(t);msg("Diagnostic copié ("+DIAG.hist().length+" mesures) : colle-le dans la conversation avec Claude.")}catch(e){msg("Copie impossible ici.")}};
 /* nom de fichier unique : nom d'origine + numéro qui augmente à chaque export + date et heure (jamais deux fois le même nom) */
 /* fichier MP4 écrit en mémoire par morceaux (moins de mémoire qu'un seul gros tampon : l'iPhone ne recharge pas la page
