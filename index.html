@@ -225,7 +225,7 @@ body.loaded .lnkh{display:none}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · <span id="ver">v2.43</span></span>
+  <span class="tag">sur ton téléphone · <span id="ver">v2.44</span></span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -404,7 +404,7 @@ body.loaded .lnkh{display:none}
 <script src="sr.js"></script>
 <script src="depth.js"></script>
 <script>
-const VER="v2.43";/* seul endroit où changer le numéro de version */
+const VER="v2.44";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -874,18 +874,13 @@ async function stabEnable(on){
   }
   draw();
 }
-$("#o_stab").onchange=e=>{try{localStorage.setItem("o_stab",e.target.checked?"1":"0")}catch(x){}stabEnable(e.target.checked)};
-$("#o_voice").addEventListener("change",e=>{try{localStorage.setItem("o_voice",e.target.checked?"1":"0")}catch(x){}});
-try{$("#o_voice").checked=localStorage.getItem("o_voice")==="1"}catch(e){}
-$("#o_defl").addEventListener("change",e=>{try{localStorage.setItem("o_defl",e.target.checked?"1":"0")}catch(x){}draw()});
-try{$("#o_defl").checked=localStorage.getItem("o_defl")==="1"}catch(e){}
-$("#o_dust").addEventListener("change",e=>{try{localStorage.setItem("o_dust",e.target.checked?"1":"0")}catch(x){}});
-try{$("#o_dust").checked=localStorage.getItem("o_dust")==="1"}catch(e){}
-$("#o_fast").addEventListener("change",e=>{try{localStorage.setItem("o_fast",e.target.checked?"1":"0")}catch(x){}});
-try{$("#o_fast").checked=localStorage.getItem("o_fast")==="1"}catch(e){}
-{let m="1";try{m=localStorage.getItem("o_max")||"1"}catch(e){}$("#o_max").checked=m==="1"}
-$("#o_max").addEventListener("change",e=>{try{localStorage.setItem("o_max",e.target.checked?"1":"0")}catch(x){}SRX.pc=null;SRX.key="";updateEst();draw()});
-$("#o_fluid").addEventListener("change",e=>{try{localStorage.setItem("o_fluid",e.target.checked?"1":"0")}catch(x){}});
+/* mémorisation des options. Poussières, scintillement, voix et stabilisation sont ensuite réglées par l'analyse de CHAQUE vidéo :
+   seules « mode rapide », « qualité maximale » et « fluidité » gardent le choix d'une vidéo à l'autre. */
+const pref=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
+const OPT_AFTER={o_stab:e=>stabEnable(e.checked),o_defl:()=>draw(),o_max:()=>{SRX.pc=null;SRX.key="";updateEst();draw()}};
+["o_stab","o_voice","o_defl","o_dust","o_fast","o_max","o_fluid"].forEach(id=>{const e=$("#"+id);
+  e.addEventListener("change",()=>{pref(id,e.checked?"1":"0");if(OPT_AFTER[id])OPT_AFTER[id](e)})});
+$("#o_fast").checked=pref("o_fast")==="1";$("#o_max").checked=(pref("o_max")||"1")==="1";
 /* ===== Découpe début/fin ===== */
 function trimRange(){const d=v.duration||0;return[$("#t_in").value/1000*d,$("#t_out").value/1000*d]}
 function trimUpdate(src){
@@ -964,7 +959,7 @@ v.onseeked=()=>{if(!az){az=true;try{analyze()}catch(e){}if(!window.__noprof)setT
 
 /* ===== Analyse complète d'une vidéo : mesures -> profil -> réglages recommandés ===== */
 const AZ={
-  seek(el,t){return new Promise(r=>{const to=setTimeout(r,3500);el.addEventListener("seeked",()=>{clearTimeout(to);setTimeout(r,30)},{once:true});try{el.currentTime=Math.max(0,t)}catch(e){clearTimeout(to);r()}})},
+  seek(el,t){return seekEl(el,Math.max(0,t)).then(()=>wait(30))},
   grab(el,W){const w=el.videoWidth||el.naturalWidth,h=el.videoHeight||el.naturalHeight,H=Math.max(8,Math.round(W*h/w));
     if(!AZ.c)AZ.c=document.createElement("canvas");const c=AZ.c;c.width=W;c.height=H;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(el,0,0,W,H);
     const d=x.getImageData(0,0,W,H).data,y=new Float32Array(W*H);for(let i=0,k=0;i<d.length;i+=4,k++)y[k]=.299*d[i]+.587*d[i+1]+.114*d[i+2];
@@ -1231,6 +1226,21 @@ const DIAG={last:null,
 setTimeout(()=>{try{DIAG.flush()}catch(e){}},4000);
 $("#diagb").onclick=async()=>{const t=JSON.stringify(DIAG.hist().map(({sent,...x})=>x));try{await navigator.clipboard.writeText(t);msg("Diagnostic copié ("+DIAG.hist().length+" mesures) : colle-le dans la conversation avec Claude.")}catch(e){msg("Copie impossible ici.")}};
 /* nom de fichier unique : nom d'origine + numéro qui augmente à chaque export + date et heure (jamais deux fois le même nom) */
+/* fichier MP4 écrit en mémoire par morceaux (moins de mémoire qu'un seul gros tampon : l'iPhone ne recharge pas la page
+   sur les longues vidéos). Le « muxer » réécrit parfois un en-tête déjà écrit : on recopie alors dans les morceaux concernés. */
+/* réglage de l'encodeur vidéo : HEVC (fichier plus léger) ou H.264, niveau adapté à la taille (au-delà du Full HD : niveau 5.1) */
+function vcfg(hevc,W,H,fps,bitrate){const big=W*H>2073600*1.2;
+  return{codec:hevc?(big?"hvc1.1.6.L153.B0":"hvc1.1.6.L123.B0"):(big?"avc1.640033":"avc1.640028"),width:W,height:H,bitrate,framerate:fps,...(hevc?{hevc:{format:"hevc"}}:{avc:{format:"avc"}}),latencyMode:"quality"}}
+function memTarget(){
+  const parts=[],starts=[];let end=0;
+  const put=(data,pos)=>{
+    if(pos>=end){parts.push(data);starts.push(pos);end=pos+data.byteLength;return}
+    let lo=0,hi=starts.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(starts[m]<=pos)lo=m;else hi=m-1}
+    let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
+    if(pos+data.byteLength>end){parts.push(data.subarray(end-pos).slice());starts.push(end);end=pos+data.byteLength}};
+  const take=()=>{const p=parts.slice();parts.length=0;starts.length=0;end=0;return p};
+  return{target:new Mp4Muxer.StreamTarget({onData:(d,p)=>put(d,p)}),blob:()=>new Blob(take(),{type:"video/mp4"}),file:name=>new File(take(),name,{type:"video/mp4"})};
+}
 function uniqName(src,ext){
   let n=1;try{n=(+localStorage.getItem("fileno")||0)+1;localStorage.setItem("fileno",n)}catch(e){n=Math.floor(Math.random()*9000)+1000}
   const d=new Date(),z=x=>String(x).padStart(2,"0");
@@ -1289,15 +1299,11 @@ const KB={blob:null,url:null,busy:false,
       const L=1920,sc=Math.min(L/Math.max(w,h),1080/Math.min(w,h)),W=Math.round(w*sc/2)*2,H=Math.round(h*sc/2)*2;
       const out=document.createElement("canvas");out.width=W;out.height=H;const x=out.getContext("2d");x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high";
       const FPSk=30,N=FPSk*8;
-      const bg=W*H>2073600*1.2;let cfg={codec:bg?"avc1.640033":"avc1.640028",width:W,height:H,bitrate:Math.round(W*H*FPSk*.055),framerate:FPSk,avc:{format:"avc"},latencyMode:"quality"};
-      try{const hv={codec:bg?"hvc1.1.6.L153.B0":"hvc1.1.6.L123.B0",width:W,height:H,bitrate:Math.round(W*H*FPSk*.04),framerate:FPSk,hevc:{format:"hevc"},latencyMode:"quality"};if(localStorage.getItem("nohevc")!=="1"&&(await VideoEncoder.isConfigSupported(hv)).supported)cfg=hv}catch(e){}
+      let cfg=vcfg(false,W,H,FPSk,Math.round(W*H*FPSk*.055));
+      try{const hv=vcfg(true,W,H,FPSk,Math.round(W*H*FPSk*.04));if(localStorage.getItem("nohevc")!=="1"&&(await VideoEncoder.isConfigSupported(hv)).supported)cfg=hv}catch(e){}
       if(!(await VideoEncoder.isConfigSupported(cfg)).supported)throw new Error("format non pris en charge");
-      const parts=[],starts=[];let end=0;
-      const put=(data,pos)=>{if(pos>=end){parts.push(data);starts.push(pos);end=pos+data.byteLength;return}
-        let lo=0,hi=starts.length-1;while(lo<hi){const mm=(lo+hi+1)>>1;if(starts[mm]<=pos)lo=mm;else hi=mm-1}
-        let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
-        if(pos+data.byteLength>end){parts.push(data.subarray(end-pos).slice());starts.push(end);end=pos+data.byteLength}};
-      const mx=new Mp4Muxer.Muxer({target:new Mp4Muxer.StreamTarget({onData:(d,p)=>put(d,p)}),fastStart:false,video:{codec:cfg.codec.startsWith("hvc")?"hevc":"avc",width:W,height:H}});
+      const mt=memTarget();
+      const mx=new Mp4Muxer.Muxer({target:mt.target,fastStart:false,video:{codec:cfg.codec.startsWith("hvc")?"hevc":"avc",width:W,height:H}});
       let err=null;const enc=new VideoEncoder({output:(c,md)=>mx.addVideoChunk(c,md),error:e=>{err=e}});enc.configure(cfg);
       const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
       $("#pg").hidden=false;
@@ -1322,7 +1328,7 @@ const KB={blob:null,url:null,busy:false,
         if(i%10===0){$("#pg").value=i/N;msg("Création de la vidéo… "+Math.round(i/N*100)+" %");await wait(0)}
       }
       await enc.flush();enc.close();mx.finalize();
-      const blob=new Blob(parts,{type:"video/mp4"});parts.length=0;
+      const blob=mt.blob();
       if(KB.url)URL.revokeObjectURL(KB.url);KB.blob=blob;KB.url=URL.createObjectURL(blob);
       $("#kbv").src=KB.url;$("#kbres").hidden=false;msg("Vidéo animée prête : touche « Partager » pour l’enregistrer ou l’envoyer.");$("#kbres").scrollIntoView({behavior:"smooth"});
       try{DIAG.send("photo_video",{ok:true,out:W+"x"+H,mo:+(blob.size/1048576).toFixed(1)})}catch(e){}
@@ -1354,14 +1360,10 @@ const MG={files:[],blob:null,url:null,busy:false,
       const a0=info.find(x=>x.au)?.au,withA=!!a0&&info.every(x=>!x.au||(x.au.sr===a0.sr&&x.au.ch===a0.ch));
       const vc=v0.codec.startsWith("avc")?"avc":v0.codec.startsWith("hv")||v0.codec.startsWith("he")?"hevc":"vp9";
       const rot=((Math.round(Math.atan2(v0.mat[1],v0.mat[0])*180/Math.PI)%360)+360)%360;
-      const parts=[],starts=[];let end=0;
-      const put=(data,pos)=>{if(pos>=end){parts.push(data);starts.push(pos);end=pos+data.byteLength;return}
-        let lo=0,hi=starts.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(starts[m]<=pos)lo=m;else hi=m-1}
-        let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
-        if(pos+data.byteLength>end){parts.push(data.subarray(end-pos).slice());starts.push(end);end=pos+data.byteLength}};
-      const mx=new Mp4Muxer.Muxer({target:new Mp4Muxer.StreamTarget({onData:(d,p)=>put(d,p)}),fastStart:false,firstTimestampBehavior:"offset",
+      const mt=memTarget();
+      const mx=new Mp4Muxer.Muxer({target:mt.target,fastStart:false,firstTimestampBehavior:"offset",
         video:{codec:vc,width:v0.W,height:v0.H,rotation:[0,90,180,270].includes(rot)?rot:0},...(withA?{audio:{codec:"aac",numberOfChannels:a0.ch,sampleRate:a0.sr}}:{})});
-      let T=0,prevD=-1,firstV=true,firstA=true;
+      let T=0,prevD=-1,firstV=true,firstA=true,aLast=0;
       for(let k=0;k<info.length;k++){
         const {f,vi,au}=info[k];msg("Assemblage "+(k+1)+" / "+info.length+" : "+f.name+"…");$("#pg0")&&($("#pg0").value=k/info.length);
         const buf=new Uint8Array(await f.arrayBuffer()),us=x=>Math.round(x*1e6/vi.ts);
@@ -1372,13 +1374,14 @@ const MG={files:[],blob:null,url:null,busy:false,
           const pts=us(vi.cts[i]-t0),dts=us(vi.dts[i]-t0);vs.push({i,pts,off:pts-dts,dur:us(d)});vEnd=Math.max(vEnd,pts+us(d))}
         const as=withA&&au?au.samples.filter(s=>s.ts>=0):[];let aEnd=0;for(const s of as)aEnd=Math.max(aEnd,s.ts+s.dur);
         let ai=0;
+        const addA=a=>{const ts=Math.max(T+a.ts,aLast);mx.addAudioChunkRaw(a.data,"key",ts,a.dur,firstA?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:au.ch,sampleRate:au.sr,description:au.asc}}:undefined);firstA=false;aLast=ts+a.dur};
         for(const s of vs){
-          while(ai<as.length&&as[ai].ts<=s.pts-s.off){const a=as[ai++];mx.addAudioChunkRaw(a.data,"key",T+a.ts,a.dur,firstA?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:au.ch,sampleRate:au.sr,description:au.asc}}:undefined);firstA=false}
+          while(ai<as.length&&as[ai].ts<=s.pts-s.off){const a=as[ai++];addA(a)}
           lastD=s.pts-s.off;mx.addVideoChunkRaw(buf.subarray(vi.so[s.i],vi.so[s.i]+vi.sz[s.i]),vi.key[s.i]?"key":"delta",T+s.pts,s.dur,firstV?{decoderConfig:{codec:vi.codec,codedWidth:vi.W,codedHeight:vi.H,...(vi.desc?{description:vi.desc}:{})}}:undefined,s.off);firstV=false}
-        while(ai<as.length){const a=as[ai++];if(a.ts+a.dur<=vEnd+25000){mx.addAudioChunkRaw(a.data,"key",T+a.ts,a.dur,firstA?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:au.ch,sampleRate:au.sr,description:au.asc}}:undefined);firstA=false}}
-        prevD=T+lastD;T+=vEnd;await wait(0)}
+        while(ai<as.length){const a=as[ai++];if(a.ts+a.dur<=vEnd+25000){addA(a)}}
+        prevD=T+lastD;T=Math.max(T+vEnd,aLast);await wait(0)}
       mx.finalize();
-      const blob=new Blob(parts,{type:"video/mp4"});parts.length=0;
+      const blob=mt.blob();
       if(MG.url)URL.revokeObjectURL(MG.url);MG.blob=blob;MG.url=URL.createObjectURL(blob);
       $("#mgv").src=MG.url;$("#mgres").hidden=false;
       msg("Vidéos regroupées sans perte de qualité ("+(blob.size/1048576).toFixed(1)+" Mo, "+fmtT(T/1e6)+")"+(withA?".":(a0?" — le son n’a pas pu être gardé (formats de son différents).":".")));
@@ -1520,13 +1523,9 @@ const LINK={busy:false,SRV:"https://retouche-serveur.nfchb5hd9z.workers.dev",
     else vbuf=new Uint8Array(await vf.arrayBuffer());
     let au=null;if(af){try{au=await demuxAudio(af);if(au&&!au.samples.length){const fr=await LINK.frag(af,"soun");if(fr)au.samples=fr.s.map(x=>({data:fr.buf.slice(x.o,x.o+x.sz),ts:Math.round(x.dts*1e6/fr.ts),dur:Math.round(x.dur*1e6/fr.ts)}))}if(au&&!au.samples.length)au=null}catch(e){au=null}}
     if(!au&&!frag)return new File([vbuf],name,{type:"video/mp4"});/* pas de son et fichier classique : tel quel */
-    const parts=[],starts=[];let end=0;
-    const put=(data,pos)=>{if(pos>=end){parts.push(data);starts.push(pos);end=pos+data.byteLength;return}
-      let lo=0,hi=starts.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(starts[m]<=pos)lo=m;else hi=m-1}
-      let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
-      if(pos+data.byteLength>end){parts.push(data.subarray(end-pos).slice());starts.push(end);end=pos+data.byteLength}};
+    const mt=memTarget();
     const vc=vi.codec.startsWith("avc")?"avc":vi.codec.startsWith("hv")||vi.codec.startsWith("he")?"hevc":"vp9";
-    const mx=new Mp4Muxer.Muxer({target:new Mp4Muxer.StreamTarget({onData:(d,p)=>put(d,p)}),fastStart:false,firstTimestampBehavior:"offset",
+    const mx=new Mp4Muxer.Muxer({target:mt.target,fastStart:false,firstTimestampBehavior:"offset",
       video:{codec:vc,width:vi.W,height:vi.H},...(au?{audio:{codec:"aac",numberOfChannels:au.ch,sampleRate:au.sr}}:{})});
     const us=x=>Math.round(x*1e6/vi.ts),t0=Math.min(...vi.cts),as=au?au.samples:[];let ai=0,fv=true,fa=true;
     const addA=a=>{mx.addAudioChunkRaw(a.data,"key",a.ts,a.dur,fa?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:au.ch,sampleRate:au.sr,description:au.asc}}:undefined);fa=false};
@@ -1534,7 +1533,7 @@ const LINK={busy:false,SRV:"https://retouche-serveur.nfchb5hd9z.workers.dev",
       while(ai<as.length&&as[ai].ts<=dts)addA(as[ai++]);
       mx.addVideoChunkRaw(vbuf.subarray(vi.so[i],vi.so[i]+vi.sz[i]),vi.key[i]?"key":"delta",pts,us(d),fv?{decoderConfig:{codec:vi.codec,codedWidth:vi.W,codedHeight:vi.H,...(vi.desc?{description:vi.desc}:{})}}:undefined,pts-dts);fv=false}
     while(ai<as.length)addA(as[ai++]);
-    mx.finalize();return new File(parts,name,{type:"video/mp4"})},
+    mx.finalize();return mt.file(name)},
   choose(n,fn){const c=$("#lnkc");c.textContent="";c.hidden=false;for(let k=0;k<n;k++){const b=document.createElement("button");b.type="button";b.className="btn";b.textContent="Vidéo "+(k+1);b.onclick=()=>{c.hidden=true;fn(k)};c.appendChild(b)}},
   err(e,site){const m=(e&&e.message)||"";
     if(m.startsWith("MSG:"))return m.slice(4);
@@ -1667,10 +1666,6 @@ v.ontimeupdate=()=>{if(v.duration&&!exporting)$("#tm").value=v.currentTime/v.dur
 $("#tm").oninput=e=>{if(v.duration&&!exporting)v.currentTime=e.target.value/1000*v.duration};
 
 /* Export image par image (WebCodecs) */
-const seek=t=>new Promise(r=>{
-  if(Math.abs(v.currentTime-t)<1e-4)return r();
-  v.addEventListener("seeked",r,{once:true});v.currentTime=t;
-});
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 let poolMode=false;
 let rvfcMiss=0,rvfcOK=true;
@@ -1699,7 +1694,7 @@ async function realtime(){
   const type=window.MediaRecorder&&["video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9","video/webm"].find(t=>MediaRecorder.isTypeSupported(t));
   if(!type)throw new Error("export en temps réel impossible sur cet appareil");
   aud();if(ac&&ac.resume)try{await ac.resume()}catch(e){}
-  v.pause();await seek(0);
+  v.pause();await seekEl(v,0);
   const st=cv.captureStream(30);
   if(dst&&dst.stream.getAudioTracks()[0])st.addTrack(dst.stream.getAudioTracks()[0]);
   if(gain)gain.gain.value=0;
@@ -1759,12 +1754,11 @@ $("#ex").onclick=async()=>{
       size(L);
       /* fichier le plus léger possible sans perte visible : HEVC (H.265) quand l'iPhone sait l'encoder, sinon H.264.
          Débit mesuré sur de vraies vidéos : au-delà, le fichier grossit sans gain visible ; une vidéo agrandie (vieux téléphone) contient moins de vrai détail, donc moins de débit */
-      const big=cv.width*cv.height>2073600*1.2,srcPx=Math.max(1,v.videoWidth*v.videoHeight),up=cv.width*cv.height/srcPx;
+      const srcPx=Math.max(1,v.videoWidth*v.videoHeight),up=cv.width*cv.height/srcPx;
       let hevcOK=false;try{hevcOK=localStorage.getItem("nohevc")!=="1"}catch(e){}
       const mk=hv=>{const px=cv.width*cv.height*OUTF,dd=window.__plan?window.__plan.length/OFPS:dT,bud=window.__safe?2e8:3e8;
         const bpp=(hv?.04:.055)*(up>=4&&!SRX.on()?.8:1)*(window.__safe?.85:1);
-        return{codec:hv?(big?"hvc1.1.6.L153.B0":"hvc1.1.6.L123.B0"):(big?"avc1.640033":"avc1.640028"),width:cv.width,height:cv.height,
-          bitrate:Math.round(px*Math.max(.03,Math.min(bpp,bud*8/(px*Math.max(1,dd))))),framerate:OUTF,...(hv?{hevc:{format:"hevc"}}:{avc:{format:"avc"}}),latencyMode:"quality"}};
+        return vcfg(hv,cv.width,cv.height,OUTF,Math.round(px*Math.max(.03,Math.min(bpp,bud*8/(px*Math.max(1,dd))))))};
       let c=mk(false);
       if(hevcOK&&!window.__plan){const ch=mk(true);try{if((await VideoEncoder.isConfigSupported(ch)).supported)c=ch}catch(e){}}
       if(c.bitrate*(window.__plan?window.__plan.length/OFPS:dT)/8>(window.__safe?2e8:3.2e8)&&L!==1280){msg("Vidéo longue : export en "+(L>1920?"Full HD":"taille réduite")+" pour ne pas saturer la mémoire de l’iPhone.");window.__memDown=true;continue}
@@ -1902,20 +1896,14 @@ $("#ex").onclick=async()=>{
       try{const el=(performance.now()-T0)/1000;if(!plan&&!srUse&&el>3)localStorage.setItem("spd",JSON.stringify({r:total/el,p:cv.width*cv.height}))}catch(e){}
       const build=wa=>{
         /* écriture par morceaux (moins de mémoire qu'un seul gros tampon : évite que l'iPhone recharge la page sur les longues vidéos) */
-        const parts=[],starts=[];let end=0;
-        const put=(data,pos)=>{
-          if(pos>=end){parts.push(data);starts.push(pos);end=pos+data.byteLength;return}
-          /* réécriture d'un en-tête déjà écrit : on la recopie dans les morceaux concernés */
-          let lo=0,hi=starts.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(starts[m]<=pos)lo=m;else hi=m-1}
-          let off=0;for(let i=lo;i<parts.length&&off<data.byteLength;i++){const a=Math.max(pos+off,starts[i]),rel=a-starts[i],n=Math.min(parts[i].byteLength-rel,data.byteLength-(a-pos));if(n>0){parts[i].set(data.subarray(a-pos,a-pos+n),rel);off=a-pos+n}}
-          if(pos+data.byteLength>end){const tail=data.subarray(end-pos);parts.push(tail.slice());starts.push(end);end=pos+data.byteLength}};
-        const tg=new Mp4Muxer.StreamTarget({onData:(data,pos)=>put(data,pos)});
+        const mt=memTarget();
+        const tg=mt.target;
         const mx=new Mp4Muxer.Muxer({target:tg,fastStart:false,video:{codec:cfg.codec.startsWith("hvc")?"hevc":"avc",width:cfg.width,height:cfg.height},
           ...(wa?{audio:{codec:"aac",numberOfChannels:acfg.numberOfChannels,sampleRate:acfg.sampleRate}}:{})});
         vch.forEach(([c,m])=>mx.addVideoChunk(c,m));
         if(wa&&rawA)rawA.samples.forEach((s,i)=>mx.addAudioChunkRaw(s.data,"key",s.ts,s.dur,i===0?{decoderConfig:{codec:"mp4a.40.2",numberOfChannels:rawA.ch,sampleRate:rawA.sr,description:rawA.asc}}:undefined));
         else if(wa)ach.forEach(([c,m])=>mx.addAudioChunk(c,m));
-        mx.finalize();const b=new Blob(parts,{type:"video/mp4"});parts.length=0;return b;
+        mx.finalize();const b=mt.blob();return b;
       };
       var wa=!!acfg;msg("Vérification du fichier…");
       try{outBlob=build(wa)}catch(e){audioWhy="l’ajout du son a échoué ("+((e&&e.message)||"erreur")+")";wa=false;outBlob=build(false)}
