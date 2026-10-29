@@ -225,7 +225,7 @@ body.loaded .lnkh{display:none}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · v2.32</span>
+  <span class="tag">sur ton téléphone · v2.33</span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -249,12 +249,12 @@ body.loaded .lnkh{display:none}
   </div>
   <form class="lnk" id="lnkf" autocomplete="off" novalidate>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
-    <input id="lnk" type="url" inputmode="url" enterkeyhint="go" placeholder="Colle un lien ici" aria-label="Lien d’une vidéo TikTok, Twitter / X, Reddit ou Tumblr">
+    <input id="lnk" type="url" inputmode="url" enterkeyhint="go" placeholder="Colle un lien ici" aria-label="Lien d’une vidéo (TikTok, Facebook, X, Snapchat, Pinterest…)">
     <button class="btn" id="lnkgo" type="submit">Charger</button>
   </form>
   <div id="lnkc" class="row" hidden style="margin-top:8px"></div>
   <p class="lnkmsg" id="lnkst" hidden aria-live="polite"></p>
-  <p class="lnkh"><b>Liens compatibles :</b> TikTok, Twitter / X, Reddit, Tumblr. La vidéo arrive dans sa meilleure qualité, prête à être retouchée ou enregistrée.</p>
+  <p class="lnkh"><b>Liens compatibles :</b> TikTok, Facebook, Twitter / X, Snapchat, Pinterest, Reddit, Tumblr, Bluesky, LinkedIn, Twitch (clips), Streamable, Imgur, 9GAG. La vidéo arrive dans sa meilleure qualité, prête à être retouchée ou enregistrée.</p>
   <input type="file" id="fm" accept="video/*" multiple hidden>
   <div class="card" id="mg" hidden>
     <h2>Regrouper des vidéos</h2>
@@ -1489,7 +1489,16 @@ const LINK={busy:false,SRV:"https://retouche-serveur.nfchb5hd9z.workers.dev",
     if(/(^|\.)tiktok\.com$/i.test(u.hostname))return "tiktok";
     if(/(^|\.)instagram\.com$/i.test(u.hostname))return "instagram";
     if(/(^|\.)tumblr\.com$/i.test(u.hostname))return "tumblr";
-    if(/(^|\.)(youtube\.com|youtu\.be|facebook\.com|fb\.watch|snapchat\.com|threads\.net)$/i.test(u.hostname))return "autre";
+    if(/(^|\.)(facebook\.com|fb\.watch|fb\.com)$/i.test(u.hostname))return "facebook";
+    if(/(^|\.)pinterest\.[a-z.]+$|^pin\.it$/i.test(u.hostname))return "pinterest";
+    if(/(^|\.)snapchat\.com$/i.test(u.hostname))return "snapchat";
+    if(/(^|\.)bsky\.app$/i.test(u.hostname))return "bluesky";
+    if(/(^|\.)streamable\.com$/i.test(u.hostname))return "streamable";
+    if(/(^|\.)twitch\.tv$/i.test(u.hostname))return "twitch";
+    if(/(^|\.)imgur\.com$/i.test(u.hostname))return "imgur";
+    if(/(^|\.)9gag\.com$/i.test(u.hostname))return "9gag";
+    if(/(^|\.)linkedin\.com$/i.test(u.hostname))return "linkedin";
+    if(/(^|\.)(youtube\.com|youtu\.be|threads\.net|threads\.com|vimeo\.com|dailymotion\.com)$/i.test(u.hostname))return "autre";
     return null},
   async json(url,site){let r;try{r=await fetch(url,{credentials:"omit"})}catch(e){throw new Error(!navigator.onLine?"RESEAU":site==="reddit"?"BLOQUE":"INTROUVABLE")}
     if(r.status===404)throw new Error("INTROUVABLE");if(!r.ok)throw new Error("HTTP"+r.status);return r.json()},
@@ -1522,9 +1531,14 @@ const LINK={busy:false,SRV:"https://retouche-serveur.nfchb5hd9z.workers.dev",
     try{return await LINK.dl(LINK.px(c[0]),nm,"Téléchargement depuis Twitter / X (via le serveur)")}catch(e){}
     throw err||new Error("INTROUVABLE")},
   async viaSrv(u,site){
-    const nom={tiktok:"TikTok",instagram:"Instagram",tumblr:"Tumblr"}[site];
+    const nom={tiktok:"TikTok",tumblr:"Tumblr",facebook:"Facebook",pinterest:"Pinterest",snapchat:"Snapchat",bluesky:"Bluesky",streamable:"Streamable",twitch:"Twitch",imgur:"Imgur","9gag":"9GAG",linkedin:"LinkedIn"}[site]||site;
     LINK.say("Recherche de la vidéo "+nom+"…");
-    return LINK.dl(LINK.SRV+"/video?url="+encodeURIComponent(u.href),site+".mp4","Téléchargement depuis "+nom)},
+    const f=await LINK.dl(LINK.SRV+"/video?url="+encodeURIComponent(u.href),site+".mp4","Téléchargement depuis "+nom);
+    /* Facebook donne parfois sa meilleure version dans un format que l'iPhone ne lit pas : on prend alors la version lisible */
+    if(site==="facebook"&&!(await LINK.lisible(f))){LINK.say("Version compatible avec l’iPhone…");const g=await LINK.dl(LINK.SRV+"/video?q=sd&url="+encodeURIComponent(u.href),site+".mp4","Téléchargement depuis "+nom);g.__lower=true;return g}
+    return f},
+  lisible(f){return new Promise(res=>{const e=document.createElement("video"),o=URL.createObjectURL(f);let done=false;const end=ok=>{if(done)return;done=true;URL.revokeObjectURL(o);e.removeAttribute("src");res(ok)};
+    e.muted=true;e.playsInline=true;e.preload="metadata";e.onloadedmetadata=()=>end(e.videoWidth>0);e.onerror=()=>end(false);setTimeout(()=>end(false),8000);e.src=o})},
   async reddit(u){
     let base=null,id="post";
     if(/v\.redd\.it$/i.test(u.hostname)){id=u.pathname.split("/").filter(Boolean)[0];base="https://v.redd.it/"+id+"/"}
@@ -1619,8 +1633,8 @@ const LINK={busy:false,SRV:"https://retouche-serveur.nfchb5hd9z.workers.dev",
     let u;try{u=new URL(s)}catch(e){LINK.say("Colle d’abord le lien d’une vidéo (il commence par https://).");return}
     const site=LINK.site(u);
     if(site==="instagram"){LINK.say("Instagram bloque la récupération par lien. Dans l’app Instagram, ouvre le reel, touche Partager (l’avion en papier) puis Télécharger : la vidéo va dans Photos. Ensuite, touche « Choisir une vidéo » ici. Si « Télécharger » n’apparaît pas, le créateur ne l’autorise pas.");return}
-    if(site==="autre"){LINK.say("Ce site n’est pas compatible par lien (liens compatibles : TikTok, Twitter / X, Reddit, Tumblr). Enregistre la vidéo depuis son app (Partager → Enregistrer la vidéo), puis touche « Choisir une vidéo ».");return}
-    if(!site){LINK.say("Lien non reconnu. Liens compatibles : TikTok, Twitter / X, Reddit, Tumblr.");return}
+    if(site==="autre"){LINK.say("Ce site n’est pas compatible par lien (liens compatibles : TikTok, Facebook, Twitter / X, Snapchat, Pinterest, Reddit, Tumblr, Bluesky, LinkedIn, Twitch, Streamable, Imgur, 9GAG). Enregistre la vidéo depuis son app (Partager → Enregistrer la vidéo), puis touche « Choisir une vidéo ».");return}
+    if(!site){LINK.say("Lien non reconnu. Liens compatibles : TikTok, Facebook, Twitter / X, Snapchat, Pinterest, Reddit, Tumblr, Bluesky, LinkedIn, Twitch, Streamable, Imgur, 9GAG.");return}
     LINK.busy=true;$("#lnkgo").disabled=true;if(pick==null)$("#lnkc").hidden=true;const t0=Date.now();
     try{
       LINK.via=false;
@@ -1808,7 +1822,7 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… (v2.32)");OFPS=window.__plan?FPS:await measureFps();
+    msg("Préparation… (v2.33)");OFPS=window.__plan?FPS:await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;

@@ -3,7 +3,7 @@
 // trouver le fichier vidéo de meilleure qualité et le renvoyer à l'app, avec les bons en-têtes.
 // Aucune vidéo n'est stockée : elle transite seulement.
 
-const VERSION = "2";
+const VERSION = "3";
 const UA_PC = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 // hôtes que /proxy accepte de relayer (rien d'autre : pas de relais ouvert)
 const PROXY_OK = /^(www\.reddit\.com|old\.reddit\.com|v\.redd\.it|video\.twimg\.com|api\.fxtwitter\.com|[a-z0-9-]+\.media\.tumblr\.com)$/i;
@@ -148,12 +148,143 @@ async function tumblr(u) {
   throw last;
 }
 
-async function video(link) {
+/* ---------- Facebook ---------- */
+async function facebook(u, sd) {
+  const H = { "user-agent": UA_PC, accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "accept-language": "en-us,en;q=0.5", "sec-fetch-mode": "navigate" };
+  let url = u.href;
+  // liens courts / de partage : on suit la redirection pour trouver le numéro de la vidéo
+  if (/fb\.watch$/i.test(u.hostname) || /\/share\//.test(u.pathname)) { const r = await fetch(url, { headers: H, redirect: "follow" }); url = r.url }
+  const id = (url.match(/(?:[?&]v=|\/videos\/(?:[^/?#]+\/)?|\/reel\/|\/watch\/\?v=)(\d{6,})/) || [])[1];
+  const page = await fetch(id ? "https://www.facebook.com/watch/?v=" + id + "&_rdr" : url, { headers: H, redirect: "follow" });
+  const t = await page.text();
+  const get = k => { const m = t.match(new RegExp('"' + k + '":("(?:[^"\\\\]|\\\\.)*")')); try { return m ? JSON.parse(m[1]) : null } catch (e) { return null } };
+  const v = (sd ? null : (get("browser_native_hd_url") || get("playable_url_quality_hd"))) || get("browser_native_sd_url") || get("playable_url");
+  if (!v) throw new Err("bloque", "Vidéo Facebook introuvable : elle est peut-être privée, réservée à un groupe, ou supprimée.", 502);
+  return stream(v, { "user-agent": UA_PC, referer: "https://www.facebook.com/" }, "facebook-" + (id || "video") + ".mp4", "");
+}
+
+/* ---------- Pinterest ---------- */
+async function pinterest(u) {
+  let url = u.href;
+  if (/pin\.it$/i.test(u.hostname)) { const r = await fetch(url, { headers: { "user-agent": UA_PC }, redirect: "follow" }); url = r.url }
+  const id = (url.match(/\/pin\/(?:[^/]*?-)?(\d+)/) || [])[1];
+  if (!id) throw new Err("lien", "Lien Pinterest non reconnu : copie le lien d'une épingle vidéo.");
+  const q = encodeURIComponent(JSON.stringify({ options: { field_set_key: "unauth_react_main_pin", id } }));
+  const r = await fetch("https://www.pinterest.com/resource/PinResource/get/?data=" + q, { headers: { "user-agent": UA_PC, "x-pinterest-pws-handler": "www/[username].js", accept: "application/json" } });
+  if (!r.ok) throw new Err("bloque", "Pinterest n'a pas répondu (" + r.status + "). Réessaie dans un moment.", 502);
+  const d = ((await r.json()).resource_response || {}).data || {};
+  let list = (d.videos && d.videos.video_list) || null;
+  if (!list && d.story_pin_data) for (const pg of d.story_pin_data.pages || []) for (const b of pg.blocks || []) if (b.video && b.video.video_list) { list = b.video.video_list; break }
+  const c = Object.values(list || {}).filter(x => x && x.url && /\.mp4(\?|$)/.test(x.url)).sort((a, b) => (b.width * b.height) - (a.width * a.height));
+  if (!c.length) throw new Err("pas_video", "Cette épingle Pinterest ne contient pas de vidéo.");
+  return stream(c[0].url, { "user-agent": UA_PC }, "pinterest-" + id + ".mp4", c[0].width + "x" + c[0].height);
+}
+
+/* ---------- Snapchat (Spotlight et vidéos publiques) ---------- */
+async function snapchat(u) {
+  const r = await fetch(u.href, { headers: { "user-agent": UA_PC, "accept-language": "fr-FR,fr;q=0.9" }, redirect: "follow" });
+  const t = await r.text();
+  const m = t.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!m) throw new Err("bloque", "Snapchat n'a pas répondu normalement. Réessaie dans un moment.", 502);
+  const s = m[1];
+  const c = [...s.matchAll(/"contentUrl":"([^"]+)"/g)].map(x => JSON.parse('"' + x[1] + '"'));
+  const id = (new URL(r.url).pathname.match(/\/spotlight\/([\w-]+)/) || [])[1];
+  let pick = c[0];
+  if (id) { const i = s.indexOf(id); if (i > 0) { const after = s.slice(i).match(/"contentUrl":"([^"]+)"/); if (after) pick = JSON.parse('"' + after[1] + '"') } }
+  if (!pick) throw new Err("pas_video", "Aucune vidéo publique trouvée sur ce lien Snapchat.");
+  return stream(pick, { "user-agent": UA_PC }, "snapchat-" + (id ? id.slice(0, 12) : "video") + ".mp4", "");
+}
+
+/* ---------- Bluesky (fichier d'origine envoyé par l'auteur) ---------- */
+async function bluesky(u) {
+  const m = u.pathname.match(/\/profile\/([^/]+)\/post\/([\w]+)/);
+  if (!m) throw new Err("lien", "Lien Bluesky non reconnu : copie le lien d'une publication.");
+  const j = await (await fetch("https://public.api.bsky.app/xrpc/app.bsky.feed.getPostThread?depth=0&parentHeight=0&uri=" + encodeURIComponent("at://" + m[1] + "/app.bsky.feed.post/" + m[2]))).json();
+  const post = j && j.thread && j.thread.post;
+  if (!post) throw new Err("introuvable", "Publication Bluesky introuvable.", 404);
+  const e = post.embed || {}, v = e.$type && e.$type.includes("video") ? e : (e.media && e.media.$type && e.media.$type.includes("video") ? e.media : null);
+  if (!v || !v.cid) throw new Err("pas_video", "Cette publication Bluesky ne contient pas de vidéo.");
+  const did = post.author.did;
+  let ep = "https://bsky.social";
+  try { const dj = await (await fetch(did.startsWith("did:web:") ? "https://" + did.slice(8) + "/.well-known/did.json" : "https://plc.directory/" + did)).json(); const sv = (dj.service || []).find(x => x.type === "AtprotoPersonalDataServer"); if (sv) ep = sv.serviceEndpoint } catch (x) {}
+  const q = v.aspectRatio ? v.aspectRatio.width + "x" + v.aspectRatio.height : "";
+  return stream(ep + "/xrpc/com.atproto.sync.getBlob?did=" + encodeURIComponent(did) + "&cid=" + v.cid, { "user-agent": UA_PC }, "bluesky-" + m[2] + ".mp4", q);
+}
+
+/* ---------- Streamable ---------- */
+async function streamable(u) {
+  const id = (u.pathname.match(/^\/(?:[es]\/)?(\w+)/) || [])[1];
+  const r = await fetch("https://ajax.streamable.com/videos/" + id, { headers: { "user-agent": UA_PC } });
+  if (!r.ok) throw new Err("introuvable", "Vidéo Streamable introuvable.", 404);
+  const j = await r.json(), f = j.files || {};
+  const c = Object.values(f).filter(x => x && x.url && /mp4/.test(x.url)).sort((a, b) => (b.width * b.height) - (a.width * a.height));
+  if (!c.length) throw new Err("pas_video", "Cette vidéo Streamable n'est pas encore prête.");
+  return stream(c[0].url.startsWith("//") ? "https:" + c[0].url : c[0].url, { "user-agent": UA_PC }, "streamable-" + id + ".mp4", c[0].width + "x" + c[0].height);
+}
+
+/* ---------- Twitch (clips) ---------- */
+async function twitch(u) {
+  const slug = (u.pathname.match(/\/clip\/([\w-]+)/) || (u.hostname.startsWith("clips.") ? u.pathname.match(/^\/([\w-]+)/) : null) || [])[1];
+  if (!slug) throw new Err("lien", "Seuls les clips Twitch sont pris en charge (pas les rediffusions ni les directs).");
+  const r = await fetch("https://gql.twitch.tv/gql", { method: "POST", headers: { "client-id": "ue6666qo983tsx6so1t0vnawi233wa", "content-type": "text/plain;charset=UTF-8" },
+    body: JSON.stringify([{ operationName: "ShareClipRenderStatus", variables: { slug }, extensions: { persistedQuery: { version: 1, sha256Hash: "2db6a3b20eabf510bd3cf465ae2408834b59eb6b8af89ca73ab1486cacecfb63" } } }]) });
+  const clip = (((await r.json())[0] || {}).data || {}).clip;
+  if (!clip) throw new Err("introuvable", "Ce clip Twitch n'existe plus.", 404);
+  const qs = ((clip.assets && clip.assets[0] && clip.assets[0].videoQualities) || clip.videoQualities || []).filter(x => x.sourceURL).sort((a, b) => (+b.quality) - (+a.quality));
+  if (!qs.length) throw new Err("pas_video", "Clip Twitch sans vidéo téléchargeable.");
+  const tok = clip.playbackAccessToken;
+  const url = qs[0].sourceURL + (qs[0].sourceURL.includes("?") ? "&" : "?") + "sig=" + encodeURIComponent(tok.signature) + "&token=" + encodeURIComponent(tok.value);
+  return stream(url, { "user-agent": UA_PC }, "twitch-" + slug.slice(0, 40) + ".mp4", qs[0].quality + "p");
+}
+
+/* ---------- Imgur ---------- */
+async function imgur(u) {
+  let id = (u.pathname.match(/\/(?:gallery\/|a\/|t\/[^/]+\/)?(?:[\w-]*-)?([A-Za-z0-9]{5,8})(?:\.\w+)?$/) || [])[1];
+  if (/\/(gallery|a)\//.test(u.pathname)) {
+    const r = await fetch("https://api.imgur.com/post/v1/" + (u.pathname.includes("/a/") ? "albums/" : "posts/") + id + "?client_id=546c25a59c58ad7&include=media", { headers: { "user-agent": UA_PC } });
+    const j = await r.json(); const m = (j.media || []).find(x => x.type === "video" || /mp4/.test(x.ext || x.mime_type || ""));
+    if (!m) throw new Err("pas_video", "Cette publication Imgur ne contient pas de vidéo.");
+    return stream(m.url, { "user-agent": UA_PC }, "imgur-" + id + ".mp4", m.width ? m.width + "x" + m.height : "");
+  }
+  return stream("https://i.imgur.com/" + id + ".mp4", { "user-agent": UA_PC }, "imgur-" + id + ".mp4", "");
+}
+
+/* ---------- 9GAG ---------- */
+async function ninegag(u) {
+  const id = (u.pathname.match(/\/gag\/(\w+)/) || [])[1];
+  if (!id) throw new Err("lien", "Lien 9GAG non reconnu.");
+  let last;
+  for (const s of ["_460sv.mp4", "_460svh265.mp4", "_460svav1.mp4"]) { try { return await stream("https://img-9gag-fun.9cache.com/photo/" + id + s, { "user-agent": UA_PC, referer: "https://9gag.com/" }, "9gag-" + id + ".mp4", "") } catch (e) { last = e } }
+  throw new Err("pas_video", "Ce post 9GAG ne contient pas de vidéo.");
+}
+
+/* ---------- LinkedIn (publications publiques) ---------- */
+async function linkedin(u) {
+  const r = await fetch(u.href, { headers: { "user-agent": UA_PC, "accept-language": "fr-FR,fr;q=0.9" }, redirect: "follow" });
+  const t = await r.text();
+  const m = t.match(/<video[^>]+data-sources="([^"]+)"/);
+  if (!m) throw new Err("pas_video", "Vidéo LinkedIn introuvable : la publication doit être publique et contenir une vidéo.");
+  const src = JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&"));
+  const c = src.filter(x => x.src).sort((a, b) => (+b["data-bitrate"] || 0) - (+a["data-bitrate"] || 0));
+  if (!c.length) throw new Err("pas_video", "Vidéo LinkedIn introuvable.");
+  return stream(c[0].src, { "user-agent": UA_PC }, "linkedin-video.mp4", "");
+}
+
+async function video(link, opt = {}) {
   let u; try { u = new URL(link) } catch (e) { throw new Err("lien", "Lien invalide.") }
   const h = u.hostname.toLowerCase().replace(/^www\.|^m\./, "");
   if (/(^|\.)tiktok\.com$/.test(h)) return tiktok(u);
   if (/(^|\.)instagram\.com$/.test(h)) return instagram(u);
   if (/(^|\.)tumblr\.com$/.test(h)) return tumblr(u);
+  if (/(^|\.)(facebook\.com|fb\.watch|fb\.com)$/.test(h)) return facebook(u, opt.sd);
+  if (/(^|\.)pinterest\.[a-z.]+$|^pin\.it$/.test(h)) return pinterest(u);
+  if (/(^|\.)snapchat\.com$/.test(h)) return snapchat(u);
+  if (/(^|\.)bsky\.app$/.test(h)) return bluesky(u);
+  if (/(^|\.)streamable\.com$/.test(h)) return streamable(u);
+  if (/(^|\.)twitch\.tv$/.test(h)) return twitch(u);
+  if (/(^|\.)imgur\.com$/.test(h)) return imgur(u);
+  if (/(^|\.)9gag\.com$/.test(h)) return ninegag(u);
+  if (/(^|\.)linkedin\.com$/.test(h)) return linkedin(u);
   throw new Err("site", "Ce site n'est pas encore pris en charge.");
 }
 
@@ -163,7 +294,7 @@ export default {
     if (req.method === "OPTIONS") return new Response(null, { headers: cors({ "access-control-max-age": "86400" }) });
     try {
       if (u.pathname === "/" || u.pathname === "/etat") return json({ ok: true, service: "retouche-serveur", version: VERSION });
-      if (u.pathname === "/video") return await video(u.searchParams.get("url") || "");
+      if (u.pathname === "/video") return await video(u.searchParams.get("url") || "", { sd: u.searchParams.get("q") === "sd" });
       if (u.pathname === "/test") { // diagnostic lisible : ce que chaque méthode a obtenu (sans télécharger la vidéo)
         const link = u.searchParams.get("url") || ""; const log = [];
         try { const l = new URL(link); if (!/instagram\.com$/i.test(l.hostname)) return json({ ok: false, msg: "test réservé à Instagram" });
