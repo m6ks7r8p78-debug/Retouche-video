@@ -53,6 +53,7 @@ QP = int(P.get("qp", 16))
 enc = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{OW}x{OH}", "-r", "30", "-i", "-",
                         "-vf", "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int",
                         "-c:v", "h264_nvenc", "-profile:v", "high", "-preset", "p6", "-tune", "hq", "-rc", "constqp", "-qp", str(QP),
+                        "-bf", "0",   # pas d'images B : ordre de décodage = ordre d'affichage (lecteur image par image de l'app)
                         "-pix_fmt", "yuv420p", "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
                         "-movflags", "+faststart", "/kaggle/working/ia.mp4"], stdin=subprocess.PIPE)
 
