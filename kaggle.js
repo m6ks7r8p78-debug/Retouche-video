@@ -99,7 +99,9 @@ var KG = (() => {
       const cd = await api("datasets.DatasetApiService", "CreateDataset", { ownerSlug: u, slug: ds, title: ds.replace(/-/g, " "), licenseName: "other", isPrivate: true, files });
       if (cd.error) throw new Error("Kaggle : " + cd.error);
       for (let i = 0; ; i++) {
-        const s = await api("datasets.DatasetApiService", "GetDatasetStatus", { ownerSlug: u, datasetSlug: ds });
+        let s = {};
+        try { s = await api("datasets.DatasetApiService", "GetDatasetStatus", { ownerSlug: u, datasetSlug: ds }) }
+        catch (e) { if (!(e.status === 403 || e.status === 404) || i > 24) throw e }   /* jeu tout juste créé : pas encore visible */
         if (/ready/i.test(s.status || "")) break;
         if (/error|fail/i.test(s.status || "")) throw new Error("jeu de données refusé par Kaggle");
         if (i > 120) throw new Error("Kaggle ne prépare pas le jeu de données"); ev("prepa", 0, "Kaggle prépare la vidéo…"); await attendre(5000);
