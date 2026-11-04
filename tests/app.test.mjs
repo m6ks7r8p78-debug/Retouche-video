@@ -21,7 +21,8 @@ if (fs.existsSync(DEPTH)) await p.route(/huggingface\.co\/.*model_quantized\.onn
 await p.goto(BASE + "/index.html"); await p.waitForFunction(() => window.MODELS && window.SR);
   await p.evaluate(() => localStorage.setItem("autorisations", JSON.stringify({ modele: { ok: true } })));
 const results = [];
-async function test(name, fn) { const t0 = Date.now(); let ok = false, info = "";
+const FILTRE = process.env.FILTRE ? new RegExp(process.env.FILTRE) : null;   /* FILTRE=… : ne lance que les cas dont le nom correspond (exécution en parallèle) */
+async function test(name, fn) { if (FILTRE && !FILTRE.test(name)) return; const t0 = Date.now(); let ok = false, info = "";
   try { const r = await fn(); ok = r === true || (r && r.ok); info = r && r.info ? r.info : "" } catch (e) { info = "exception : " + e.message.split("\n")[0] }
   results.push({ name, ok, info }); console.log((ok ? "✓ " : "✗ ") + name + (info ? " — " + info : "") + " (" + ((Date.now() - t0) / 1000).toFixed(0) + " s)") }
 const save = async (name) => { const d = await p.evaluate(async () => { const r = await fetch(outUrl); const a = new Uint8Array(await r.arrayBuffer()); let s = ""; for (let i = 0; i < a.length; i += 32768) s += String.fromCharCode(...a.subarray(i, i + 32768)); return btoa(s) }); const f = path.join(OUT, name); fs.writeFileSync(f, Buffer.from(d, "base64")); return f };
