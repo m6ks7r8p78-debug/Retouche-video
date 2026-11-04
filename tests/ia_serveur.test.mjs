@@ -80,7 +80,7 @@ await test("Ménage : plus aucun jeu de données ni calcul « retouche-ia-… »
   const r = await p.evaluate(async () => { const u = await KG.moi();
     const k = await KG._api("kernels.KernelsApiService", "ListKernels", { user: u, pageSize: 50, search: "retouche ia" });
     const d = await KG._api("datasets.DatasetApiService", "ListDatasets", { user: u, pageSize: 50, search: "retouche ia" });
-    const re = new RegExp("/" + KG.dernier + "$"); return { slug: KG.dernier, k: (k.kernels || []).map(x => x.ref).filter(x => re.test(x)), d: (d.datasets || []).map(x => x.ref).filter(x => re.test(x)) } });
+    const re = new RegExp("/" + KG.dernier + "(-donnees)?$"); return { slug: KG.dernier, k: (k.kernels || []).map(x => x.ref).filter(x => re.test(x)), d: (d.datasets || []).map(x => x.ref).filter(x => re.test(x)) } });
   return { ok: !!r.slug && !r.k.length && !r.d.length, info: "calcul de ce test « " + r.slug + " » — calculs restants : " + (r.k.join(", ") || "aucun") + " ; jeux de données restants : " + (r.d.join(", ") || "aucun") } });
 
 await test("Aucune erreur JavaScript", async () => ({ ok: errs.length === 0, info: errs.join(" | ").slice(0, 200) || "aucune" }));

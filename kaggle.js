@@ -18,7 +18,8 @@ var KG = (() => {
   async function api(svc, m, body) {
     const r = await fetch(API + svc + "/" + m, { method: "POST", headers: { Authorization: "Bearer " + jeton(), "Content-Type": "application/json" }, body: JSON.stringify(body || {}), signal: abort && abort.signal });
     const t = await r.text(); let j = null; try { j = JSON.parse(t) } catch (e) {}
-    if (!r.ok) { const e = new Error((j && (j.message || j.error)) || ("Kaggle : erreur " + r.status)); e.status = r.status; throw e }
+    const em = j && ((j.error && (j.error.message || j.error.status)) || j.message || (typeof j.error === "string" && j.error));
+    if (!r.ok || (j && j.error && typeof j.error === "object")) { const e = new Error("Kaggle : " + (em || ("erreur " + r.status))); e.status = r.status; throw e }
     return j || {};
   }
   async function moi() {
@@ -70,8 +71,9 @@ var KG = (() => {
 
   /* menage : supprime le calcul et le jeu de données (rien ne reste chez Kaggle) */
   async function menage(u, slug) {
+    const ds = slug + "-donnees";
     const out = [];
-    for (const [svc, m, b] of [["kernels.KernelsApiService", "DeleteKernel", { userName: u, kernelSlug: slug }], ["datasets.DatasetApiService", "DeleteDataset", { ownerSlug: u, datasetSlug: slug }]]) {
+    for (const [svc, m, b] of [["kernels.KernelsApiService", "DeleteKernel", { userName: u, kernelSlug: slug }], ["datasets.DatasetApiService", "DeleteDataset", { ownerSlug: u, datasetSlug: ds }]]) {
       try { const sv = abort; abort = null; await api(svc, m, b); abort = sv; out.push(m + " ok") } catch (e) { out.push(m + " : " + e.message) }
     }
     return out;
@@ -81,7 +83,7 @@ var KG = (() => {
   async function traiter(o, ev) {
     if (!jeton()) throw new Error("aucun jeton Kaggle enregistré (⚙️ Paramètres)");
     abort = new AbortController();
-    const u = await moi(), slug = "retouche-ia-" + Date.now().toString(36), ref = u + "/" + slug, t0 = Date.now(); dernier = slug;
+    const u = await moi(), slug = "retouche-ia-" + Date.now().toString(36), ref = u + "/" + slug, ds = slug + "-donnees", t0 = Date.now(); dernier = slug;
     let fin = false;
     try {
       ev("envoi", 0, "Préparation de l’envoi…");
@@ -94,20 +96,20 @@ var KG = (() => {
         const tk = await depot(b, n, f => ev("envoi", (base + f * b.size) / tot, "Envoi de la vidéo vers ton espace privé Kaggle… " + Math.round((base + f * b.size) / tot * 100) + " %"));
         base += b.size; files.push({ token: tk }); attendus[n] = b.size;
       }
-      const cd = await api("datasets.DatasetApiService", "CreateDataset", { ownerSlug: u, slug, title: slug.replace(/-/g, " "), licenseName: "other", isPrivate: true, files });
+      const cd = await api("datasets.DatasetApiService", "CreateDataset", { ownerSlug: u, slug: ds, title: ds.replace(/-/g, " "), licenseName: "other", isPrivate: true, files });
       if (cd.error) throw new Error("Kaggle : " + cd.error);
       for (let i = 0; ; i++) {
-        const s = await api("datasets.DatasetApiService", "GetDatasetStatus", { ownerSlug: u, datasetSlug: slug });
+        const s = await api("datasets.DatasetApiService", "GetDatasetStatus", { ownerSlug: u, datasetSlug: ds });
         if (/ready/i.test(s.status || "")) break;
         if (/error|fail/i.test(s.status || "")) throw new Error("jeu de données refusé par Kaggle");
         if (i > 120) throw new Error("Kaggle ne prépare pas le jeu de données"); ev("prepa", 0, "Kaggle prépare la vidéo…"); await attendre(5000);
       }
       /* contrôle : chaque fichier est arrivé en entier (nom et taille exacte), sinon on s'arrête */
-      const lf = await api("datasets.DatasetApiService", "ListDatasetFiles", { ownerSlug: u, datasetSlug: slug, pageSize: 50 });
+      const lf = await api("datasets.DatasetApiService", "ListDatasetFiles", { ownerSlug: u, datasetSlug: ds, pageSize: 50 });
       const recus = Object.fromEntries((lf.datasetFiles || []).map(f => [f.name, +f.totalBytes]));
       for (const n in attendus) if (recus[n] !== attendus[n]) throw new Error("envoi incomplet : " + n + " (" + (recus[n] || 0) + " octets reçus sur " + attendus[n] + ")");
       const sk = await api("kernels.KernelsApiService", "SaveKernel", { slug: ref, newTitle: slug.replace(/-/g, " "), text: code, language: "python", kernelType: "script",
-        isPrivate: true, enableGpu: true, enableInternet: false, datasetDataSources: [ref], kernelDataSources: [], competitionDataSources: [], categoryIds: [] });
+        isPrivate: true, enableGpu: true, enableInternet: false, datasetDataSources: [u + "/" + ds], kernelDataSources: [], competitionDataSources: [], categoryIds: [] });
       if (sk.error) throw new Error("Kaggle : " + sk.error);
       let st = "", t1 = Date.now();
       for (;;) {
