@@ -81,7 +81,7 @@ le reste étant des tests et des documents ; `studio` a donc été relancé sur 
 | `reassemblage.test.mjs` | 5 réussis, 0 échoué |
 | `noyau.test.mjs` | versions équivalentes, choix automatique opérationnel |
 | **`effacer.test.mjs`** (nouveau) | **19 réussis, 0 échoué** (308 s) ; aucune erreur JavaScript |
-| `app.test.mjs --ia` | APP_V33 |
+| `app.test.mjs --ia` | 13 réussis, 0 échoué ; aucune erreur JavaScript (photos, comparateur, PNG, 12 Mpx, 4K paysage 3840×2160, 4K portrait 2160×3840, 720×1280, 1080p, taille d’origine, compte rendu, relief) — identique à la v3.2 |
 
 Incidents de test (consignés, aucun ne vient du code de l'app) :
 - Première exécution du gestionnaire : 3 échecs de téléchargement. Cause : un serveur de test v3.2 lancé à la main plus tôt
@@ -142,4 +142,10 @@ et demande un GPU de plusieurs Go. **Rien de cela n’est déclaré opérationne
 
 ## 9. Livraison
 
-LIVRAISON
+- Branche principale `main` avancée sur la v3.3 (avance rapide depuis `b458e8d`, aucune fusion manuelle) ; GitHub Pages publie l’app depuis `main`.
+- Branches de sauvegarde : `sauvegarde-v3.2` (`b458e8d`, état d’avant) et `sauvegarde-v3.3` (cette version) ; branche de travail `v3.3-effacer` gardée.
+- Archive complète : `retouche-video-v3.3.zip` (`git archive` du commit livré), extraite et contrôlée dans un dossier vide (liste des fichiers
+  et empreintes identiques au dépôt). Les modèles téléchargeables (MI-GAN, EdgeTAM, relief) n’y sont pas : ils sont récupérés par l’app
+  à leurs adresses figées et vérifiés par empreinte (MODELES_IA.md).
+- Documents : README.md, CHANGELOG.md, ARCHITECTURE.md, SECURITE.md, GUIDE_IPHONE.md, GUIDE_RECONSTRUCTION_IA.md (nouveau), MODELES_IA.md (nouveau),
+  LICENCES.md (+ LICENSE-MI-GAN.txt, LICENSE-EdgeTAM.txt), RESTAURATION_IA.md, AUTORISATIONS.md, GUIDE_CLOUD_GRATUIT.md, NOTES.md, ce rapport.
