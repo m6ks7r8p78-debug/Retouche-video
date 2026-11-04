@@ -770,9 +770,10 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     const inf=await demuxVideo(curFile);if(!inf||!inf.ns)throw new Error("IA rapide : vidéo illisible pour l’envoi.");
     const mo=x=>Math.round(x/1048576),reçu=Math.round(ow*oh*inf.ns*0.55/1048576);
     if(!(await STUDIO.consent("cloud")))throw new Error("IA rapide non autorisée : rien n’a été envoyé.");
-    if(!confirm("IA rapide sur serveur — envoi de ta vidéo\n\nFournisseur : Kaggle (Google), dans un espace PRIVÉ de ton compte.\nModèle : Real-ESRGAN general v3 (le même que dans l’app).\nBut : calculer la restauration IA de chaque image ("+inf.ns+" images, résultat en "+ow+"×"+oh+").\nConservation : la vidéo et le résultat sont supprimés de Kaggle dès le résultat récupéré, ou en cas d’échec.\nEnvoi : "+mo(curFile.size)+" Mo ; réception : environ "+reçu+" Mo (Wi-Fi conseillé).\n\nEnvoyer maintenant ?"))throw new Error("envoi annulé : rien n’a été envoyé.");
+    if(!confirm("IA rapide sur serveur — envoi de ta vidéo\n\nFournisseur : Kaggle (Google), dans un espace PRIVÉ de ton compte.\nModèle : Real-ESRGAN general v3 (le même que dans l’app).\nBut : calculer la restauration IA de chaque image ("+inf.ns+" images, résultat en "+ow+"×"+oh+").\nConservation : la vidéo et le résultat sont supprimés de Kaggle dès le résultat récupéré, ou en cas d’échec.\nEnvoi : "+mo(curFile.size)+" Mo ; réception : environ "+reçu+" Mo (Wi-Fi conseillé).\n\nEnvoyer maintenant ?"))throw new Error("envoi refusé : rien n’a été envoyé.");
     const stop=setInterval(()=>{if(cancel)KG.annuler()},500);let r;
     try{r=await KG.traiter({file:curFile,dw:v.videoWidth,dh:v.videoHeight,ow,oh,dn:+SRX.dn().toFixed(4),images:inf.ns},(et,f,t)=>{msg(t);const pg=$("#pg");if(pg)pg.value=et==="envoi"?f*.1:et==="recup"?.1+f*.05:pg.value})}
+    catch(e){const m=(e&&e.message)||String(e);if(cancel||/^annulé$/.test(m))throw new Error("annulé");throw new Error(/^IA rapide/.test(m)?m:"IA rapide : "+m)}
     finally{clearInterval(stop)}
     const ri=await demuxVideo(r.file);
     if(!ri||ri.ns!==inf.ns||ri.dw!==ow||ri.dh!==oh)throw new Error("IA rapide : le résultat reçu ne correspond pas à ta vidéo ("+(ri?ri.ns+" images, "+ri.dw+"×"+ri.dh:"illisible")+").");
@@ -2008,6 +2009,7 @@ $("#rv").onerror=()=>msg("La lecture a échoué (code "+($("#rv").error?$("#rv")
 /* encodeur de son disponible : AAC (le plus compatible, celui de l'iPhone), sinon Opus dans le MP4 ; le fichier final est relu pour vérifier */
 async function audioCfg(sr,ch,br){for(const codec of ["mp4a.40.2","opus"]){const c={codec,sampleRate:sr,numberOfChannels:Math.min(2,ch),bitrate:br};try{if((await AudioEncoder.isConfigSupported(c)).supported)return c}catch(e){}}return null}
 function friendly(m){
+  if(/^IA rapide|Kaggle|rien n’a été envoyé/.test(m))return "Échec : "+m+(/quota/i.test(m)?" (quota gratuit de cartes graphiques Kaggle épuisé pour la semaine : décoche « IA rapide » ou réessaie plus tard)":"");
   if(/encod/i.test(m))return "Échec : l’encodeur de ton iPhone a refusé ce format. Choisis Full HD et réessaie.";
   if(/canvas has no frame/i.test(m))return "Échec : une image n’a pas pu être lue. Réessaie, ou choisis Full HD.";
   if(/memory|quota|alloc|mémoire/i.test(m))return "Échec : la mémoire de l’iPhone est saturée. Choisis Full HD, ou traite une partie plus courte.";
