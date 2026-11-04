@@ -14,6 +14,7 @@ async function fresh() {
   const ctx = await browser.newContext(); const p = await ctx.newPage(); const errs = [];
   p.on("pageerror", e => errs.push(e.message));
   await p.goto(BASE + "/index.html"); await p.waitForFunction(() => window.MODELS && window.SR);
+  await p.evaluate(() => localStorage.setItem("autorisations", JSON.stringify({ modele: { ok: true } })));
   await p.evaluate(async () => {
     const info = async v => (await fetch("/__test/info?v=" + v)).json();
     const [a, b] = [await info(1), await info(2)];

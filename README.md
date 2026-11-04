@@ -41,4 +41,4 @@ Tout est calculé sur le téléphone : les photos et vidéos ne sont envoyées �
 Aucun service payant, aucune clé d’API, aucun abonnement. Seuls téléchargements : le modèle de profondeur (27 Mo, une fois,
 depuis Hugging Face, adresse figée sur une révision et empreinte vérifiée) et les vidéos chargées par lien.
 
-Documents : CHANGELOG.md, NOTES.md, MODELES.md, RAPPORT_*.md (audit, tests, sécurité, performances, licences), GUIDE_*.md (iPhone, cloud gratuit, dépannage).
+Documents : CHANGELOG.md, NOTES.md, MODELES.md, ARCHITECTURE, DECISIONS, ROADMAP, SECURITE, CONFIDENTIALITE, LICENCES, PERFORMANCES, COMPATIBILITE, GUIDE_* (iPhone, ordinateur, utilisateur, cloud gratuit), DEPANNAGE, RAPPORT_* (audit, tests, qualité, final).

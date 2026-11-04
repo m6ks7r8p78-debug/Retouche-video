@@ -19,6 +19,7 @@ const p = await ctx.newPage(); const errs = []; p.on("pageerror", e => errs.push
 const DEPTH = path.join(MED, "depth.onnx");
 if (fs.existsSync(DEPTH)) await p.route(/huggingface\.co\/.*model_quantized\.onnx/, r => r.fulfill({ status: 200, body: fs.readFileSync(DEPTH), headers: { "content-type": "application/octet-stream", "access-control-allow-origin": "*" } }));
 await p.goto(BASE + "/index.html"); await p.waitForFunction(() => window.MODELS && window.SR);
+  await p.evaluate(() => localStorage.setItem("autorisations", JSON.stringify({ modele: { ok: true } })));
 const results = [];
 async function test(name, fn) { const t0 = Date.now(); let ok = false, info = "";
   try { const r = await fn(); ok = r === true || (r && r.ok); info = r && r.info ? r.info : "" } catch (e) { info = "exception : " + e.message.split("\n")[0] }

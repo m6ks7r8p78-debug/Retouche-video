@@ -227,6 +227,8 @@ var MODELS = (() => {
   async function download0(id, opt) {
     const e = get(id); if (!e) throw fail("ABSENT"); if (e.integre) return;
     const c = compat(id); if (!c.ok) throw fail("INCOMPATIBLE", c.why);
+    /* autorisation (révocable dans ⚙️ Paramètres) avant tout téléchargement */
+    if (window.STUDIO && !STUDIO.granted("modele") && !(await STUDIO.consent("modele"))) throw fail("ANNULE", "téléchargement non autorisé");
     const st = await storage();
     if (st.quota != null && st.usage != null && st.quota - st.usage < e.taille * 1.3) throw fail("STOCKAGE", Math.round((st.quota - st.usage) / MB) + " Mo libres");
     const ctrl = new AbortController(); if (opt.signal) opt.signal.addEventListener("abort", () => ctrl.abort(), { once: true });
