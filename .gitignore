@@ -3,3 +3,6 @@ node_modules/
 tests/sorties/
 tests/medias/depth.onnx
 tests/medias/grande_12mpx.jpg
+tests/medias/migan.onnx
+tests/medias/edgetam_enc.onnx_data
+tests/medias/edgetam_dec.onnx_data

@@ -1,4 +1,4 @@
-# Autorisations (état réel du code, v3.2)
+# Autorisations (état réel du code, v3.3)
 
 Source : `studio.js` (objet `PERM`, fonctions `consent`, `granted`, `grant`, `revoke`). Les autorisations sont gardées
 sur l'appareil (clé `autorisations` du stockage local) et peuvent être données, retirées ou redemandées dans **⚙️ Paramètres**.
@@ -8,7 +8,7 @@ sur l'appareil (clé `autorisations` du stockage local) et peuvent être donnée
 | Clé | Usage | Ce qui quitte l'iPhone | Où c'est vérifié dans le code | Testé |
 |---|---|---|---|---|
 | `lien` | Charger une vidéo par lien (TikTok, Instagram, X, Reddit…) | le lien collé (et la vidéo récupérée transite par le serveur de l'app, qui ne stocke rien) | `index.html`, début de `LINK.go` : refus = aucune requête | oui (`tests/studio.test.mjs`) |
-| `modele` | Télécharger un modèle IA facultatif (relief) | rien de personnel : seule la demande du fichier, à Hugging Face | `models.js`, `download()` | oui |
+| `modele` | Télécharger un modèle IA facultatif (relief ; *v3.3* : effacement MI-GAN, sélection au toucher EdgeTAM) | rien de personnel : seule la demande du fichier, à Hugging Face | `models.js`, `download()` | oui |
 | `analyse_ia` | Analyse IA d'une image (version Claude uniquement) | une image réduite (768 px) de la vidéo | `index.html`, bouton « Analyse IA » | non (n'existe pas hors de Claude) |
 | `diagnostic` *(v3.2)* | Envoi automatique des mesures (version Claude uniquement) | des nombres : réglages, tailles, durées, vitesse de l'IA, navigateur — ni image, ni son, ni nom de fichier | `index.html`, `DIAG.flush()` | oui |
 
@@ -18,6 +18,9 @@ Règles appliquées :
 - **Aucune autorisation n'est déduite d'une autre** : chaque clé est vérifiée séparément.
 - Le bouton « 📋 Copier le diagnostic » reste local : il copie dans le presse-papiers, tu choisis où le coller.
 - Tout le traitement des photos, vidéos et sons se fait sur l'appareil : il n'a pas besoin d'autorisation réseau.
+- *v3.3* : importer, analyser (toucher), reconstruire, garder et exporter une photo dans « Effacer une zone » sont des actions locales,
+  chacune déclenchée par un geste explicite (rien n'est fait automatiquement) ; aucune ne fait de requête réseau. Pas de transfert cloud,
+  d'entraînement ni de réutilisation : ces autorisations n'existent toujours pas, faute de fonction.
 
 ## Ce qui n'existe pas encore (demandé par le cahier des charges)
 

@@ -1,4 +1,11 @@
-# Rapport de sécurité (v3.2)
+# Rapport de sécurité (v3.3)
+
+**v3.3 — Effacer une zone** : aucun envoi de photo ; trois nouveaux fichiers de modèle téléchargés depuis Hugging Face à des adresses
+figées, vérifiés par SHA-256, seulement après l’autorisation « Télécharger un modèle IA » (refus testé : aucune requête). Les deux
+petits fichiers de structure d’EdgeTAM sont livrés avec l’app et **revérifiés par empreinte à chaque chargement** (un fichier modifié est refusé).
+Les textes affichés par l’outil sont échappés ; le nom de fichier n’est jamais inséré dans la page comme du code. La carte des zones inventées
+et la provenance ne peuvent pas être désactivées. Données temporaires : tout reste en mémoire ; fermer l’outil libère les modèles (testé).
+
 
 - **Médias** : jamais envoyés à un serveur. Sorties réseau possibles, chacune soumise à autorisation (AUTORISATIONS.md) :
   fichier d’un modèle (Hugging Face, adresse figée + SHA-256), vidéo par lien (serveur de l’app, qui ne stocke rien), et,

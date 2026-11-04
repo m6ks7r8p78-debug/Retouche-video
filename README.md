@@ -12,7 +12,8 @@ Tout est calculé sur le téléphone : les photos et vidéos ne sont envoyées �
 3. Choisir la taille (vidéo) et le rendu : **Naturel**, **Équilibré** (conseillé), **Détails**, **Faible lumière** ou **Nuit → jour** (esthétique).
 4. « Améliorer » : progression réelle, puis compte rendu vérifié, comparateur avant / après (zoom jusqu’à 8× pour les photos), enregistrement.
 5. Outils → **Vitesse et sens de lecture** : accéléré, ralenti, à l’envers (Time Repair).
-6. Bouton **🧠 Modèles IA** (en haut) : modèles installés, place occupée, téléchargement, vérification, libération de mémoire, nettoyage.
+6. **Effacer une zone d’une photo (IA)** *(v3.3)* : peins ou touche un élément, l’IA remplit la zone ; les pixels inventés sont marqués sur une carte (GUIDE_RECONSTRUCTION_IA.md).
+7. Bouton **🧠 Modèles IA** (en haut) : modèles installés, place occupée, téléchargement, vérification, libération de mémoire, nettoyage.
 
 ## Fichiers
 
@@ -26,6 +27,7 @@ Tout est calculé sur le téléphone : les photos et vidéos ne sont envoyées �
 | `rnnoise.mjs` | nettoyage de la voix (RNNoise en WebAssembly) |
 | `mp4-muxer.js` | écriture du fichier MP4 |
 | `sw.js`, `manifest.webmanifest` | fonctionnement hors ligne et installation sur l’écran d’accueil |
+| `effacer.js`, `modeles/` | *(v3.3)* « Effacer une zone » : MI-GAN (effacement, MIT) et EdgeTAM (sélection au toucher, Apache-2.0), téléchargés à la première utilisation ; carte des zones inventées, provenance |
 | `studio.js` | ⚙️ Paramètres : autorisations, sauvegarde chiffrée, historique ; assistant « Dis ce que tu veux » |
 | `polices/` | polices de l’interface, hébergées avec l’app (aucune requête vers Google) |
 | `serveur/` | petit serveur gratuit (Cloudflare Workers) qui récupère une vidéo à partir d’un lien de réseau social |

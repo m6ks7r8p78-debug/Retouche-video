@@ -1,5 +1,7 @@
 # Modèles IA — fiches de validation
 
+> v3.3 : les fiches des modèles d’effacement (MI-GAN) et de sélection au toucher (EdgeTAM) sont dans **MODELES_IA.md**.
+
 Tous les modèles sont déclarés dans `models.js` (registre unique). Version exacte, source, licence et empreinte SHA-256
 y sont figées ; l’app refuse tout fichier dont l’empreinte ne correspond pas. Aucun coût : ni abonnement, ni API, ni serveur payant.
 Mesures faites dans Chrome sans écran avec un GPU **simulé sur le processeur** : la qualité est la même que sur iPhone

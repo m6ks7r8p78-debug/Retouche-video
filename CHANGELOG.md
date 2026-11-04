@@ -1,5 +1,20 @@
 # Journal des versions
 
+## v3.3 — 4 novembre 2026 (effacer une zone, sélection au toucher)
+- **Effacer une zone d’une photo** (accueil, ou depuis une photo améliorée) : tu peins la zone, l’IA la remplit (MI-GAN, licence MIT,
+  28 Mo téléchargés une fois après accord, calcul sur le téléphone). Proposition à **garder ou refuser** ; annuler, recommencer,
+  revenir à l’original ; zoom à deux doigts. Hors de la zone, la photo n’est **pas modifiée, au pixel près** (testé).
+- **Carte des zones inventées** : affichage dédié (rayures roses, opacité réglable), badge permanent « contient des zones inventées par l’IA »,
+  export de la carte en pleine taille et d’une **fiche de provenance** (modèle, empreinte, licence, zones, pixels inventés, date).
+- **👆 Sélection au toucher** (EdgeTAM, Meta, Apache-2.0, 40 Mo facultatifs) : un toucher propose le contour d’un objet, d’un accessoire
+  ou d’un élément de filtre AR ; on le corrige au pinceau ou à la gomme avant de reconstruire.
+- Gestionnaire de modèles : 3 entrées (`migan`, `edgetam`, `edgetam_dec`), adresses figées, empreintes vérifiées, mêmes règles que les autres.
+- Historique : chaque effacement gardé est noté (date, taille, pixels inventés) ; jamais l’image.
+- Correction pendant le développement : un téléchargement refusé affichait « la partie reçue est gardée » alors que rien n’avait été reçu.
+- Nouveau test `tests/effacer.test.mjs` (19 cas, vrais modèles) ; il échoue bien quand on introduit un défaut (2 défauts essayés : 5 échecs chacun).
+- Études : licences de ProPainter, CodeFormer (S-Lab, non commerciales) et CompleteMe (CC BY-NC-SA 4.0) relues à la source → écartés ;
+  quotas ZeroGPU relus sur la documentation officielle (GUIDE_CLOUD_GRATUIT.md). Documents : GUIDE_RECONSTRUCTION_IA.md, MODELES_IA.md, RAPPORT_v3.3.md.
+
 ## v3.2 — 4 novembre 2026 (audit, sécurité, vie privée)
 - **Modèles IA conservés lors des mises à jour** : le service worker effaçait tous les caches du site à chaque nouvelle version,
   dont le modèle de relief téléchargé (27 Mo, re-téléchargé ensuite) et les caches de l'app /radar/. Il ne retire plus que
