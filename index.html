@@ -515,7 +515,7 @@ const PROF={id:"equilibre",manual:false,
     PROF.rec=id;PROF.why=why;let saved=null;try{saved=localStorage.getItem("profil")}catch(e){}
     PROF.set(saved&&PROF.T[saved]?saved:id,null);PROF.manual=!!saved;return id},
   hint(){const h=document.querySelector("#profh");if(!h)return;
-    const t={naturel:"Corrections modérées, textures et grain d’origine préservés, l’IA est mêlée à l’original pour rester fidèle.",equilibre:"Compromis entre nettoyage, netteté et aspect naturel (réglages mesurés sur le banc de test).",details:"Netteté et restauration renforcées. Attention : sur une source très abîmée, des détails peuvent paraître artificiels (peau lissée, textures inventées)."}[PROF.id];
+    const t={naturel:"Corrections modérées, textures et grain d’origine préservés, l’IA est mêlée à l’original pour rester fidèle.",equilibre:"Compromis entre nettoyage, netteté et aspect naturel (réglages mesurés sur le banc de test).",details:"Netteté et restauration renforcées (surtout visible sans IA ; avec l’IA sur une source très abîmée, l’écart avec Équilibré est faible). Attention : des détails peuvent paraître artificiels (peau lissée, textures inventées)."}[PROF.id];
     h.textContent=t+(PROF.why?" Conseillé ici : "+PROF.NOM[PROF.rec]+" ("+PROF.why+")"+(PROF.manual&&PROF.id!==PROF.rec?" — ton choix est gardé.":"."):"")}
 };
 let show=1,looping=false,exporting=false,cancel=false,az=false,dl=null,url=null,outUrl=null,outBlob=null,curFile=null;
