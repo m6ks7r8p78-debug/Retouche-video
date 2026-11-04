@@ -18,9 +18,9 @@ const p = await browser.newPage(); await p.goto(BASE + "/index.html"); await p.w
 const SV = !!process.env.SANS_VISAGES; await p.evaluate(sv => MODELS.setOff("visages", sv), SV);
 const PROFS = (process.env.PROFS || "naturel,equilibre,details").split(",");
 const save = async f => { const d = await p.evaluate(async () => { const r = await fetch(outUrl); const a = new Uint8Array(await r.arrayBuffer()); let s = ""; for (let i = 0; i < a.length; i += 32768) s += String.fromCharCode(...a.subarray(i, i + 32768)); return btoa(s) }); fs.writeFileSync(f, Buffer.from(d, "base64")) };
-await p.selectOption("#pfmt", "png");
 for (const img of IMGS) {
   await p.setInputFiles("#fp", path.join(MED, img + ".jpg")); await p.waitForFunction(() => !document.querySelector("#rec").hidden);
+  await p.selectOption("#pfmt", "png");
   for (const [ia, profs] of [[false, ["equilibre"]], [true, PROFS]]) {
     await p.evaluate(ia => { const e = document.querySelector("#o_max"); e.checked = ia; e.dispatchEvent(new Event("change")) }, ia);
     for (const prof of profs) {
