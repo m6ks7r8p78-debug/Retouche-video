@@ -500,7 +500,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v3.5";/* seul endroit où changer le numéro de version */
+const VER="v3.6";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -1322,6 +1322,10 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       try{PROF.recommend({w:v.videoWidth,h:v.videoHeight,noise:m.noise,blk:m.blk,p50:m.p50,p98:m.p98})}catch(e){}
       const ad=LEARN.adapt(r.o);r.learn=ad.notes;
       REC.apply(r);
+      /* v3.6 : style de retouche de la personne, mesuré le 5 nov. 2026 en comparant ses réglages à la main avec le réglage automatique
+         sur la même vidéo : moins de contraste, couleurs plus vives, plus froid, légère correction de dominante, netteté ×2. */
+      {const ST={cs:-.05,br:-.02,co:-.10,sa:.17,wa:-.06,sh:.33},R={};S.forEach(([k,,lo,hi])=>R[k]=[lo,hi]);
+        for(const k in ST)P[k]=+Math.max(R[k][0],Math.min(R[k][1],P[k]+ST[k])).toFixed(3);P.wb=Math.max(P.wb||0,.1);sync()}
       if(r.o.bias){for(const k in r.o.bias)P[k]=Math.max(k==="co"||k==="sa"?.8:-.3,Math.min(k==="co"||k==="sa"?1.4:.3,P[k]+r.o.bias[k]));sync()}
       if(r.o.skip)r.it&&r.it.forEach((k,i)=>{const id={dust:"o_dust",defl:"o_defl",stab:"o_stab",voice:"o_voice"}[k];if(id&&r.o.skip[id]){REC.toggle(k,false,r);(r.off=r.off||{})[i]=true}});
       REC.show(r);LEARN.snap();

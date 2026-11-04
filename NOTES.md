@@ -88,3 +88,8 @@ Constat sur une vidéo test : avec l'IA seule (Équilibré, ai:1), peau lissée 
 - Couleurs verrouillées sur la version classique (mode de fusion « color » à 85 %) : l'IA n'apporte que la netteté.
 - Grain léger (motif 256 px, fusion « overlay » 35 %, décalé à chaque image pour ne pas rester figé).
 - Code : SRX.compose dans index.html. Sauvegarde : tag sauvegarde-v3.4.
+
+## v3.6 (5 nov. 2026) — réglage auto calé sur le style de la personne
+Comparaison de ses réglages à la main avec le réglage auto (même vidéo, 0:01). Décalage appliqué après chaque réglage auto :
+nettoyage −0,05 · luminosité −0,02 · contraste −0,10 · couleurs +0,17 · chaleur −0,06 · dominante ≥ 0,10 · netteté +0,33.
+Code : bloc « v3.6 » juste après REC.apply(r) dans index.html. L'apprentissage existant (LEARN) continue par-dessus.
