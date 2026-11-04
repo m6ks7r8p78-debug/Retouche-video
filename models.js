@@ -29,19 +29,6 @@ var MODELS = (() => {
       limites: "Lent sur iPhone (26 à 42 s par mégapixel mesurés sur l’iPhone du propriétaire, iOS 27.2, WebGPU). Sur une source très abîmée, peut lisser la peau ou inventer de fines textures. Inutile au-delà de 1,1 Mpx (la source contient déjà ses détails).",
       secours: "Amélioration classique sans IA (anti-blocs, débruitage, netteté, couleurs), toujours disponible.",
       validation: "Banc : 8 images abîmées, LPIPS 0,341–0,371 contre 0,393–0,420 sans IA (plus bas = mieux). Identique WebGPU/WebGL2 à 0,02/255 près." },
-    { id: "visages", nom: "Protection des visages", role: "Détection de visages",
-      modele: "Ultra-Light-Fast-Generic-Face-Detector-1MB, version RFB-320 (ONNX)",
-      version: "révision dffdddd (fichier models/onnx/version-RFB-320.onnx)",
-      fonction: "Repère les visages pour que la restauration IA y invente moins : la version classique (qui n’invente rien) y est davantage mêlée. Ne modifie pas les visages par elle-même.",
-      medias: "photo, vidéo (seulement quand la restauration IA est utilisée)", entree: "image réduite à 320×240", sortie: "boîtes des visages",
-      moteur: "ONNX Runtime Web 1.22.0 (WebAssembly)", url: "visages.onnx", integre: true, taille: 1270727,
-      sha256: "34cd7e60aeff28744c657de7a3dc64e872d506741de66987f3426f2b79f88017",
-      licence: "MIT (Linzaer, 2019) — usage commercial permis avec la mention de licence",
-      source: "https://github.com/Linzaer/Ultra-Light-Fast-Generic-Face-Detector-1MB", lourd: false,
-      memoire: "faible pour le modèle (1,3 Mo) ; le moteur WebAssembly occupe quelques dizaines de Mo (non mesuré sur iPhone)",
-      limites: "Visages très petits (moins d’environ 10 px de large dans l’image réduite), de profil ou masqués parfois manqués : ils sont alors traités comme le reste de l’image.",
-      secours: "Sans détection, l’image entière est traitée de la même façon (comme avant la v2.50).",
-      validation: "Visage trouvé (confiance 0,997 à 1) sur les versions petite, sombre et floue du portrait de test ; aucun faux visage sur la photo de café ; chat écarté par le seuil de 0,9." },
     { id: "depth", nom: "Effet de relief (profondeur)", role: "Estimation de profondeur",
       modele: "Depth Anything V2 Small — ONNX quantifié 8 bits (onnx-community)",
       version: "révision 4472b73 (fichier onnx/model_quantized.onnx)",
@@ -154,7 +141,6 @@ var MODELS = (() => {
     if (id === "sr") { const g = gl2(); if (navigator.gpu) return { ok: true, why: "WebGPU disponible" + (g.ok && g.fb && g.db >= 4 ? " (WebGL2 en secours)" : "") };
       return g.ok && g.fb && g.db >= 4 ? { ok: true, why: "WebGL2 (WebGPU absent)" } : { ok: false, why: "ni WebGPU ni WebGL2 complet" } }
     if (id === "depth") return window.WebAssembly && gl2().ok ? { ok: true, why: "WebAssembly + WebGL2" } : { ok: false, why: "WebAssembly ou WebGL2 absent" };
-    if (id === "visages") return window.WebAssembly ? { ok: true, why: "WebAssembly" } : { ok: false, why: "WebAssembly absent" };
     if (id === "voix") return window.WebAssembly && window.AudioEncoder && window.OfflineAudioContext ? { ok: true, why: "WebAssembly + encodeur audio" } : { ok: false, why: "encodeur audio absent (mettre iOS à jour)" };
     if (id === "filtres") return { ok: true, why: "WebGL" };
     return { ok: true, why: "" };

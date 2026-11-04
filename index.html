@@ -475,7 +475,6 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 </main>
 
 <script src="models.js"></script>
-<script src="faces.js"></script>
 <script src="sr-gpu.js"></script>
 <script src="sr.js"></script>
 <script src="depth.js"></script>
@@ -494,11 +493,12 @@ const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],r:1};
    - sh, dn, cs : multiplient netteté, réduction du bruit, nettoyage des couleurs ;
    - c : part de la correction de lumière / contraste / couleurs gardée (1 = toute, .5 = moitié) ;
    - hp : protection des hautes lumières ; srdn : décalage du débruitage du réseau IA (négatif = garde plus de texture) ;
-   - ai : part du résultat IA dans toute l'image, le reste venant de la version classique, qui n'invente rien (1 = IA seule) ;
-   - face : part de la version classique sur les visages repérés (protection contre les visages « cireux » ou redessinés).
+   - ai : part du résultat IA dans toute l'image, le reste venant de la version classique, qui n'invente rien (1 = IA seule).
+   Essai v2.50 écarté : mêler davantage de version classique sur les visages détectés (UltraFace) ; mesuré sur 3 portraits abîmés,
+   LPIPS du visage 0,370 → 0,459 (plus loin de l'original) : la version classique y remet les blocs de compression (tests/calibrage_visages.py).
    « Équilibré » = réglages mesurés sur le banc depuis la v2.45 (inchangés). */
 const PROF={id:"equilibre",manual:false,
-  T:{naturel:{sh:.5,dn:.6,cs:.6,c:.5,hp:.9,srdn:-.12,ai:.7,face:.6},equilibre:{sh:1,dn:1,cs:1,c:1,hp:.7,srdn:0,ai:1,face:.45},details:{sh:1.7,dn:1,cs:1,c:1,hp:.7,srdn:.15,ai:1,face:.25}},
+  T:{naturel:{sh:.5,dn:.6,cs:.6,c:.5,hp:.9,srdn:-.12,ai:.7},equilibre:{sh:1,dn:1,cs:1,c:1,hp:.7,srdn:0,ai:1},details:{sh:1.7,dn:1,cs:1,c:1,hp:.7,srdn:.15,ai:1}},
   NOM:{naturel:"Naturel",equilibre:"Équilibré",details:"Détails"},rec:"equilibre",why:"",
   k(){return PROF.T[PROF.id]||PROF.T.equilibre},
   /* valeur réellement appliquée d'un réglage */
@@ -667,7 +667,7 @@ function pass(pg,src,dst,w,h,set){
 }
 function draw(el){
   if(poolMode&&!el)return;
-  if(!el&&!srIn&&show&&SRX&&SRX.pc&&SRX.key===SRX.k()){const o=cur();srIn=true;srOrig=o;try{draw(SRX.pc)}finally{srIn=false;srOrig=null}SRX.compose(o,SRX.pcFaces);SRX.badge(1);return}
+  if(!el&&!srIn&&show&&SRX&&SRX.pc&&SRX.key===SRX.k()){const o=cur();srIn=true;srOrig=o;try{draw(SRX.pc)}finally{srIn=false;srOrig=null}SRX.compose(o);SRX.badge(1);return}
   const s0=el||cur();if(!poolMode)stabT=v.currentTime;
   if(!gl||!dims(s0)[0]||s0.readyState<2)return;
   const [w,h]=dims(s0);
@@ -736,31 +736,18 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
       if(!SRX.dc)SRX.dc=document.createElement("canvas");SRX.dc.width=w;SRX.dc.height=h;SRX.dc.getContext("2d").drawImage(cv,0,0);cv.width=W0;cv.height=H0;inp=SRX.dc}
     let c;try{c=await SRX.run(inp,cv.width/dims(el)[0],onTile,key)}
     catch(e){SRX.fail(e);return false}
-    const fb=await SRX.faces(inp,mode==="video"&&exporting?stabT:null);
     srIn=true;srOrig=el;try{draw(c)}finally{srIn=false;srOrig=null}
-    SRX.compose(el,fb);if(fb.length&&exporting&&mode==="video")SRX.faceFrames=(SRX.faceFrames||0)+1;return true},
-  /* visages de l'image (si la protection est disponible) ; pour une vidéo à l'export, suivis et lissés d'une image à l'autre */
-  async faces(el,t){
-    if(!window.FACES||!window.MODELS||MODELS.isOff("visages")||!MODELS.compat("visages").ok)return[];
-    try{const b=await FACES.detect(el);SRX.faceErr=null;return t!=null?FACES.track(b,t,curFile):b.map(x=>({...x,w:1}))}
-    catch(e){SRX.faceErr=MODELS.explain(e);return[]}},
-  /* mélange final, APRÈS les couleurs : l'image IA (déjà dans cv) est mêlée à la version classique de la même image, qui n'invente rien :
-     partout pour le profil Naturel (part 1 − ai), et davantage sur les visages (part « face », ovale aux bords fondus). */
-  compose(el,boxes){
-    const K=PROF.k(),g=Math.max(0,1-K.ai),fk=K.face||0,fb=(boxes||[]).filter(b=>b.w>0);SRX.lastFaces=fb.length;
-    if(g<=.001&&(!fb.length||fk<=.001))return;
+    SRX.compose(el);return true},
+  /* mélange final, APRÈS les couleurs : l'image IA (déjà dans cv) est mêlée à la version classique de la même image (part 1 − ai) */
+  compose(el){
+    const K=PROF.k(),g=Math.max(0,1-K.ai);
+    if(g<=.001)return;
     const W=cv.width,H=cv.height,mk=n=>{let c=SRX[n];if(!c)c=SRX[n]=document.createElement("canvas");if(c.width!==W||c.height!==H){c.width=W;c.height=H}return c};
-    const A=mk("cA"),B=mk("cB"),Mk=mk("cM"),xa=A.getContext("2d"),xb=B.getContext("2d"),xm=Mk.getContext("2d");
+    const A=mk("cA"),B=mk("cB"),xa=A.getContext("2d"),xb=B.getContext("2d");
     xa.globalCompositeOperation="copy";xa.drawImage(cv,0,0);xa.globalCompositeOperation="source-over";
     draw(el);/* version classique : mêmes réglages, mêmes couleurs, même stabilisation */
     xb.globalCompositeOperation="copy";xb.drawImage(cv,0,0);xb.globalCompositeOperation="source-over";
-    xm.clearRect(0,0,W,H);if(g>0){xm.fillStyle="rgba(0,0,0,"+g+")";xm.fillRect(0,0,W,H)}
-    const T=stabTR(),mx=x=>((x-.5-T[1])/T[0]+.5)*W,my=y=>((y-.5-T[2])/T[0]+.5)*H;/* boîtes repérées sur l'image source → position dans le résultat */
-    for(const b of fb){const x0=mx(b.x0),x1=mx(b.x1),y0=my(b.y0),y1=my(b.y1),rx=Math.max(2,(x1-x0)*.62),ry=Math.max(2,(y1-y0)*.70),a=Math.min(1,fk*b.w);
-      xm.save();xm.translate((x0+x1)/2,(y0+y1)/2);xm.scale(1,ry/rx);const gr=xm.createRadialGradient(0,0,0,0,0,rx);
-      gr.addColorStop(0,"rgba(0,0,0,"+a+")");gr.addColorStop(.6,"rgba(0,0,0,"+a+")");gr.addColorStop(1,"rgba(0,0,0,0)");xm.fillStyle=gr;xm.beginPath();xm.arc(0,0,rx,0,Math.PI*2);xm.fill();xm.restore()}
-    xb.globalCompositeOperation="destination-in";xb.drawImage(Mk,0,0);xb.globalCompositeOperation="source-over";
-    xa.drawImage(B,0,0);blit(A)},
+    xa.globalAlpha=g;    xa.drawImage(B,0,0);xa.globalAlpha=1;blit(A)},
   /* échec de l'IA : message clair selon la cause ; en cas de mémoire saturée, on libère les modèles avant de continuer sans IA */
   fail(e){const t=window.MODELS?MODELS.explain(e):{code:"MOTEUR",texte:(e&&e.message)||"erreur",solution:""};
     if(t.code==="MEMOIRE"&&window.MODELS)MODELS.freeAll();
@@ -780,10 +767,9 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
       const el=cur();if(!el||exporting||!show||(mode==="video"&&!v.paused)||!SRX.fits(el))return;
       const key=SRX.k();if(SRX.key===key&&SRX.pc)return;SRX.badge(2);
       let c;try{c=await SRX.run(el,cv.width/dims(el)[0],null,SRX.ck())}catch(e){SRX.fail(e);SRX.badge(0);return}
-      const fb=await SRX.faces(el,null);
       if(key!==SRX.k()||exporting||(mode==="video"&&!v.paused)){SRX.badge(0);return}
       if(!SRX.pc)SRX.pc=document.createElement("canvas");SRX.pc.width=c.width;SRX.pc.height=c.height;SRX.pc.getContext("2d").drawImage(c,0,0);
-      SRX.pcFaces=fb;SRX.key=key;draw()},700)}};
+      SRX.key=key;draw()},700)}};
 /* copie brute d'une image (déjà traitée) dans cv, sans aucun réglage */
 function blit(el){
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el);
@@ -1809,7 +1795,6 @@ const FREP={info:null,
       if(isFinite(dd)&&Math.abs(dd-ed)>Math.max(.15,1.5/x.fps[1]))warn("Durée lue "+dd.toFixed(2)+" s au lieu de "+ed.toFixed(2)+" s attendues.");
       if(Math.abs(x.fps[1]-x.fps[0])>.05)ok("Cadence : "+(Math.round(x.fps[0]*100)/100)+" → "+x.fps[1]+" images par seconde (option « Mouvement plus fluide »).");else ok("Cadence d’origine conservée : "+(Math.round(x.fps[0]*100)/100)+" images par seconde ✓");}
     else if(x.chk===null)warn("Le fichier n’a pas pu être relu pour vérification (le lecteur de cet appareil ne l’a pas ouvert à temps).");
-    if(x.faces>0)ok("Visages protégés sur "+x.faces+" image"+(x.faces>1?"s":"")+" : l’IA y est mêlée à la version classique (rendu "+PROF.NOM[PROF.id]+").");
     if(x.son)ok("Son : présent ✓");else if(x.why==="ta vidéo n’a pas de son")ok("Son : la vidéo d’origine n’en a pas.");else bad("Son absent : "+(x.why||"raison inconnue")+".");
     if(x.memDown)warn("Taille réduite automatiquement pour ne pas saturer la mémoire de l’iPhone.");
     if(x.retry4k)warn("La 4K n’a pas tenu sur cet iPhone : export refait en Full HD.");
@@ -2023,7 +2008,7 @@ $("#ex").onclick=async()=>{
       rdr=await makeSeq(off,OFPS);rdr0=!!rdr;
     }
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
-    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();try{FACES.reset()}catch(e){}SRX.lastFaces=0;SRX.faceFrames=0;
+    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();
     for(let i=0;i<total;i++){
       if(cancel||err)break;
       const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
@@ -2118,7 +2103,7 @@ $("#ex").onclick=async()=>{
       const frozen=!plan&&poolUp&&maxRun>=3;
       msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(frozen?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
       let chk=null;try{chk=await probeInfo(outBlob)}catch(e){}
-      try{const ro=FREP.out({chk,w:cfg.width,h:cfg.height,mo:(outBlob.size/1048576).toFixed(1),codec:cfg.codec,mbps:(cfg.bitrate/1e6).toFixed(1),frames:total,expected:plan?total:Math.max(1,Math.round(dT*OUTF)),faces:srUse?SRX.faceFrames||0:-1,son:!!wa,why:audioWhy,memDown:!!window.__memDown,retry4k:!!window.__retried4k,dupRun:frozen?maxRun+1:0,slow:!rdr0,ar:[v.videoWidth,v.videoHeight],fps:[OFPS,OUTF],dur:[dT,(plan?total:total)/OUTF]});
+      try{const ro=FREP.out({chk,w:cfg.width,h:cfg.height,mo:(outBlob.size/1048576).toFixed(1),codec:cfg.codec,mbps:(cfg.bitrate/1e6).toFixed(1),frames:total,expected:plan?total:Math.max(1,Math.round(dT*OUTF)),son:!!wa,why:audioWhy,memDown:!!window.__memDown,retry4k:!!window.__retried4k,dupRun:frozen?maxRun+1:0,slow:!rdr0,ar:[v.videoWidth,v.videoHeight],fps:[OFPS,OUTF],dur:[dT,(plan?total:total)/OUTF]});
         const l=$("#orep_l");l.textContent="";let nb=0;ro.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
         $("#orep_s").textContent=nb?"Compte rendu de l’export : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu de l’export : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro;window.__retried4k=false}catch(e){}
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
@@ -2774,8 +2759,7 @@ const PHOTO={last:null,
 function recipe(extra){
   const o=id=>{const e=$("#"+id);return e?e.checked:false};
   const r={app:VER,date:new Date().toISOString(),media:mode,source:mode==="photo"?dims(photoEl).join("×"):v.videoWidth+"×"+v.videoHeight,profil:PROF.NOM[PROF.id],
-    ia:SRX.on()?{modele:"Real-ESRGAN general v3 (v0.2.5.0)",moteur:window.SR?SR.engine:"?",debruitage:+SRX.dn().toFixed(2),part_ia:PROF.k().ai,
-      visages:{proteges:SRX.lastFaces||0,part_classique:PROF.k().face,detecteur:MODELS.isOff("visages")?"désactivé":SRX.faceErr?"indisponible":"UltraFace RFB-320"}}:"non",
+    ia:SRX.on()?{modele:"Real-ESRGAN general v3 (v0.2.5.0)",moteur:window.SR?SR.engine:"?",debruitage:+SRX.dn().toFixed(2),part_ia:PROF.k().ai}:"non",
     operations:[P.db>0&&"anti-blocs",PROF.v("dn")>0&&"réduction du bruit",PROF.v("sh")>0&&"netteté",PROF.v("cs")>0&&"nettoyage des couleurs",P.wb>0&&"équilibre des couleurs",FLT.sel>=0&&"retrait de filtre",
       mode==="video"&&o("o_dust")&&"poussières",mode==="video"&&o("o_defl")&&"anti-scintillement",mode==="video"&&o("o_stab")&&"stabilisation",mode==="video"&&o("o_voice")&&"voix",mode==="video"&&o("o_fluid")&&"fluidité"].filter(Boolean),
     reglages_appliques:Object.fromEntries(["br","co","sa","wa","sh","dn","cs","db"].map(k=>[k,+(+PROF.v(k)).toFixed(3)])),protection_hautes_lumieres:PROF.k().hp,...(extra||{})};
@@ -2807,8 +2791,6 @@ async function exportPhoto(){
     const ro=[["ok","Photo créée : "+W+"×"+H+" ("+(s>1?"agrandie ×"+(Math.round(s*10)/10).toString().replace(".",","):"taille d’origine")+"), "+(png?"PNG sans perte":"JPEG qualité 95 %")+", "+(blob.size/1048576).toFixed(1).replace(".",",")+" Mo. Fichier relu et vérifié ✓"],
       ["ok","Rendu : "+PROF.NOM[PROF.id]+(ia?" ; restauration IA (Real-ESRGAN general v3, moteur "+(SR.engine==="gpu"?"WebGPU":"WebGL2")+")":" ; sans IA")+"."]];
     if(s>1)ro.push([ia?"warn":"ok",ia?"Agrandissement par IA : une partie des fins détails est estimée par le réseau, elle n’existait pas dans l’original. Compare au zoom ci-dessous.":"Agrandissement classique : aucune information n’est inventée, l’image est seulement interpolée."]);
-    if(ia&&SRX.lastFaces)ro.push(["ok","Visage"+(SRX.lastFaces>1?"s":"")+" repéré"+(SRX.lastFaces>1?"s":"")+" : "+SRX.lastFaces+". L’IA y est mêlée à "+Math.round(PROF.k().face*100)+" % de version classique pour ne pas redessiner les traits."]);
-    else if(ia&&SRX.faceErr)ro.push(["warn","Protection des visages indisponible : "+SRX.faceErr.texte]);
     if(SRX.lastErr)ro.push(["warn","IA non utilisée : "+SRX.lastErr.texte]);
     orepShow(ro);
     msg("Terminé ! "+W+"×"+H+"."+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
