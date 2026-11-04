@@ -1,5 +1,14 @@
 # Journal des versions
 
+## v3.4 — 5 novembre 2026 (IA rapide sur serveur gratuit Kaggle)
+- Option « IA rapide sur serveur gratuit (Kaggle) » : la même IA (même fichier sr.bin, résultat identique à l'œil : PSNR 57–59 dB
+  contre l'app), calculée sur les 2 cartes graphiques gratuites du compte Kaggle. Vidéo de test : 1,1 min de calcul (180 images).
+- Jeton Kaggle dans ⚙️ Paramètres (gardé sur le téléphone, jamais sauvegardé) ; accord demandé avant chaque envoi ;
+  tout est supprimé chez Kaggle après récupération. Relais Cloudflare dédié : retouche-kaggle.retouche-ia.workers.dev.
+- Test d'intégration avec le vrai Kaggle (tests/ia_serveur.test.mjs) : refus sans jeton / envoi refusé = rien envoyé ;
+  export Full HD complet (180/180 images, son) ; ordre des images conforme (0 écart sur 56 contrôles) ; ménage vérifié.
+- Non encore fait : mesure sur une vraie vidéo 720×1280 de plusieurs minutes, essai sur iPhone, suite complète app --ia.
+
 ## v3.3 — 4 novembre 2026 (effacer une zone, sélection au toucher)
 - **Effacer une zone d’une photo** (accueil, ou depuis une photo améliorée) : tu peins la zone, l’IA la remplit (MI-GAN, licence MIT,
   28 Mo téléchargés une fois après accord, calcul sur le téléphone). Proposition à **garder ou refuser** ; annuler, recommencer,

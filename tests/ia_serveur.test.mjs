@@ -63,18 +63,21 @@ await test("Export Full HD avec l'IA calculée sur Kaggle : vidéo complète, bo
 
 await test("Ordre des images : chaque image exportée correspond à la bonne image de la source (aucun décalage)", async () => {
   if (!sortie) return { ok: false, info: "pas de vidéo" };
+  /* décalage propre à l'app pour ce fichier (horloge du fichier qui ne commence pas à 0) : rang = map(n) */
+  const dApp = await p.evaluate(async () => { const i = await demuxVideo(curFile), r = new SeqReader(curFile, i); r.setFps(OFPS); return r.map(60) - 60 });
   const py = `
 import subprocess, numpy as np, sys
 def lire(f):
     r = subprocess.run(["ffmpeg","-loglevel","error","-i",f,"-vf","scale=48:27:flags=area,format=gray","-fps_mode","passthrough","-f","rawvideo","-"],capture_output=True).stdout
     return np.frombuffer(r,np.uint8).reshape(-1,27,48).astype(float)
-A, B = lire(sys.argv[1]), lire(sys.argv[2]); n = min(len(A), len(B)); bad = 0; pires = []
-for i in range(2, n-2, 7):
-    e = [np.abs(A[i]-B[i+d]).mean() for d in (-2,-1,0,1,2)]
-    if int(np.argmin(e)) != 2 and e[2] - min(e) > 0.5: bad += 1; pires.append(i)
-print(bad, n, pires[:5])`;
-  const o = execFileSync("python3", ["-c", py, path.join(MED, VID), sortie]).toString().trim().split(" ");
-  return { ok: o[0] === "0", info: "images contrôlées toutes les 7 : décalages trouvés " + o[0] + " sur " + o[1] + " images" } });
+A, B = lire(sys.argv[1]), lire(sys.argv[2]); n = min(len(A), len(B)); d0 = int(sys.argv[3]); bad = 0; tot = 0
+for i in range(6, n-6, 3):
+    e = {d: np.abs(B[i]-A[i+d]).mean() for d in range(-4, 5)}
+    tot += 1
+    if min(e, key=e.get) != d0 and e[d0] - min(e.values()) > 0.5: bad += 1
+print(bad, tot)`;
+  const o = execFileSync("python3", ["-c", py, path.join(MED, VID), sortie, String(dApp)]).toString().trim().split(" ");
+  return { ok: o[0] === "0", info: "décalage de l'app pour ce fichier : " + dApp + " image(s) ; images exportées ne correspondant pas à ce rang : " + o[0] + " sur " + o[1] } });
 
 await test("Ménage : plus aucun jeu de données ni calcul « retouche-ia-… » de ce test chez Kaggle", async () => {
   const r = await p.evaluate(async () => { const u = await KG.moi();
