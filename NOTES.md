@@ -1,57 +1,51 @@
 # Notes de travail — Retouche vidéo
 
-À lire en premier pour reprendre le projet. État au 4 novembre 2026, version **v2.49** en ligne (GitHub Pages).
+À lire en premier pour reprendre le projet. État au 4 novembre 2026 : **v2.50** (studio IA). Point de restauration : tag `v2.49-sauvegarde`.
 
 ## Règles du projet
 - Règle absolue : ne jamais sacrifier la qualité pour la vitesse ; viser le résultat le plus proche du parfait.
 - Tout se calcule sur le téléphone (PWA), gratuit, utilisable par des débutants : réglages automatiques.
-- Chaque changement est mesuré sur le banc de test avant publication, puis testé de bout en bout (aperçu, photo, photo animée, export vidéo, regroupement, avant / après) dans Chrome sans écran.
-- Une version en test va d'abord sur une branche, puis sur `main` quand le test complet est réussi.
-- Numéro de version : constante `VER` en haut du script de `index.html` (un seul endroit) ; changer aussi `C` dans `sw.js` quand des fichiers hors ligne changent.
+- Chaque changement est mesuré (banc de qualité) puis testé de bout en bout (`tests/`, voir `tests/README.md`) avant publication.
+- Une version en test va d'abord sur une branche (`studio-ia` pour la v2.50), puis sur `main` quand le test complet est réussi.
+- Numéro de version : constante `VER` en haut du script de `index.html` ; changer aussi `C` dans `sw.js` quand des fichiers hors ligne changent.
+- Aucune fonction affichée sans traitement réel ; une piste qui ne gagne pas à la mesure est retirée et documentée (`MODELES.md`).
 
 ## Ce que fait chaque pièce
 | Pièce | Rôle |
 |---|---|
-| `index.html` | toute l'app : interface, rendu WebGL (shader `FS` : couleurs, filtres, protection des hautes lumières `hp`), analyse automatique `analyze()` / `REC`, export WebCodecs, son, outils |
-| `sr.js` | « Qualité maximale » : Real-ESRGAN general v3 (64 canaux × 32 couches) en WebGL2 ; choisit `sr-gpu.js` (WebGPU) s'il marche, sinon WebGL2 |
-| `sr-gpu.js` | même réseau en WebGPU (compute shaders), identique au WebGL2 à 0,02/255 près |
-| `sr.bin` | poids du modèle en demi-précision (2 jeux : débruitage fort / faible, mélangés) |
-| `depth.js`, `ort/` | effet de relief des photos animées (Depth Anything V2 Small via ONNX Runtime Web, 27 Mo téléchargés une fois) |
-| `filtres.png` | 25 filtres Snapchat / Instagram (tables 17³ aller + retour) ; les 6 derniers appris sur de vraies paires avec / sans filtre |
-| `serveur/worker.js` | serveur Cloudflare « retouche-serveur » (v4, en ligne) : récupère les vidéos depuis un lien ; origine limitée à l'app, redirections vérifiées, 40 demandes / min |
+| `index.html` | interface, rendu WebGL (shader `FS`), analyse vidéo `REC` / photo `PHOTO`, profils `PROF`, IA `SRX`, export WebCodecs, comparateur photo `PV`, recette `recipe()` |
+| `models.js` | gestionnaire central des modèles (registre, SHA-256, téléchargement avec reprise IndexedDB, installation atomique, versions, retour arrière, nettoyage, fenêtre « Modèles IA ») |
+| `sr.js` / `sr-gpu.js` / `sr.bin` | Real-ESRGAN general v3 ; WebGPU avec 2 versions de calcul (1 ou 4 pixels par fil, choisie par appareil au premier usage, clé `sr_noyau`), repli WebGL2 |
+| `depth.js` | relief (Depth Anything V2 Small, adresse figée révision 4472b73, empreinte vérifiée) |
+| `filtres.png`, `rnnoise.mjs` | retrait de filtres, voix ; vérifiés par empreinte au chargement |
+| `serveur/worker.js` | serveur Cloudflare « retouche-serveur » (inchangé en v2.50) |
 
-## Mesures clés (banc : 8 images Kodak abîmées, LPIPS plus bas = mieux)
-| Méthode | Réseau social | Vieux téléphone | Filtre beauté |
-|---|---|---|---|
-| Simple agrandissement | 0,406 | 0,431 | 0,432 |
-| App sans IA | 0,393 | 0,418 | 0,420 |
-| Modèle IA (grand) | 0,341 | 0,346 | 0,371 |
-| Modèle rapide (essayé, refusé) | 0,368 | 0,394 | 0,401 |
+## Profils de rendu (v2.50)
+Ils dosent ce que l'analyse automatique a réglé (`P` reste la base) : `PROF.T` dans `index.html`.
+- Naturel : corrections de couleur ×0,5, netteté ×0,5, débruitage IA −0,12, 30 % de version classique mêlée à l'IA.
+- Équilibré (conseillé, réglages mesurés depuis la v2.45) ; Détails : netteté ×1,7, débruitage IA +0,15.
+- Conseil automatique : Naturel pour une source HD propre, sinon Équilibré ; Détails jamais imposé.
+- Mesures (portrait abîmé, LPIPS) : Équilibré 0,186, Détails 0,190, Naturel 0,195 (meilleurs PSNR/SSIM), sans IA 0,348.
 
-- Vitesse réelle de l'IA sur l'iPhone (iOS 27.2, WebGPU) : 26 à 42 s par mégapixel. Photo 720×1280 ≈ 30 s ; vidéo de plusieurs minutes : des dizaines d'heures → l'IA est décochée automatiquement au-delà d'1 h de calcul (on peut la recocher sur un extrait).
-- Équilibre automatique des couleurs retiré (v2.49) : la règle « zones presque grises » voyait une fausse dominante sur 20 photos propres sur 24 et refroidissait l'image (peau prise pour du gris).
-- Contraste automatique : le blanc n'est remonté que pour une image voilée ; une scène sombre voulue reste sombre (v2.46).
+## Mesures clés
+- Vitesse IA sur l'iPhone du propriétaire (v2.49, WebGPU) : 26 à 42 s par mégapixel. La v2.50 ajoute un calcul « 4 pixels par fil » :
+  identique au pixel près, 1,9 à 2,4× plus rapide sur GPU simulé ; **gain réel sur iPhone à mesurer** (Modèles IA → Mesurer la vitesse).
+- Protection des visages (UltraFace) essayée puis retirée : LPIPS visage 0,370 → 0,459 (voir `MODELES.md`).
+- Analyse d'une photo 12 Mpx : 19,6 s → 5 ms (miniature faite une fois au chargement).
 
 ## Historique récent
 | Version | Changement |
 |---|---|
-| v2.49 | équilibre auto des couleurs retiré ; IA décochée pour une vidéo de plus d'1 h de calcul ; durée estimée selon l'extrait |
+| v2.50 | gestionnaire de modèles + fenêtre « Modèles IA » ; profils Naturel / Équilibré / Détails ; analyse mesurée des photos ; comparateur avec zoom 1–8× ; export PNG ; taille personnalisée ; vérification des fichiers exportés (relus : taille, format d'image, durée, cadence) ; recette du traitement ; calcul WebGPU 4 pixels/fil ; modèle de profondeur figé ; corrections : faux « images figées », double stabilisation (poussières + IA), réglages d'une vidéo repris par la photo suivante, téléchargements simultanés, analyse lente des grandes photos ; suite de tests |
+| v2.49 | équilibre auto des couleurs retiré ; IA décochée pour une vidéo de plus d'1 h de calcul |
 | v2.48 | moteur IA WebGPU, repli WebGL2 |
-| v2.47 | bouton « Copier le diagnostic pour Claude » (onglet Outils) |
-| v2.46 | scènes sombres voulues plus éclaircies |
-| v2.45 | protection des hautes lumières ; réglages appliqués dans le diagnostic |
-| v2.44 | code simplifié (écriture MP4, encodeur, options) ; regroupement de vidéos avec son réparé |
-| v2.43 | effet de relief ; contraste auto corrigé ; IA dans la photo animée ; serveur v4 |
-| v2.39–v2.42 | arrivée de la qualité maximale (Real-ESRGAN), ancienne petite IA retirée |
-| v2.38 | 6 filtres appris sur de vraies paires |
-| v2.37 | son des exports réparé (configuration AAC) |
+| v2.45–v2.47 | protection des hautes lumières, scènes sombres, diagnostic |
 
 ## Prochaines pistes
-1. Optimiser le calcul WebGPU (aujourd'hui une petite part de la puissance de la puce) — conseillé en premier.
-2. Modèle IA plus léger (moyen), à mesurer sur le banc.
-3. Serveur avec carte graphique (payant, vidéos hors du téléphone) — à décider par le propriétaire.
-4. Plus de paires photo avec / sans filtre (scènes variées) pour le retrait de filtre.
-5. Simplifications restantes : un seul module de mesures d'image, un seul lecteur MP4, un seul thème CSS.
+1. Lire sur l'iPhone la vitesse « 4 pixels par fil » (Modèles IA → Mesurer la vitesse, ou diagnostic) et décider s'il faut aller plus loin (demi-précision f16).
+2. Serveur avec carte graphique (payant) pour les longues vidéos — décision du propriétaire, non engagée.
+3. Plus de paires avec / sans filtre pour le retrait de filtre.
+4. Vérifier sur iPhone : persistance du stockage (bouton « Demander la protection du stockage »), mémoire en 4K.
 
 ## Diagnostic
-Onglet Outils → « 📋 Copier le diagnostic pour Claude » : nombres seulement (réglages appliqués, moteur IA, vitesse, temps d'export), aucune image.
+Onglet Outils → « 📋 Copier le diagnostic pour Claude » : nombres seulement (réglages, profil, moteur et version de calcul IA, vitesse, temps d'export), aucune image.
