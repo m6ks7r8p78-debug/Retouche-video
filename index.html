@@ -556,6 +556,10 @@ async function measureFps(){
 }
 let mode="video",photoEl=null,wd;
 function cur(){return mode==="photo"&&photoEl?photoEl:v}
+/* miniature (640 px au plus) pour les mesures : faite une fois au chargement de la photo, depuis l'image décodée ;
+   relire chaque fois la photo complète (12 Mpx) dans la mémoire graphique bloquait l'app plusieurs secondes */
+let photoThumb=null;
+function small(){return mode==="photo"&&photoThumb?photoThumb:cur()}
 function dims(s){return [s.videoWidth||s.naturalWidth||s.width||0,s.videoHeight||s.naturalHeight||s.height||0]}
 function setMode(){
   const ph=mode==="photo";
@@ -806,7 +810,7 @@ function neutralGains(el){
 }
 async function balanceColors(){
   const gs=[];
-  if(mode==="photo"){const g=neutralGains(cur());if(g)gs.push(g)}
+  if(mode==="photo"){const g=neutralGains(small());if(g)gs.push(g)}
   else{
     const t0=v.currentTime,dur=v.duration||1;v.pause();
     for(const f of [.1,.25,.4,.55,.7,.85]){try{await seekEl(v,Math.min(dur-.05,dur*f));const g=neutralGains(v);if(g)gs.push(g)}catch(e){}}
@@ -824,7 +828,7 @@ async function balanceColors(){
 function analyze(){
   /* analyse d’une image : points noir/blanc (percentiles), couleurs ternes, dominante chaude ou froide — réglages doux */
   const W=64,H=36,c=document.createElement("canvas");c.width=W;c.height=H;
-  const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(cur(),0,0,W,H);
+  const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(small(),0,0,W,H);
   const d=x.getImageData(0,0,W,H).data,n=W*H,hist=new Float32Array(256);
   let r=0,g=0,b=0,k=0,sat=0;
   for(let i=0;i<d.length;i+=4){
@@ -1323,7 +1327,7 @@ const FLT={sel:-1,sel2:-1,mx:.5,f:1,n:0,tex:null,data:null,
     const box=$("#flt");box.hidden=false;$("#fltb").hidden=true;
     const g=$("#flt_g");g.textContent="Préparation des aperçus…";
     try{await FLT.load()}catch(e){const t=MODELS.explain(e);g.textContent="Impossible de charger la bibliothèque de filtres : "+t.texte+" "+t.solution;return}
-    const src=cur(),[w,h]=dims(src),TW=120,TH=Math.round(TW*h/w);
+    const src=small(),[w,h]=dims(src),TW=120,TH=Math.round(TW*h/w);
     const c0=document.createElement("canvas");c0.width=TW;c0.height=TH;const x0=c0.getContext("2d",{willReadFrequently:true});x0.drawImage(src,0,0,TW,TH);
     const base=x0.getImageData(0,0,TW,TH),d=base.data,np=TW*TH;
     const lum=a=>{const y=new Float32Array(np);for(let i=0,j=0;j<np;i+=4,j++)y[j]=(.299*a[i]+.587*a[i+1]+.114*a[i+2])/255;return y};
@@ -2722,6 +2726,8 @@ $("#fp").onchange=e=>{
     const k=Math.min(1,4096/Math.max(im.naturalWidth,im.naturalHeight));
     const c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
     c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    {const ks=Math.min(1,640/Math.max(im.naturalWidth,im.naturalHeight)),t=document.createElement("canvas");t.width=Math.max(1,Math.round(im.naturalWidth*ks));t.height=Math.max(1,Math.round(im.naturalHeight*ks));
+      const tx=t.getContext("2d",{willReadFrequently:true});tx.imageSmoothingQuality="high";tx.drawImage(im,0,0,t.width,t.height);photoThumb=t}
     /* l'original reste disponible pour le comparateur (libéré à la photo suivante) */
     if(photoURL)URL.revokeObjectURL(photoURL);photoURL=u;window.__photoFile=f;window.__photoNat=[im.naturalWidth,im.naturalHeight];
     try{FLT.reset()}catch(e){}photoEl=c;mode="photo";v.pause();
@@ -2736,7 +2742,7 @@ $("#fp").onchange=e=>{
 const PHOTO={last:null,
   analyze(){
     const el=photoEl;if(!el)return;const [w,h]=dims(el);
-    const f=AZ.grab(el,Math.min(640,w)),st=AZ.stats(f),noise=AZ.noise(f),sharp=AZ.sharp(f);let blk=null;try{blk=AZ.block(el)}catch(e){}
+    const th=photoThumb||el,f=AZ.grab(th,Math.min(640,dims(th)[0])),st=AZ.stats(f),noise=AZ.noise(f),sharp=AZ.sharp(f);let blk=null;try{blk=AZ.block(el)}catch(e){}
     const m={kind:"photo",w,h,noise,sharp,blk,p2:st.p2,p50:st.p50,p98:st.p98,sat:st.sat};PHOTO.last=m;
     const n=[],it=[],big=w*h>1100000;
     n.push("Définition : "+w+"×"+h+" ("+(w*h/1e6).toFixed(1).replace(".",",")+" Mpx). "+(big?"Déjà détaillée : nettoyage léger, sans IA (elle n’ajouterait rien).":"Petite : agrandissement "+(Math.max(w,h)<1500?"×3":"×2")+(SRX.on()?" avec restauration IA ; une partie des détails sera estimée, pas d’origine.":" (IA désactivée)."))); it.push(null);
