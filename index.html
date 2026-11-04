@@ -1805,7 +1805,8 @@ const FREP={info:null,
     if(x.memDown)warn("Taille réduite automatiquement pour ne pas saturer la mémoire de l’iPhone.");
     if(x.retry4k)warn("La 4K n’a pas tenu sur cet iPhone : export refait en Full HD.");
     if(x.dupRun>=3)warn("Quelques images semblent figées (série de "+x.dupRun+") : si la vidéo saccade, réessaie.");
-    if(x.slow)warn("Lecture rapide image par image indisponible pour ce fichier : méthode plus lente utilisée (même qualité).");
+    if(x.slow&&x.big)ok("Au-delà du Full HD, les images sont lues une à une par la méthode classique, choisie pour ménager la mémoire de l’iPhone (même qualité).");
+    else if(x.slow)warn("Lecture rapide image par image indisponible pour ce fichier : méthode plus lente utilisée (même qualité).");
     return o}
 };
 
@@ -2109,7 +2110,7 @@ $("#ex").onclick=async()=>{
       const frozen=!plan&&poolUp&&maxRun>=3;
       msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(frozen?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
       let chk=null;try{chk=await probeInfo(outBlob)}catch(e){}
-      try{const ro=FREP.out({chk,w:cfg.width,h:cfg.height,mo:(outBlob.size/1048576).toFixed(1),codec:cfg.codec,mbps:(cfg.bitrate/1e6).toFixed(1),frames:total,expected:plan?total:Math.max(1,Math.round(dT*OUTF)),son:!!wa,why:audioWhy,memDown:!!window.__memDown,retry4k:!!window.__retried4k,dupRun:frozen?maxRun+1:0,slow:!rdr0,ar:[v.videoWidth,v.videoHeight],fps:[OFPS,OUTF],dur:[dT,(plan?total:total)/OUTF]});
+      try{const ro=FREP.out({chk,w:cfg.width,h:cfg.height,mo:(outBlob.size/1048576).toFixed(1),codec:cfg.codec,mbps:(cfg.bitrate/1e6).toFixed(1),frames:total,expected:plan?total:Math.max(1,Math.round(dT*OUTF)),son:!!wa,why:audioWhy,memDown:!!window.__memDown,retry4k:!!window.__retried4k,dupRun:frozen?maxRun+1:0,slow:!rdr0,big:cfg.width*cfg.height>2073600*1.2,ar:[v.videoWidth,v.videoHeight],fps:[OFPS,OUTF],dur:[dT,(plan?total:total)/OUTF]});
         const l=$("#orep_l");l.textContent="";let nb=0;ro.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
         $("#orep_s").textContent=nb?"Compte rendu de l’export : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu de l’export : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro;window.__retried4k=false}catch(e){}
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
