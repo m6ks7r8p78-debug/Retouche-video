@@ -3,7 +3,7 @@
 // trouver le fichier vidéo de meilleure qualité et le renvoyer à l'app, avec les bons en-têtes.
 // Aucune vidéo n'est stockée : elle transite seulement.
 
-const VERSION = "4";
+const VERSION = "5";
 const UA_PC = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 // hôtes que /proxy accepte de relayer (rien d'autre : pas de relais ouvert)
 const PROXY_OK = /^(www\.reddit\.com|old\.reddit\.com|v\.redd\.it|video\.twimg\.com|api\.fxtwitter\.com|[a-z0-9-]+\.media\.tumblr\.com)$/i;
@@ -11,9 +11,9 @@ const PROXY_OK = /^(www\.reddit\.com|old\.reddit\.com|v\.redd\.it|video\.twimg\.
 // sites autorisés à appeler ce serveur depuis un navigateur (l'app sur GitHub Pages, sa version dans Claude, les tests locaux) :
 // un autre site ne peut plus s'en servir comme téléchargeur sur ton quota gratuit
 const ORIGINS = /^https:\/\/(m6ks7r8p78-debug\.github\.io|[a-z0-9-]+\.claudeusercontent\.com|claude\.ai)$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
-let ORIGIN = "";
+/* l'origine autorisée est posée sur la réponse finale, requête par requête (v5) : avant, une variable globale
+   partagée pouvait donner à une requête l'en-tête CORS d'une autre requête traitée en même temps */
 const cors = (h = {}) => ({
-  "access-control-allow-origin": ORIGIN || "null",
   vary: "origin",
   "access-control-allow-methods": "GET, OPTIONS",
   "access-control-expose-headers": "x-nom, x-qualite, content-length",
@@ -211,6 +211,7 @@ async function bluesky(u) {
   if (!v || !v.cid) throw new Err("pas_video", "Cette publication Bluesky ne contient pas de vidéo.");
   const did = post.author.did;
   let ep = "https://bsky.social";
+  if (did.startsWith("did:web:") && !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(did.slice(8)) || /^did:web:[\d.]+$/.test(did)) throw new Err("lien", "Compte Bluesky non pris en charge.");
   try { const dj = await (await fetch(did.startsWith("did:web:") ? "https://" + did.slice(8) + "/.well-known/did.json" : "https://plc.directory/" + did)).json(); const sv = (dj.service || []).find(x => x.type === "AtprotoPersonalDataServer"); if (sv) ep = sv.serviceEndpoint } catch (x) {}
   const q = v.aspectRatio ? v.aspectRatio.width + "x" + v.aspectRatio.height : "";
   return stream(ep + "/xrpc/com.atproto.sync.getBlob?did=" + encodeURIComponent(did) + "&cid=" + v.cid, { "user-agent": UA_PC }, "bluesky-" + m[2] + ".mp4", q);
@@ -304,10 +305,15 @@ function tooMany(ip) {
 
 export default {
   async fetch(req) {
+    const origin = req.headers.get("origin") || "", ok = ORIGINS.test(origin);
+    if (origin && !ok) return new Response("Origine non autorisée.", { status: 403 });
+    const res = await handle(req);
+    const out = new Response(res.body, res); out.headers.set("access-control-allow-origin", ok ? origin : "null"); out.headers.set("vary", "origin");
+    return out;
+  },
+};
+async function handle(req) {
     const u = new URL(req.url);
-    const origin = req.headers.get("origin") || "";
-    ORIGIN = ORIGINS.test(origin) ? origin : "";
-    if (origin && !ORIGIN) return new Response("Origine non autorisée.", { status: 403 });
     if (u.pathname !== "/" && u.pathname !== "/etat" && tooMany(req.headers.get("cf-connecting-ip") || "?")) return fail("limite", "Trop de demandes : réessaie dans une minute.", 429);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors({ "access-control-max-age": "86400" }) });
     try {
@@ -344,5 +350,4 @@ export default {
       if (e instanceof Err) return fail(e.code, e.message, e.s);
       return fail("erreur", "Erreur du serveur : " + String(e && e.message || e).slice(0, 120), 500);
     }
-  },
-};
+}
