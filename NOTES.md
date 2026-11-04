@@ -1,6 +1,6 @@
 # Notes de travail — Retouche vidéo
 
-À lire en premier pour reprendre le projet. État au 4 novembre 2026 : **v2.50** (studio IA). Point de restauration : tag `v2.49-sauvegarde`.
+À lire en premier pour reprendre le projet. État au 4 novembre 2026 : **v3.0**. Points de restauration : tags `v2.49-sauvegarde`, `v2.50`. Point de restauration : tag `v2.49-sauvegarde`.
 
 ## Règles du projet
 - Règle absolue : ne jamais sacrifier la qualité pour la vitesse ; viser le résultat le plus proche du parfait.
@@ -36,12 +36,14 @@ Ils dosent ce que l'analyse automatique a réglé (`P` reste la base) : `PROF.T`
 ## Historique récent
 | Version | Changement |
 |---|---|
+| v3.0 | Time Repair (objet `TR` : plan d’images dans le temps de la source, son WSOLA / cassette / inversé), profils `nuit` et `jour` (uniforme `gm` du shader, gain ×3 max, noirs gardés), VFR et ralentis détectés, secours Opus (`audioCfg`), serveur v5 (à redéployer) |
 | v2.50 | gestionnaire de modèles + fenêtre « Modèles IA » ; profils Naturel / Équilibré / Détails ; analyse mesurée des photos ; comparateur avec zoom 1–8× ; export PNG ; taille personnalisée ; vérification des fichiers exportés (relus : taille, format d'image, durée, cadence) ; recette du traitement ; calcul WebGPU 4 pixels/fil ; modèle de profondeur figé ; corrections : faux « images figées », double stabilisation (poussières + IA), réglages d'une vidéo repris par la photo suivante, téléchargements simultanés, analyse lente des grandes photos ; suite de tests |
 | v2.49 | équilibre auto des couleurs retiré ; IA décochée pour une vidéo de plus d'1 h de calcul |
 | v2.48 | moteur IA WebGPU, repli WebGL2 |
 | v2.45–v2.47 | protection des hautes lumières, scènes sombres, diagnostic |
 
 ## Prochaines pistes
+0. Redéployer `serveur/worker.js` (v5) sur Cloudflare ; découper `index.html` en modules (risqué sans iPhone de test, reporté).
 1. Lire sur l'iPhone la vitesse « 4 pixels par fil » (Modèles IA → Mesurer la vitesse, ou diagnostic) et décider s'il faut aller plus loin (demi-précision f16).
 2. Serveur avec carte graphique (payant) pour les longues vidéos — décision du propriétaire, non engagée.
 3. Plus de paires avec / sans filtre pour le retrait de filtre.

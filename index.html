@@ -1798,6 +1798,8 @@ const FREP={info:null,
     if(r.hdr)warn("Vidéo HDR ("+r.hdr+(r.bits===10?", 10 bits":"")+") : le résultat sera en couleurs standard (SDR), comme la plupart des vidéos partagées. Les zones très lumineuses peuvent paraître un peu moins éclatantes.");
     if(r.son===false)ok("Pas de piste son dans le fichier : le résultat sera muet.");
     else if(r.acodec&&!/AAC/.test(r.acodec))warn("Son au format "+r.acodec+" : il sera converti, ce qui peut prendre plus de mémoire.");
+    if(r.vfr)ok("Cadence variable (fréquent sur iPhone en faible lumière) : chaque image garde son instant ; l’export produit une cadence constante de "+(Math.round((r.fps||30)*100)/100)+" i/s, sans décalage du son.");
+    if(r.fps&&r.fps>=100)warn("Vidéo à "+Math.round(r.fps)+" images par seconde : c’est souvent un ralenti iPhone. Pour le voir au ralenti, utilise Outils → Vitesse (0,25× pour 120 i/s → 30 i/s).");
     if(r.moovFin)ok("Index du fichier placé à la fin (fréquent après un envoi par messagerie) : aucun problème.");
     if(dur>300)warn("Vidéo longue ("+fmtT(dur)+") : l’export prendra du temps et l’app adaptera la taille ou le débit pour ne pas saturer la mémoire de l’iPhone. Garde l’écran allumé et l’app au premier plan.");
     if(w*h>3840*2160*1.01)warn("Très grande définition : l’export se fera au maximum en 4K.");
@@ -1810,7 +1812,9 @@ const FREP={info:null,
   show(o,title){const d=$("#frep"),l=$("#frep_l");l.textContent="";let nb=0;
     o.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
     $("#frep_s").textContent=title||(nb?"Rapport du fichier : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Rapport du fichier : tout est en ordre");d.classList.toggle("warn",nb>0);d.hidden=false},
-  async run(file){try{const r=await FREP.inspect(file);if(curFile!==file)return;try{r.fps=await containerFps(file)}catch(e){}if(curFile!==file)return;FREP.info=r;const o=FREP.issues(r,v);FREP.show(o);try{DIAG.send("fichier",{fichier:r,points:o.filter(x=>x[0]!=="ok").map(x=>x[1])})}catch(e){}}catch(e){}},
+  async run(file){try{const r=await FREP.inspect(file);if(curFile!==file)return;try{r.fps=await containerFps(file)}catch(e){}
+    /* cadence variable : écarts entre les horodatages des images (fréquent sur iPhone en faible lumière) */
+    try{const vi=await demuxVideo(file);if(vi&&vi.ns>10){const d=[];for(let i=1;i<vi.ns;i++)d.push(vi.dts[i]-vi.dts[i-1]);d.sort((x,y)=>x-y);const med=d[d.length>>1]||1;r.vfr=(d[Math.floor(d.length*.95)]-d[Math.floor(d.length*.05)])/med>.25}}catch(e){}if(curFile!==file)return;FREP.info=r;const o=FREP.issues(r,v);FREP.show(o);try{DIAG.send("fichier",{fichier:r,points:o.filter(x=>x[0]!=="ok").map(x=>x[1])})}catch(e){}}catch(e){}},
   /* rapport de sortie : ce qui a été produit, et pourquoi si quelque chose manque */
   out(x){const o=[];const ok=(t)=>o.push(["ok",t]),warn=(t)=>o.push(["warn",t]),bad=(t)=>o.push(["bad",t]);
     ok("Fichier créé : "+x.w+"×"+x.h+", "+x.mo+" Mo, format "+(x.codec.startsWith("hvc")?"HEVC (compact)":"H.264 (classique)")+", "+x.mbps+" Mbit/s.");

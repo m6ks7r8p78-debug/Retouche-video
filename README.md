@@ -9,9 +9,10 @@ Tout est calculé sur le téléphone : les photos et vidéos ne sont envoyées �
 
 1. Ouvrir l’app dans Safari (puis Partager → « Sur l’écran d’accueil » pour l’installer).
 2. « Choisir une vidéo » ou « Choisir une photo ». L’app analyse le fichier et règle tout (carte « Analyse automatique »).
-3. Choisir la taille (vidéo) et le rendu : **Naturel** (fidèle), **Équilibré** (conseillé) ou **Détails** (plus poussé).
+3. Choisir la taille (vidéo) et le rendu : **Naturel**, **Équilibré** (conseillé), **Détails**, **Faible lumière** ou **Nuit → jour** (esthétique).
 4. « Améliorer » : progression réelle, puis compte rendu vérifié, comparateur avant / après (zoom jusqu’à 8× pour les photos), enregistrement.
-5. Bouton **🧠 Modèles IA** (en haut) : modèles installés, place occupée, téléchargement, vérification, libération de mémoire, nettoyage.
+5. Outils → **Vitesse et sens de lecture** : accéléré, ralenti, à l’envers (Time Repair).
+6. Bouton **🧠 Modèles IA** (en haut) : modèles installés, place occupée, téléchargement, vérification, libération de mémoire, nettoyage.
 
 ## Fichiers
 
@@ -39,3 +40,5 @@ Tout est calculé sur le téléphone : les photos et vidéos ne sont envoyées �
 
 Aucun service payant, aucune clé d’API, aucun abonnement. Seuls téléchargements : le modèle de profondeur (27 Mo, une fois,
 depuis Hugging Face, adresse figée sur une révision et empreinte vérifiée) et les vidéos chargées par lien.
+
+Documents : CHANGELOG.md, NOTES.md, MODELES.md, RAPPORT_*.md (audit, tests, sécurité, performances, licences), GUIDE_*.md (iPhone, cloud gratuit, dépannage).

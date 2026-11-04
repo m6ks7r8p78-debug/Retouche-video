@@ -54,6 +54,12 @@ Secours : son d’origine conservé.
 
 Intégrée (`filtres.png`, SHA-256 `804891ac…3ed4`). Données apprises (pas un réseau de neurones), propres à l’app.
 
+## 5. Faible luminosité (sans réseau de neurones)
+Relèvement des ombres par gamma sur la luminance (gain ≤ ×3, noirs < 6 % préservés), choisi pour amener la médiane vers 0,42.
+Portrait sombre de test, contre l’original bien exposé : Équilibré PSNR 8,84 / LPIPS 0,421 → Faible luminosité 15,36 / 0,347.
+Zero-DCE, Retinexformer, MIRNet, LLFormer étudiés : non intégrés en v3.0 (pas de poids ONNX vérifiés et testés dans cette session ;
+le gain devrait être mesuré contre cette méthode simple avant tout ajout).
+
 ## Modèles étudiés et écartés
 
 | Piste | Décision | Raison |
@@ -62,4 +68,4 @@ Intégrée (`filtres.png`, SHA-256 `804891ac…3ed4`). Données apprises (pas un
 | Protection des visages (détecteur UltraFace RFB-320, MIT, 1,3 Mo) | essayé puis retiré (v2.50) | détection parfaite sur les portraits abîmés (confiance 0,997–1), mais mêler la version classique sur le visage éloigne de l’original : LPIPS visage 0,370 → 0,459 ; elle y remet les blocs de compression (tests/calibrage_visages.py) |
 | CodeFormer | écarté | licence S-Lab non commerciale (incompatible avec un futur abonnement) ; tendance à inventer un visage |
 | GFPGAN | écarté | poids d’environ 350 Mo, trop lourds pour Safari sur iPhone ; peut changer l’identité |
-| Restauration vidéo temporelle (BasicVSR++, RVRT…) et Real-ESRGAN x4plus | écartés | calcul des dizaines de fois plus lourd que le modèle actuel, déjà de 26 à 42 s par mégapixel sur iPhone |
+| Restauration vidéo temporelle (BasicVSR++, RVRT…), SwinIR, Real-ESRGAN x4plus, RIFE (interpolation) | écartés en v3.0 | calcul des dizaines de fois plus lourd que le modèle actuel, déjà de 26 à 42 s par mégapixel sur iPhone |
