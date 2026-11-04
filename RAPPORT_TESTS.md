@@ -8,6 +8,7 @@ Environnement : Chrome sans écran (Playwright), GPU **simulé** sur processeur 
 | `tests/gestionnaire.test.mjs` (modèles : téléchargement, reprise, SHA-256, corruption, stockage, mises à jour, nettoyage…) | oui | 24 réussis, 0 échoué ; 2 non testables (éviction Safari réelle, saturation mémoire réelle) |
 | `tests/app.test.mjs --ia` (photos, IA, comparateur, PNG, 12 Mpx, vidéos 4K paysage/portrait, 720p, 1080p, origine, relief) | oui | 13 réussis, 0 échoué |
 | `tests/v3.test.mjs` (vitesse ×2, envers, ralenti 0,5× fluide, son, profils faible lumière) | oui | 7 réussis, 0 échoué |
+| `tests/studio.test.mjs` (autorisations : lien et modèle refusés = rien envoyé ; sauvegarde chiffrée : bonne / mauvaise phrase, fichier modifié ; assistant ; fenêtre Paramètres) | oui | 8 réussis, 0 échoué |
 | `tests/noyau.test.mjs` (calcul WebGPU 4 pixels/fil) | oui | identique au pixel près, choix automatique opérationnel |
 | Serveur v5 (CORS par requête, origine étrangère, adresse interne) | oui, en local (Node) | réussi ; **non déployé** sur Cloudflare |
 | Banc de qualité (profils, faible luminosité) | oui | voir MODELES.md |
