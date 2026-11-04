@@ -1,5 +1,21 @@
 # Journal des versions
 
+## v3.2 — 4 novembre 2026 (audit, sécurité, vie privée)
+- **Modèles IA conservés lors des mises à jour** : le service worker effaçait tous les caches du site à chaque nouvelle version,
+  dont le modèle de relief téléchargé (27 Mo, re-téléchargé ensuite) et les caches de l'app /radar/. Il ne retire plus que
+  ses propres anciennes versions. Nouveau test `tests/sw.test.mjs` (échoue sur la v3.1, réussit sur la v3.2).
+- **Faille corrigée** : une sauvegarde non chiffrée piégée pouvait exécuter du code à l'ouverture de ⚙️ Paramètres (historique
+  affiché sans échappement). Tout est maintenant affiché comme du texte. Test ajouté (code exécuté sur la v3.1, plus sur la v3.2).
+- **Plus aucune requête vers Google à l'ouverture** : polices hébergées avec l'app (`polices/`, licence OFL).
+- **Secours mp4-muxer verrouillé** : le fichier de secours (jsDelivr) est refusé s'il ne correspond pas à son empreinte (SRI).
+- **Autorisation « diagnostic »** (version Claude) : les mesures ne sont plus envoyées automatiquement sans accord ;
+  bouton « Autoriser » ajouté dans ⚙️ Paramètres pour chaque autorisation.
+- Vérifications d'audit : `sr.bin` identique bit à bit aux poids officiels Real-ESRGAN v0.2.5.0 (FP16) ; ONNX Runtime Web et mp4-muxer
+  identiques aux paquets npm ; serveur **v5 bien en ligne** (la mention « à redéployer » de la v3.0 était périmée).
+- Points de restauration : branches `sauvegarde-v2.49`, `sauvegarde-v2.50`, `sauvegarde-v3.0`, `sauvegarde-v3.1`
+  (les tags cités dans les notes n'avaient jamais été créés).
+- Documents : AUTORISATIONS.md (nouveau), RESTAURATION_IA.md (étude des modèles de suppression AR, visage, corps, cloud), mises à jour.
+
 ## v3.1 — 4 novembre 2026
 - **Remise en ordre automatique des morceaux** (Outils → Regrouper des vidéos → « 🧩 Remettre dans l’ordre automatiquement ») :
   choisis les morceaux dans n’importe quel ordre ; l’app compare la dernière image de chaque morceau à la première des autres
@@ -17,7 +33,7 @@
 - Rapport de fichier : cadence variable (VFR) et ralentis iPhone (≥ 100 i/s) détectés.
 - Son : secours Opus quand l’encodeur AAC manque (fichier relu ; sinon export sans son, expliqué).
 - Serveur v5 : origine CORS fixée par requête (plus de variable globale partagée), comptes Bluesky did:web limités aux vrais domaines.
-  **À redéployer sur Cloudflare** (la version en ligne reste la v4 tant que ce n’est pas fait).
+  ~~À redéployer sur Cloudflare~~ — constaté en ligne le 4 novembre 2026 (audit v3.2 : `/etat` répond version 5).
 
 ## v2.50 — 4 novembre 2026
 Gestionnaire de modèles, profils Naturel / Équilibré / Détails, analyse photo, comparateur avec zoom, export PNG, taille personnalisée,

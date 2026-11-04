@@ -1,4 +1,32 @@
-# Rapport d’audit (v2.50 → v3.0)
+# Rapport d’audit
+
+## Audit du 4 novembre 2026 (v3.1 → v3.2)
+
+Base examinée : dépôt `m6ks7r8p78-debug/Retouche-video`, branche `main`, commit `d563af9` (**v3.1**, alors que le prompt
+de reprise annonçait v3.0). Version publiée sur GitHub Pages : identique octet par octet au dépôt (`index.html`, `sw.js`, `studio.js`).
+Autres branches présentes : `studio-ia` (= main), `qualite-maximale`, `simplifications`, `webgpu`, `v2-dev`, `wip-*` (anciennes).
+
+| Vérification | Résultat |
+|---|---|
+| Version dans le code (`VER`) | v3.1 ; NOTES / ARCHITECTURE / RAPPORT_FINAL disaient encore v3.0 (corrigé) |
+| Points de restauration annoncés (tags `v2.49-sauvegarde`, `v2.50`) | **absents** de GitHub ; créés en branches `sauvegarde-*` (l'envoi de tags est refusé par l'environnement) |
+| Serveur Cloudflare | **v5 en ligne** (`/etat`), contrairement aux documents ; origine étrangère → 403, adresse interne → refusée, CORS par requête |
+| `sr.bin` | identique bit à bit aux poids officiels Real-ESRGAN v0.2.5.0 (x4v3 + wdn-x4v3) convertis en FP16 |
+| Modèle de relief | empreinte SHA-256 conforme au fichier téléchargé à l'adresse figée |
+| `rnnoise.mjs`, `filtres.png` | taille et SHA-256 conformes au registre |
+| `ort/` (ONNX Runtime Web 1.22.0), `mp4-muxer.js` (5.1.3) | identiques aux paquets npm officiels (non couverts par le registre d'empreintes) |
+| Requêtes réseau à l'ouverture | Google Fonts sans autorisation → **corrigé** (polices locales) |
+| Code tiers de secours | mp4-muxer depuis jsDelivr sans contrôle → **corrigé** (SRI sha384) |
+| Service worker | effaçait les modèles téléchargés et les caches /radar/ à chaque mise à jour → **corrigé**, testé |
+| Historique (⚙️ Paramètres) | injection de code possible via une sauvegarde piégée → **corrigé**, testé |
+| Diagnostic (version Claude) | envoyé sans autorisation → **corrigé** (autorisation `diagnostic`) |
+| Chiffrement AES-256-GCM | conforme : sel 16 o et nonce 12 o aléatoires à chaque sauvegarde, PBKDF2-SHA256 250 000 tours |
+| AUTORISATIONS.md | absent → créé, conforme au code |
+
+Fonctions réellement opérationnelles, partielles et absentes : tableau des « 12 systèmes » ci-dessous (toujours exact pour la v3.2).
+Recherche sur la suppression AR, la restauration de visage et la complétion du corps : RESTAURATION_IA.md.
+
+## Audit précédent (v2.50 → v3.0)
 
 Base : dépôt `Retouche-video`, version v2.50 (identique à l’archive Retouche-video-v2.50.zip), auditée dans cette session et la précédente.
 

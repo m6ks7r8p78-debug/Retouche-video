@@ -37,5 +37,30 @@ await test("Assistant : vitesse et sens préparés ; génération refusée honn�
   return { ok: document.querySelector("#tr_r").checked && document.querySelector("#tr_v").value === "0.5" && out.some(x => x[0] === "warn" && /Génération/.test(x[1])), info: out.map(x => x[0]).join(",") } }));
 await test("Fenêtre ⚙️ Paramètres : autorisations, sauvegarde, historique", async () => { await p.evaluate(() => document.querySelector("#stb").click()); await p.waitForFunction(() => document.querySelector("#stg").open, null, { timeout: 120000 });
   const t = await p.textContent("#stg"); await p.evaluate(() => document.querySelector('#stg [data-s="close"]').click()); return { ok: /Autorisations/.test(t) && /Sauvegarde/.test(t) && /Historique/.test(t), info: "affichée et fermée" } });
+/* v3.2 */
+await test("Sauvegarde piégée restaurée : l’historique s’affiche sans exécuter de code", async () => {
+  await p.evaluate(async () => { window.__pwned = 0; localStorage.removeItem("recettes");
+    const piege = [{ date: "x", media: '<img src=x onerror="window.__pwned=1">', source: "<b>gras</b>", sortie: "<script>window.__pwned=2<\/script>", profil: "\"'><svg onload=window.__pwned=3>", operations: ["<i>op</i>"], ia: "non" }, "pas un objet"];
+    await STUDIO.restore({ format: "retouche-sauvegarde", v: 1, chiffre: false, contenu: { data: { recettes: JSON.stringify(piege) } } }) });
+  await p.evaluate(() => document.querySelector("#stb").click()); await p.waitForTimeout(400);
+  const r = await p.evaluate(() => ({ pw: window.__pwned, img: document.querySelectorAll("#stg li img, #stg li svg, #stg li script, #stg li b").length, txt: document.querySelector("#stg").textContent }));
+  await p.evaluate(() => { document.querySelector('#stg [data-s="close"]').click(); localStorage.removeItem("recettes") });
+  return { ok: r.pw === 0 && r.img === 0 && /<b>gras<\/b>/.test(r.txt), info: "code exécuté : " + (r.pw ? "OUI" : "non") + " ; balises créées : " + r.img + " ; texte affiché tel quel" } });
+await test("Diagnostic (version Claude) : rien d’envoyé sans autorisation, envoyé après « Autoriser »", async () => {
+  const r = await p.evaluate(async () => { const sent = []; localStorage.removeItem("autorisations");
+    window.claude = { use: async k => k === "db" ? { collection: () => ({ doc: id => ({ set: async x => sent.push(id) }) }) } : null };
+    localStorage.setItem("diag_hist", JSON.stringify([{ id: "t1", kind: "test", sent: false }])); await DIAG.flush(); const avant = sent.length;
+    document.querySelector("#stb").click(); await new Promise(r => setTimeout(r, 300));
+    const btn = document.querySelector('#stg [data-s="grant"][data-k="diagnostic"]'); if (btn) btn.click(); await new Promise(r => setTimeout(r, 300)); await DIAG.flush();
+    const apres = sent.length, g = STUDIO.granted("diagnostic"); document.querySelector('#stg [data-s="close"]').click();
+    STUDIO.revoke("diagnostic"); delete window.claude; localStorage.removeItem("diag_hist"); return { avant, apres, g, btn: !!btn } });
+  return { ok: r.avant === 0 && r.btn && r.g && r.apres >= 1, info: "avant : " + r.avant + " envoi ; bouton Autoriser : " + (r.btn ? "présent" : "absent") + " ; après : " + r.apres + " envoi(s)" } });
+await test("Polices de l’app chargées localement (aucune requête vers Google)", async () => {
+  await p.close(); /* dernier test : libère la page précédente (vidéo chargée, GPU simulé sur processeur) */
+  const cx = await b.newContext(), p2 = await cx.newPage(); const ext = []; p2.on("request", r => { const u = new URL(r.url()); if (u.hostname !== "localhost") ext.push(u.hostname) });
+  await p2.goto("http://localhost:" + PORT + "/index.html", { waitUntil: "domcontentloaded", timeout: 120000 }); await p2.waitForFunction(() => window.STUDIO, null, { timeout: 120000 }); await p2.evaluate(() => document.fonts.ready);
+  const f = await p2.evaluate(async () => { await document.fonts.load("700 20px 'Bricolage Grotesque'"); await document.fonts.load("400 14px 'Instrument Sans'"); await document.fonts.load("400 14px 'DM Mono'");
+    return ["700 20px 'Bricolage Grotesque'", "400 14px 'Instrument Sans'", "400 14px 'DM Mono'"].map(x => document.fonts.check(x)) });
+  await cx.close(); return { ok: f.every(Boolean) && ext.length === 0, info: "polices : " + f.map(x => x ? "chargée" : "absente").join(", ") + " ; requêtes externes : " + (ext.length ? [...new Set(ext)].join(", ") : "aucune") } });
 console.log("Erreurs JavaScript : " + (errs.length ? errs.join(" | ") : "aucune"));
 console.log(`Résultat : ${res.filter(Boolean).length} réussis, ${res.filter(x => !x).length} échoués.`); await b.close(); srv.kill(); process.exit(res.every(Boolean) && !errs.length ? 0 : 1);

@@ -10,8 +10,7 @@
 <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAFMElEQVR42u2dW0/UQBiGp0uJcaHlN/CXTBQ0UZSDCAsIXKAkXBpRIss5sgt4B2r8Uf4Gt0sAwdQbDhq2pdvtzHSmz5NeEExlO/P0e7+vy8Hxl94LgFaUWAJADkAOyA5XhCGrAFQOQA7ILlZYBIiSAzuAWAFiBYgVIFYAOYCeA+g5gFgBYgWIFTCOX+MnfbX7xAoQK5C8bLw6uSweu7KKB5UD6DlsRtYOUjkMzZTTlh/Tc4Ci2kHlAHoOmzJl4uzWZ077Pt8jVkBdshArppWNybO2Pk+sgJTq4fIDb/aokfVWEism0aj8Tv2vyAH0HIUrGOftlhZ/p5tR1monps4798nf7u5ADrBLi5b/VTpFiJVcOXEh2zZ/221HDtzQ7sT0hXr//C03gRygm+t9UmBJEieQo1iWtOXEv7GiJ1caa+/iLmZuqcjn+ptdQojGzJ8MtNjsEkKk6yypHDkuJJf7msaS63M7ATlMoH/58oOfiwqcuIbH55C/nuMOOnlVFp/bvxxTPPyNUrZPragcgBzQPo43s8gqmEVjtkV2+OsOlQOIFYiZV28VCRllQ/DGmyXI2UTesseOODn0NVaby+xqohy5NTT4a6Ixd/OxJFycMGA8uVoxX+1oWRJhqPLAjE4tuV7Mm0iRtVmON/VG0YVtfWB3Mwua6bdCiMa841dDmZUDM0wsIUrWsyRCIfvADEl++Kuh1I1jlGWCjcTxKgtyBd/+GJedqjoegyuEvgV0eiclyhHsRF6YV0GLvK+knvdWMMOIFStJbkdbXueCUNAGW3dENwCyvmJJZiVc4Y5Xkjgr0iqH0qohvMkFqkDqw4tqEG0ZZZmcjVlVvtkHInEpHBQOKgekqByUDkoHsYIbxApkKYfaBx36nhIEu5+seNyhblWLVTmC3dVgd5WSkLhyFKVw/KcIhSPJUdCeI6itBjVKCKNsrCJCCG98nnGFWIlSpEqsECvRftSrQb3KOvCcA0XaeEKqtgnI/V+GCupVb2zOtJaDt+yV+bG3FuytsQ7IgSJxchR+XLlLkcKOK7wrm8SPdSGENzpbsMccxEpyRfbXg/11eg6IU4RRtrijbEI/vJHXjLIQocjBRnCwQaxAnCI2x0qots6HYWilH73DM1pTxbpfNWkHerUgVjBD17QCaMEom5kWL6Zz95oYZTGDWEGLHMWK4gJooBbPc6+FLX9SIzTNjCkTXibPOdCCWNGvxZBpWhArqsyoGHiTEytowSiLFvQcuTHjmflm0HNI0GLSlpucngMtiBXpZjy1zgxiJQstJiy9yXlXFjOIFcjJqvL9HEDPQemgcgA9B9BzAD0H5LXnUPsraJqHNf6OX+qjeViLdMOs30Pa+2ScO1oB8tZZwx8dbh7VKAIpjuZRTaisGyJ0tfwEWvOo3vP4JTd9co6/1iPbDWk76JQHx3RdlRACRfK8gNLluPPyIDWyby2X2ZIJVscoe3X0yC9ORSwbg2OyN66k7krAtPV0ygMjSturb/tsbWdajCr7WiXF43rPwCgbnN6MgVGVm+WUH43outTj71SRxE7oQKcckHNcETLKQlTPAYAcgBxgfs9x/ONLXH/+cJhzMzmXygHIAYyyQnT2HSycS+UAYgV0xkouX1fIuUrOjcUpPxjiFgFiBZADLB9lgcoByAGMsmCbHNgBxAq0XTkYVoDKAfQcQOUARlkgVoBYAWIFqBxAzwHECgCxAsQKUDmAngOoHEDPAcQKECuAHFDEWCFXgMoByAGMssAoC8QKIAcwygKVA5ADCspf0iguEXq/3EYAAAAASUVORK5CYII=">
 <title>Retouche vidéo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="polices/polices.css"><!-- polices hébergées avec l'app (v3.2) : plus aucune requête vers Google à l'ouverture -->
 <style>
 /* Layout : bande d'en-tête façon pellicule, puis une colonne (écran) ou deux colonnes (aperçu fixe + commandes). */
 :root{--bg:#eef1f0;--panel:#fbfcfb;--ink:#14211f;--mut:#566764;--line:#d1dad7;--acc:#0b7a80;--accink:#ffffff;--acc-soft:#dcefef;--tc:#a4620f;--stage:#0a0f10;--ok:#2c7a4b;
@@ -493,7 +492,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 <script src="sr.js"></script>
 <script src="depth.js"></script>
 <script>
-const VER="v3.1";/* seul endroit où changer le numéro de version */
+const VER="v3.2";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -1412,6 +1411,8 @@ const DIAG={last:null,
     const h=DIAG.hist();h.push(d);DIAG.save(h);const b=$("#diagb");if(b){b.hidden=false;b.textContent="Copier le diagnostic ("+Math.min(h.length,300)+" mesures)"}
     await DIAG.flush()},
   async flush(){
+    /* v3.2 : rien n'est envoyé sans l'autorisation « diagnostic » (donnée dans ⚙️ Paramètres) ; sinon les mesures restent sur l'appareil */
+    if(!window.STUDIO||!STUDIO.granted("diagnostic"))return;
     const db=await DIAG.db();if(!db)return;const h=DIAG.hist();let ch=false;
     for(const d of h){if(d.sent)continue;try{const {sent,...x}=d;await db.collection("diag").doc(d.id).set(x);d.sent=true;ch=true}catch(e){break}}
     if(ch)DIAG.save(h)}
@@ -3047,7 +3048,8 @@ $("#sv").onclick=async()=>{
 </script>
 <script src="studio.js"></script>
 <script src="mp4-muxer.js"></script>
-<script>if(!window.Mp4Muxer)document.write('<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js"><\/script>')</script>
+<script>/* secours si le fichier local manque : même fichier (npm 5.1.3), refusé par le navigateur s'il ne correspond pas à l'empreinte */
+if(!window.Mp4Muxer)document.write('<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js" integrity="sha384-SujebcgqCNlLMRSnVkLD+3eWOzsxobv30Bct+0lV+fc1EHHEuvcePwmDgMzpnptj" crossorigin="anonymous"><\/script>')</script>
 <script>/* hors ligne : l'app se garde sur le téléphone (version installée depuis Safari) ; en ligne, la dernière version est toujours chargée en premier */
 try{if("serviceWorker" in navigator&&location.protocol==="https:"&&/github\.io$/.test(location.hostname))navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}</script>
 </body>

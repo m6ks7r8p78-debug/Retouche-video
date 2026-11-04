@@ -7,8 +7,10 @@ var STUDIO = (() => {
   const PERM = {
     lien: { nom: "Charger une vidéo par lien", envoi: "le lien collé est envoyé au serveur de l’app (Cloudflare Workers) qui récupère la vidéo ; aucune vidéo n’y est conservée", compte: "aucun compte" },
     modele: { nom: "Télécharger un modèle IA", envoi: "rien de personnel : seul le fichier du modèle est téléchargé depuis sa source officielle (Hugging Face), puis vérifié", compte: "aucun compte" },
-    analyse_ia: { nom: "Analyse IA (version Claude)", envoi: "une image réduite de ta vidéo est envoyée à Claude pour proposer des réglages", compte: "ton compte Claude" }
+    analyse_ia: { nom: "Analyse IA (version Claude)", envoi: "une image réduite de ta vidéo est envoyée à Claude pour proposer des réglages", compte: "ton compte Claude" },
+    diagnostic: { nom: "Envoi automatique du diagnostic (version Claude)", envoi: "des nombres seulement (réglages, tailles, durées, vitesse de l’IA, modèle de téléphone) sont rangés dans la base privée de la version Claude ; aucune image, aucun son, aucun nom de fichier", compte: "ton compte Claude" }
   };
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const all = () => { try { return JSON.parse(localStorage.getItem(AK) || "{}") } catch (e) { return {} } };
   const put = o => { try { localStorage.setItem(AK, JSON.stringify(o)) } catch (e) {} };
   function granted(k) { const a = all()[k]; return !!(a && a.ok) }
@@ -19,6 +21,7 @@ var STUDIO = (() => {
     const a = all(); a[k] = { ok, at: Date.now() }; put(a); render(); return ok;
   }
   function revoke(k) { const a = all(); delete a[k]; put(a) }
+  function grant(k) { if (!PERM[k]) return; const a = all(); a[k] = { ok: true, at: Date.now() }; put(a) }
 
   /* ---------- sauvegarde des réglages (jamais les médias), chiffrée si une phrase secrète est donnée ---------- */
   const KEEP = /^(q|profil|o_[a-z]+|learn|recettes|modeles_etat|autorisations|sr_moteur|sr_noyau|srspd|spd|fileno|inst)$/;
@@ -83,12 +86,14 @@ var STUDIO = (() => {
     return `<div class="mdl-top"><h2>Paramètres</h2><button class="btn" data-s="close" type="button">Fermer</button></div><div class="mdl-body">
       <div class="mdl-sto"><b>Autorisations</b><span>Rien ne quitte ton iPhone sans ton accord. Chaque usage est demandé la première fois et peut être retiré.</span>
       ${Object.entries(PERM).map(([k, p]) => `<div class="mdl-card"><div class="mdl-h"><b>${p.nom}</b><span class="mdl-st ${a[k] && a[k].ok ? "ok" : ""}">${a[k] ? (a[k].ok ? "autorisé" : "refusé") : "pas encore demandé"}</span></div>
-        <p class="mdl-m">${p.envoi}. Compte : ${p.compte}.</p>${a[k] ? `<div class="mdl-acts"><button class="btn" data-s="revoke" data-k="${k}">Retirer</button></div>` : ""}</div>`).join("")}</div>
+        <p class="mdl-m">${p.envoi}. Compte : ${p.compte}.</p><div class="mdl-acts">${a[k] && a[k].ok ? `<button class="btn" data-s="revoke" data-k="${k}">Retirer</button>` : `<button class="btn" data-s="grant" data-k="${k}">Autoriser</button>${a[k] ? `<button class="btn" data-s="revoke" data-k="${k}">Redemander plus tard</button>` : ""}`}</div></div>`).join("")}</div>
       <div class="mdl-sto"><b>Sauvegarde des réglages</b><span>Profils, préférences, autorisations, historique et état des modèles (jamais tes photos ni tes vidéos). Avec une phrase secrète, le fichier est chiffré (AES-256-GCM) : sans elle, il ne peut pas être relu.</span>
         <label class="s"><span>Phrase secrète (facultative)</span><input id="st_pass" type="password" autocomplete="new-password" style="width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)"></label>
         <div class="mdl-acts"><button class="btn main" data-s="save">Créer la sauvegarde</button><button class="btn" data-s="load">Restaurer une sauvegarde</button></div><input type="file" id="st_file" accept=".json,application/json" hidden></div>
       <div class="mdl-sto"><b>Historique des traitements</b><span>${h.length ? h.length + " traitement(s) gardé(s) sur cet appareil (30 au plus)." : "Aucun traitement enregistré."}</span>
-        ${h.length ? `<ul class="mdl-m" style="padding-left:18px">${h.slice(-10).reverse().map(r => `<li>${new Date(r.date).toLocaleString("fr-FR")} — ${r.media} ${r.source} → ${r.sortie || "?"}, rendu ${r.profil}${r.ia && r.ia !== "non" ? ", IA" : ""}${r.operations && r.operations.length ? " (" + r.operations.join(", ") + ")" : ""}</li>`).join("")}</ul>
+        ${h.length ? `<ul class="mdl-m" style="padding-left:18px">${h.slice(-10).reverse().map(r => { r = r && typeof r === "object" ? r : {}; const d = new Date(r.date);
+          /* tout est échappé : une sauvegarde restaurée peut venir d'ailleurs (v3.2) */
+          return `<li>${esc(isNaN(d) ? "date inconnue" : d.toLocaleString("fr-FR"))} — ${esc(r.media)} ${esc(r.source)} → ${esc(r.sortie || "?")}, rendu ${esc(r.profil)}${r.ia && r.ia !== "non" ? ", IA" : ""}${Array.isArray(r.operations) && r.operations.length ? " (" + r.operations.map(esc).join(", ") + ")" : ""}</li>` }).join("")}</ul>
         <div class="mdl-acts"><button class="btn" data-s="clearh">Effacer l’historique</button></div>` : ""}</div>
       <p class="mdl-note" id="st_note" hidden></p></div>`;
   }
@@ -103,6 +108,7 @@ var STUDIO = (() => {
       try {
         if (s === "close") dlg.close();
         else if (s === "revoke") { revoke(x.dataset.k); render(); note("Autorisation retirée : elle sera redemandée au prochain usage.") }
+        else if (s === "grant") { grant(x.dataset.k); render(); note("Autorisation donnée. Tu peux la retirer ici à tout moment."); if (x.dataset.k === "diagnostic") try { DIAG.flush() } catch (e) {} }
         else if (s === "clearh") { if (confirm("Effacer l’historique des traitements ?")) { localStorage.removeItem("recettes"); render() } }
         else if (s === "save") { const pass = dlg.querySelector("#st_pass").value; const o = await backup(pass);
           const blob = new Blob([JSON.stringify(o, null, 1)], { type: "application/json" }); window.__lastBackup = o;
@@ -121,5 +127,5 @@ var STUDIO = (() => {
       const li = document.createElement("li"); li.textContent = "Ensuite, touche le grand bouton « Améliorer »."; l.appendChild(li) };
   }
   mount();
-  return { consent, granted, revoke, backup, restore, plan, PERM };
+  return { consent, granted, grant, revoke, backup, restore, plan, PERM, esc };
 })();

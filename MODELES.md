@@ -15,6 +15,7 @@ Mesures faites dans Chrome sans écran avec un GPU **simulé sur le processeur**
 | Moteur | WebGPU (2 versions de calcul, choisie par appareil), repli WebGL2, repli final : amélioration classique |
 | Mémoire | ≈ 140 Mo de mémoire graphique pour une image 1280×720 (calcul d’après les tampons, non mesuré sur iPhone) |
 | Utilisé pour | photos et vidéos jusqu’à 1,1 Mpx ; au-delà, la source contient déjà ses détails |
+| Authenticité (audit v3.2) | `sr.bin` = les deux fichiers `.pth` officiels de la release v0.2.5.0 convertis en FP16, **identiques bit à bit** (2 426 592 valeurs, écart 0), dans l’ordre lu par `sr.js` (jeu x4v3 puis jeu wdn-x4v3) |
 
 Validation (tests/sorties/qualite, sources : portrait et chat dégradés « vieux téléphone », mesures contre l’original intact) :
 

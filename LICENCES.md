@@ -9,5 +9,7 @@
 | mp4-muxer | MIT | — | oui |
 | Tables de filtres | propres à l’app | propres à l’app | oui |
 | Médias de test | scikit-image : NASA (domaine public), CC0 | — | oui |
+| Polices Bricolage Grotesque, DM Mono, Instrument Sans *(v3.2, hébergées dans `polices/`)* | — | SIL Open Font License 1.1 (`polices/OFL.txt`) | oui |
 
-Écartés pour licence : CodeFormer (S-Lab, non commercial), Depth Anything V2 Base/Large (CC-BY-NC).
+Écartés pour licence : CodeFormer (S-Lab, non commercial), Depth Anything V2 Base/Large (CC-BY-NC),
+ProPainter (NTU S-Lab 1.0, non commercial), CompleteMe (CC-BY-NC-SA-4.0 sur sa fiche) — voir RESTAURATION_IA.md.
