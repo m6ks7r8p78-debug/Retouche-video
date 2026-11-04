@@ -225,7 +225,7 @@ body.loaded .lnkh{display:none}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · <span id="ver">v2.48</span></span>
+  <span class="tag">sur ton téléphone · <span id="ver">v2.49</span></span>
 </header>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
@@ -406,7 +406,7 @@ body.loaded .lnkh{display:none}
 <script src="sr.js"></script>
 <script src="depth.js"></script>
 <script>
-const VER="v2.48";/* seul endroit où changer le numéro de version */
+const VER="v2.49";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -631,6 +631,14 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     let c;try{c=await SRX.run(inp,cv.width/dims(el)[0],onTile,key)}
     catch(e){SRX.off=true;msg("La qualité maximale n’est pas disponible sur cet appareil ("+((e&&e.message)||"erreur")+") : l’amélioration standard est utilisée.");return false}
     srIn=true;srOrig=el;try{draw(c)}finally{srIn=false;srOrig=null}return true},
+  /* durée de l'IA pour toute la vidéo, d'après la vitesse mesurée sur CE téléphone ; au-delà d'une heure, elle est décochée
+     pour cette vidéo (l'iPhone ne peut pas rester des heures au premier plan), avec la marche à suivre pour l'utiliser quand même */
+  iaSec(){let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}if(!ms||mode!=="video"||!v.duration)return 0;
+    const [a,b]=trimRange();return (b-a)*(OFPS||30)*(v.videoWidth*v.videoHeight/1e6)*ms/1000},
+  videoCheck(){const o=$("#o_max");if(!o||mode!=="video"||!SRX.fits(v))return;const sec=SRX.iaSec();
+    if(sec>3600&&o.checked){o.checked=false;SRX.autoOff=curFile;updateEst();
+      msg("Qualité maximale (IA) désactivée pour cette vidéo : elle prendrait environ "+(sec>5400?String(Math.round(sec/360)/10).replace(".",",")+" h":Math.round(sec/60)+" min")+" sur ton iPhone. Pour l’utiliser quand même, choisis un extrait court (Réglages → Partie à traiter), puis recoche « Qualité maximale ».")}
+    else if(SRX.autoOff&&SRX.autoOff!==curFile&&!o.checked&&(pref("o_max")||"1")==="1"){o.checked=true;SRX.autoOff=null;updateEst()}},
   preview(){clearTimeout(SRX.pt);if(!SRX.on()||exporting)return;
     SRX.pt=setTimeout(async()=>{
       const el=cur();if(!el||exporting||!show||(mode==="video"&&!v.paused)||!SRX.fits(el))return;
@@ -766,11 +774,12 @@ function updateEst(){
     if(sp&&sp.r>0){
       const w=v.videoWidth,h=v.videoHeight;let px=w*h;
       if(q>0){const s=Math.min(q/Math.max(w,h),q*9/16/Math.min(w,h));px=Math.round(w*s/2)*2*Math.round(h*s/2)*2}
-      let sec=v.duration*30*(px/sp.p)/sp.r,ia="";
+      const dur=(()=>{try{const [a,b]=trimRange();return Math.max(.2,b-a)}catch(e){return v.duration}})();
+      let sec=dur*30*(px/sp.p)/sp.r,ia="";
       /* qualité maximale : temps du réseau mesuré sur cet appareil (millisecondes par mégapixel d'image d'origine) */
       if(SRX.on()&&SRX.fits(v)){let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}
-        if(ms>0)sec+=v.duration*(OFPS||30)*(w*h/1e6)*ms/1000;else ia=" L’IA ajoutera du temps : il sera connu après un premier essai (aperçu en pause)."}
-      t+=" Durée estimée : "+(sec>90?"environ "+(sec>5400?Math.round(sec/3600*10)/10+" h":Math.round(sec/60)+" min"):"moins de 2 min")+" (d’après ton dernier export)."+ia;
+        if(ms>0)sec+=dur*(OFPS||30)*(w*h/1e6)*ms/1000;else ia=" L’IA ajoutera du temps : il sera connu après un premier essai (aperçu en pause)."}
+      t+=" Durée estimée : "+(sec>90?"environ "+(sec>5400?String(Math.round(sec/3600*10)/10).replace(".",",")+" h":Math.round(sec/60)+" min"):"moins de 2 min")+" (d’après ton dernier export)."+ia;
     }else t+=" La durée estimée s’affichera après ton premier export.";
   }
   $("#qhint").textContent=t;
@@ -891,7 +900,7 @@ async function stabEnable(on){
 const pref=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
 const OPT_AFTER={o_stab:e=>stabEnable(e.checked),o_defl:()=>draw(),o_max:()=>{SRX.pc=null;SRX.key="";updateEst();draw()}};
 ["o_stab","o_voice","o_defl","o_dust","o_fast","o_max","o_fluid"].forEach(id=>{const e=$("#"+id);
-  e.addEventListener("change",()=>{pref(id,e.checked?"1":"0");if(OPT_AFTER[id])OPT_AFTER[id](e)})});
+  e.addEventListener("change",()=>{pref(id,e.checked?"1":"0");if(id==="o_max")SRX.autoOff=null;if(OPT_AFTER[id])OPT_AFTER[id](e)})});
 $("#o_fast").checked=pref("o_fast")==="1";$("#o_max").checked=(pref("o_max")||"1")==="1";
 /* ===== Découpe début/fin ===== */
 function trimRange(){const d=v.duration||0;return[$("#t_in").value/1000*d,$("#t_out").value/1000*d]}
@@ -901,6 +910,7 @@ function trimUpdate(src){
   if(src==="out"&&b<a+20){b=Math.min(1000,a+20);$("#t_out").value=b}
   const [s,e]=trimRange();$("#t_txt").textContent=fmtT(s)+" → "+fmtT(e)+" ("+Math.round(e-s)+" s)";
   if(v.duration&&!exporting){v.currentTime=src==="out"?Math.max(0,e-.05):s}
+  try{updateEst()}catch(x){}
 }
 $("#t_in").oninput=()=>trimUpdate("in");$("#t_out").oninput=()=>trimUpdate("out");
 /* ===== Comparaison par curseur ===== */
@@ -958,6 +968,7 @@ v.onloadedmetadata=()=>{
   if(Math.max(v.videoWidth,v.videoHeight)>=1500){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Ta vidéo est déjà en haute définition : le Full HD est choisi (bien plus rapide, presque aussi net). Tu peux repasser en 4K ci-dessus.'}
   window.__safe=null;
   try{FREP.run(curFile)}catch(e){}
+  setTimeout(()=>{try{SRX.videoCheck()}catch(e){}},0);
   try{const c=JSON.parse(localStorage.getItem("crash_last")||"null");
     if(c&&c.name===curFile.name&&c.size===curFile.size&&Date.now()-c.t<12*3600e3){window.__safe=c;localStorage.removeItem("crash_last");
       if(c.q==="3840"){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));document.querySelectorAll("[data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q==="1920"?"true":"false"))}
@@ -1059,7 +1070,9 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
     if(m.dust>=REC.T.dust){o.dust=true;n.push("Poussières ou points noirs (≈"+Math.round(m.dust)+" par image) : effacement.");it.push("dust")}
     if(fl&&(fl.frac>=REC.T.flick||fl.mean>=REC.T.flickMean)){o.defl=true;n.push("Scintillement ("+Math.round(fl.frac*100)+" % des images) : anti-scintillement.");it.push("defl")}
     if(m.shake>=REC.T.shake){o.stab=true;n.push("Image très tremblante : stabilisation (image légèrement recadrée, 10 % au plus).");it.push("stab")}
-    if(m.gains){const sp=Math.max(...m.gains)-Math.min(...m.gains);if(sp>=REC.T.cast){o.wb=m.gains;n.push("Dominante de couleur : couleurs équilibrées.");it.push("wb")}}
+    /* équilibre automatique des couleurs retiré : sur 24 photos propres de référence, la règle « zones presque grises »
+       voyait une fausse dominante dans 20 cas (la peau et les murs chauds étaient pris pour du gris) et refroidissait l'image.
+       Il reste disponible à la main (Réglages → Équilibrer les couleurs). */
     if(m.noise>=REC.T.noiseHi){o.dn=.5;n.push("Image bruitée ou granuleuse : réduction du bruit renforcée.");it.push("dn")}
     else if(m.noise>=REC.T.noiseMid){o.dn=.35;n.push("Un peu de bruit : réduction du bruit moyenne.");it.push("dn")}
     if(m.p98-m.p2<.45){n.push("Image peu contrastée : contraste relevé.");it.push("img")}
@@ -1140,7 +1153,7 @@ REC.after=async function(){
     const m=await AZ.run(el,{fps:OFPS||30});if(!m)return;
     const A={dust:$("#o_dust").checked,stab:$("#o_stab").checked},sug=[],ch={};
     if(m.dust>=REC.T.dust&&!A.dust){sug.push("Il reste des poussières : activer leur retrait.");ch.dust=true}
-    if(m.gains&&Math.max(...m.gains)-Math.min(...m.gains)>=REC.T.cast&&P.wb===0){sug.push("Une dominante de couleur persiste : équilibrer les couleurs.");ch.wb=m.gains}
+
     if(m.shake>=REC.T.shake&&!A.stab){sug.push("Le résultat tremble encore : activer la stabilisation.");ch.stab=true}
     if(m.noise>=REC.T.noiseMid&&P.dn<.5){sug.push("Le bruit est encore visible : réduction du bruit renforcée.");ch.dn=m.noise>=REC.T.noiseHi?.6:.45}
     const ul=$("#rec_a");ul.textContent="";
