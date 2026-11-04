@@ -1,4 +1,6 @@
-# Rapport de tests — v3.1
+# Rapport de tests — v3.2 (audit du 4 novembre 2026)
+
+Toutes les suites ont été relancées sur la v3.2 (branche `audit-v3.2`), dans l'ordre, après les corrections. Aucune erreur JavaScript.
 
 Environnement : Chrome sans écran (Playwright), GPU **simulé** sur processeur (SwiftShader), FFmpeg/ffprobe, Python (PSNR, SSIM, LPIPS).
 **Aucun iPhone n’était disponible : aucun test n’a été fait sur un vrai appareil.** Liste de vérifications à faire : GUIDE_IPHONE.md.
@@ -8,11 +10,13 @@ Environnement : Chrome sans écran (Playwright), GPU **simulé** sur processeur 
 | `tests/gestionnaire.test.mjs` (modèles : téléchargement, reprise, SHA-256, corruption, stockage, mises à jour, nettoyage…) | oui | 24 réussis, 0 échoué ; 2 non testables (éviction Safari réelle, saturation mémoire réelle) |
 | `tests/app.test.mjs --ia` (photos, IA, comparateur, PNG, 12 Mpx, vidéos 4K paysage/portrait, 720p, 1080p, origine, relief) | oui | 13 réussis, 0 échoué |
 | `tests/v3.test.mjs` (vitesse ×2, envers, ralenti 0,5× fluide, son, profils faible lumière) | oui | 7 réussis, 0 échoué |
-| `tests/studio.test.mjs` (autorisations : lien et modèle refusés = rien envoyé ; sauvegarde chiffrée : bonne / mauvaise phrase, fichier modifié ; assistant ; fenêtre Paramètres) | oui | 8 réussis, 0 échoué |
-| `tests/reassemblage.test.mjs` (v3.1 : 5 morceaux coupés sans réencodage, noms trompeurs, dates effacées, mélangés + un doublon ; puis un morceau du milieu retiré) | oui, 3 exécutions | 5 réussis, 0 échoué ; ordre retrouvé, doublon retiré, vidéo regroupée **identique image par image** à l’originale (empreinte MD5), trou signalé avec confiance faible |
-| `tests/noyau.test.mjs` (calcul WebGPU 4 pixels/fil) | oui | identique au pixel près, choix automatique opérationnel |
-| Serveur v5 (CORS par requête, origine étrangère, adresse interne) | oui, en local (Node) | réussi ; **non déployé** sur Cloudflare |
-| Banc de qualité (profils, faible luminosité) | oui | voir MODELES.md |
+| `tests/studio.test.mjs` (autorisations : lien et modèle refusés = rien envoyé ; sauvegarde chiffrée : bonne / mauvaise phrase, fichier modifié ; assistant ; fenêtre Paramètres ; **v3.2** : sauvegarde piégée sans exécution de code, diagnostic soumis à autorisation, polices locales sans requête externe) | oui | 11 réussis, 0 échoué (sur la v3.1 : 9 réussis, 2 échoués — la faille est réelle) |
+| `tests/sw.test.mjs` (**v3.2** : à la mise à jour, seuls les anciens caches de l'app partent ; modèles téléchargés et /radar/ gardés ; fichiers hors ligne présents ; aucune requête Google Fonts) | oui | 7 réussis, 0 échoué (sur la v3.1 : 4 réussis, 3 échoués) |
+| `tests/reassemblage.test.mjs` (v3.1 : 5 morceaux coupés sans réencodage, noms trompeurs, dates effacées, mélangés + un doublon ; puis un morceau du milieu retiré) | oui | 5 réussis, 0 échoué ; ordre retrouvé, doublon retiré, vidéo regroupée **identique image par image** à l’originale (empreinte MD5), trou signalé avec confiance faible |
+| `tests/noyau.test.mjs` (calcul WebGPU 4 pixels/fil) | oui | écart 0 entre les deux versions, choix automatique opérationnel (GPU simulé : 42,5 s contre 31,2 s) |
+| Serveur v5 **en ligne** (CORS par requête, origine étrangère, adresse interne) | oui, sur le serveur réel (Cloudflare) | origine de l'app acceptée ; origine étrangère → 403 ; `169.254.169.254` → refusé ; `/etat` → version 5 |
+| Authenticité des fichiers (`sr.bin` contre les poids officiels, ONNX Runtime et mp4-muxer contre npm, modèle de relief) | oui | identiques |
+| Banc de qualité (profils, faible luminosité) | non relancé en v3.2 (aucun calcul d'image modifié) | mesures v3.0 : voir MODELES.md |
 
 Détails vérifiés par ffprobe : dimensions exactes (3840×2160, 2160×3840, 720×1280…), cadence conservée (30 i/s), durée à ±0,06 s, son présent ;
 vitesse ×2 : 3,00 s vidéo et son ; ralenti 0,5× : 12,00 s ; à l’envers : 1re image = dernière de la source.
