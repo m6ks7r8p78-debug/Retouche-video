@@ -217,6 +217,50 @@ body.loaded .lnkh{display:none}
 .frep li::before{content:"";position:absolute;left:0;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--ok)}
 .frep li.warn::before{background:var(--tc)}.frep li.bad::before{background:#d8455d}
 .rec ul li.learn{color:var(--mut);font-size:13px;margin-top:6px}
+/* v2.50 : studio — modèles IA, profils, analyse photo, comparateur avec zoom */
+.mdlb{flex:none;padding:8px 11px;border-radius:999px;border:0;background:var(--panel);box-shadow:0 1px 0 var(--line),0 6px 16px -10px rgba(36,21,36,.4);font:600 13px/1 var(--fd);cursor:pointer}
+.top .tag{margin-left:8px}
+.top .brand{margin-right:auto}
+dialog.mdl{width:min(640px,100vw - 16px);max-height:calc(100dvh - 24px);padding:0;border:0;border-radius:18px;background:var(--bg);color:var(--ink);box-shadow:0 30px 60px -20px rgba(0,0,0,.5)}
+dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
+.mdl-top{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;padding:14px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+.mdl-top h2{margin:0;font:700 18px/1.2 var(--fd);flex:1}
+.mdl-top button{width:auto;padding:9px 14px}
+.mdl-body{padding:4px 16px 18px}
+.mdl-intro{font-size:14px;color:var(--mut);margin:10px 0}
+.mdl-sto,.mdl-rec,.mdl-cl,.mdl-card{background:var(--panel);border-radius:14px;padding:12px;margin-top:10px;box-shadow:0 1px 0 var(--line)}
+.mdl-sto span,.mdl-cl span{display:block;font-size:14px;color:var(--mut);margin-top:4px}
+.mdl-sto .btn,.mdl-cl .btn{margin-top:8px}
+.mdl-rec ul,.mdl-cl ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+.mdl-rec li.warn{color:var(--tc)}
+.mdl-h{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.mdl-h b{font-family:var(--fd)}
+.mdl-st{flex:none;font:500 11px/1.2 var(--fm);padding:4px 8px;border-radius:999px;background:var(--acc-soft);color:var(--ink);text-align:right}
+.mdl-st.ok{background:rgba(44,122,75,.15)}.mdl-st.warn{background:rgba(232,89,12,.15);color:var(--tc)}
+.mdl-f{margin:6px 0 4px;font-size:14px}
+.mdl-m{margin:4px 0;font-size:12px;color:var(--mut)}
+.mdl-err{margin:6px 0;font-size:14px;color:var(--tc)}
+.mdl-note{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--acc-soft);font-size:14px}
+.mdl-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.mdl-acts .btn{width:auto;flex:1 1 auto;padding:10px 12px;font-size:14px}
+.mdl-card details{margin-top:8px;font-size:13px}.mdl-card summary{cursor:pointer;color:var(--mut)}
+.mdl-card dl{margin:6px 0 0;display:grid;grid-template-columns:minmax(0,9em) minmax(0,1fr);gap:4px 10px}.mdl-card dt{color:var(--mut)}.mdl-card dd{margin:0;overflow-wrap:anywhere}
+.mdl-eng{display:block;margin-top:8px;font-size:14px}.mdl-eng span{display:block;color:var(--mut);margin-bottom:4px}
+.prof{margin-top:12px}
+.prof .seg button::before{content:none!important}
+#profh{margin:8px 0 0;font-size:13px;color:var(--mut);min-height:1.4em}
+.pv{margin-top:10px}
+.pv-box{position:relative;width:100%;overflow:hidden;border-radius:12px;background:#000;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
+.pv-lay{position:absolute;inset:0;overflow:hidden}
+.pv-in{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
+.pv-in img{position:absolute;inset:0;width:100%;height:100%;display:block;-webkit-user-drag:none;pointer-events:none}
+.pv-box.px img{image-rendering:pixelated}
+.pv-line{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.6);pointer-events:none}
+.pv-t{position:absolute;top:8px;padding:4px 8px;border-radius:999px;font:600 11px/1 var(--fm);letter-spacing:.06em;text-transform:uppercase;background:rgba(0,0,0,.6);color:#fff;pointer-events:none}
+.pv-t.l{left:8px}.pv-t.r{right:8px}
+.pv-z{display:flex;gap:6px;margin-top:8px}.pv-z button{flex:1;padding:9px 4px;border-radius:10px;border:0;background:var(--panel);box-shadow:0 1px 0 var(--line);font:600 14px/1 var(--fd);cursor:pointer}
+.pv-z button[aria-pressed="true"]{background:var(--grad);color:#fff}
+.recipe{margin:6px 0 0;font-size:12px;color:var(--mut);word-break:break-word}
 </style>
 </head>
 <body>
@@ -225,8 +269,13 @@ body.loaded .lnkh{display:none}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
-  <span class="tag">sur ton téléphone · <span id="ver">v2.49</span></span>
+  <button class="mdlb" id="mdlb" type="button" aria-haspopup="dialog">🧠 Modèles IA</button>
+  <span class="tag"><span id="ver">v2.50</span></span>
 </header>
+<dialog class="mdl" id="mdl" aria-labelledby="mdlt">
+  <div class="mdl-top"><h2 id="mdlt">Modèles IA</h2><button class="btn" id="mdlx" type="button">Fermer</button></div>
+  <div class="mdl-body"><p class="mdl-intro">L’app choisit seule le bon modèle pour chaque photo ou vidéo. Ici, tu vois ce qui est installé, ce que ça occupe, et tu peux libérer de la place. Tout est calculé sur ton téléphone ; seul le fichier d’un modèle est téléchargé, jamais tes photos ni tes vidéos.</p><div class="mdl-body-in"></div></div>
+</dialog>
 <div class="sprock" aria-hidden="true"></div>
 <main class="wrap wide">
   <section class="hero">
@@ -267,7 +316,7 @@ body.loaded .lnkh{display:none}
       <button class="btn" id="mgsave" style="margin-top:8px">Enregistrer la vidéo regroupée</button></div>
   </div>
   <p class="st" id="st0"></p>
-  <p class="privacy">Tes vidéos et photos restent sur ton téléphone. Seule une image part si tu utilises l’analyse IA, et, dans la version Claude, des mesures techniques anonymes (vitesse, réglages) pour améliorer l’app.</p>
+  <p class="privacy">Tes vidéos et photos restent sur ton téléphone : elles ne sont envoyées à aucun serveur. Seuls deux cas utilisent internet : télécharger un modèle IA (le fichier du modèle, rien d’autre) et charger une vidéo à partir d’un lien. Dans la version Claude, l’analyse IA facultative envoie une image, et des mesures techniques anonymes (vitesse, réglages) aident à améliorer l’app.</p>
 
   <div class="note" id="inst" hidden>
     <strong>Ajouter à l’écran d’accueil</strong>
@@ -303,12 +352,22 @@ body.loaded .lnkh{display:none}
         <div id="qwrap">
           <p class="help">Choisis la taille du résultat. Tout le reste est réglé automatiquement.</p>
           <div class="seg" role="group" aria-label="Taille du résultat">
-            <button data-q="3840" aria-pressed="false">4K<small>plus net, plus long</small></button>
+            <button data-q="3840" aria-pressed="false">4K<small>3840 · plus long</small></button>
             <button data-q="1920" aria-pressed="true">Full HD<small>conseillé</small></button>
             <button data-q="-1" aria-pressed="false">Origine<small>nettoyage seul</small></button>
           </div>
           <select id="q" hidden><option value="3840">4K</option><option value="1920" selected>Full HD</option><option value="-1">Taille d’origine (avant un autre outil)</option></select>
           <p id="qhint"></p>
+        </div>
+        <div class="prof" id="prof">
+          <p class="help" style="margin:0 0 8px">Rendu voulu :</p>
+          <div class="seg" role="group" aria-label="Rendu voulu">
+            <button data-prof="naturel" aria-pressed="false">Naturel<small>fidèle</small></button>
+            <button data-prof="equilibre" aria-pressed="true">Équilibré<small>conseillé</small></button>
+            <button data-prof="details" aria-pressed="false">Détails<small>plus poussé</small></button>
+          </div>
+          <p id="profh"></p>
+          <label class="s ponly" hidden><span>Format de la photo</span><select id="pfmt"><option value="jpeg">JPEG (léger, qualité 95 %)</option><option value="png">PNG (sans perte, plus lourd)</option></select></label>
         </div>
         <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><p class="help" id="rec_hint" hidden style="margin:6px 0 0">Déjà appliqué. Décoche ce que tu ne veux pas.</p></div>
         <button class="btn main big" id="ex" style="margin-top:12px">Améliorer en 4K</button>
@@ -318,6 +377,17 @@ body.loaded .lnkh{display:none}
           <h2>Résultat</h2>
           <div class="rec" id="rec_after"><p class="help" id="rec_at" style="margin:0 0 6px"></p><ul id="rec_a"></ul><button class="btn" id="rec_b" hidden></button></div>
           <img id="ri" alt="Photo retouchée" hidden>
+          <div class="pv" id="pv" hidden>
+            <div class="pv-box" id="pvb">
+              <div class="pv-lay"><div class="pv-in"><img id="pvo" alt="Avant"></div></div>
+              <div class="pv-lay" id="pvla"><div class="pv-in"><img id="pva" alt="Après"></div></div>
+              <div class="pv-line" id="pvl"></div><span class="pv-t l">Avant</span><span class="pv-t r">Après</span>
+            </div>
+            <input type="range" id="pvs" min="0" max="1000" value="500" aria-label="Séparation avant / après">
+            <div class="pv-z" role="group" aria-label="Zoom"><button type="button" data-z="1" aria-pressed="true">1×</button><button type="button" data-z="2" aria-pressed="false">2×</button><button type="button" data-z="4" aria-pressed="false">4×</button><button type="button" data-z="8" aria-pressed="false">8×</button></div>
+            <p class="help" style="margin:6px 0 0">Glisse le curseur pour comparer. Zoome puis fais glisser l’image pour inspecter les détails (à partir de 4×, chaque pixel réel est montré tel quel). Double-touche pour zoomer à cet endroit.</p>
+            <button class="btn" id="pvsolo" type="button" style="margin-top:8px">Voir la photo retouchée seule</button>
+          </div>
           <div id="ba" hidden>
             <div class="bag">
               <figure><figcaption>Avant</figcaption><video id="bao" muted playsinline preload="auto"></video></figure>
@@ -339,7 +409,7 @@ body.loaded .lnkh{display:none}
           <div id="bares" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Avant / après</h2><video id="bav" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
             <button class="btn main" id="bas2" style="margin-top:8px">Partager l’avant / après</button></div>
           <details class="frep" id="orep" hidden><summary id="orep_s">Compte rendu de l’export</summary><ul id="orep_l"></ul></details>
-          <details id="tech" hidden style="margin-top:10px"><summary class="help" style="cursor:pointer;margin:0">Détails techniques</summary><p class="help mono" id="techt" style="margin:6px 0 0;font-size:12px;word-break:break-word"></p>
+          <details id="tech" hidden style="margin-top:10px"><summary class="help" style="cursor:pointer;margin:0">Détails techniques</summary><p class="help mono" id="techt" style="margin:6px 0 0;font-size:12px;word-break:break-word"></p><p class="recipe mono" id="recipe"></p>
             <button class="btn" id="diagb" style="margin-top:8px" hidden>Copier le diagnostic</button></details>
         </div>
         <button class="btn" id="ai" style="margin-top:12px" hidden>Analyse intelligente (IA)</button>
@@ -363,6 +433,8 @@ body.loaded .lnkh{display:none}
           <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe les vidéos saccadées à 30 images par seconde.</span></label>
           <div class="trim"><b>Partie à traiter</b><span class="mono" id="t_txt">tout</span>
             <input type="range" id="t_in" min="0" max="1000" value="0" aria-label="Début"><input type="range" id="t_out" min="0" max="1000" value="1000" aria-label="Fin"></div>
+          <label class="s"><span>Autre taille de résultat (côté le plus long)</span><select id="qc"><option value="">— garder le choix de l’onglet Améliorer —</option><option value="1280">1280 px (720p)</option><option value="1920">1920 px (1080p, Full HD)</option><option value="2560">2560 px (1440p)</option><option value="3840">3840 px (4K UHD)</option></select></label>
+          <p class="help" style="margin:6px 0 0">Le format de l’image est toujours gardé (portrait reste portrait) ; rien n’est recadré ni déformé. Agrandir ne crée pas de vrais détails : au-delà de la taille d’origine, ils sont estimés.</p>
         </div>
         <details id="adv" style="margin-top:14px"><summary>Réglages manuels de l’image <span class="mono" style="font-weight:400">(déjà réglés automatiquement)</span></summary>
         <p class="help">Facultatif : pars d’un préréglage, puis affine.</p>
@@ -402,11 +474,13 @@ body.loaded .lnkh{display:none}
   </div>
 </main>
 
+<script src="models.js"></script>
+<script src="faces.js"></script>
 <script src="sr-gpu.js"></script>
 <script src="sr.js"></script>
 <script src="depth.js"></script>
 <script>
-const VER="v2.49";/* seul endroit où changer le numéro de version */
+const VER="v2.50";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -415,6 +489,35 @@ const v=document.createElement("video");v.playsInline=true;v.muted=true;v.setAtt
 v.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(v);
 let HP=.7;/* force de la protection des hautes lumières */
 const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],r:1};let WBG=[1,1,1],DFG=1;
+/* ===== Profils de rendu =====
+   Ils ne remplacent pas l'analyse automatique : ils dosent ce qu'elle a réglé (P reste la base, visible dans les curseurs).
+   - sh, dn, cs : multiplient netteté, réduction du bruit, nettoyage des couleurs ;
+   - c : part de la correction de lumière / contraste / couleurs gardée (1 = toute, .5 = moitié) ;
+   - hp : protection des hautes lumières ; srdn : décalage du débruitage du réseau IA (négatif = garde plus de texture) ;
+   - ai : part du résultat IA dans toute l'image, le reste venant de la version classique, qui n'invente rien (1 = IA seule) ;
+   - face : part de la version classique sur les visages repérés (protection contre les visages « cireux » ou redessinés).
+   « Équilibré » = réglages mesurés sur le banc depuis la v2.45 (inchangés). */
+const PROF={id:"equilibre",manual:false,
+  T:{naturel:{sh:.5,dn:.6,cs:.6,c:.5,hp:.9,srdn:-.12,ai:.7,face:.6},equilibre:{sh:1,dn:1,cs:1,c:1,hp:.7,srdn:0,ai:1,face:.45},details:{sh:1.7,dn:1,cs:1,c:1,hp:.7,srdn:.15,ai:1,face:.25}},
+  NOM:{naturel:"Naturel",equilibre:"Équilibré",details:"Détails"},rec:"equilibre",why:"",
+  k(){return PROF.T[PROF.id]||PROF.T.equilibre},
+  /* valeur réellement appliquée d'un réglage */
+  v(n){const K=PROF.k();switch(n){case"sh":return Math.min(2,P.sh*K.sh);case"dn":return Math.min(1,P.dn*K.dn);case"cs":return Math.min(1,P.cs*K.cs);
+    case"br":return P.br*K.c;case"co":return 1+(P.co-1)*K.c;case"sa":return 1+(P.sa-1)*K.c;case"wa":return P.wa*K.c;default:return P[n]}},
+  set(id,manual){if(!PROF.T[id])return;PROF.id=id;if(manual!=null){PROF.manual=manual;try{if(manual&&id!==PROF.rec)localStorage.setItem("profil",id);else localStorage.removeItem("profil")}catch(e){}}
+    document.querySelectorAll("[data-prof]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.prof===id?"true":"false"));PROF.hint();
+    try{SRX.pc=null;SRX.key=""}catch(e){}if(typeof draw==="function")draw()},
+  /* profil conseillé pour un média, d'après les mesures : « Détails » n'est jamais choisi d'office (risque de détails inventés) */
+  recommend(m){let id="equilibre",why;
+    const big=m.w*m.h>1100000,noisy=m.noise!=null&&m.noise>=1.6,blocky=m.blk&&m.blk.r>=1.25;
+    if(big&&!noisy&&!blocky){id="naturel";why="source déjà nette et peu abîmée : on garde son aspect"}
+    else why=(blocky?"compression visible":noisy?"bruit visible":"petite définition")+" : restauration et nettoyage équilibrés";
+    PROF.rec=id;PROF.why=why;let saved=null;try{saved=localStorage.getItem("profil")}catch(e){}
+    PROF.set(saved&&PROF.T[saved]?saved:id,null);PROF.manual=!!saved;return id},
+  hint(){const h=document.querySelector("#profh");if(!h)return;
+    const t={naturel:"Corrections modérées, textures et grain d’origine préservés, l’IA est mêlée à l’original pour rester fidèle.",equilibre:"Compromis entre nettoyage, netteté et aspect naturel (réglages mesurés sur le banc de test).",details:"Netteté et restauration renforcées. Attention : sur une source très abîmée, des détails peuvent paraître artificiels (peau lissée, textures inventées)."}[PROF.id];
+    h.textContent=t+(PROF.why?" Conseillé ici : "+PROF.NOM[PROF.rec]+" ("+PROF.why+")"+(PROF.manual&&PROF.id!==PROF.rec?" — ton choix est gardé.":"."):"")}
+};
 let show=1,looping=false,exporting=false,cancel=false,az=false,dl=null,url=null,outUrl=null,outBlob=null,curFile=null;
 const PREVIEW=1280,FPS=30;let OFPS=30;
 let fpsC=null;
@@ -457,7 +560,7 @@ function dims(s){return [s.videoWidth||s.naturalWidth||s.width||0,s.videoHeight|
 function setMode(){
   const ph=mode==="photo";
   $("#app").hidden=false;$("#st0").hidden=true;
-  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#plc").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);$("#qwrap").hidden=ph;if(ph)$("#rec").hidden=true;document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
+  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#plc").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);document.querySelectorAll(".ponly").forEach(e=>e.hidden=!ph);$("#qwrap").hidden=ph;if(ph)$("#rec").hidden=true;$("#pv").hidden=true;SRX.lastErr=null;PROF.why="";PROF.hint();document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
   $("#ex").textContent=ph?"Améliorer la photo":($("#q").value==="-1"?"Nettoyer (taille d’origine)":$("#q").value==="3840"?"Améliorer en 4K":"Améliorer en Full HD");
   $("#out").hidden=true;
 }
@@ -564,7 +667,7 @@ function pass(pg,src,dst,w,h,set){
 }
 function draw(el){
   if(poolMode&&!el)return;
-  if(!el&&!srIn&&show&&SRX&&SRX.pc&&SRX.key===SRX.k()){srIn=true;srOrig=cur();try{draw(SRX.pc)}finally{srIn=false;srOrig=null}SRX.badge(1);return}
+  if(!el&&!srIn&&show&&SRX&&SRX.pc&&SRX.key===SRX.k()){const o=cur();srIn=true;srOrig=o;try{draw(SRX.pc)}finally{srIn=false;srOrig=null}SRX.compose(o,SRX.pcFaces);SRX.badge(1);return}
   const s0=el||cur();if(!poolMode)stabT=v.currentTime;
   if(!gl||!dims(s0)[0]||s0.readyState<2)return;
   const [w,h]=dims(s0);
@@ -588,15 +691,17 @@ function draw(el){
     }catch(e){gl.activeTexture(gl.TEXTURE0)}
   }
   let src=tex;
-  if(show&&!srIn&&!dustOnly&&(P.sh>0||P.dn>0||P.cs>0)){pass(progB,src,tex3,w,h,()=>{gl.uniform1i(UB.t,0);gl.uniform2f(UB.px,1/w,1/h);gl.uniform1f(UB.sh,P.sh);gl.uniform1f(UB.dn,P.dn);gl.uniform1f(UB.cs,P.cs)});src=tex3}
+  const eSh=PROF.v("sh"),eDn=PROF.v("dn"),eCs=PROF.v("cs");
+  if(show&&!srIn&&!dustOnly&&(eSh>0||eDn>0||eCs>0)){pass(progB,src,tex3,w,h,()=>{gl.uniform1i(UB.t,0);gl.uniform2f(UB.px,1/w,1/h);gl.uniform1f(UB.sh,eSh);gl.uniform1f(UB.dn,eDn);gl.uniform1f(UB.cs,eCs)});src=tex3}
   gl.useProgram(prog);gl.bindTexture(gl.TEXTURE_2D,src);gl.uniform1i(U.t,0);
   gl.viewport(0,0,cv.width,cv.height);
   gl.uniform2f(U.px,1/w,1/h);gl.uniform1f(U.on,dustOnly?0:show);
-  {const T=stabTR();gl.uniform3f(U.tr,T[0],T[1],T[2])}
+  /* pré-passe « poussières seules » (avant l'IA) : pas de stabilisation ici, sinon elle serait appliquée deux fois (avant et après le réseau) */
+  {const T=dustOnly?[1,0,0]:stabTR();gl.uniform3f(U.tr,T[0],T[1],T[2])}
   gl.uniform1f(U.sp,show&&split&&!dustOnly?split:0);
   gl.activeTexture(gl.TEXTURE3);if(srIn&&srOrig&&show&&split){gl.bindTexture(gl.TEXTURE_2D,texO);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srOrig)}else gl.bindTexture(gl.TEXTURE_2D,tex0);gl.uniform1i(U.t0,3);gl.activeTexture(gl.TEXTURE0);
-  for(const k of ["br","co","sa","wa"])gl.uniform1f(U[k],P[k]);
-  gl.uniform1f(U.hp,window.__hp!=null?window.__hp:HP);
+  for(const k of ["br","co","sa","wa"])gl.uniform1f(U[k],PROF.v(k));
+  gl.uniform1f(U.hp,window.__hp!=null?window.__hp:PROF.k().hp);
   gl.uniform1f(U.ex,show?(exporting?DFG:REC.pv()):1);
   {const on=show&&FLT.tex&&FLT.sel>=0?FLT.f:0;gl.uniform1f(U.lf,on);if(on>0){gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,FLT.tex);gl.uniform1i(U.tl,4);gl.activeTexture(gl.TEXTURE0);gl.uniform1f(U.lrow,FLT.sel);gl.uniform1f(U.lrow2,FLT.sel2>=0?FLT.sel2:FLT.sel);gl.uniform1f(U.lmx,FLT.sel2>=0?FLT.mx:0);gl.uniform1f(U.lnb,FLT.nb)}}
   {const w=show?P.wb:0;gl.uniform3f(U.gn,1+(WBG[0]-1)*w,1+(WBG[1]-1)*w,1+(WBG[2]-1)*w)}
@@ -609,8 +714,9 @@ function draw(el){
    À l'export : chaque image passe par le réseau, puis par les réglages de couleur habituels.
    Dans l'aperçu : calculée quand la vidéo est en pause (ou pour une photo), puis gardée tant que l'image ne change pas. */
 var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
-  on(){return !SRX.off&&!!window.SR&&$("#o_max").checked},
-  dn(){return Math.min(.8,.3+.5*Math.max(0,P.dn-.2))},
+  on(){return !SRX.off&&!!window.SR&&$("#o_max").checked&&!(window.MODELS&&MODELS.isOff("sr"))},
+  /* force du débruitage du réseau : d'après la réduction du bruit réglée, décalée selon le profil (Naturel garde plus de texture) */
+  dn(){return Math.max(.05,Math.min(.9,Math.min(.8,.3+.5*Math.max(0,P.dn-.2))+PROF.k().srdn))},
   k(){const e=cur();return mode+":"+(mode==="video"?v.currentTime+"|"+(curFile&&curFile.name):window.__photoName)+":"+cv.width+"x"+cv.height+":"+SRX.dn()},
   badge(on){const b=$("#bdg");if(!b||!show)return;b.textContent=on===1?"Amélioré · IA":on===2?"Amélioré · IA en cours…":"Amélioré"},
   fits(el){const [w,h]=dims(el);return w>0&&!!window.SR&&SR.fits(w,h)},
@@ -629,8 +735,38 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
       const [w,h]=dims(el),W0=cv.width,H0=cv.height;cv.width=w;cv.height=h;dustOnly=true;try{draw(el)}finally{dustOnly=false}
       if(!SRX.dc)SRX.dc=document.createElement("canvas");SRX.dc.width=w;SRX.dc.height=h;SRX.dc.getContext("2d").drawImage(cv,0,0);cv.width=W0;cv.height=H0;inp=SRX.dc}
     let c;try{c=await SRX.run(inp,cv.width/dims(el)[0],onTile,key)}
-    catch(e){SRX.off=true;msg("La qualité maximale n’est pas disponible sur cet appareil ("+((e&&e.message)||"erreur")+") : l’amélioration standard est utilisée.");return false}
-    srIn=true;srOrig=el;try{draw(c)}finally{srIn=false;srOrig=null}return true},
+    catch(e){SRX.fail(e);return false}
+    const fb=await SRX.faces(inp,mode==="video"&&exporting?stabT:null);
+    srIn=true;srOrig=el;try{draw(c)}finally{srIn=false;srOrig=null}
+    SRX.compose(el,fb);if(fb.length&&exporting&&mode==="video")SRX.faceFrames=(SRX.faceFrames||0)+1;return true},
+  /* visages de l'image (si la protection est disponible) ; pour une vidéo à l'export, suivis et lissés d'une image à l'autre */
+  async faces(el,t){
+    if(!window.FACES||!window.MODELS||MODELS.isOff("visages")||!MODELS.compat("visages").ok)return[];
+    try{const b=await FACES.detect(el);SRX.faceErr=null;return t!=null?FACES.track(b,t,curFile):b.map(x=>({...x,w:1}))}
+    catch(e){SRX.faceErr=MODELS.explain(e);return[]}},
+  /* mélange final, APRÈS les couleurs : l'image IA (déjà dans cv) est mêlée à la version classique de la même image, qui n'invente rien :
+     partout pour le profil Naturel (part 1 − ai), et davantage sur les visages (part « face », ovale aux bords fondus). */
+  compose(el,boxes){
+    const K=PROF.k(),g=Math.max(0,1-K.ai),fk=K.face||0,fb=(boxes||[]).filter(b=>b.w>0);SRX.lastFaces=fb.length;
+    if(g<=.001&&(!fb.length||fk<=.001))return;
+    const W=cv.width,H=cv.height,mk=n=>{let c=SRX[n];if(!c)c=SRX[n]=document.createElement("canvas");if(c.width!==W||c.height!==H){c.width=W;c.height=H}return c};
+    const A=mk("cA"),B=mk("cB"),Mk=mk("cM"),xa=A.getContext("2d"),xb=B.getContext("2d"),xm=Mk.getContext("2d");
+    xa.globalCompositeOperation="copy";xa.drawImage(cv,0,0);xa.globalCompositeOperation="source-over";
+    draw(el);/* version classique : mêmes réglages, mêmes couleurs, même stabilisation */
+    xb.globalCompositeOperation="copy";xb.drawImage(cv,0,0);xb.globalCompositeOperation="source-over";
+    xm.clearRect(0,0,W,H);if(g>0){xm.fillStyle="rgba(0,0,0,"+g+")";xm.fillRect(0,0,W,H)}
+    const T=stabTR(),mx=x=>((x-.5-T[1])/T[0]+.5)*W,my=y=>((y-.5-T[2])/T[0]+.5)*H;/* boîtes repérées sur l'image source → position dans le résultat */
+    for(const b of fb){const x0=mx(b.x0),x1=mx(b.x1),y0=my(b.y0),y1=my(b.y1),rx=Math.max(2,(x1-x0)*.62),ry=Math.max(2,(y1-y0)*.70),a=Math.min(1,fk*b.w);
+      xm.save();xm.translate((x0+x1)/2,(y0+y1)/2);xm.scale(1,ry/rx);const gr=xm.createRadialGradient(0,0,0,0,0,rx);
+      gr.addColorStop(0,"rgba(0,0,0,"+a+")");gr.addColorStop(.6,"rgba(0,0,0,"+a+")");gr.addColorStop(1,"rgba(0,0,0,0)");xm.fillStyle=gr;xm.beginPath();xm.arc(0,0,rx,0,Math.PI*2);xm.fill();xm.restore()}
+    xb.globalCompositeOperation="destination-in";xb.drawImage(Mk,0,0);xb.globalCompositeOperation="source-over";
+    xa.drawImage(B,0,0);blit(A)},
+  /* échec de l'IA : message clair selon la cause ; en cas de mémoire saturée, on libère les modèles avant de continuer sans IA */
+  fail(e){const t=window.MODELS?MODELS.explain(e):{code:"MOTEUR",texte:(e&&e.message)||"erreur",solution:""};
+    if(t.code==="MEMOIRE"&&window.MODELS)MODELS.freeAll();
+    if(t.code!=="DESACTIVE")SRX.off=true;SRX.lastErr=t;
+    msg("Qualité maximale (IA) indisponible : "+t.texte+" L’amélioration classique, sans IA, est utilisée pour la suite."+(t.code==="CORROMPU"?" Recharge l’app pour récupérer le fichier.":""));
+    try{DIAG.send("ia_echec",{code:t.code,err:String((e&&e.message)||e).slice(0,200)})}catch(x){}},
   /* durée de l'IA pour toute la vidéo, d'après la vitesse mesurée sur CE téléphone ; au-delà d'une heure, elle est décochée
      pour cette vidéo (l'iPhone ne peut pas rester des heures au premier plan), avec la marche à suivre pour l'utiliser quand même */
   iaSec(){let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}if(!ms||mode!=="video"||!v.duration)return 0;
@@ -643,10 +779,16 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     SRX.pt=setTimeout(async()=>{
       const el=cur();if(!el||exporting||!show||(mode==="video"&&!v.paused)||!SRX.fits(el))return;
       const key=SRX.k();if(SRX.key===key&&SRX.pc)return;SRX.badge(2);
-      let c;try{c=await SRX.run(el,cv.width/dims(el)[0],null,SRX.ck())}catch(e){SRX.off=true;SRX.badge(0);return}
+      let c;try{c=await SRX.run(el,cv.width/dims(el)[0],null,SRX.ck())}catch(e){SRX.fail(e);SRX.badge(0);return}
+      const fb=await SRX.faces(el,null);
       if(key!==SRX.k()||exporting||(mode==="video"&&!v.paused)){SRX.badge(0);return}
       if(!SRX.pc)SRX.pc=document.createElement("canvas");SRX.pc.width=c.width;SRX.pc.height=c.height;SRX.pc.getContext("2d").drawImage(c,0,0);
-      SRX.key=key;draw()},700)}};
+      SRX.pcFaces=fb;SRX.key=key;draw()},700)}};
+/* copie brute d'une image (déjà traitée) dans cv, sans aucun réglage */
+function blit(el){
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el);
+  gl.useProgram(prog);gl.uniform1i(U.t,0);gl.viewport(0,0,cv.width,cv.height);gl.uniform2f(U.px,1/el.width,1/el.height);
+  gl.uniform1f(U.on,0);gl.uniform3f(U.tr,1,0,0);gl.uniform1f(U.sp,0);gl.uniform1f(U.lf,0);gl.drawArrays(gl.TRIANGLE_STRIP,0,4)}
 function size(L){
   const [w,h]=dims(cur());if(!w)return;
   if(L<0){cv.width=w&~1;cv.height=h&~1;draw();return}
@@ -767,8 +909,13 @@ document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>showTab(t.dataset.t))
 const fmtT=s=>{s=Math.max(0,Math.round(s||0));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
 function chips(a){const m=$("#meta");m.textContent="";a.forEach(t=>{const s=document.createElement("span");s.textContent=t;m.appendChild(s)})}
 const HINTS={"3840":"Agrandit jusqu’à la 4K : le plus net, mais le plus long.","1920":"Environ deux fois plus rapide qu’en 4K, avec une très bonne netteté.","-1":"Nettoie sans agrandir. À utiliser avant un outil d’agrandissement par IA."};
+/* taille exacte du résultat (même calcul que size()) : le format de l'image est gardé, portrait comme paysage */
+function outDims(w,h,L){if(L<0)return[w&~1,h&~1];const s=Math.min(L/Math.max(w,h),L*9/16/Math.min(w,h));return[Math.round(w*s/2)*2,Math.round(h*s/2)*2]}
 function updateEst(){
-  const q=+$("#q").value;let t=HINTS[$("#q").value]||"";
+  const q=+$("#q").value;let t=HINTS[$("#q").value]||(q>0?"Taille personnalisée : côté le plus long jusqu’à "+q+" px.":"");
+  if(mode==="video"&&v.videoWidth){const [ow,oh]=outDims(v.videoWidth,v.videoHeight,q),k=ow/v.videoWidth;
+    t="Résultat : "+ow+"×"+oh+(oh>ow?" (portrait)":"")+". "+t;
+    if(k>2.05)t+=" Ta vidéo fait "+v.videoWidth+"×"+v.videoHeight+" : elle sera agrandie ×"+String(Math.round(k*10)/10).replace(".",",")+" ; les détails ajoutés sont estimés, pas d’origine.";}
   if(mode==="video"&&v.duration&&v.videoWidth){
     let sp=null;try{sp=JSON.parse(localStorage.getItem("spd")||"null")}catch(e){}
     if(sp&&sp.r>0){
@@ -785,7 +932,7 @@ function updateEst(){
   $("#qhint").textContent=t;
 }
 document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{
-  $("#q").value=b.dataset.q;$("#q").dispatchEvent(new Event("change"));
+  $("#q").value=b.dataset.q;$("#qc").value="";$("#q").dispatchEvent(new Event("change"));
   try{localStorage.setItem("q",b.dataset.q)}catch(e){}
 });
 $("#q").addEventListener("change",()=>{
@@ -955,7 +1102,7 @@ function loadFile(f){
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
   curFile=f;az=false;try{FLT.reset()}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
-  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres"].forEach(i=>$("#"+i).hidden=true);
+  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres","pv"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
   });
 }
@@ -983,7 +1130,7 @@ v.onseeked=()=>{if(!az){az=true;try{analyze()}catch(e){}if(!window.__noprof)setT
 /* ===== Analyse complète d'une vidéo : mesures -> profil -> réglages recommandés ===== */
 const AZ={
   seek(el,t){return seekEl(el,Math.max(0,t)).then(()=>wait(30))},
-  grab(el,W){const w=el.videoWidth||el.naturalWidth,h=el.videoHeight||el.naturalHeight,H=Math.max(8,Math.round(W*h/w));
+  grab(el,W){const [w,h]=dims(el),H=Math.max(8,Math.round(W*h/w));
     if(!AZ.c)AZ.c=document.createElement("canvas");const c=AZ.c;c.width=W;c.height=H;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(el,0,0,W,H);
     const d=x.getImageData(0,0,W,H).data,y=new Float32Array(W*H);for(let i=0,k=0;i<d.length;i+=4,k++)y[k]=.299*d[i]+.587*d[i+1]+.114*d[i+2];
     return{W,H,d,y}},
@@ -998,7 +1145,7 @@ const AZ={
     res.sort((a,b)=>a[0]-b[0]);const n=Math.max(1,Math.floor(res.length*.3));let m=0;for(let i=0;i<n;i++)m+=res[i][1];m/=n;
     return Math.sqrt(Math.PI/2)*m/6},
   /* carrés de compression : compare les sauts de luminosité sur la grille 8×8 (et son décalage) aux sauts ailleurs */
-  block(el){const w=el.videoWidth||el.naturalWidth,h=el.videoHeight||el.naturalHeight;if(!w||w*h>2.2e6)return null;
+  block(el){const [w,h]=dims(el);if(!w||w*h>2.2e6)return null;
     if(!AZ.bc)AZ.bc=document.createElement("canvas");const c=AZ.bc;c.width=w;c.height=h;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(el,0,0,w,h);
     const d=x.getImageData(0,0,w,h).data,y=new Float32Array(w*h);for(let i=0,k=0;i<d.length;i+=4,k++)y[k]=.299*d[i]+.587*d[i+1]+.114*d[i+2];
     const ex=new Float64Array(8),ey=new Float64Array(8),nx=new Float64Array(8),ny=new Float64Array(8);
@@ -1081,7 +1228,7 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
   T:{blk:1.25,hiss:-52,dust:15,flick:.25,flickMean:.008,shake:2.5,cast:.08,noiseMid:1.6,noiseHi:3,blur:30},
   apply(r){
     const o=r.o,set=(id,v)=>{const e=$("#"+id);if(e){e.checked=v;try{localStorage.setItem(id,v?"1":"0")}catch(x){}}};
-    set("o_dust",o.dust);set("o_voice",o.voice);set("o_defl",o.defl);set("o_stab",o.stab);
+    set("o_dust",o.dust);set("o_voice",o.voice&&!MODELS.isOff("voix")&&MODELS.compat("voix").ok);set("o_defl",o.defl);set("o_stab",o.stab);
     try{stabEnable(o.stab)}catch(e){}
     if(o.wb){WBG=o.wb;P.wb=.85}else{WBG=[1,1,1];P.wb=0}
     P.dn=o.dn;P.sh=o.sh;P.db=o.db;DB.ph=o.ph;if(o.cs!=null)P.cs=o.cs;sync()},
@@ -1116,6 +1263,7 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       const au=await REC.audio();m.audio=au;
       if(curFile!==my)return;
       const r=REC.recommend(m,fl);REC.last={m,fl,r};window.__prof={m,fl};
+      try{PROF.recommend({w:v.videoWidth,h:v.videoHeight,noise:m.noise,blk:m.blk})}catch(e){}
       const ad=LEARN.adapt(r.o);r.learn=ad.notes;
       REC.apply(r);
       if(r.o.bias){for(const k in r.o.bias)P[k]=Math.max(k==="co"||k==="sa"?.8:-.3,Math.min(k==="co"||k==="sa"?1.4:.3,P[k]+r.o.bias[k]));sync()}
@@ -1172,7 +1320,9 @@ REC.after=async function(){
 const FLT={sel:-1,sel2:-1,mx:.5,f:1,n:0,tex:null,data:null,
   async load(){
     if(FLT.data)return true;
-    const img=new Image();img.src="filtres.png";await img.decode();
+    if(MODELS.isOff("filtres"))throw new Error("désactivé");
+    const fu=URL.createObjectURL(new Blob([await MODELS.bytes("filtres")],{type:"image/png"}));
+    const img=new Image();img.src=fu;try{await img.decode()}finally{URL.revokeObjectURL(fu)}
     const c=document.createElement("canvas");c.width=img.width;c.height=img.height;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(img,0,0);
     FLT.data=x.getImageData(0,0,c.width,c.height).data;FLT.nb=img.height/17;FLT.n=FLT.nb/2;
     if(gl){FLT.tex=gl.createTexture();gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,FLT.tex);
@@ -1186,7 +1336,7 @@ const FLT={sel:-1,sel2:-1,mx:.5,f:1,n:0,tex:null,data:null,
   async open(){
     const box=$("#flt");box.hidden=false;$("#fltb").hidden=true;
     const g=$("#flt_g");g.textContent="Préparation des aperçus…";
-    try{await FLT.load()}catch(e){g.textContent="Impossible de charger la bibliothèque de filtres.";return}
+    try{await FLT.load()}catch(e){const t=MODELS.explain(e);g.textContent="Impossible de charger la bibliothèque de filtres : "+t.texte+" "+t.solution;return}
     const src=cur(),[w,h]=dims(src),TW=120,TH=Math.round(TW*h/w);
     const c0=document.createElement("canvas");c0.width=TW;c0.height=TH;const x0=c0.getContext("2d",{willReadFrequently:true});x0.drawImage(src,0,0,TW,TH);
     const base=x0.getImageData(0,0,TW,TH),d=base.data,np=TW*TH;
@@ -1236,7 +1386,7 @@ const DIAG={last:null,
       filtre:FLT.sel>=0?(FLT.sel+(FLT.sel2>=0?"+"+FLT.sel2+"@"+FLT.mx:"")):"aucun",
       timing:window.__timing||"",seq:window.__seqInfo||"",
       /* réglages réellement appliqués (pour comprendre un rendu trop clair, trop sombre…) : des nombres seulement, aucune image */
-      reglages:Object.fromEntries(Object.entries(P).map(([k,x])=>[k,+(+x).toFixed(3)])),balance:WBG.map(x=>+x.toFixed(3)),protection:HP,appris:(()=>{try{const d=LEARN.get();return d&&d.bias?d.bias:null}catch(e){return null}})(),ia:window.SR?{actif:SR.ok,moteur:SR.engine,vitesse_ms_par_Mpx:SR.speed,raison:SR.why}:null}},
+      reglages:Object.fromEntries(Object.entries(P).map(([k,x])=>[k,+(+x).toFixed(3)])),balance:WBG.map(x=>+x.toFixed(3)),protection:PROF.k().hp,profil:PROF.id,appris:(()=>{try{const d=LEARN.get();return d&&d.bias?d.bias:null}catch(e){return null}})(),ia:window.SR?{actif:SR.ok,moteur:SR.engine,vitesse_ms_par_Mpx:SR.speed,raison:SR.why,noyau:window.SRGPU&&SRGPU.kernel||null}:null}},
   hist(){try{return JSON.parse(localStorage.getItem("diag_hist")||"[]")}catch(e){return[]}},
   save(h){try{localStorage.setItem("diag_hist",JSON.stringify(h.slice(-300)))}catch(e){try{localStorage.setItem("diag_hist",JSON.stringify(h.slice(-60)))}catch(x){}}},
   async db(){try{if(!window.claude||!claude.use)return null;return await claude.use("db")}catch(e){return null}},
@@ -1653,6 +1803,13 @@ const FREP={info:null,
     ok("Fichier créé : "+x.w+"×"+x.h+", "+x.mo+" Mo, format "+(x.codec.startsWith("hvc")?"HEVC (compact)":"H.264 (classique)")+", "+x.mbps+" Mbit/s.");
     ok("Images : "+x.frames+" sur "+x.expected+" attendues"+(x.frames>=x.expected-1?" ✓":"")+".");
     if(x.frames<x.expected-1)bad("Il manque "+(x.expected-x.frames)+" images : réessaie, et garde l’app au premier plan pendant l’export.");
+    if(x.chk&&x.chk.w){const ar0=x.ar[0]/x.ar[1],ar1=x.chk.w/x.chk.h,ed=x.dur[1],dd=x.chk.d;
+      ok("Fichier relu par le lecteur : "+x.chk.w+"×"+x.chk.h+(isFinite(dd)?", "+dd.toFixed(2).replace(".",",")+" s":"")+" ✓");
+      if(Math.abs(ar1/ar0-1)<.01)ok("Format de l’image conservé ("+(x.chk.h>x.chk.w?"portrait":"paysage")+"), sans recadrage ni déformation ✓");else warn("Le format de l’image a légèrement changé ("+ar0.toFixed(3)+" → "+ar1.toFixed(3)+").");
+      if(isFinite(dd)&&Math.abs(dd-ed)>Math.max(.15,1.5/x.fps[1]))warn("Durée lue "+dd.toFixed(2)+" s au lieu de "+ed.toFixed(2)+" s attendues.");
+      if(Math.abs(x.fps[1]-x.fps[0])>.05)ok("Cadence : "+(Math.round(x.fps[0]*100)/100)+" → "+x.fps[1]+" images par seconde (option « Mouvement plus fluide »).");else ok("Cadence d’origine conservée : "+(Math.round(x.fps[0]*100)/100)+" images par seconde ✓");}
+    else if(x.chk===null)warn("Le fichier n’a pas pu être relu pour vérification (le lecteur de cet appareil ne l’a pas ouvert à temps).");
+    if(x.faces>0)ok("Visages protégés sur "+x.faces+" image"+(x.faces>1?"s":"")+" : l’IA y est mêlée à la version classique (rendu "+PROF.NOM[PROF.id]+").");
     if(x.son)ok("Son : présent ✓");else if(x.why==="ta vidéo n’a pas de son")ok("Son : la vidéo d’origine n’en a pas.");else bad("Son absent : "+(x.why||"raison inconnue")+".");
     if(x.memDown)warn("Taille réduite automatiquement pour ne pas saturer la mémoire de l’iPhone.");
     if(x.retry4k)warn("La 4K n’a pas tenu sur cet iPhone : export refait en Full HD.");
@@ -1749,6 +1906,10 @@ const probe=b=>new Promise(res=>{
   p.onerror=()=>fin(p.error?p.error.code:"?");
   setTimeout(()=>fin(true),6000);p.src=u;p.load();
 });
+/* relit le fichier produit comme le ferait un lecteur vidéo : dimensions et durée réelles */
+const probeInfo=b=>new Promise(res=>{const p=document.createElement("video"),u=URL.createObjectURL(b);let d=false;
+  const fin=x=>{if(d)return;d=true;URL.revokeObjectURL(u);p.removeAttribute("src");res(x)};
+  p.muted=true;p.playsInline=true;p.preload="metadata";p.onloadedmetadata=()=>fin({w:p.videoWidth,h:p.videoHeight,d:p.duration});p.onerror=()=>fin(null);setTimeout(()=>fin(null),6000);p.src=u});
 $("#rv").onerror=()=>msg("La lecture a échoué (code "+($("#rv").error?$("#rv").error.code:"?")+").");
 function friendly(m){
   if(/encod/i.test(m))return "Échec : l’encodeur de ton iPhone a refusé ce format. Choisis Full HD et réessaie.";
@@ -1862,7 +2023,7 @@ $("#ex").onclick=async()=>{
       rdr=await makeSeq(off,OFPS);rdr0=!!rdr;
     }
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
-    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();
+    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();try{FACES.reset()}catch(e){}SRX.lastFaces=0;SRX.faceFrames=0;
     for(let i=0;i<total;i++){
       if(cancel||err)break;
       const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
@@ -1951,12 +2112,17 @@ $("#ex").onclick=async()=>{
       vch.length=0;ach.length=0;
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
-      $("#rv").hidden=false;baShow(!isPlan,tS);if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
-      msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(!plan&&maxRun>=3?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
-      try{const ro=FREP.out({w:cfg.width,h:cfg.height,mo:(outBlob.size/1048576).toFixed(1),codec:cfg.codec,mbps:(cfg.bitrate/1e6).toFixed(1),frames:total,expected:plan?total:Math.max(1,Math.round(dT*OUTF)),son:!!wa,why:audioWhy,memDown:!!window.__memDown,retry4k:!!window.__retried4k,dupRun:maxRun+1,slow:!rdr0});
+      $("#rv").hidden=false;$("#pv").hidden=true;baShow(!isPlan,tS);if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
+      /* images identiques à la suivante : signe d'une recherche d'image ratée SEULEMENT en lecture par recherche (repli) ;
+         en lecture séquentielle, ce sont les images de la source elle-même (plan fixe, mouvement très lent) : pas une erreur */
+      const frozen=!plan&&poolUp&&maxRun>=3;
+      msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(frozen?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
+      let chk=null;try{chk=await probeInfo(outBlob)}catch(e){}
+      try{const ro=FREP.out({chk,w:cfg.width,h:cfg.height,mo:(outBlob.size/1048576).toFixed(1),codec:cfg.codec,mbps:(cfg.bitrate/1e6).toFixed(1),frames:total,expected:plan?total:Math.max(1,Math.round(dT*OUTF)),faces:srUse?SRX.faceFrames||0:-1,son:!!wa,why:audioWhy,memDown:!!window.__memDown,retry4k:!!window.__retried4k,dupRun:frozen?maxRun+1:0,slow:!rdr0,ar:[v.videoWidth,v.videoHeight],fps:[OFPS,OUTF],dur:[dT,(plan?total:total)/OUTF]});
         const l=$("#orep_l");l.textContent="";let nb=0;ro.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
         $("#orep_s").textContent=nb?"Compte rendu de l’export : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu de l’export : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro;window.__retried4k=false}catch(e){}
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
+      try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)]}))}catch(e){}
       try{DIAG.send("export",{ok:true,codec:cfg.codec,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
@@ -2217,7 +2383,7 @@ async function lastFrame(){
   const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",.95));
   if(!blob){msg("Impossible de créer l’image.");return}
   outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
-  $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer l’image";
+  $("#ri").src=outUrl;$("#ri").hidden=false;$("#pv").hidden=true;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer l’image";
   $("#out").hidden=false;$("#sv").hidden=false;
   msg("Dernière image prête."+(dl?"":" Appuie longuement dessus pour l’enregistrer."));
   $("#out").scrollIntoView({behavior:"smooth"});
@@ -2268,7 +2434,8 @@ let rnnMod=null;
 async function voiceClean(raw,file,t0,t1,trim,bed){
   bed=bed==null?.04:bed;
   let ab=await decodeAudioAny(raw,file);if(ab.sampleRate!==48000)ab=await toRate(ab,48000);
-  if(!rnnMod){const m=await import("./rnnoise.mjs");rnnMod=await m.default()}
+  if(!rnnMod){await MODELS.bytes("voix");/* empreinte vérifiée : un fichier abîmé est refusé, le son d'origine est alors gardé */
+    const m=await import("./rnnoise.mjs");rnnMod=await m.default()}
   const M=rnnMod,ch=Math.min(2,ab.numberOfChannels),N=ab.length,LAG=960,inP=M._malloc(480*4),outP=M._malloc(480*4);
   const a0=trim?Math.max(0,Math.round(t0*48000)):0,a1=trim?Math.min(N,Math.round(t1*48000)):N,L=Math.max(1,a1-a0),res=[];
   try{
@@ -2561,36 +2728,122 @@ $("#bat").onclick=()=>{
 
 /* Photos */
 $("#pickp").onclick=()=>$("#fp").click();
+let photoURL=null;
 $("#fp").onchange=e=>{
   if(exporting||window.__exStarting){e.target.value="";msg("Un export est en cours : attends la fin ou touche « Annuler » avant de choisir une photo.");return}
-  const f=e.target.files[0];if(!f)return;window.__photoName=f.name;
+  const f=e.target.files[0];e.target.value="";if(!f)return;window.__photoName=f.name;
   const u=URL.createObjectURL(f),im=new Image();msg("Chargement de la photo…");
   im.onload=()=>{
     const k=Math.min(1,4096/Math.max(im.naturalWidth,im.naturalHeight));
     const c=document.createElement("canvas");c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
-    c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);
-    try{FLT.reset()}catch(e){}photoEl=c;mode="photo";v.pause();setMode();chips([c.width+"×"+c.height,"photo"]);$("#tc").hidden=true;updateEst();$("#pickp .lbl").textContent="Autre photo";
-    size(PREVIEW);try{analyze()}catch(e){}draw();msg("");
+    c.getContext("2d").drawImage(im,0,0,c.width,c.height);
+    /* l'original reste disponible pour le comparateur (libéré à la photo suivante) */
+    if(photoURL)URL.revokeObjectURL(photoURL);photoURL=u;window.__photoFile=f;window.__photoNat=[im.naturalWidth,im.naturalHeight];
+    try{FLT.reset()}catch(e){}photoEl=c;mode="photo";v.pause();
+    /* rien ne doit venir de la vidéo précédente : anti-blocs, équilibre des couleurs, poussières… sont propres à chaque média */
+    P.db=0;DB.ph=[0,0];P.wb=0;WBG=[1,1,1];DUST.on=false;SRX.pc=null;SRX.key="";SRX.warned=false;
+    setMode();chips([c.width+"×"+c.height+(k<1?" (réduite de "+im.naturalWidth+"×"+im.naturalHeight+")":""),"photo",(f.size/1048576).toFixed(1).replace(".",",")+" Mo"]);$("#tc").hidden=true;updateEst();$("#pickp .lbl").textContent="Autre photo";
+    size(PREVIEW);try{analyze()}catch(e){}try{PHOTO.analyze()}catch(e){}draw();msg("");
   };
-  im.onerror=()=>msg("Impossible de lire cette photo.");im.src=u;
+  im.onerror=()=>{URL.revokeObjectURL(u);msg("Impossible de lire cette photo (format non pris en charge par ce navigateur).")};im.src=u;
 };
+/* ===== Analyse d'une photo : mesures réelles, puis réglages et profil conseillés ===== */
+const PHOTO={last:null,
+  analyze(){
+    const el=photoEl;if(!el)return;const [w,h]=dims(el);
+    const f=AZ.grab(el,Math.min(640,w)),st=AZ.stats(f),noise=AZ.noise(f),sharp=AZ.sharp(f);let blk=null;try{blk=AZ.block(el)}catch(e){}
+    const m={kind:"photo",w,h,noise,sharp,blk,p2:st.p2,p50:st.p50,p98:st.p98,sat:st.sat};PHOTO.last=m;
+    const n=[],it=[],big=w*h>1100000;
+    n.push("Définition : "+w+"×"+h+" ("+(w*h/1e6).toFixed(1).replace(".",",")+" Mpx). "+(big?"Déjà détaillée : nettoyage léger, sans IA (elle n’ajouterait rien).":"Petite : agrandissement "+(Math.max(w,h)<1500?"×3":"×2")+(SRX.on()?" avec restauration IA ; une partie des détails sera estimée, pas d’origine.":" (IA désactivée)."))); it.push(null);
+    if(blk&&blk.r>=REC.T.blk){P.db=Math.max(.35,Math.min(1,(blk.r-1.15)/.45));DB.ph=[blk.px,blk.py];n.push("Carrés de compression mesurés (indice "+blk.r.toFixed(2).replace(".",",")+") : lissés.");it.push("db")}
+    if(noise>=REC.T.noiseHi){P.dn=.5;n.push("Bruit ou grain marqué : réduction du bruit renforcée.");it.push("dn")}
+    else if(noise>=REC.T.noiseMid){P.dn=.35;n.push("Un peu de bruit : réduction du bruit moyenne.");it.push("dn")}
+    if(sharp<REC.T.blur)n.push("Image floue : la netteté est améliorée avec mesure ; un flou important ne peut pas être entièrement rattrapé (les détails perdus ne sont pas récupérables).");
+    if(st.p98-st.p2<.45){n.push("Image peu contrastée : contraste relevé.");it.push("img")}
+    else if(st.p50<.22){n.push("Image sombre : éclaircie avec mesure (une scène sombre voulue reste sombre).");it.push("img")}
+    if(st.p98>=.985&&st.p50>.6)n.push("Zones très claires probablement brûlées : elles sont protégées, mais le détail perdu ne revient pas.");
+    sync();
+    const r={n:n.slice(1),it:it.slice(1),o:{db:P.db,dn:P.dn}};REC.last={m,r};
+    PROF.recommend(m);
+    $("#rec").hidden=false;REC.show(r,n[0]+(r.n.length?" Voici ce que j’ai mesuré et réglé :":" Aucun défaut marqué mesuré : réglages doux."));
+    try{LEARN.snap()}catch(e){}
+    try{DIAG.send("analyse_photo",{mesures:{w,h,bruit:+noise.toFixed(2),nettete:Math.round(sharp),blocs:blk&&+blk.r.toFixed(2),p50:+st.p50.toFixed(2)},profil:PROF.rec})}catch(e){}
+  }
+};
+/* ===== Recette du traitement : tout ce qu'il faut pour comprendre ou refaire un résultat ===== */
+function recipe(extra){
+  const o=id=>{const e=$("#"+id);return e?e.checked:false};
+  const r={app:VER,date:new Date().toISOString(),media:mode,source:mode==="photo"?dims(photoEl).join("×"):v.videoWidth+"×"+v.videoHeight,profil:PROF.NOM[PROF.id],
+    ia:SRX.on()?{modele:"Real-ESRGAN general v3 (v0.2.5.0)",moteur:window.SR?SR.engine:"?",debruitage:+SRX.dn().toFixed(2),part_ia:PROF.k().ai,
+      visages:{proteges:SRX.lastFaces||0,part_classique:PROF.k().face,detecteur:MODELS.isOff("visages")?"désactivé":SRX.faceErr?"indisponible":"UltraFace RFB-320"}}:"non",
+    operations:[P.db>0&&"anti-blocs",PROF.v("dn")>0&&"réduction du bruit",PROF.v("sh")>0&&"netteté",PROF.v("cs")>0&&"nettoyage des couleurs",P.wb>0&&"équilibre des couleurs",FLT.sel>=0&&"retrait de filtre",
+      mode==="video"&&o("o_dust")&&"poussières",mode==="video"&&o("o_defl")&&"anti-scintillement",mode==="video"&&o("o_stab")&&"stabilisation",mode==="video"&&o("o_voice")&&"voix",mode==="video"&&o("o_fluid")&&"fluidité"].filter(Boolean),
+    reglages_appliques:Object.fromEntries(["br","co","sa","wa","sh","dn","cs","db"].map(k=>[k,+(+PROF.v(k)).toFixed(3)])),protection_hautes_lumieres:PROF.k().hp,...(extra||{})};
+  try{const h=JSON.parse(localStorage.getItem("recettes")||"[]");h.push(r);localStorage.setItem("recettes",JSON.stringify(h.slice(-30)))}catch(e){}
+  return r}
+function showRecipe(r){const e=$("#recipe");if(!e)return;e.textContent="Recette : "+JSON.stringify(r);$("#tech").hidden=false}
 async function exportPhoto(){
-  if(!photoEl)return;
-  const [w,h]=dims(photoEl),m=Math.max(w,h);
-  let s=m<1500?3:m<2500?2:1;s=Math.min(s,4096/m);
-  cv.width=Math.round(w*s);cv.height=Math.round(h*s);show=1;
-  msg("Traitement de la photo…");await wait(30);
-  const t0=performance.now();
-  if(!(await SRX.render(photoEl,f=>{const el=(performance.now()-t0)/1000,r=el/f*(1-f);msg("Restauration IA de la photo… "+Math.round(f*100)+" %"+(f<1&&el>2?", reste environ "+(r>90?Math.round(r/60)+" min":Math.round(r)+" s"):""))},SRX.ck())))draw(photoEl);
-  const blob=await new Promise(r=>cv.toBlob(r,"image/jpeg",.95)),W=cv.width,H=cv.height;
-  size(PREVIEW);
-  if(!blob){msg("Impossible de créer la photo.");return}
-  outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
-  $("#ri").src=outUrl;$("#ri").hidden=false;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
-  $("#out").hidden=false;$("#sv").hidden=false;$("#kbb").hidden=false;$("#kbo").hidden=false;$("#kbres").hidden=true;$("#bab").hidden=true;$("#bares").hidden=true;
-  msg("Terminé ! "+W+"×"+H+"."+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
-  $("#out").scrollIntoView({behavior:"smooth"});
+  if(!photoEl||exporting)return;exporting=true;const btn=$("#ex");btn.disabled=true;
+  try{
+    const [w,h]=dims(photoEl),m=Math.max(w,h);
+    let s=m<1500?3:m<2500?2:1;s=Math.min(s,4096/m);
+    cv.width=Math.round(w*s);cv.height=Math.round(h*s);show=1;
+    msg("Traitement de la photo…");await wait(30);
+    const t0=performance.now();
+    const ia=await SRX.render(photoEl,f=>{const el=(performance.now()-t0)/1000,r=el/f*(1-f);msg("Restauration IA de la photo… "+Math.round(f*100)+" %"+(f<1&&el>2?", reste environ "+(r>90?Math.round(r/60)+" min":Math.round(r)+" s"):""))},SRX.ck());
+    if(!ia)draw(photoEl);
+    const png=$("#pfmt")&&$("#pfmt").value==="png";
+    const blob=await new Promise(r=>cv.toBlob(r,png?"image/png":"image/jpeg",.95)),W=cv.width,H=cv.height;
+    size(PREVIEW);
+    if(!blob){msg("Impossible de créer la photo (mémoire saturée ?). Réessaie, ou choisis le format JPEG.");return}
+    /* contrôle du fichier produit : il doit se relire et avoir la taille prévue */
+    let ok=false;try{const bm=await createImageBitmap(blob);ok=bm.width===W&&bm.height===H;bm.close&&bm.close()}catch(e){ok=false}
+    if(!ok){msg("La photo produite n’a pas pu être relue : réessaie.");return}
+    outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
+    $("#ri").src=outUrl;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
+    $("#out").hidden=false;$("#sv").hidden=false;$("#kbb").hidden=false;$("#kbo").hidden=false;$("#kbres").hidden=true;$("#bab").hidden=true;$("#bares").hidden=true;
+    PV.show(photoURL,outUrl,W,H);
+    const r=recipe({sortie:W+"×"+H,format:png?"PNG":"JPEG 95 %",ia_utilisee:ia,duree_s:+((performance.now()-t0)/1000).toFixed(1)});showRecipe(r);
+    const ro=[["ok","Photo créée : "+W+"×"+H+" ("+(s>1?"agrandie ×"+(Math.round(s*10)/10).toString().replace(".",","):"taille d’origine")+"), "+(png?"PNG sans perte":"JPEG qualité 95 %")+", "+(blob.size/1048576).toFixed(1).replace(".",",")+" Mo. Fichier relu et vérifié ✓"],
+      ["ok","Rendu : "+PROF.NOM[PROF.id]+(ia?" ; restauration IA (Real-ESRGAN general v3, moteur "+(SR.engine==="gpu"?"WebGPU":"WebGL2")+")":" ; sans IA")+"."]];
+    if(s>1)ro.push([ia?"warn":"ok",ia?"Agrandissement par IA : une partie des fins détails est estimée par le réseau, elle n’existait pas dans l’original. Compare au zoom ci-dessous.":"Agrandissement classique : aucune information n’est inventée, l’image est seulement interpolée."]);
+    if(ia&&SRX.lastFaces)ro.push(["ok","Visage"+(SRX.lastFaces>1?"s":"")+" repéré"+(SRX.lastFaces>1?"s":"")+" : "+SRX.lastFaces+". L’IA y est mêlée à "+Math.round(PROF.k().face*100)+" % de version classique pour ne pas redessiner les traits."]);
+    else if(ia&&SRX.faceErr)ro.push(["warn","Protection des visages indisponible : "+SRX.faceErr.texte]);
+    if(SRX.lastErr)ro.push(["warn","IA non utilisée : "+SRX.lastErr.texte]);
+    orepShow(ro);
+    msg("Terminé ! "+W+"×"+H+"."+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
+    try{DIAG.send("export_photo",{ok:true,out:W+"x"+H,ia,profil:PROF.id,format:png?"png":"jpeg",mo:+(blob.size/1048576).toFixed(2)})}catch(e){}
+    $("#out").scrollIntoView({behavior:"smooth"});
+  }catch(e){msg("La photo n’a pas pu être traitée : "+((e&&e.message)||"erreur")+".");try{DIAG.send("export_photo",{ok:false,err:String(e&&e.message).slice(0,200)})}catch(x){}}
+  finally{exporting=false;btn.disabled=false}
 }
+function orepShow(ro){const l=$("#orep_l");l.textContent="";let nb=0;ro.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
+  $("#orep_s").textContent=nb?"Compte rendu : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro}
+/* ===== Comparateur avant / après avec zoom (photos) ===== */
+const PV={z:1,tx:0,ty:0,sp:.5,solo:false,
+  show(uo,ua,W,H){const b=$("#pvb");$("#pvo").src=uo;$("#pva").src=ua;b.style.aspectRatio=W+" / "+H;PV.z=1;PV.tx=PV.ty=0;PV.solo=false;$("#pv").hidden=false;$("#ri").hidden=true;$("#pvsolo").textContent="Voir la photo retouchée seule";PV.apply()},
+  hide(){$("#pv").hidden=true},
+  apply(){const b=$("#pvb"),r=b.getBoundingClientRect(),W=r.width||1,H=r.height||1;
+    PV.tx=Math.min(0,Math.max(W*(1-PV.z),PV.tx));PV.ty=Math.min(0,Math.max(H*(1-PV.z),PV.ty));
+    b.querySelectorAll(".pv-in").forEach(e=>e.style.transform="translate("+PV.tx+"px,"+PV.ty+"px) scale("+PV.z+")");
+    $("#pvla").style.clipPath="inset(0 0 0 "+(PV.sp*100)+"%)";$("#pvl").style.left=(PV.sp*100)+"%";
+    b.classList.toggle("px",PV.z>=4);b.style.cursor=PV.z>1?"grab":"default";
+    document.querySelectorAll("#pv [data-z]").forEach(x=>x.setAttribute("aria-pressed",+x.dataset.z===PV.z?"true":"false"))},
+  zoom(z,cx,cy){const b=$("#pvb"),r=b.getBoundingClientRect();cx=cx==null?r.width/2:cx;cy=cy==null?r.height/2:cy;
+    const ix=(cx-PV.tx)/PV.z,iy=(cy-PV.ty)/PV.z;PV.z=z;PV.tx=cx-ix*z;PV.ty=cy-iy*z;PV.apply()}
+};
+$("#pvs").oninput=e=>{PV.sp=e.target.value/1000;PV.apply()};
+document.querySelectorAll("#pv [data-z]").forEach(b=>b.onclick=()=>PV.zoom(+b.dataset.z));
+$("#pvsolo").onclick=()=>{PV.solo=!PV.solo;$("#pvb").hidden=PV.solo;$("#pvs").hidden=PV.solo;$("#ri").hidden=!PV.solo;$("#pvsolo").textContent=PV.solo?"Revenir au comparateur":"Voir la photo retouchée seule";if(!PV.solo)PV.apply()};
+(()=>{const b=$("#pvb");let drag=null,lastTap=0;
+  b.addEventListener("pointerdown",e=>{const r=b.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,now=Date.now();
+    if(now-lastTap<320){PV.zoom(PV.z>=4?1:4,x,y);lastTap=0;return}lastTap=now;
+    if(PV.z>1){drag={x:e.clientX,y:e.clientY,tx:PV.tx,ty:PV.ty};try{b.setPointerCapture(e.pointerId)}catch(_){}b.style.cursor="grabbing"}
+    else{PV.sp=Math.min(1,Math.max(0,x/r.width));$("#pvs").value=Math.round(PV.sp*1000);PV.apply();drag={split:true}}});
+  b.addEventListener("pointermove",e=>{if(!drag)return;if(drag.split){const r=b.getBoundingClientRect();PV.sp=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));$("#pvs").value=Math.round(PV.sp*1000);PV.apply();return}
+    PV.tx=drag.tx+e.clientX-drag.x;PV.ty=drag.ty+e.clientY-drag.y;PV.apply()});
+  const end=()=>{drag=null;b.style.cursor=PV.z>1?"grab":"default"};b.addEventListener("pointerup",end);b.addEventListener("pointercancel",end);
+  window.addEventListener("resize",()=>{if(!$("#pv").hidden)PV.apply()})})();
 /* Raccourci écran d’accueil */
 (function(){
   let seen=false;try{seen=localStorage.getItem("inst")==="1"}catch(e){}
@@ -2600,6 +2853,30 @@ async function exportPhoto(){
 })();
 /* Enregistrement */
 (async()=>{try{if(window.claude&&claude.use)dl=await claude.use("downloads")}catch(e){dl=null}})();
+/* ===== Profils : boutons ===== */
+document.querySelectorAll("[data-prof]").forEach(b=>b.onclick=()=>PROF.set(b.dataset.prof,true));
+try{const sp=localStorage.getItem("profil");if(sp&&PROF.T[sp]){PROF.id=sp;PROF.manual=true;document.querySelectorAll("[data-prof]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.prof===sp?"true":"false"))}}catch(e){}
+/* ===== Taille personnalisée ===== */
+$("#qc").onchange=e=>{const val=e.target.value;if(!val)return;const q=$("#q");if(![...q.options].some(o=>o.value===val)){const o=document.createElement("option");o.value=val;o.textContent=val+" px";q.appendChild(o)}
+  q.value=val;q.dispatchEvent(new Event("change"));try{localStorage.setItem("q",val)}catch(x){}};
+/* ===== Modèles IA : fenêtre de gestion et liens avec les fonctions ===== */
+window.__mediaInfo=()=>mode==="photo"&&photoEl?{kind:"photo",w:dims(photoEl)[0],h:dims(photoEl)[1]}:v.videoWidth?{kind:"video",w:v.videoWidth,h:v.videoHeight,son:FREP.info?FREP.info.son!==false:true}:null;
+$("#mdlb").onclick=()=>{const d=$("#mdl");try{d.showModal()}catch(e){d.setAttribute("open","")}MODELS.mount(d)};
+$("#mdlx").onclick=()=>{const d=$("#mdl");try{d.close()}catch(e){d.removeAttribute("open")}};
+$("#mdl").addEventListener("click",e=>{if(e.target===$("#mdl"))$("#mdlx").click()});
+/* une fonction dont le modèle est désactivé ou incompatible est grisée, avec la raison (pas de faux bouton) */
+function syncModels(){
+  const fix=(id,inp,label)=>{const e=$(inp);if(!e)return;const off=MODELS.isOff(id),c=MODELS.compat(id),bad=off||!c.ok;e.disabled=bad;if(bad)e.checked=false;
+    const box=e.closest("label");if(!box)return;let n=box.querySelector(".mdl-why");if(!n){n=document.createElement("small");n.className="mdl-why";n.style.cssText="display:block;color:var(--tc);margin-top:2px";box.querySelector("span").appendChild(n)}
+    n.textContent=bad?(off?label+" désactivé dans « Modèles IA ».":"Indisponible sur cet appareil : "+c.why+"."):"";};
+  fix("sr","#o_max","Modèle");fix("depth","#o_relief","Modèle");fix("voix","#o_voice","Modèle");
+  const fb=$("#fltb");if(fb){const off=MODELS.isOff("filtres");fb.disabled=off;fb.textContent=off?"Retrait de filtre désactivé (Modèles IA)":"Retirer un filtre Snapchat / Instagram (essai)"}
+  try{SRX.pc=null;SRX.key="";updateEst()}catch(e){}
+}
+MODELS.subscribe(syncModels);syncModels();
+/* son (RNNoise) et filtres : déclarés au gestionnaire pour l'état et la libération de mémoire */
+MODELS.register("voix",{loaded:()=>!!rnnMod,busy:()=>exporting,unload:()=>{rnnMod=null}});
+MODELS.register("filtres",{loaded:()=>!!FLT.data,busy:()=>FLT.sel>=0,unload:()=>{if(FLT.sel>=0)return;try{if(FLT.tex&&gl)gl.deleteTexture(FLT.tex)}catch(e){}FLT.tex=null;FLT.data=null}});
 /* ===== Lot de vidéos ===== */
 $("#exall").onclick=async()=>{
   if(!batch||batch.running||exporting)return;

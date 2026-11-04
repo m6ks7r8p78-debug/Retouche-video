@@ -53,6 +53,56 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>,@builtin(local_invocation_i
   let o=u32(pix.y*p.tsz.x+pix.x); let oc=og*16u;
   for(var k:u32=0u;k<4u;k=k+1u){ Y[(oc+k)*plane+o]=a0[k]; Y[(oc+4u+k)*plane+o]=a1[k]; Y[(oc+8u+k)*plane+o]=a2[k]; Y[(oc+12u+k)*plane+o]=a3[k]; }
 }`;
+  /* même couche, version « 4 pixels par fil » (bloc 2×2) : chaque poids lu sert 4 fois au lieu d'1, et il y a 4 fois moins
+     de groupes de calcul. L'ordre des additions est le même qu'au-dessus : le résultat doit être identique (vérifié à chaque appareil). */
+  const T4 = 2 * WG + 2, CH4 = 8;
+  const CONV4 = (first) => {
+    const P4 = ["00", "01", "10", "11"];   /* pixel (dy,dx) du bloc 2×2 */
+    let acc = "", fma = "", store = "";
+    for (const q of P4) { acc += `var a${q}0=B[og*4u];var a${q}1=B[og*4u+1u];var a${q}2=B[og*4u+2u];var a${q}3=B[og*4u+3u];`;
+      fma += `a${q}0=a${q}0+x${q}*w0;a${q}1=a${q}1+x${q}*w1;a${q}2=a${q}2+x${q}*w2;a${q}3=a${q}3+x${q}*w3;`;
+      store += `{let pp=p0+vec2<i32>(${q[1]},${q[0]});if(all(pp<p.tsz)){
+        if(p.act==1u){a${q}0=max(a${q}0,vec4(0.))+B[n4+og*4u]*min(a${q}0,vec4(0.));a${q}1=max(a${q}1,vec4(0.))+B[n4+og*4u+1u]*min(a${q}1,vec4(0.));
+          a${q}2=max(a${q}2,vec4(0.))+B[n4+og*4u+2u]*min(a${q}2,vec4(0.));a${q}3=max(a${q}3,vec4(0.))+B[n4+og*4u+3u]*min(a${q}3,vec4(0.));}
+        let o=u32(pp.y*p.tsz.x+pp.x);for(var k:u32=0u;k<4u;k=k+1u){Y[(oc+k)*plane+o]=a${q}0[k];Y[(oc+4u+k)*plane+o]=a${q}1[k];Y[(oc+8u+k)*plane+o]=a${q}2[k];Y[(oc+12u+k)*plane+o]=a${q}3[k];}}}\n` }
+    return `
+struct P{org:vec2<i32>,isz:vec2<i32>,tsz:vec2<i32>,ci:u32,act:u32};
+@group(0) @binding(0) var<uniform> p:P;
+@group(0) @binding(1) var<storage,read> W:array<vec4<f32>>;
+@group(0) @binding(2) var<storage,read> B:array<vec4<f32>>;
+${first ? "@group(0) @binding(3) var I:texture_2d<f32>;" : "@group(0) @binding(3) var<storage,read> X:array<f32>;"}
+@group(0) @binding(4) var<storage,read_write> Y:array<f32>;
+var<workgroup> sh:array<f32,${CH4 * T4 * T4}>;
+@compute @workgroup_size(${WG},${WG},1)
+fn main(@builtin(local_invocation_id) lid:vec3<u32>,@builtin(workgroup_id) wid:vec3<u32>){
+  let og=wid.z; let base=vec2<i32>(wid.xy)*${2 * WG}-1; let p0=vec2<i32>(wid.xy)*${2 * WG}+vec2<i32>(lid.xy)*2;
+  ${acc}
+  let li0=lid.y*${WG}u+lid.x; let plane=u32(p.tsz.x*p.tsz.y);
+  for(var c0:u32=0u;c0<p.ci;c0=c0+${CH4}u){
+    for(var li=li0;li<${CH4 * T4 * T4}u;li=li+${WG * WG}u){
+      let ic=li/${T4 * T4}u; let r=li%${T4 * T4}u;
+      let q=base+vec2<i32>(i32(r%${T4}u),i32(r/${T4}u)); let g=q+p.org; var v=0.;
+      if(c0+ic<p.ci && all(g>=vec2<i32>(0)) && all(g<p.isz) && ${first ? "true" : "all(q>=vec2<i32>(0)) && all(q<p.tsz)"}){
+        ${first ? "v=textureLoad(I,g,0)[ic];" : "v=X[(c0+ic)*plane+u32(q.y*p.tsz.x+q.x)];"}
+      }
+      sh[li]=v;
+    }
+    workgroupBarrier();
+    let n=min(${CH4}u,p.ci-c0);
+    for(var ic:u32=0u;ic<n;ic=ic+1u){
+      for(var t:u32=0u;t<9u;t=t+1u){
+        let s=ic*${T4 * T4}u+(lid.y*2u+t/3u)*${T4}u+lid.x*2u+t%3u;
+        let x00=sh[s]; let x01=sh[s+1u]; let x10=sh[s+${T4}u]; let x11=sh[s+${T4 + 1}u];
+        let w=((og*p.ci+c0+ic)*9u+t)*4u; let w0=W[w]; let w1=W[w+1u]; let w2=W[w+2u]; let w3=W[w+3u];
+        ${fma}
+      }
+    }
+    workgroupBarrier();
+  }
+  let n4=arrayLength(&B)/2u; let oc=og*16u;
+  ${store}
+}`;
+  };
   /* réarrangement ×4 + image d'origine agrandie, sur la partie utile de la tuile */
   const SHUF = `
 struct P{org:vec2<i32>,isz:vec2<i32>,tsz:vec2<i32>,c0:vec2<i32>,n:vec2<i32>};
@@ -87,19 +137,32 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
       if (!navigator.gpu) { why = "WebGPU absent"; return st = false }
       const ad = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" }); if (!ad) { why = "pas de carte graphique WebGPU"; return st = false }
       dev = await ad.requestDevice({ requiredLimits: { maxStorageBufferBindingSize: Math.min(ad.limits.maxStorageBufferBindingSize, 256 * 1048576), maxBufferSize: Math.min(ad.limits.maxBufferSize, 256 * 1048576) } });
-      dev.lost.then(() => { st = false; why = "carte graphique perdue" });
-      const r = await fetch("sr.bin"); if (!r.ok) throw new Error("poids introuvables");
-      const h = new Uint16Array(await r.arrayBuffer()), A = new Float32Array(h.length); for (let i = 0; i < h.length; i++) A[i] = h2f(h[i]);
+      const myDev = dev;
+      myDev.lost.then(info => { if (dev !== myDev || (info && info.reason === "destroyed")) return; st = false; why = "carte graphique perdue" });
+      /* poids lus par le gestionnaire de modèles : empreinte SHA-256 vérifiée */
+      let raw; if (window.MODELS) raw = await MODELS.bytes("sr"); else { const r = await fetch("sr.bin"); if (!r.ok) throw new Error("poids introuvables"); raw = await r.arrayBuffer() }
+      const h = new Uint16Array(raw), A = new Float32Array(h.length); for (let i = 0; i < h.length; i++) A[i] = h2f(h[i]);
       const nf = 64, nc = 32, n = 3 * nf * 9 + 2 * nf + nc * (nf * nf * 9 + 2 * nf) + nf * 48 * 9 + 48;
       if (A.length !== 2 * n) throw new Error("fichier de poids inattendu");
       M = { nf, nc, n, A, halo: nc + 4 };
       const mk = code => dev.createComputePipeline({ layout: "auto", compute: { module: dev.createShaderModule({ code }), entryPoint: "main" } });
       pipes.first = mk(CONV(true)); pipes.conv = mk(CONV(false)); pipes.shuf = mk(SHUF);
+      /* version « 4 pixels par fil » : créée à part ; si ce GPU la refuse, seule la version d'origine sert */
+      try { const mk4 = code => dev.createComputePipelineAsync({ layout: "auto", compute: { module: dev.createShaderModule({ code }), entryPoint: "main" } });
+        pipes.first4 = await mk4(CONV4(true)); pipes.conv4 = await mk4(CONV4(false)) } catch (e) { pipes.first4 = pipes.conv4 = null; kinfo = { k: "1", why: "version 4 pixels refusée par ce GPU" } }
       const rm = dev.createShaderModule({ code: RES });
       pipes.res = dev.createRenderPipeline({ layout: "auto", vertex: { module: rm, entryPoint: "vs" }, fragment: { module: rm, entryPoint: "fs", targets: [{ format: "rgba8unorm" }] }, primitive: { topology: "triangle-list" } });
       setWeights(.3);
       return st = true;
-    } catch (e) { why = (e && e.message) || "erreur"; return st = false }
+    } catch (e) { why = (e && e.message) || "erreur"; if (e && e.code) { try { dev && dev.destroy() } catch (x) {} dev = null; return st = null, false } return st = false }
+  }
+  /* libère tout (tampons, textures, appareil) ; tout sera recréé et revérifié au prochain usage */
+  function unload() {
+    try { layers.forEach(L => { L.w.destroy(); L.b.destroy() }) } catch (e) {}
+    try { if (tile) tile.bufs.forEach(b => b.destroy()); [img, full, outT].forEach(t => t && t.destroy()) } catch (e) {}
+    const d = dev; dev = null; try { d && d.destroy() } catch (e) {}
+    layers = []; pipes = {}; tile = null; full = null; img = null; outT = null; M = null; dnCur = -1; cacheKey = null; out2d = null; kinfo = null;
+    if (st === true) st = null;
   }
 
   function setWeights(dn) {
@@ -122,8 +185,8 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
 
   function uni(words) { const b = dev.createBuffer({ size: Math.max(16, Math.ceil(words.byteLength / 16) * 16), usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }); dev.queue.writeBuffer(b, 0, words); return b }
 
-  async function network(src, W, H, onTile) {
-    const halo = M.halo;
+  async function network(src, W, H, onTile, kern) {
+    const halo = M.halo, k4 = (kern || K()) === "4" && !!pipes.conv4, G = k4 ? 2 * WG : WG;
     if (!img || img.width !== W || img.height !== H) {
       if (img) img.destroy(); if (full) full.destroy();
       img = dev.createTexture({ size: [W, H], format: "rgba8unorm", usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT });
@@ -143,12 +206,12 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
       const enc = dev.createCommandEncoder(), tmp = [];
       let cur = X0, nxt = X1;
       for (let li = 0; li < layers.length; li++) {
-        const Ly = layers[li], last = li === layers.length - 1, first = li === 0, dst = last ? XL : nxt, pl = first ? pipes.first : pipes.conv;
+        const Ly = layers[li], last = li === layers.length - 1, first = li === 0, dst = last ? XL : nxt, pl = first ? (k4 ? pipes.first4 : pipes.first) : (k4 ? pipes.conv4 : pipes.conv);
         const u = uni(new Int32Array([ex, ey, W, H, TW, TH, Ly.ci, Ly.act])); tmp.push(u);
         const bg = dev.createBindGroup({ layout: pl.getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: u } }, { binding: 1, resource: { buffer: Ly.w } }, { binding: 2, resource: { buffer: Ly.b } },
           { binding: 3, resource: first ? img.createView() : { buffer: cur } }, { binding: 4, resource: { buffer: dst } }] });
         const pass = enc.beginComputePass(); pass.setPipeline(pl); pass.setBindGroup(0, bg);
-        pass.dispatchWorkgroups(Math.ceil(TW / WG), Math.ceil(TH / WG), Ly.co / 16); pass.end();
+        pass.dispatchWorkgroups(Math.ceil(TW / G), Math.ceil(TH / G), Ly.co / 16); pass.end();
         if (!first && !last) { const t = cur; cur = nxt; nxt = t } else if (first) { cur = nxt; nxt = X0 }
       }
       const x1 = Math.min(W, cx + CORE), y1 = Math.min(H, cy + CORE), nx = (x1 - cx) * 4, ny = (y1 - cy) * 4;
@@ -161,10 +224,39 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
     }
   }
 
+  /* ---------- choix de la version de calcul, sur CET appareil ----------
+     Les deux versions font exactement le même calcul. Au premier usage, l'app les compare sur une image d'essai :
+     résultats identiques exigés (sinon la version d'origine est gardée), puis la plus rapide est retenue et mémorisée. */
+  const KV = "1";   /* à changer si une version de calcul change : la comparaison est alors refaite */
+  let kinfo = null;
+  function K() { if (kinfo) return kinfo.k; try { const o = JSON.parse(localStorage.getItem("sr_noyau") || "null"); if (o && o.v === KV) { kinfo = o; return o.k } } catch (e) {} return "1" }
+  async function readFull(W, H) {
+    const bpr = Math.ceil(W * 16 / 256) * 256, rb = dev.createBuffer({ size: bpr * H * 4, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+    const enc = dev.createCommandEncoder(); enc.copyTextureToBuffer({ texture: full }, { buffer: rb, bytesPerRow: bpr }, [W * 4, H * 4]); dev.queue.submit([enc.finish()]);
+    await rb.mapAsync(GPUMapMode.READ); const a = new Uint8Array(rb.getMappedRange()).slice(); rb.unmap(); rb.destroy(); return a;
+  }
+  async function tune(force) {
+    if (!force && (K(), kinfo)) return kinfo;
+    if (!pipes.conv4) { kinfo = kinfo || { k: "1", v: KV, why: "version 4 pixels indisponible" }; return kinfo }
+    const N = 96, c = document.createElement("canvas"); c.width = c.height = N; const x = c.getContext("2d");
+    for (let i = 0; i < N; i += 4) for (let j = 0; j < N; j += 4) { x.fillStyle = "rgb(" + ((i * 37 + j * 11) & 255) + "," + ((i * 13 ^ j * 7) & 255) + "," + ((i + j * 3) & 255) + ")"; x.fillRect(i, j, 4, 4) }
+    const time = async k => { const t0 = performance.now(); await network(c, N, N, null, k); return performance.now() - t0 };
+    await time("1"); const r1 = await readFull(N, N); await time("4"); const r4 = await readFull(N, N);
+    let diff = 0; for (let i = 0; i < r1.length; i++) { const d = Math.abs(r1[i] - r4[i]); if (d > diff) diff = d }
+    const t1 = Math.min(await time("1"), await time("1")), t4 = Math.min(await time("4"), await time("4"));
+    cacheKey = null;
+    kinfo = { v: KV, k: diff <= 1 && t4 < t1 * .95 ? "4" : "1", ms1: Math.round(t1), ms4: Math.round(t4), ecart: diff, at: Date.now(),
+      why: diff > 1 ? "résultats différents (écart " + diff + "/255) : version d'origine gardée" : "" };
+    try { localStorage.setItem("sr_noyau", JSON.stringify(kinfo)) } catch (e) {}
+    return kinfo;
+  }
+
   /* même interface que SR.run : renvoie un canevas de W·s × H·s */
   let out2d = null;
   async function run(src, s, dn, onTile, key) {
     if (!(await init())) throw new Error(why);
+    setWeights(dn == null ? .3 : dn);
+    if (!kinfo || kinfo.v !== KV) { K(); if (!kinfo || kinfo.v !== KV) await tune(true) }
     const W = src.videoWidth || src.displayWidth || src.naturalWidth || src.width, H = src.videoHeight || src.displayHeight || src.naturalHeight || src.height;
     const lim = dev.limits.maxTextureDimension2D; if (W * 4 > lim || H * 4 > lim) throw new Error("image trop grande pour la carte graphique");
     s = Math.min(4, Math.max(.25, s)); setWeights(dn == null ? .3 : dn);
@@ -191,5 +283,5 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
     out2d.getContext("2d").putImageData(id, 0, 0);
     return out2d;
   }
-  return { init, run, get ok() { return st }, get why() { return why }, get speed() { return stats.px ? Math.round(stats.ms / stats.px * 1e6) : 0 } };
+  return { init, run, unload, tune, get kernel() { return kinfo }, get loaded() { return st === true && !!dev }, get ok() { return st }, get why() { return why }, get speed() { return stats.px ? Math.round(stats.ms / stats.px * 1e6) : 0 } };
 })();

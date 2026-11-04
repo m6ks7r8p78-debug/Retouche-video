@@ -118,8 +118,11 @@ o=vec4(s/float(k*k),1.);}`;
       if (!g.getExtension("EXT_color_buffer_float")) { why = "la carte graphique ne gère pas les calculs en virgule flottante"; return st = false }
       if (g.getParameter(g.MAX_DRAW_BUFFERS) < 4) { why = "carte graphique trop limitée"; return st = false }
       model = model || { file: "sr.bin", nf: 64, nc: 32, pairs: 2 };
-      const r = await fetch(model.file); if (!r.ok) throw new Error("poids introuvables");
-      const h = new Uint16Array(await r.arrayBuffer()); const A = new Float32Array(h.length); for (let i = 0; i < h.length; i++) A[i] = h2f(h[i]);
+      /* poids lus par le gestionnaire de modèles : empreinte SHA-256 vérifiée (fichier abîmé = refusé) */
+      let raw;
+      if (window.MODELS && model.file === "sr.bin") raw = await MODELS.bytes("sr");
+      else { const r = await fetch(model.file); if (!r.ok) throw new Error("poids introuvables"); raw = await r.arrayBuffer() }
+      const h = new Uint16Array(raw); const A = new Float32Array(h.length); for (let i = 0; i < h.length; i++) A[i] = h2f(h[i]);
       const { nf, nc } = model, n = 3 * nf * 9 + 2 * nf + nc * (nf * nf * 9 + 2 * nf) + nf * 48 * 9 + 48;
       if (A.length !== n * (model.pairs || 1)) throw new Error("fichier de poids inattendu");
       M = { nf, nc, n, A, halo: nc + 4 };
@@ -132,7 +135,10 @@ o=vec4(s/float(k*k),1.);}`;
       img = g.createTexture();
       setWeights(.3);
       return st = true;
-    } catch (e) { why = (e && e.message) || "erreur"; return st = false }
+    } catch (e) { why = (e && e.message) || "erreur";
+      /* modèle désactivé, abîmé ou absent : pas un défaut de l'appareil, on pourra réessayer plus tard */
+      if (e && e.code) { st = null; return false }
+      return st = false }
   }
   const frame = () => new Promise(r => setTimeout(r, 0));
   async function gpuWait() {
@@ -198,15 +204,46 @@ o=vec4(s/float(k*k),1.);}`;
   /* src : vidéo, image, canevas ou VideoFrame ; s : échelle de sortie ; key : identifiant de l'image (null = pas de réutilisation).
      Renvoie un canevas de W·s × H·s. */
   /* moteur choisi : WebGPU s'il marche sur cet appareil (plus rapide), sinon WebGL2 ; un échec WebGPU bascule définitivement en WebGL2 */
-  let engine = null;
+  let engine = null, running = 0;
+  /* choix du moteur : « auto » (WebGPU puis WebGL2), « gpu » ou « gl » (réglable dans « Modèles IA ») */
+  function pref() { try { return window.__srgl ? "gl" : localStorage.getItem("sr_moteur") || (localStorage.getItem("srgl") === "1" ? "gl" : "auto") } catch (e) { return "auto" } }
   async function run(src, s, dn, onTile, key) {
-    let noGpu = false; try { noGpu = window.__srgl || localStorage.getItem("srgl") === "1" } catch (e) {}
-    if (engine !== "gl" && !noGpu && window.SRGPU && navigator.gpu) {
-      try { const c = await SRGPU.run(src, s, dn, onTile, key); engine = "gpu"; stats = { ms: SRGPU.speed, px: 1e6 }; return c }
-      catch (e) { if (/trop grande/.test(e && e.message)) throw e; engine = "gl"; why = "WebGPU : " + ((e && e.message) || "erreur") }
-    }
-    return runGL(src, s, dn, onTile, key);
+    running++;
+    try {
+      const p = pref();
+      if (p !== "gl" && (engine !== "gl" || p === "gpu") && window.SRGPU && navigator.gpu) {
+        try { const c = await SRGPU.run(src, s, dn, onTile, key); engine = "gpu"; stats = { ms: SRGPU.speed, px: 1e6 }; return c }
+        catch (e) { if (/trop grande|DESACTIVE|CORROMPU|INCOMPATIBLE/.test(e && e.message)) throw e;
+          /* WebGPU en échec : on libère ce qu'il occupait avant de passer à WebGL2 (évite le cumul de mémoire) */
+          try { SRGPU.unload() } catch (x) {} engine = "gl"; why = "WebGPU : " + ((e && e.message) || "erreur") }
+      }
+      const c = await runGL(src, s, dn, onTile, key); engine = "gl"; return c;
+    } finally { running-- }
   }
+  /* libère toute la mémoire graphique du réseau ; il sera rechargé (et revérifié) au prochain usage */
+  function unload() {
+    try { if (window.SRGPU) SRGPU.unload() } catch (e) {}
+    if (g) { try { const x = g.getExtension("WEBGL_lose_context"); if (x) x.loseContext() } catch (e) {} }
+    g = null; cvs = null; st = null; M = null; full = null; fullW = fullH = 0; fbFull = null; X0 = X1 = XL = null; fbs = null; tileW = tileH = 0; dnCur = -1; cacheKey = null; img = null; vao = null;
+    if (engine === "gpu" || engine === "gl") engine = null;
+  }
+  /* vitesse réelle sur CET appareil : image d'essai 256×256 passée par chaque moteur disponible */
+  async function bench() {
+    const c = document.createElement("canvas"); c.width = c.height = 256; const x = c.getContext("2d");
+    for (let i = 0; i < 256; i += 8) for (let j = 0; j < 256; j += 8) { x.fillStyle = "rgb(" + ((i * 7 + j * 3) & 255) + "," + ((i * 5 + j * 11) & 255) + "," + ((i ^ j) & 255) + ")"; x.fillRect(i, j, 8, 8) }
+    const out = [], keep = (() => { try { return localStorage.getItem("sr_moteur") } catch (e) { return null } })();
+    const one = async (p, lab) => { try { localStorage.setItem("sr_moteur", p) } catch (e) {} const e0 = engine; engine = null;
+      try { await run(c, 1, .3, null, null); const t0 = performance.now(); await run(c, 1, .3, null, null); const ms = performance.now() - t0;
+        out.push(lab + (engine === (p === "gpu" ? "gpu" : "gl") ? " : " + (ms / 65536 * 1e6 / 1000).toFixed(1).replace(".", ",") + " s par mégapixel" : " : indisponible")) }
+      catch (e) { out.push(lab + " : échec (" + ((e && e.message) || "erreur") + ")") } finally { engine = e0 } };
+    try { if (window.SRGPU && navigator.gpu) await one("gpu", "WebGPU"); await one("gl", "WebGL2") }
+    finally { try { if (keep) localStorage.setItem("sr_moteur", keep); else localStorage.removeItem("sr_moteur") } catch (e) {} engine = null }
+    try { const k = window.SRGPU && SRGPU.kernel; if (k && k.ms1) out.push("calcul WebGPU retenu : " + (k.k === "4" ? "4 pixels par fil" : "1 pixel par fil") + " (essai : " + k.ms1 + " ms contre " + k.ms4 + " ms" + (k.why ? ", " + k.why : "") + ")") } catch (e) {}
+    return out.join(" ; ");
+  }
+  if (window.MODELS) MODELS.register("sr", {
+    loaded: () => !!(st === true || (window.SRGPU && SRGPU.loaded)), busy: () => running > 0,
+    unload, bench, engine: () => { engine = null } });
   async function runGL(src, s, dn, onTile, key) {
     if (!(await init())) throw new Error(why);
     const W = src.videoWidth || src.displayWidth || src.naturalWidth || src.width, H = src.videoHeight || src.displayHeight || src.naturalHeight || src.height;
@@ -233,8 +270,9 @@ o=vec4(s/float(k*k),1.);}`;
     return cvs;
   }
   return {
-    init, run, MAXPX,
+    init, run, MAXPX, unload, bench,
     get ok() { return engine === "gpu" ? true : st }, get why() { return why }, get engine() { return engine || "?" },
+    get busy() { return running > 0 },
     /* vitesse mesurée du dernier calcul : millisecondes par mégapixel d'image d'origine */
     get speed() { return stats.px ? Math.round(stats.ms / stats.px * 1e6) : 0 },
     fits(W, H) { return W * H <= MAXPX },

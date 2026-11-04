@@ -4,37 +4,38 @@
    2. Relief : la caméra se déplace doucement ; ce qui est proche bouge plus que le fond (parallaxe), calculé en WebGL2.
    Rien n'est inventé : chaque pixel affiché vient de la photo, seule sa position change selon sa distance. */
 var DEPTH = (() => {
-  const MODEL = "https://huggingface.co/onnx-community/depth-anything-v2-small/resolve/main/onnx/model_quantized.onnx";
-  const CACHE = "retouche-modeles-v1", SIDE = 518;
-  let sess = null, loading = null;
+  /* le modèle (adresse figée sur une révision précise, empreinte SHA-256 vérifiée, reprise après coupure)
+     est géré par le gestionnaire de modèles (models.js) */
+  const SIDE = 518;
+  let sess = null, loading = null, running = 0;
 
   function script(src) {
     return new Promise((ok, ko) => { if (window.ort) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => ko(new Error("moteur introuvable")); document.head.appendChild(s) });
   }
-  /* téléchargement du modèle avec progression, puis copie gardée sur l'appareil (fonctionne ensuite hors ligne) */
-  async function modelBytes(onP) {
-    let c = null; try { c = await caches.open(CACHE); const hit = await c.match(MODEL); if (hit) return new Uint8Array(await hit.arrayBuffer()) } catch (e) { c = null }
-    const r = await fetch(MODEL); if (!r.ok || !r.body) throw new Error("téléchargement du modèle impossible (" + r.status + ")");
-    const tot = +r.headers.get("content-length") || 27258801, rd = r.body.getReader(), parts = []; let n = 0;
-    for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); n += value.length; if (onP) onP(Math.min(1, n / tot)) }
-    const buf = new Uint8Array(n); let o = 0; for (const p of parts) { buf.set(p, o); o += p.length }
-    try { if (c) await c.put(MODEL, new Response(buf, { headers: { "content-type": "application/octet-stream" } })) } catch (e) {}
-    return buf;
-  }
   async function load(onP) {
     if (sess) return sess;
     if (!loading) loading = (async () => {
+      await MODELS.beforeLoad("depth");                  /* libère la restauration IA si elle dort en mémoire */
+      const b = new Uint8Array(await MODELS.bytes("depth", { download: true, onProgress: onP }));
       await script("ort/ort.wasm.min.js");
       ort.env.wasm.wasmPaths = new URL("ort/", location.href).href;
       ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
-      const b = await modelBytes(onP);
       sess = await ort.InferenceSession.create(b, { executionProviders: ["wasm"], graphOptimizationLevel: "all" });
       return sess;
     })().catch(e => { loading = null; throw e });
     return loading;
   }
+  async function unload() {
+    const s = sess; sess = null; loading = null;
+    try { if (s && s.release) await s.release() } catch (e) {}
+    if (g) { try { const x = g.getExtension("WEBGL_lose_context"); if (x) x.loseContext() } catch (e) {} }
+    g = null; cvs = null; prog = null; tI = null; tD = null; loc = {};
+  }
   /* carte de profondeur (proche = 1, loin = 0), à la taille d'entrée du modèle */
   async function estimate(img, onP) {
+    running++; try { return await estimate0(img, onP) } finally { running-- }
+  }
+  async function estimate0(img, onP) {
     const s = await load(onP);
     const w = img.naturalWidth || img.videoWidth || img.width, h = img.naturalHeight || img.videoHeight || img.height;
     const k = SIDE / Math.max(w, h), W = Math.max(14, Math.round(w * k / 14) * 14), H = Math.max(14, Math.round(h * k / 14) * 14);
@@ -94,5 +95,6 @@ s=clamp(s,vec2(0.),vec2(1.));o=vec4(texture(I,s).rgb*alpha,1.);}`;
     g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
     return cvs;
   }
-  return { load, estimate, setup, frame, get ready() { return !!sess } };
+  if (window.MODELS) MODELS.register("depth", { loaded: () => !!sess, busy: () => running > 0 || !!loading && !sess, unload });
+  return { load, estimate, setup, frame, unload, get ready() { return !!sess } };
 })();

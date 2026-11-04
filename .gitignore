@@ -1,2 +1,5 @@
 serveur/.wrangler/
 node_modules/
+tests/sorties/
+tests/medias/depth.onnx
+tests/medias/grande_12mpx.jpg
