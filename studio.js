@@ -74,6 +74,8 @@ var STUDIO = (() => {
     if (has(/visage/)) no("Visages : pas de restauration dédiée (essayée puis retirée : elle éloignait du vrai visage). Ils profitent du traitement de toute l’image ; le rendu Naturel est le plus fidèle.");
     const sp = has(/ralenti|plus lent/) ? "0.5" : has(/acceler|plus vite|x2|deux fois plus vite/) ? "2" : null, rev = has(/envers|inverse/);
     if (sp || rev) { if (!vid) no("Vitesse et sens : seulement pour les vidéos."); else { if (sp) $("#tr_v").value = sp; $("#tr_r").checked = rev; try { TR.info() } catch (e) {} ok("Vitesse / sens préparés dans Outils → « Vitesse et sens de lecture » : touche « Créer la version corrigée » là-bas."); } }
+    if (has(/effac|gomm|(enleve|enlever|retire|retirer|supprime|supprimer|vire|virer).{0,25}(objet|element|personne|passant|oreille|museau|nez|lunette|accessoire|tache|filtre ar|autocollant|sticker|texte)/))
+      ok("Retirer un objet, une personne ou un élément de filtre AR d’une photo : accueil → « Effacer une zone d’une photo (IA) ». La zone est remplie par l’IA : ces pixels sont inventés, et marqués comme tels.");
     if (has(/generer|genere|cree une video|personnage|3d|musique|clone/)) no("Génération d’images, de vidéos, de voix, de personnages ou de 3D : non disponible (voir ROADMAP.md : trop lourd pour un iPhone sans service payant).");
     if (!out.length) no("Je n’ai reconnu aucune demande. Exemples : « stabilise, réduis le bruit, export 4K », « vidéo sombre », « remets à l’endroit ».");
     return out;
