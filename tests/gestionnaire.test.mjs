@@ -164,7 +164,7 @@ await test("Interface « Modèles IA » : s’ouvre, affiche chaque modèle avec
   const cards = [...document.querySelectorAll(".mdl-card")], btns = [...document.querySelectorAll(".mdl-card button")].map(b => b.dataset.a);
   const known = ["install", "cancel", "rollback", "unload", "toggle", "remove", "bench"];
   document.querySelector("#mdlx").click();
-  return { ok: cards.length === 4 && btns.length > 0 && btns.every(a => known.includes(a)), info: cards.length + " modèles affichés ; actions : " + [...new Set(btns)].join(", ") } }));
+  return { ok: cards.length === MODELS.REG.length && btns.length > 0 && btns.every(a => known.includes(a)), info: cards.length + " modèles affichés sur " + MODELS.REG.length + " au registre ; actions : " + [...new Set(btns)].join(", ") } }));
 
 nt("Limites de stockage réelles de Safari / iOS", "simulées ci-dessus (quota réduit) ; le comportement exact d’éviction de Safari ne peut être vérifié que sur un iPhone");
 nt("Mémoire réellement saturée sur iPhone", "la saturation est simulée (erreur « out of memory ») ; une vraie saturation ne se reproduit que sur l’appareil");
