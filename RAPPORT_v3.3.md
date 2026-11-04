@@ -25,7 +25,17 @@ branche `sauvegarde-v3.2` = `b458e8d`.
 
 ## 2. Tests de référence de la v3.2 (copie propre)
 
-RESULTATS_V32
+Copie propre (clone de `b458e8d`), mêmes outils que l'audit v3.2. **Mêmes résultats que RAPPORT_TESTS.md.**
+
+| Suite | Résultat |
+|---|---|
+| `sw.test.mjs` | 7 réussis, 0 échoué |
+| `gestionnaire.test.mjs` | 24 réussis, 0 échoué, 2 non testables |
+| `studio.test.mjs` | 11 réussis, 0 échoué |
+| `v3.test.mjs` | 7 réussis, 0 échoué |
+| `reassemblage.test.mjs` | 5 réussis, 0 échoué |
+| `noyau.test.mjs` | versions de calcul équivalentes (écart 0), choix automatique opérationnel |
+| `app.test.mjs --ia` | 13 réussis, 0 échoué ; aucune erreur JavaScript |
 
 ## 3. Nouveautés v3.3
 
@@ -58,7 +68,28 @@ RESULTATS_V32
 
 ## 4. Tests de la v3.3 (copie propre de la branche, clonée à neuf)
 
-RESULTATS_V33
+Copies propres (clones neufs de la branche `v3.3-effacer`), même machine, mêmes outils. `sw`, `gestionnaire`, `v3`, `reassemblage`, `noyau` :
+commit `39b39f0` ; `effacer`, `studio`, `app` : commit `a1ae4e5`. Entre les deux, seul `studio.js` (règle de l'assistant) change dans l'app,
+le reste étant des tests et des documents ; `studio` a donc été relancé sur `a1ae4e5`.
+
+| Suite | Résultat |
+|---|---|
+| `sw.test.mjs` | 7 réussis, 0 échoué (nouveaux fichiers hors ligne présents) |
+| `gestionnaire.test.mjs` | 24 réussis, 0 échoué, 2 non testables — voir l'incident ci-dessous |
+| `studio.test.mjs` | 11 réussis, 0 échoué (version finale, avec la règle de l'assistant) |
+| `v3.test.mjs` | 7 réussis, 0 échoué |
+| `reassemblage.test.mjs` | 5 réussis, 0 échoué |
+| `noyau.test.mjs` | versions équivalentes, choix automatique opérationnel |
+| **`effacer.test.mjs`** (nouveau) | **19 réussis, 0 échoué** (308 s) ; aucune erreur JavaScript |
+| `app.test.mjs --ia` | APP_V33 |
+
+Incidents de test (consignés, aucun ne vient du code de l'app) :
+- Première exécution du gestionnaire : 3 échecs de téléchargement. Cause : un serveur de test v3.2 lancé à la main plus tôt
+  occupait encore le port 8766, avec ses « coupures simulées » déjà consommées. Serveur arrêté, suite relancée : réussite.
+- Puis 1 échec : le test exigeait exactement 4 modèles dans la fenêtre « Modèles IA » (nombre figé avant la v3.3). La fenêtre en
+  affiche 7, tous ceux du registre. Le test compare maintenant au registre réel (aussi strict, et suit les futurs ajouts) : 24/24.
+- Deux suites de tests utilisaient le même port (8768) : le test d'effacement a désormais le sien (8773).
+- Un essai d'exécution répartie (agents) a échoué : ils tournaient sur la même machine et se gênaient. Arrêtés ; aucun de leurs résultats n'est utilisé ici.
 
 Contre-épreuve (les tests doivent échouer quand on introduit un défaut), sur `tests/effacer.test.mjs` :
 - défaut 1 — la reconstruction recopie tout le rectangle de contexte au lieu de la seule zone : **5 échecs** (pixels hors zone modifiés : 4 489 / 3 183 / 13 245) ;
