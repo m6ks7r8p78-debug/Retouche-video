@@ -270,7 +270,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
     <span>Retouche</span>
   </div>
   <button class="mdlb" id="mdlb" type="button" aria-haspopup="dialog">🧠 Modèles IA</button>
-  <span class="tag"><span id="ver">v3.0</span></span>
+  <span class="tag"><span id="ver">v3.1</span></span>
 </header>
 <dialog class="mdl" id="mdl" aria-labelledby="mdlt">
   <div class="mdl-top"><h2 id="mdlt">Modèles IA</h2><button class="btn" id="mdlx" type="button">Fermer</button></div>
@@ -307,9 +307,11 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
   <input type="file" id="fm" accept="video/*" multiple hidden>
   <div class="card" id="mg" hidden>
     <h2>Regrouper des vidéos</h2>
-    <p class="help">Les vidéos seront mises bout à bout dans cet ordre. Utilise les flèches pour changer l’ordre.</p>
+    <p class="help">Les vidéos seront mises bout à bout dans cet ordre. Choisis-les dans n’importe quel ordre : « Remettre dans l’ordre » le retrouve à partir des images et des dates ; les flèches permettent de corriger.</p>
     <div id="mgl" style="display:flex;flex-direction:column;gap:6px"></div>
     <button class="btn" id="mgadd" style="margin-top:8px">+ Ajouter d’autres vidéos</button>
+    <button class="btn" id="mgauto" style="margin-top:8px">🧩 Remettre dans l’ordre automatiquement</button>
+    <ul id="mgrep" class="help" hidden style="margin:8px 0 0;padding-left:18px"></ul>
     <button class="btn main" id="mggo" style="margin-top:8px">Regrouper en une seule vidéo</button>
     <div id="mgres" hidden style="margin-top:12px"><video id="mgv" controls playsinline style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
       <button class="btn main" id="mgimp" style="margin-top:8px">✨ Améliorer cette vidéo</button>
@@ -491,7 +493,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 <script src="sr.js"></script>
 <script src="depth.js"></script>
 <script>
-const VER="v3.0";/* seul endroit où changer le numéro de version */
+const VER="v3.1";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -1586,6 +1588,46 @@ const MG={files:[],blob:null,url:null,busy:false,
     finally{MG.busy=false;$("#mggo").disabled=MG.files.length<2}
   }
 };
+/* ===== Remise en ordre automatique des morceaux (Video Reassembly) =====
+   Indices combinés : continuité de l'image (dernière image d'un morceau ≈ première du suivant), date d'enregistrement
+   écrite dans le fichier (souvent effacée par les réseaux sociaux), numéro dans le nom. Doublons repérés.
+   Si l'ordre reste incertain, l'app le dit et demande de vérifier au lieu de prétendre le connaître. */
+const RA={
+  async thumbs(f){const e=document.createElement("video"),u=URL.createObjectURL(f);e.muted=true;e.playsInline=true;e.preload="auto";e.src=u;
+    try{await new Promise((ok,ko)=>{e.onloadeddata=ok;e.onerror=()=>ko(new Error("illisible"));setTimeout(()=>ko(new Error("trop long")),15000)});
+      const c=document.createElement("canvas");c.width=48;c.height=27;const x=c.getContext("2d",{willReadFrequently:true});
+      const grab=async t=>{await seekEl(e,Math.max(0,Math.min(e.duration-.02,t)));x.drawImage(e,0,0,48,27);const d=x.getImageData(0,0,48,27).data,g=new Float32Array(1296);for(let i=0;i<1296;i++)g[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];return g};
+      return{first:await grab(.02),last:await grab(e.duration-.05),dur:e.duration}}finally{e.removeAttribute("src");e.load();URL.revokeObjectURL(u)}},
+  /* date d'enregistrement de l'en-tête MP4 (mvhd), en secondes depuis 1904 ; 0 = absente */
+  async date(f){try{let off=0;while(off<f.size){const d=new DataView(await f.slice(off,Math.min(off+16,f.size)).arrayBuffer());if(d.byteLength<8)break;let sz=d.getUint32(0);const t=String.fromCharCode(d.getUint8(4),d.getUint8(5),d.getUint8(6),d.getUint8(7));if(sz===1)sz=Number(d.getBigUint64(8));else if(sz===0)sz=f.size-off;
+      if(t==="moov"){const b=new DataView(await f.slice(off,Math.min(off+sz,off+4096)).arrayBuffer());for(let i=8;i<b.byteLength-24;i++)if(b.getUint32(i)===0x6d766864){const v=b.getUint8(i+4);return v===1?Number(b.getBigUint64(i+8)):b.getUint32(i+8)}return 0}if(sz<8)break;off+=sz}}catch(e){}return 0},
+  diff(a,b){let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);return s/a.length},
+  async run(){
+    const F=MG.files;if(F.length<2)return;const rep=$("#mgrep");rep.hidden=false;rep.textContent="";const say=(t,c)=>{const li=document.createElement("li");li.textContent=t;if(c)li.style.color="var(--tc)";rep.appendChild(li)};
+    msg("Analyse des morceaux…");const I=[];
+    for(const f of F){try{I.push({f,...await RA.thumbs(f),date:await RA.date(f),num:+((f.name.match(/(\d+)(?!.*\d)/)||[])[1]||NaN)})}catch(e){say("« "+f.name+" » : illisible ("+e.message+"), laissé en fin de liste.",1);I.push({f,bad:true})}}
+    const G=I.filter(x=>!x.bad),n=G.length;
+    /* doublons : mêmes premières et dernières images, même durée */
+    const dup=new Set();for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)if(!dup.has(j)&&Math.abs(G[i].dur-G[j].dur)<.08&&RA.diff(G[i].first,G[j].first)<2&&RA.diff(G[i].last,G[j].last)<2){dup.add(j);say("« "+G[j].f.name+" » semble être un doublon de « "+G[i].f.name+" » : retiré de l’assemblage (ajoute-le de nouveau si c’est une erreur).",1)}
+    const U=G.filter((x,i)=>!dup.has(i)),m=U.length,C=U.map(a=>U.map(b=>a===b?1e9:RA.diff(a.last,b.first)));
+    /* meilleur enchaînement : toutes les possibilités jusqu'à 8 morceaux, sinon de proche en proche */
+    let best=null,second=Infinity;const cost=o=>{let s=0;for(let k=1;k<o.length;k++)s+=C[o[k-1]][o[k]];return s};
+    if(m<=8){const perm=(arr,l)=>{if(l===arr.length){const c=cost(arr);if(!best||c<best.c){if(best)second=Math.min(second,best.c);best={o:arr.slice(),c}}else second=Math.min(second,c);return}for(let i=l;i<arr.length;i++){[arr[l],arr[i]]=[arr[i],arr[l]];perm(arr,l+1);[arr[l],arr[i]]=[arr[i],arr[l]]}};perm([...Array(m).keys()],0)}
+    else{const left=new Set([...Array(m).keys()]);let cur=[...left].sort((a,b)=>Math.min(...C.map(r=>r[a]))>Math.min(...C.map(r=>r[b]))?-1:1)[0];const o=[cur];left.delete(cur);while(left.size){let nb=-1,nc=Infinity;for(const j of left)if(C[cur][j]<nc){nc=C[cur][j];nb=j}o.push(nb);left.delete(nb);cur=nb}best={o,c:cost(o)};second=best.c*1.01}
+    const dated=U.every(x=>x.date>0)&&new Set(U.map(x=>x.date)).size===m,byDate=dated?[...Array(m).keys()].sort((a,b)=>U[a].date-U[b].date):null,same=(a,b)=>a&&b&&a.join()===b.join();
+    let order=best.o,why="continuité de l’image";
+    if(byDate&&!same(byDate,best.o)){const cd=cost(byDate);if(cd<=best.c*1.6){order=byDate;why="date d’enregistrement (confirmée par la continuité de l’image)"}else why="continuité de l’image (les dates du fichier la contredisent : elles ont peut-être été modifiées par une application)"}
+    else if(byDate)why="continuité de l’image et date d’enregistrement, qui concordent";
+    const margin=second===Infinity?Infinity:(second-best.c)/Math.max(1,best.c),sure=margin>.3||same(order,byDate);
+    MG.files=[...order.map(k=>U[k].f),...I.filter(x=>x.bad).map(x=>x.f)];MG.render();rep.hidden=false;
+    say("Ordre proposé d’après la "+why+" : "+order.map(k=>U[k].f.name).join(" → ")+".");
+    const links=order.slice(1).map((k,i)=>C[order[i]][k]),med=Math.min(...links);/* référence : le raccord le plus net */
+    order.slice(1).forEach((k,i)=>{if(links[i]>Math.max(18,3*med))say("Raccord douteux entre « "+U[order[i]].f.name+" » et « "+U[k].f.name+" » : un morceau manque peut-être entre les deux, ou il y a un changement de scène.",1)});
+    say(sure?"Confiance : bonne.":"Confiance : faible — plusieurs ordres se ressemblent. Vérifie l’ordre avec les flèches avant de regrouper.",!sure);
+    msg("");try{DIAG.send("remise_en_ordre",{n:F.length,doublons:dup.size,sure,dates:dated})}catch(e){}
+    return{order:MG.files.map(f=>f.name),sure,dup:dup.size}}
+};
+$("#mgauto").onclick=()=>RA.run();
 $("#pickm").onclick=()=>$("#fm").click();$("#mgadd").onclick=()=>$("#fm").click();
 $("#fm").onchange=e=>{if(exporting){e.target.value="";return}MG.add(e.target.files);e.target.value=""};
 $("#mggo").onclick=()=>MG.go();

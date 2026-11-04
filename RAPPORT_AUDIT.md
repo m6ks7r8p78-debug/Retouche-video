@@ -32,3 +32,15 @@ Fonctions à développer demandées par le cahier des charges et leur sort en v3
 | 10. Model & Integration | **réalisé** : registre, SHA-256, reprise, atomique, versions, retour arrière |
 | 11. System & Infrastructure | **partiel** : exécution WebGPU/WebGL2/WASM, stockage, sauvegarde chiffrée, diagnostic. Manque : reprise d’un export après fermeture, multi-appareils |
 | 12. Governance & Quality | **partiel** : autorisations révocables, licences vérifiées, tests et rapports, aucune dépense possible |
+
+## Cahier « Mission complémentaire » (v3.1)
+
+| Demande | État |
+|---|---|
+| Analyse intelligente à l’import | déjà présente (rapport de fichier, profil conseillé, VFR, ralentis) |
+| Détection / retrait de filtres de visage et de réalité augmentée, récupération du visage d’origine | **non réalisable honnêtement** : les pixels d’origine n’existent plus ; il faudrait inventer un visage (interdit par le cahier lui-même) |
+| Reconstruction du visage et des yeux guidée par l’identité | **non réalisée** (invention de traits d’une vraie personne ; essai v2.50 mesuré défavorable) |
+| Reconstruction hors du cadre | **non réalisée** (génération d’image, modèles de plusieurs Go) |
+| Cohérence temporelle | partielle (débruitage temporel, anti-scintillement, stabilisation existants) |
+| **Réassemblage intelligent de vidéos** | **réalisé** : ordre par continuité d’image + date du fichier, doublons, raccords douteux, confiance, validation demandée si incertain, correction manuelle, regroupement sans perte — testé (tests/reassemblage.test.mjs) |
+| Directeur de traitement / bouton unique | déjà présent (analyse automatique → profil conseillé → un bouton « Améliorer ») |
