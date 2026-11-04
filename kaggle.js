@@ -13,7 +13,7 @@ var KG = (() => {
   const API = "https://api.kaggle.com/v1/", JK = "kaggle_jeton";
   const RELAIS = "https://retouche-kaggle.retouche-ia.workers.dev";   /* serveur relais dédié (serveur-ia/relais.js), séparé du serveur des liens */
   const jeton = () => { try { return localStorage.getItem(JK) || "" } catch (e) { return "" } };
-  let user = null, abort = null;
+  let user = null, abort = null, dernier = null;
 
   async function api(svc, m, body) {
     const r = await fetch(API + svc + "/" + m, { method: "POST", headers: { Authorization: "Bearer " + jeton(), "Content-Type": "application/json" }, body: JSON.stringify(body || {}), signal: abort && abort.signal });
@@ -33,9 +33,13 @@ var KG = (() => {
     await new Promise((ok, ko) => {
       const x = new XMLHttpRequest(); x.open("PUT", r.createUrl);
       x.setRequestHeader("Content-Type", blob.type || "application/octet-stream");
+      /* Le stockage de Kaggle accepte l'envoi mais ne laisse pas le navigateur lire sa réponse (session ouverte par Kaggle) :
+         un envoi entièrement transmis est donc accepté ici, puis VÉRIFIÉ chez Kaggle (nom et taille exacte de chaque fichier). */
+      let transmis = false;
       x.upload.onprogress = e => { if (onP && e.lengthComputable) onP(e.loaded / e.total) };
+      x.upload.onload = () => { transmis = true };
       x.onload = () => x.status >= 200 && x.status < 300 ? ok() : ko(new Error("envoi refusé (" + x.status + ")"));
-      x.onerror = () => ko(new Error("envoi interrompu (réseau)")); x.onabort = () => ko(new Error("annulé"));
+      x.onerror = () => transmis ? ok() : ko(new Error("envoi interrompu (réseau)")); x.onabort = () => ko(new Error("annulé"));
       if (abort) abort.signal.addEventListener("abort", () => x.abort());
       x.send(blob);
     });
@@ -77,18 +81,18 @@ var KG = (() => {
   async function traiter(o, ev) {
     if (!jeton()) throw new Error("aucun jeton Kaggle enregistré (⚙️ Paramètres)");
     abort = new AbortController();
-    const u = await moi(), slug = "retouche-ia-" + Date.now().toString(36), ref = u + "/" + slug, t0 = Date.now();
+    const u = await moi(), slug = "retouche-ia-" + Date.now().toString(36), ref = u + "/" + slug, t0 = Date.now(); dernier = slug;
     let fin = false;
     try {
       ev("envoi", 0, "Préparation de l’envoi…");
       const params = new Blob([JSON.stringify({ dn: o.dn, ow: o.ow, oh: o.oh, dw: o.dw, dh: o.dh, images: o.images, version: 1, qp: 16 })], { type: "application/json" });
       const sr = await (await texte("sr.bin")).blob(), py = await (await texte("serveur-ia/ia_serveur.py")).blob(), code = await (await texte("serveur-ia/traitement_kaggle.py")).text();
       const ext = ((o.file.name || "").match(/\.(mp4|mov|m4v)$/i) || [".mp4"])[0].toLowerCase();
-      const files = [];
+      const files = [], attendus = {};
       const tot = o.file.size + sr.size + py.size + params.size; let base = 0;
       for (const [b, n] of [[params, "params.json"], [py, "ia_serveur.py"], [sr, "sr.bin"], [o.file, "video" + ext]]) {
         const tk = await depot(b, n, f => ev("envoi", (base + f * b.size) / tot, "Envoi de la vidéo vers ton espace privé Kaggle… " + Math.round((base + f * b.size) / tot * 100) + " %"));
-        base += b.size; files.push({ token: tk });
+        base += b.size; files.push({ token: tk }); attendus[n] = b.size;
       }
       const cd = await api("datasets.DatasetApiService", "CreateDataset", { ownerSlug: u, slug, title: slug.replace(/-/g, " "), licenseName: "other", isPrivate: true, files });
       if (cd.error) throw new Error("Kaggle : " + cd.error);
@@ -98,6 +102,10 @@ var KG = (() => {
         if (/error|fail/i.test(s.status || "")) throw new Error("jeu de données refusé par Kaggle");
         if (i > 120) throw new Error("Kaggle ne prépare pas le jeu de données"); ev("prepa", 0, "Kaggle prépare la vidéo…"); await attendre(5000);
       }
+      /* contrôle : chaque fichier est arrivé en entier (nom et taille exacte), sinon on s'arrête */
+      const lf = await api("datasets.DatasetApiService", "ListDatasetFiles", { ownerSlug: u, datasetSlug: slug, pageSize: 50 });
+      const recus = Object.fromEntries((lf.datasetFiles || []).map(f => [f.name, +f.totalBytes]));
+      for (const n in attendus) if (recus[n] !== attendus[n]) throw new Error("envoi incomplet : " + n + " (" + (recus[n] || 0) + " octets reçus sur " + attendus[n] + ")");
       const sk = await api("kernels.KernelsApiService", "SaveKernel", { slug: ref, newTitle: slug.replace(/-/g, " "), text: code, language: "python", kernelType: "script",
         isPrivate: true, enableGpu: true, enableInternet: false, datasetDataSources: [ref], kernelDataSources: [], competitionDataSources: [], categoryIds: [] });
       if (sk.error) throw new Error("Kaggle : " + sk.error);
@@ -126,5 +134,5 @@ var KG = (() => {
   }
   function annuler() { if (abort) abort.abort() }
   function regle(t) { try { if (t) localStorage.setItem(JK, String(t).trim()); else localStorage.removeItem(JK) } catch (e) {} user = null }
-  return { traiter, annuler, regle, actif: () => !!jeton(), moi, _api: api };
+  return { traiter, annuler, regle, actif: () => !!jeton(), moi, _api: api, get dernier() { return dernier } };
 })();
