@@ -4,6 +4,29 @@
 `sauvegarde-v2.49`, `sauvegarde-v2.50`, `sauvegarde-v3.0`, `sauvegarde-v3.1`, `sauvegarde-v3.2`, `sauvegarde-v3.3` (les tags cités avant n'avaient jamais été créés :
 l'envoi de tags est refusé par l'environnement de travail de Claude, d'où des branches). Serveur Cloudflare : **v5 en ligne**.
 
+## Chantier en cours : v3.4 « IA rapide sur serveur (Kaggle) » — branche `serveur-ia` (pas encore sur `main`)
+Pourquoi : l'IA « qualité maximale » prend ≈ 27–30 s par image sur l'iPhone du propriétaire (mesuré : 29,8 s/Mpx WebGPU ;
+le calcul « 4 pixels par fil » n'y gagne que 12 %) → 50 h pour une vidéo 720×1280 de 4 min 40. Sur Kaggle (2 × T4 gratuites,
+≈ 30 h/semaine) : 0,31 s/image sur une T4 en demi-précision.
+- `serveur-ia/ia_serveur.py` : reproduction exacte de SR.run (mêmes poids sr.bin, mélange dn, ×4, RGBA8, réduction FRES).
+  Mesuré contre l'app (6 cas) : PSNR 57–59 dB, écart max 2–6/255 (≤ 0,022 % des pixels > 2/255) → identique à l'œil.
+- `serveur-ia/traitement_kaggle.py` : calcul Kaggle (2 GPU, une image par image du fichier dans l'ordre d'affichage,
+  décodage BT.709 plage limitée, sortie H.264 qp 16 plage limitée, contrôles nombre d'images / tailles, info.json).
+  Rang d'image : l'app convertit son numéro par `rdr.map(pl.a)` (l'horloge du fichier peut commencer après 0 : décalage
+  de 2 images constaté sur les vidéos de test) ; le lecteur du résultat est un SeqReader avec setFps(0).
+- `kaggle.js` (objet KG) : l'app pilote Kaggle directement (CORS OK pour api.kaggle.com et le dépôt GCS) avec le jeton
+  gardé sur le téléphone (clé `kaggle_jeton`, jamais sauvegardée). Envoi accepté une fois transmis puis vérifié
+  (ListDatasetFiles : nom + taille) car la réponse GCS n'est pas lisible par le navigateur. Jeu de données `<slug>-donnees`
+  (titre distinct du calcul, sinon Kaggle refuse). Ménage : DeleteKernel + DeleteDataset.
+- Relais `serveur-ia/relais.js` déployé : https://retouche-kaggle.retouche-ia.workers.dev (compte Cloudflare
+  « Jmy.maelhys@gmail.com », 36afa5a6…, PAS celui du serveur des liens) — Kaggle ne sert pas ses sorties aux navigateurs.
+- `index.html` : case `#o_srv`, `SRX.lancerServeur`, `SRX.remote.image(rang)` à la place de SR.run pendant l'export ;
+  refus avec Time Repair / fluide / poussières ; erreurs distinctes (quota Kaggle). `studio.js` : jeton dans ⚙️ Paramètres,
+  autorisation `cloud` + accord avant CHAQUE envoi.
+- Tests : `tests/ia_serveur.test.mjs` (vrai Kaggle), `tests/serveur_ia_compare.py`, `serveur_ia_reference.mjs`, `serveur_ia_decodage.mjs`.
+- Reste : test d'intégration complet réussi, vérifier que DeleteKernel est autorisé par le jeton, mesurer une vraie vidéo
+  720×1280, documentation (README, CHANGELOG, SECURITE, AUTORISATIONS, GUIDE_IPHONE), fusion dans `main`.
+
 ## Règles du projet
 - Règle absolue : ne jamais sacrifier la qualité pour la vitesse ; viser le résultat le plus proche du parfait.
 - Tout se calcule sur le téléphone (PWA), gratuit, utilisable par des débutants : réglages automatiques.
