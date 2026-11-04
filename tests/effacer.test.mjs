@@ -11,7 +11,7 @@ import path from "path";
 import crypto from "crypto";
 import { fileURLToPath } from "url";
 const { chromium } = await import(process.env.PW || "playwright");
-const HERE = path.dirname(fileURLToPath(import.meta.url)), PORT = 8768, BASE = "http://localhost:" + PORT;
+const HERE = path.dirname(fileURLToPath(import.meta.url)), PORT = 8773, BASE = "http://localhost:" + PORT;
 const MED = path.resolve(process.argv[2] || path.join(HERE, "medias")), MIGAN = path.join(MED, "migan.onnx");
 const SHA = "6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b";
 if (!fs.existsSync(MIGAN)) { console.log("Modèle absent : placer migan_pipeline_v2.onnx dans " + MIGAN + " (voir tests/README.md)."); process.exit(2) }
