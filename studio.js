@@ -8,6 +8,7 @@ var STUDIO = (() => {
     lien: { nom: "Charger une vidéo par lien", envoi: "le lien collé est envoyé au serveur de l’app (Cloudflare Workers) qui récupère la vidéo ; aucune vidéo n’y est conservée", compte: "aucun compte" },
     modele: { nom: "Télécharger un modèle IA", envoi: "rien de personnel : seul le fichier du modèle est téléchargé depuis sa source officielle (Hugging Face), puis vérifié", compte: "aucun compte" },
     analyse_ia: { nom: "Analyse IA (version Claude)", envoi: "une image réduite de ta vidéo est envoyée à Claude pour proposer des réglages", compte: "ton compte Claude" },
+    cloud: { nom: "IA rapide sur serveur (Kaggle)", envoi: "ta vidéo est envoyée dans un espace privé de ton compte Kaggle (Google) pour y calculer l’IA, puis supprimée avec le résultat ; un accord est aussi redemandé avant chaque envoi", compte: "ton compte Kaggle (jeton gardé sur ce téléphone seulement)" },
     diagnostic: { nom: "Envoi automatique du diagnostic (version Claude)", envoi: "des nombres seulement (réglages, tailles, durées, vitesse de l’IA, modèle de téléphone) sont rangés dans la base privée de la version Claude ; aucune image, aucun son, aucun nom de fichier", compte: "ton compte Claude" }
   };
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -89,6 +90,9 @@ var STUDIO = (() => {
       <div class="mdl-sto"><b>Autorisations</b><span>Rien ne quitte ton iPhone sans ton accord. Chaque usage est demandé la première fois et peut être retiré.</span>
       ${Object.entries(PERM).map(([k, p]) => `<div class="mdl-card"><div class="mdl-h"><b>${p.nom}</b><span class="mdl-st ${a[k] && a[k].ok ? "ok" : ""}">${a[k] ? (a[k].ok ? "autorisé" : "refusé") : "pas encore demandé"}</span></div>
         <p class="mdl-m">${p.envoi}. Compte : ${p.compte}.</p><div class="mdl-acts">${a[k] && a[k].ok ? `<button class="btn" data-s="revoke" data-k="${k}">Retirer</button>` : `<button class="btn" data-s="grant" data-k="${k}">Autoriser</button>${a[k] ? `<button class="btn" data-s="revoke" data-k="${k}">Redemander plus tard</button>` : ""}`}</div></div>`).join("")}</div>
+      <div class="mdl-sto"><b>IA rapide sur serveur (Kaggle)</b><span>${window.KG && KG.actif() ? "Jeton enregistré sur ce téléphone." : "Aucun jeton. Sur kaggle.com : ton profil → Settings → API → Create New Token, puis colle-le ici."} Il reste sur ce téléphone : il n’est jamais mis dans les sauvegardes ni envoyé ailleurs qu’à Kaggle (et au relais de l’app, sans y être gardé).</span>
+        <input id="kgj" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Jeton Kaggle (KGAT_…)" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);margin:6px 0">
+        <div class="mdl-acts"><button class="btn" data-s="kgsave">Enregistrer le jeton</button>${window.KG && KG.actif() ? `<button class="btn" data-s="kgdel">Retirer le jeton</button>` : ""}</div></div>
       <div class="mdl-sto"><b>Sauvegarde des réglages</b><span>Profils, préférences, autorisations, historique et état des modèles (jamais tes photos ni tes vidéos). Avec une phrase secrète, le fichier est chiffré (AES-256-GCM) : sans elle, il ne peut pas être relu.</span>
         <label class="s"><span>Phrase secrète (facultative)</span><input id="st_pass" type="password" autocomplete="new-password" style="width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)"></label>
         <div class="mdl-acts"><button class="btn main" data-s="save">Créer la sauvegarde</button><button class="btn" data-s="load">Restaurer une sauvegarde</button></div><input type="file" id="st_file" accept=".json,application/json" hidden></div>
@@ -111,6 +115,9 @@ var STUDIO = (() => {
         if (s === "close") dlg.close();
         else if (s === "revoke") { revoke(x.dataset.k); render(); note("Autorisation retirée : elle sera redemandée au prochain usage.") }
         else if (s === "grant") { grant(x.dataset.k); render(); note("Autorisation donnée. Tu peux la retirer ici à tout moment."); if (x.dataset.k === "diagnostic") try { DIAG.flush() } catch (e) {} }
+        else if (s === "kgsave") { const t = (dlg.querySelector("#kgj") || {}).value || ""; if (!/^\S{20,200}$/.test(t.trim())) { note("Colle le jeton Kaggle complet (il commence souvent par KGAT_)."); return }
+          KG.regle(t); note("Vérification du jeton…"); KG.moi().then(u => { render(); note("Jeton enregistré : compte Kaggle « " + u + " ».") }).catch(e => { KG.regle(""); render(); note("Jeton refusé par Kaggle (" + e.message + "). Rien n’a été gardé.") }) }
+        else if (s === "kgdel") { KG.regle(""); render(); note("Jeton retiré de ce téléphone.") }
         else if (s === "clearh") { if (confirm("Effacer l’historique des traitements ?")) { localStorage.removeItem("recettes"); render() } }
         else if (s === "save") { const pass = dlg.querySelector("#st_pass").value; const o = await backup(pass);
           const blob = new Blob([JSON.stringify(o, null, 1)], { type: "application/json" }); window.__lastBackup = o;

@@ -430,6 +430,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
       <div class="panel" id="tp2" hidden>
         <div class="opts">
           <label class="chk"><input type="checkbox" id="o_max" checked><span><b>Qualité maximale (IA)</b>Restauration par intelligence artificielle : retire les blocs de compression, le bruit et le flou, et recrée le détail. Calculée sur ton téléphone, plus lente. Utilisée seulement pour les images de petite taille (jusqu’à 1280×720), celles qui en ont besoin.</span></label>
+          <label class="chk" id="o_srv_l"><input type="checkbox" id="o_srv"><span><b>IA rapide sur serveur gratuit (Kaggle)</b>La même IA, calculée sur les cartes graphiques gratuites de ton compte Kaggle au lieu du téléphone : environ 100 fois plus rapide pour une longue vidéo. Ta vidéo est envoyée dans un espace privé de ton compte, puis effacée. Accord demandé avant chaque envoi. À régler une fois dans ⚙️ Paramètres (jeton Kaggle).</span></label>
         </div>
         <div class="opts vonly">
           <h2>Options de la vidéo</h2>
@@ -497,8 +498,9 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 <script src="sr.js"></script>
 <script src="depth.js"></script>
 <script src="effacer.js"></script>
+<script src="kaggle.js"></script>
 <script>
-const VER="v3.3";/* seul endroit où changer le numéro de version */
+const VER="v3.4";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -756,9 +758,32 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
   fits(el){const [w,h]=dims(el);return w>0&&!!window.SR&&SR.fits(w,h)},
   ck(){return mode==="video"?"v:"+(curFile&&curFile.name)+":"+v.currentTime:"p:"+window.__photoName},
   async run(el,s,onTile,key){
+    if(SRX.remote){/* IA rapide : image déjà calculée sur le serveur, même taille, mêmes réglages */
+      if(SRX.idx<0){SRX.miss++;throw new Error("la lecture image par image s’est interrompue")}
+      return SRX.remote.image(SRX.idx)}
     /* copie immédiate de l'image (avant toute attente) : l'image d'une vidéo change ou est libérée entre-temps, et WebGPU ne lit pas toujours une vidéo directement */
     if(!(el instanceof HTMLCanvasElement)&&!(el instanceof HTMLImageElement)){const [w,h]=dims(el),c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(el,0,0,w,h);el=c}
     const job=SRX.lock.then(()=>SR.run(el,s,SRX.dn(),onTile,key));SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed)localStorage.setItem("srspd",SR.speed)}catch(e){}return c},
+  /* IA rapide : envoi à Kaggle, attente, récupération ; renvoie un lecteur d'images {image(rang), fermer()} */
+  async lancerServeur(ow,oh){
+    if(!KG.actif())throw new Error("IA rapide : ajoute d’abord ton jeton Kaggle dans ⚙️ Paramètres.");
+    const inf=await demuxVideo(curFile);if(!inf||!inf.ns)throw new Error("IA rapide : vidéo illisible pour l’envoi.");
+    const mo=x=>Math.round(x/1048576),reçu=Math.round(ow*oh*inf.ns*0.55/1048576);
+    if(!(await STUDIO.consent("cloud")))throw new Error("IA rapide non autorisée : rien n’a été envoyé.");
+    if(!confirm("IA rapide sur serveur — envoi de ta vidéo\n\nFournisseur : Kaggle (Google), dans un espace PRIVÉ de ton compte.\nModèle : Real-ESRGAN general v3 (le même que dans l’app).\nBut : calculer la restauration IA de chaque image ("+inf.ns+" images, résultat en "+ow+"×"+oh+").\nConservation : la vidéo et le résultat sont supprimés de Kaggle dès le résultat récupéré, ou en cas d’échec.\nEnvoi : "+mo(curFile.size)+" Mo ; réception : environ "+reçu+" Mo (Wi-Fi conseillé).\n\nEnvoyer maintenant ?"))throw new Error("envoi annulé : rien n’a été envoyé.");
+    const stop=setInterval(()=>{if(cancel)KG.annuler()},500);let r;
+    try{r=await KG.traiter({file:curFile,dw:v.videoWidth,dh:v.videoHeight,ow,oh,dn:+SRX.dn().toFixed(4),images:inf.ns},(et,f,t)=>{msg(t);const pg=$("#pg");if(pg)pg.value=et==="envoi"?f*.1:et==="recup"?.1+f*.05:pg.value})}
+    finally{clearInterval(stop)}
+    const ri=await demuxVideo(r.file);
+    if(!ri||ri.ns!==inf.ns||ri.dw!==ow||ri.dh!==oh)throw new Error("IA rapide : le résultat reçu ne correspond pas à ta vidéo ("+(ri?ri.ns+" images, "+ri.dw+"×"+ri.dh:"illisible")+").");
+    const rr=new SeqReader(r.file,ri);rr.setFps(0);let ouvert=false;
+    const c=document.createElement("canvas");c.width=ow;c.height=oh;const x=c.getContext("2d");
+    window.__iaServeur={minutes:r.minutes,images:inf.ns,gpu:r.info&&r.info.gpu,s_par_image:r.info&&r.info.s_par_image};
+    try{DIAG.send("ia_serveur_ok",window.__iaServeur)}catch(e){}
+    msg("Résultat IA reçu ("+r.minutes+" min). Assemblage de la vidéo sur le téléphone…");
+    return{
+      async image(k){if(!ouvert){await rr.open(k);ouvert=true}const f=await rr.need(k);x.drawImage(f,0,0,ow,oh);return c},
+      async fermer(){try{rr.close()}catch(e){}try{const d=await navigator.storage.getDirectory();await d.removeEntry("ia-serveur.mp4")}catch(e){}}}},
   /* dessine el restaurée par l'IA ; renvoie false si l'IA n'est pas utilisable (l'appelant dessine alors normalement) */
   async render(el,onTile,key){
     if(!SRX.on())return false;
@@ -783,7 +808,8 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     xb.globalCompositeOperation="copy";xb.drawImage(cv,0,0);xb.globalCompositeOperation="source-over";
     xa.globalAlpha=g;    xa.drawImage(B,0,0);xa.globalAlpha=1;blit(A)},
   /* échec de l'IA : message clair selon la cause ; en cas de mémoire saturée, on libère les modèles avant de continuer sans IA */
-  fail(e){const t=window.MODELS?MODELS.explain(e):{code:"MOTEUR",texte:(e&&e.message)||"erreur",solution:""};
+  fail(e){if(SRX.remote){SRX.remoteErr=SRX.remoteErr||e;return}/* IA rapide : l'export s'arrête proprement, l'IA locale reste active */
+    const t=window.MODELS?MODELS.explain(e):{code:"MOTEUR",texte:(e&&e.message)||"erreur",solution:""};
     if(t.code==="MEMOIRE"&&window.MODELS)MODELS.freeAll();
     if(t.code!=="DESACTIVE")SRX.off=true;SRX.lastErr=t;
     msg("Qualité maximale (IA) indisponible : "+t.texte+" L’amélioration classique, sans IA, est utilisée pour la suite."+(t.code==="CORROMPU"?" Recharge l’app pour récupérer le fichier.":""));
@@ -2027,6 +2053,15 @@ $("#ex").onclick=async()=>{
       if((await VideoEncoder.isConfigSupported(c)).supported){cfg=c;break}
     }
     if(!cfg)throw new Error("Encodage vidéo non pris en charge.");
+    /* IA rapide (v3.4) : toutes les images IA sont calculées sur les cartes graphiques gratuites du compte Kaggle,
+       puis relues ici à la place du calcul IA du téléphone ; tout le reste de l'export est inchangé */
+    SRX.remote=null;SRX.idx=-1;SRX.miss=0;SRX.remoteErr=null;
+    if(SRX.on()&&SRX.fits(v)&&window.KG&&$("#o_srv")&&$("#o_srv").checked){
+      const why=isPlan?"Vitesse et sens (Time Repair)":fluid?"« Mouvement plus fluide »":$("#o_dust").checked?"« Anti-poussière »":!window.VideoDecoder?"la lecture image par image (iOS trop ancien)":null;
+      if(why)throw new Error("L’IA rapide sur serveur ne fonctionne pas encore avec "+why+". Décoche l’une des deux options, puis relance.");
+      SRX.remote=await SRX.lancerServeur(cv.width,Math.max(2,Math.round(v.videoHeight*(cv.width/v.videoWidth))));
+      if(cancel)throw new Error("annulé");
+    }
     /* audio */
     let ab=null,acfg=null,audioWhy="",rawA=null;
     if(!window.__plan){try{rawA=await demuxAudio(curFile)}catch(e){rawA=null}}
@@ -2130,7 +2165,7 @@ $("#ex").onclick=async()=>{
       if(window.__baMode)split=BA.split(i,total);
       let f=null,p1=performance.now();
       try{
-        const p0=performance.now();if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
+        const p0=performance.now();SRX.idx=SRX.remote&&rdr?rdr.map(pl.a):-1;if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
         if(rdr)f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       }catch(e){
         if(!rdr)throw e;
@@ -2139,6 +2174,7 @@ $("#ex").onclick=async()=>{
         await initPool();poolMode=true;for(let z=q;z<q+POOL;z++)go(z);
         i--;continue;
       }
+      if(SRX.remoteErr){err=new Error("IA rapide : "+((SRX.remoteErr&&SRX.remoteErr.message)||"image du serveur illisible")+". Rien n’est perdu : relance l’export.");break}
       const d0=performance.now();tVF+=d0-p1;
       if(!plan&&i<150){tx.drawImage(src,0,0,24,18);const td=tx.getImageData(0,0,24,18).data;
         if(prevT){let sm=true;for(let z=0;z<td.length;z++){if(td[z]!==prevT[z]){sm=false;break}}if(sm){dup++;run++;if(run>maxRun)maxRun=run}else run=0}
@@ -2207,6 +2243,7 @@ $("#ex").onclick=async()=>{
     else msg(friendly(m));
     try{DIAG.send("export",{ok:false,err:m.slice(0,300)})}catch(x){}}
   finally{
+    if(SRX.remote){try{SRX.remote.fermer()}catch(e){}SRX.remote=null;SRX.idx=-1}
     window.__plan=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}

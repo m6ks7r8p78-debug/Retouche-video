@@ -47,12 +47,14 @@ if abs(OH / DH - s) > 0.01:
 dec = subprocess.Popen(["ffmpeg", "-loglevel", "error", "-i", VID, "-vf",
                         f"scale=in_color_matrix={matrice}:in_range={plage}:out_range=pc:flags=lanczos+full_chroma_int+accurate_rnd",
                         "-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE, bufsize=1 << 26)
-# écriture : HEVC 8 bits 4:2:0 (lisible par Safari), quasi sans perte (qp fixe bas)
+# écriture : H.264 High 8 bits 4:2:0, plage standard (limitée) BT.709 — lu partout, y compris par Safari et WebCodecs —
+# quasi sans perte (qp fixe bas ; écart mesuré par tests/serveur_ia_compare.py)
 QP = int(P.get("qp", 16))
 enc = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{OW}x{OH}", "-r", "30", "-i", "-",
-                        "-c:v", "hevc_nvenc", "-preset", "p6", "-tune", "hq", "-rc", "constqp", "-qp", str(QP),
-                        "-pix_fmt", "yuv420p", "-color_range", "pc", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
-                        "-tag:v", "hvc1", "-movflags", "+faststart", "/kaggle/working/ia.mp4"], stdin=subprocess.PIPE)
+                        "-vf", "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int",
+                        "-c:v", "h264_nvenc", "-profile:v", "high", "-preset", "p6", "-tune", "hq", "-rc", "constqp", "-qp", str(QP),
+                        "-pix_fmt", "yuv420p", "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
+                        "-movflags", "+faststart", "/kaggle/working/ia.mp4"], stdin=subprocess.PIPE)
 
 ng = max(1, torch.cuda.device_count())
 modeles = [IA.charger(SR, P["dn"], device=f"cuda:{g}") for g in range(ng)]
