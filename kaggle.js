@@ -7,11 +7,11 @@
    - Le résultat (une image calculée par image de la vidéo, déjà à la taille d'export) est relu ensuite par l'export
      normal de l'app à la place du calcul IA local : couleurs, mélange, protection des hautes lumières, son, encodage
      restent ceux de l'app.
-   Le téléchargement du résultat passe par le serveur Cloudflare de l'app (Kaggle ne permet pas à Safari de le lire
+   Le téléchargement du résultat passe par un petit serveur relais Cloudflare (serveur-ia/relais.js) (Kaggle ne permet pas à Safari de le lire
    directement) ; le jeton y transite sans être conservé. */
 var KG = (() => {
   const API = "https://api.kaggle.com/v1/", JK = "kaggle_jeton";
-  const SRV = () => (window.LINK && LINK.SRV) || "https://retouche-serveur.nfchb5hd9z.workers.dev";
+  const RELAIS = "https://retouche-kaggle.retouche-ia.workers.dev";   /* serveur relais dédié (serveur-ia/relais.js), séparé du serveur des liens */
   const jeton = () => { try { return localStorage.getItem(JK) || "" } catch (e) { return "" } };
   let user = null, abort = null;
 
@@ -46,7 +46,7 @@ var KG = (() => {
 
   /* téléchargement du résultat via le serveur de l'app, écrit au fil de l'eau dans le stockage privé de l'app (pas en mémoire) */
   async function recup(u, slug, f, onP) {
-    const r = await fetch(SRV() + "/kaggle/sortie?u=" + encodeURIComponent(u) + "&k=" + encodeURIComponent(slug) + "&f=" + encodeURIComponent(f),
+    const r = await fetch(RELAIS + "/kaggle/sortie?k=" + encodeURIComponent(slug) + "&f=" + encodeURIComponent(f),
       { headers: { "X-Kaggle-Jeton": jeton() }, signal: abort && abort.signal });
     if (!r.ok) throw new Error("récupération refusée (" + r.status + ")");
     if (f.endsWith(".json")) return r.json();
