@@ -81,3 +81,10 @@ Ils dosent ce que l'analyse automatique a réglé (`P` reste la base) : `PROF.T`
 
 ## Diagnostic
 Onglet Outils → « 📋 Copier le diagnostic pour Claude » : nombres seulement (réglages, profil, moteur et version de calcul IA, vitesse, temps d'export), aucune image.
+
+## v3.5 (5 nov. 2026) — IA plus fidèle
+Constat sur une vidéo test : avec l'IA seule (Équilibré, ai:1), peau lissée « plastique », reflets faux dans les yeux, virage orange.
+- Mélange IA / version classique : Naturel 45 %, Équilibré 55 %, Détails 75 % d'IA (avant 70 / 100 / 100 %).
+- Couleurs verrouillées sur la version classique (mode de fusion « color » à 85 %) : l'IA n'apporte que la netteté.
+- Grain léger (motif 256 px, fusion « overlay » 35 %, décalé à chaque image pour ne pas rester figé).
+- Code : SRX.compose dans index.html. Sauvegarde : tag sauvegarde-v3.4.

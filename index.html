@@ -500,7 +500,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v3.4";/* seul endroit où changer le numéro de version */
+const VER="v3.5";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -519,7 +519,7 @@ const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],r:1};
    LPIPS du visage 0,370 → 0,459 (plus loin de l'original) : la version classique y remet les blocs de compression (tests/calibrage_visages.py).
    « Équilibré » = réglages mesurés sur le banc depuis la v2.45 (inchangés). */
 const PROF={id:"equilibre",manual:false,
-  T:{naturel:{sh:.5,dn:.6,cs:.6,c:.5,hp:.9,srdn:-.12,ai:.7},equilibre:{sh:1,dn:1,cs:1,c:1,hp:.7,srdn:0,ai:1},details:{sh:1.7,dn:1,cs:1,c:1,hp:.7,srdn:.15,ai:1},
+  T:{naturel:{sh:.5,dn:.6,cs:.6,c:.5,hp:.9,srdn:-.12,ai:.45},equilibre:{sh:1,dn:1,cs:1,c:1,hp:.7,srdn:0,ai:.55},details:{sh:1.7,dn:1,cs:1,c:1,hp:.7,srdn:.15,ai:.75},
     nuit:{sh:.6,dn:1.6,cs:1.2,c:1,hp:.85,srdn:.2,ai:1,lift:.42},jour:{sh:.6,dn:1.6,cs:1.2,c:1,hp:.85,srdn:.2,ai:1,lift:.5,warm:.03,sat:.05,con:.05}},
   NOM:{naturel:"Naturel",equilibre:"Équilibré",details:"Détails",nuit:"Faible luminosité",jour:"Nuit → jour (esthétique)"},m:null,
   /* faible luminosité : gamma choisi pour amener la médiane de l'image vers la cible « lift », borné (jamais plus de ×2,2) */
@@ -800,14 +800,22 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     SRX.compose(el);return true},
   /* mélange final, APRÈS les couleurs : l'image IA (déjà dans cv) est mêlée à la version classique de la même image (part 1 − ai) */
   compose(el){
+    /* v3.5 : l'IA seule repeignait l'image (peau lissée, reflets faux dans les yeux, couleurs qui virent à l'orange).
+       On garde donc : 1) un mélange avec la version classique, 2) les couleurs de la version classique (l'IA n'apporte que la netteté),
+       3) un grain très léger pour retrouver la texture naturelle. */
     const K=PROF.k(),g=Math.max(0,1-K.ai);
-    if(g<=.001)return;
     const W=cv.width,H=cv.height,mk=n=>{let c=SRX[n];if(!c)c=SRX[n]=document.createElement("canvas");if(c.width!==W||c.height!==H){c.width=W;c.height=H}return c};
     const A=mk("cA"),B=mk("cB"),xa=A.getContext("2d"),xb=B.getContext("2d");
     xa.globalCompositeOperation="copy";xa.drawImage(cv,0,0);xa.globalCompositeOperation="source-over";
     draw(el);/* version classique : mêmes réglages, mêmes couleurs, même stabilisation */
     xb.globalCompositeOperation="copy";xb.drawImage(cv,0,0);xb.globalCompositeOperation="source-over";
-    xa.globalAlpha=g;    xa.drawImage(B,0,0);xa.globalAlpha=1;blit(A)},
+    if(g>.001){xa.globalAlpha=g;xa.drawImage(B,0,0)}
+    xa.globalCompositeOperation="color";xa.globalAlpha=.85;xa.drawImage(B,0,0);/* couleurs verrouillées sur la version classique */
+    if(!SRX.gr){const n=document.createElement("canvas");n.width=n.height=256;const x=n.getContext("2d"),im=x.createImageData(256,256);
+      let sd=12345;for(let i=0;i<im.data.length;i+=4){sd=(sd*1103515245+12345)>>>0;const q=118+((sd>>>16)%21);im.data[i]=im.data[i+1]=im.data[i+2]=q;im.data[i+3]=255}
+      x.putImageData(im,0,0);SRX.gr=n}
+    xa.globalCompositeOperation="overlay";xa.globalAlpha=.35;const ox=Math.random()*256|0,oy=Math.random()*256|0;xa.translate(-ox,-oy);xa.fillStyle=xa.createPattern(SRX.gr,"repeat");xa.fillRect(ox,oy,W,H);xa.setTransform(1,0,0,1,0,0);/* grain léger */
+    xa.globalCompositeOperation="source-over";xa.globalAlpha=1;blit(A)},
   /* échec de l'IA : message clair selon la cause ; en cas de mémoire saturée, on libère les modèles avant de continuer sans IA */
   fail(e){if(SRX.remote){SRX.remoteErr=SRX.remoteErr||e;return}/* IA rapide : l'export s'arrête proprement, l'IA locale reste active */
     const t=window.MODELS?MODELS.explain(e):{code:"MOTEUR",texte:(e&&e.message)||"erreur",solution:""};
