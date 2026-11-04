@@ -13,7 +13,7 @@ await new Promise(r => setTimeout(r, 600));
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ["--enable-unsafe-webgpu", "--use-angle=swiftshader", "--ignore-gpu-blocklist"] });
 const p = await (await browser.newContext()).newPage(); const errs = []; p.on("pageerror", e => errs.push(e.message));
 await p.goto(BASE + "/index.html"); await p.waitForFunction(() => window.SR && window.MODELS);
-const CAS = [[3, 0.3], [2, 0.55]], res = [];
+const CAS = process.env.CAS ? process.env.CAS.split(",").map(c => c.split(":").map(Number)) : [[3, 0.3], [2, 0.55]], res = [];   /* CAS="4:0.3,2:0.55" */
 for (const f of fs.readdirSync(IN).filter(f => f.endsWith(".png"))) for (const [s, dn] of CAS) {
   const b64 = fs.readFileSync(path.join(IN, f)).toString("base64"), t0 = Date.now();
   const r = await p.evaluate(async ({ b64, s, dn }) => {
