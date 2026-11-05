@@ -129,3 +129,11 @@ Contraste −0,10 maintenant proportionnel à la hausse décidée par l'analyse 
 ## v3.13 (5 nov. 2026) — enregistrement du jeton Kaggle visible
 Retour : « rien ne se passe » en touchant Enregistrer le jeton. Le message s'affichait tout en bas de la fenêtre Paramètres (hors écran).
 Il s'affiche maintenant juste sous le bouton (avec défilement), et un jeton n'est effacé que si Kaggle le refuse (401/403), pas pour un souci réseau.
+
+## v4.0 (5 nov. 2026) — mode simple par défaut
+Demande : app plus simple pour débutant, peu de boutons, pas surchargée (« je m'y perds »).
+- Mode simple (défaut, mémorisé dans localStorage « ui_mode ») : accueil = 3 étapes + « Choisir une vidéo » / « Choisir une photo » + lien.
+  Écran de travail = aperçu, Lecture, Maintenir : original, taille (4K / Full HD / Origine), interrupteur « ⚡ Qualité IA », bouton Améliorer, puis Enregistrer.
+- Masqués en mode simple : onglets Réglages/Outils, profils, analyse détaillée, assistant, rapports, regroupement, effacer une zone, Modèles IA, outils annexes.
+- « ⚡ Qualité IA » pilote o_max ; avec un jeton Kaggle enregistré, il active aussi o_srv automatiquement (vidéos calculées sur Kaggle).
+- Bouton « Mode expert » en haut : réaffiche toute l'app telle qu'avant (rien n'est supprimé).

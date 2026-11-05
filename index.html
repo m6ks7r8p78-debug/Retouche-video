@@ -262,6 +262,19 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 .pv-z{display:flex;gap:6px;margin-top:8px}.pv-z button{flex:1;padding:9px 4px;border-radius:10px;border:0;background:var(--panel);box-shadow:0 1px 0 var(--line);font:600 14px/1 var(--fd);cursor:pointer}
 .pv-z button[aria-pressed="true"]{background:var(--grad);color:#fff}
 .recipe{margin:6px 0 0;font-size:12px;color:var(--mut);word-break:break-word}
+
+/* ===== v4.0 : mode simple (par défaut) — l'essentiel seulement ; « Mode expert » réaffiche tout ===== */
+body.simple #mdlb,body.simple .hero .eyebrow,body.simple .hero .lead,body.simple #pickm,body.simple #picke,body.simple .lnkh,body.simple .privacy,
+body.simple .tabs,body.simple #prof,body.simple #rec,body.simple #qhint,body.simple #qwrap>.help,body.simple #asst,body.simple #frep,body.simple #spl,body.simple #meta,
+body.simple #ai,body.simple #rtb,body.simple #socn,body.simple #bab,body.simple #kbb,body.simple #erb,body.simple #orep,body.simple #tech,body.simple #rec_after{display:none!important}
+body.simple #tp2,body.simple #tp3{display:none!important}
+body.simple #tp1{display:block!important}
+body.simple .picks{grid-template-columns:1fr 1fr}
+body:not(.simple) .simple-only{display:none!important}
+#modeb{font-size:13px}
+#sai{margin-top:12px}
+#sai .chk{margin:0}
+#s_iah{display:block;font-weight:400;opacity:.8;margin-top:2px}
 </style>
 </head>
 <body>
@@ -270,6 +283,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
     <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>Retouche</span>
   </div>
+  <button class="mdlb" id="modeb" type="button">Mode expert</button>
   <button class="mdlb" id="mdlb" type="button" aria-haspopup="dialog">🧠 Modèles IA</button>
   <span class="tag"><span id="ver">v3.1</span></span>
 </header>
@@ -377,6 +391,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
           <label class="s ponly" hidden><span>Format de la photo</span><select id="pfmt"><option value="jpeg">JPEG (léger, qualité 95 %)</option><option value="png">PNG (sans perte, plus lourd)</option></select></label>
         </div>
         <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><p class="help" id="rec_hint" hidden style="margin:6px 0 0">Déjà appliqué. Décoche ce que tu ne veux pas.</p></div>
+        <div class="card simple-only" id="sai"><label class="chk"><input type="checkbox" id="s_ia"><span><b>⚡ Qualité IA</b><span id="s_iah"></span></span></label></div>
         <button class="btn main big" id="ex" style="margin-top:12px">Améliorer en 4K</button>
         <progress id="pg" value="0" max="1" hidden></progress>
         <p class="st" id="st1" role="status"></p>
@@ -500,7 +515,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v3.13";/* seul endroit où changer le numéro de version */
+const VER="v4.0";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -3121,5 +3136,26 @@ $("#sv").onclick=async()=>{
 if(!window.Mp4Muxer)document.write('<script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.js" integrity="sha384-SujebcgqCNlLMRSnVkLD+3eWOzsxobv30Bct+0lV+fc1EHHEuvcePwmDgMzpnptj" crossorigin="anonymous"><\/script>')</script>
 <script>/* hors ligne : l'app se garde sur le téléphone (version installée depuis Safari) ; en ligne, la dernière version est toujours chargée en premier */
 try{if("serviceWorker" in navigator&&location.protocol==="https:"&&/github\.io$/.test(location.hostname))navigator.serviceWorker.register("sw.js").catch(()=>{})}catch(e){}</script>
+<script>
+/* ===== v4.0 : mode simple ===== */
+(()=>{
+  const $=q=>document.querySelector(q),B=document.body;let m="simple";try{m=localStorage.getItem("ui_mode")||"simple"}catch(e){}
+  const ia=$("#s_ia"),h=$("#s_iah"),mx=$("#o_max"),sv=$("#o_srv");
+  const kg=()=>!!(window.KG&&KG.actif());
+  const fire=e=>{try{e.dispatchEvent(new Event("change",{bubbles:true}))}catch(x){}};
+  function hint(){if(!h)return;h.textContent=!ia.checked?"Désactivée : traitement rapide sur le téléphone, sans IA."
+    :kg()?"Activée : calcul sur les cartes graphiques gratuites de ton compte Kaggle (quelques minutes)."
+    :"Activée sur l’iPhone (photos : ~30 s ; vidéos : très long). Pour les vidéos, ajoute ton jeton Kaggle dans ⚙️.";}
+  function syncFromApp(){if(!ia||!mx)return;ia.checked=mx.checked;if(sv&&mx.checked&&kg()&&!sv.checked){sv.checked=true;fire(sv)}hint()}
+  if(ia)ia.onchange=()=>{mx.checked=ia.checked;fire(mx);if(sv){const w=ia.checked&&kg();if(sv.checked!==w){sv.checked=w;fire(sv)}}hint()};
+  function apply(){B.classList.toggle("simple",m==="simple");const b=$("#modeb");if(b)b.textContent=m==="simple"?"Mode expert":"Mode simple";
+    if(m==="simple"){try{showTab("tp1")}catch(e){}syncFromApp()}}
+  const b=$("#modeb");if(b)b.onclick=()=>{m=m==="simple"?"expert":"simple";try{localStorage.setItem("ui_mode",m)}catch(e){}apply();window.scrollTo({top:0,behavior:"smooth"})};
+  apply();
+  /* l'app peut changer la case IA d'elle-même (ex. vidéo trop longue pour l'iPhone) : on garde l'interrupteur à jour */
+  if(mx)mx.addEventListener("change",()=>{if(ia&&ia.checked!==mx.checked){ia.checked=mx.checked;hint()}});
+  setInterval(()=>{if(m==="simple"&&ia&&mx&&ia.checked!==mx.checked)syncFromApp();else if(m==="simple")hint()},1500);
+})();
+</script>
 </body>
 </html>
