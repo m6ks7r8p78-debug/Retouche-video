@@ -113,3 +113,7 @@ Retour : vidéo 848×480 (dominante 0,82/1,05/1,22, blocs 1,10) trop froide/bleu
 - Chaleur : −(bleu − rouge) × 0,10, bornée −0,04 à +0,02 (avant × 0,15, jusqu'à −0,08).
 - Anti-blocs dès 1,08 (avant 1,25), force (r − 1)/0,25 (0,30 à 1) ; netteté × (1 − (r − 1,05) × 4), au moins × 0,55.
   Exemple blocs 1,10 : anti-blocs 0,40, netteté × 0,80.
+
+## v3.10 (5 nov. 2026) — chaleur : juste un peu plus froid que l'original
+Retour sur la vidéo 848×480 : correction −0,061 trop bleue, original « un tout petit peu trop orange ».
+Chaleur = −(bleu − rouge) × 0,05, bornée −0,025 à +0,01. Cette vidéo : −0,02 ; vidéo de référence : −0,021.

@@ -500,7 +500,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v3.9";/* seul endroit où changer le numéro de version */
+const VER="v3.10";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -1332,7 +1332,7 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
         P.sh=cl("sh",Math.max(.2,Math.min(.8,1-sharp/70))+lsh);           /* image floue → plus de netteté ; déjà nette → presque rien */
         P.dn=cl("dn",Math.max(.1,Math.min(.45,.1+noise*.6))+Math.max(0,ldn)); /* bruit mesuré → réduction proportionnelle */
         const warm=g&&g.length===3?g[2]-g[0]:0;                           /* > 0 : image qui tire vers l'orange ; < 0 : vers le bleu */
-        P.wa=cl("wa",Math.max(-.04,Math.min(.02,-warm*.1)));/* v3.9 : correction adoucie (−0,061 jugé trop froid / bleu) */             /* corrige seulement la dominante réellement présente */
+        P.wa=cl("wa",Math.max(-.025,Math.min(.01,-warm*.05)));/* v3.10 : à peine plus froid que l'original (−0,061 puis −0,04 jugés trop bleus) */             /* corrige seulement la dominante réellement présente */
         /* v3.9 : carrés de compression lissés dès 1,08 (avant 1,25) et netteté modérée sur ces vidéos pour ne pas les faire ressortir */
         if(m.blk&&m.blk.r>=1.08){P.db=Math.max(P.db||0,+Math.max(.3,Math.min(1,(m.blk.r-1)/.25)).toFixed(2));DB.ph=[m.blk.px,m.blk.py];
           P.sh=cl("sh",P.sh*Math.max(.55,1-(m.blk.r-1.05)*4))}
