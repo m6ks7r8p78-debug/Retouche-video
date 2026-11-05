@@ -27,6 +27,11 @@ le calcul « 4 pixels par fil » n'y gagne que 12 %) → 50 h pour une vidéo 72
 - Reste : test d'intégration complet réussi, vérifier que DeleteKernel est autorisé par le jeton, mesurer une vraie vidéo
   720×1280, documentation (README, CHANGELOG, SECURITE, AUTORISATIONS, GUIDE_IPHONE), fusion dans `main`.
 
+## v4.9 (5 nov. 2026) — publicités préparées, ÉTEINTES
+`pub.js` (PUB_CONFIG en haut du fichier) ; mode d'emploi et étapes pour allumer : `PUBLICITE.md` ; tests : `tests/pub.test.mjs`.
+Le propriétaire veut une app gratuite rentabilisée par des petites pubs + une pub de 3–5 s avant le téléchargement.
+Note : `tests/v3.test.mjs` a 3 échecs (« Photo sombre … selectOption ») déjà présents en v4.8, sans lien avec les pubs.
+
 ## Règles du projet
 - Règle absolue : ne jamais sacrifier la qualité pour la vitesse ; viser le résultat le plus proche du parfait.
 - Tout se calcule sur le téléphone (PWA), gratuit, utilisable par des débutants : réglages automatiques.

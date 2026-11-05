@@ -1,5 +1,11 @@
 # Journal des versions
 
+## v4.9 — 5 novembre 2026 (publicités préparées, éteintes)
+- Nouveau `pub.js` : bannière discrète en bas de page, pub récompensée avant l'enregistrement, lien de consentement Google,
+  « Coller un lien » masqué quand les pubs sont allumées. Tout est éteint : l'app ne change pas tant que ce n'est pas activé.
+- Jamais bloquant : sans pub prête, l'enregistrement se fait directement. Jamais de pub hors du domaine choisi.
+- Mode d'emploi pour allumer : PUBLICITE.md. Tests : tests/pub.test.mjs (8 réussis).
+
 ## v4.8 — 5 novembre 2026 (conversion accélérée des vidéos ralenties / accélérées)
 - Même résultat qu'en v4.7, mêmes réglages : seule la façon de calculer change.
 - Lecture de la vidéo en continu (décodeur de l'iPhone) aussi quand la vitesse est changée. Avant, chaque image
