@@ -2257,7 +2257,6 @@ $("#ex").onclick=async()=>{
       /* lecture à l'envers : beaucoup de retours en arrière → images clés rapprochées dans le résultat du serveur */
       let nb=0;if(isPlan){let mx=-1;for(const pp of window.__plan){if(pp.a<mx-1)nb++;mx=Math.max(mx,pp.b!=null?pp.b:pp.a)}}
       SRX.remote=await SRX.lancerServeur(cv.width,Math.max(2,Math.round(v.videoHeight*(cv.width/v.videoWidth))),nb>Math.max(2,window.__plan?window.__plan.length/45:0)?4:0);
-      {const si=await demuxVideo(curFile);if(!si)throw new Error("IA rapide : vidéo illisible.");SRX.mapr=new SeqReader(curFile,si);SRX.mapr.setFps(OFPS)}
       if(cancel)throw new Error("annulé");
     }
     /* audio */
@@ -2329,7 +2328,7 @@ $("#ex").onclick=async()=>{
        et pour la prolongation (quelques sauts en arrière : la lecture repart de l'image clé voisine).
        Seule la lecture à l'envers (un retour en arrière à chaque image) garde l'ancienne méthode. */
     let pBack=0;if(isPlan){let mx=-1;for(const pp of plan){if(pp.a<mx-1)pBack++;mx=Math.max(mx,pp.b!=null?pp.b:pp.a)}}
-    const seqPlanOK=!isPlan||pBack<=Math.max(2,plan.length/45);
+    const seqPlanOK=!isPlan||pBack<=Math.max(2,plan.length/45)||!!SRX.remote;/* v5.8 : avec l'IA rapide, même à l'envers (l'image du serveur doit être exactement la même image) */
     if(seqPlanOK&&window.VideoDecoder&&!window.__noseq&&(cv.width*cv.height<=2073600*1.2||SRX.remote||isPlan)){/* v4.5 : avec Kaggle, toujours (4K compris) */
       rdr=await makeSeq(isPlan?plan[0].a:off,OFPS);rdr0=!!rdr;
     }
@@ -2340,7 +2339,10 @@ $("#ex").onclick=async()=>{
       if(cancel||err)break;
       const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
       /* saut en arrière dans un plan (prolongation) : la lecture séquentielle repart de là */
-      if(rdr&&isPlan&&pl.a<pMax-1){rdr.close();rdr=await makeSeq(pl.a,OFPS);pMax=-1;
+      if(rdr&&isPlan&&(pl.a<pMax-1||(SRX.remote&&pl.a===pMax-1&&!rdr.peek(pl.a)))){
+        /* v5.8 : à l'envers avec l'IA rapide : la lecture repart de l'image clé voisine, sans relire tout le fichier */
+        if(SRX.remote){const inf=rdr.i;rdr.close();rdr=new SeqReader(curFile,inf);rdr.setFps(OFPS);try{await rdr.open(rdr.map(pl.a))}catch(e){rdr.close();rdr=null}}
+        else{rdr.close();rdr=await makeSeq(pl.a,OFPS)}pMax=-1;
         if(!rdr){window.__seqInfo="seq relance impossible";q=0;for(let z=0;z<i;z++){q+=plan[z].b!=null?2:1}await initPool();poolMode=true;for(let z=q;z<q+POOL;z++)go(z)}}
       pMax=Math.max(pMax,pl.b!=null?pl.b:pl.a);
       if(rdr){
@@ -2373,7 +2375,7 @@ $("#ex").onclick=async()=>{
       if(window.__baMode)split=BA.split(i,total);
       let f=null,p1=performance.now();
       try{
-        const p0=performance.now();SRX.idx=!SRX.remote?-1:pl.b==null?SRX.mapr.map(pl.a):{a:SRX.mapr.map(pl.a),b:SRX.mapr.map(pl.b),w:pl.w,fl:fcache&&fcache.j===pl.j?fcache.fl:null};if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
+        const p0=performance.now();SRX.idx=!SRX.remote||!rdr?-1:pl.b==null?rdr.map(pl.a):{a:rdr.map(pl.a),b:rdr.map(pl.b),w:pl.w,fl:fcache&&fcache.j===pl.j?fcache.fl:null};if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
         if(rdr)f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       }catch(e){
         if(!rdr||SRX.remote)throw e;
@@ -2452,7 +2454,7 @@ $("#ex").onclick=async()=>{
     else msg(friendly(m));
     try{DIAG.send("export",{ok:false,err:m.slice(0,300)})}catch(x){}}
   finally{
-    if(SRX.remote){try{SRX.remote.fermer()}catch(e){}SRX.remote=null;SRX.idx=-1;SRX.mapr=null}
+    if(SRX.remote){try{SRX.remote.fermer()}catch(e){}SRX.remote=null;SRX.idx=-1}
     window.__plan=null;window.__planK=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}

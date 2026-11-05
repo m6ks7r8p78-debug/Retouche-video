@@ -56,9 +56,10 @@ const cas = [
   ["barre 0,75× (ralenti avec images intermédiaires)", async () => { await vitesse(75); await p.evaluate(() => $("#ex").onclick()) }, false],
   ["barre 1,30× (accéléré, images sautées)", async () => { await vitesse(130); await p.evaluate(() => $("#ex").onclick()) }, false],
   ["Time Repair 0,5× lu à l'envers (fluide)", async () => { await vitesse(100); await p.evaluate(() => { $("#tr_v").value = "0.5"; $("#tr_r").checked = true; $("#tr_f").checked = true; $("#tr_a").value = "sans"; return TR.go() }) }, false],
+  ["Time Repair 1× lu à l'envers (sans images intermédiaires)", async () => { await vitesse(100); await p.evaluate(() => { $("#tr_v").value = "1"; $("#tr_r").checked = true; $("#tr_f").checked = false; $("#tr_a").value = "sans"; return TR.go() }) }, false],
   ["« Mouvement plus fluide » (vitesse normale)", async () => { await vitesse(100); await p.evaluate(() => { $("#tr_r").checked = false; return $("#ex").onclick() }) }, true],
 ];
-for (const [nom, lancer, fluid] of cas) {
+for (const [nom, lancer, fluid] of cas.filter(c => !process.env.CAS || new RegExp(process.env.CAS, "i").test(c[0]))) {
   const ref = path.join(OUT, nom.replace(/[^a-z0-9]+/gi, "_") + "_sans_ia.mp4"), ia = ref.replace("_sans_ia", "_ia_serveur");
   await test(nom + " : export avec l'IA rapide terminé, bonnes images relues", async () => {
     await reglages(false, fluid); await lancer(); await done(); let t = await p.textContent("#st1"); if (!/Terminé/.test(t)) return { ok: false, info: "sans IA : " + t.slice(0, 160) };
