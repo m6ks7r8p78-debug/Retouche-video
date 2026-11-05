@@ -1,5 +1,9 @@
 # Journal des versions
 
+## v5.3 — 5 novembre 2026 (page Confidentialité)
+- Nouvelle page confidentialite.html (traitement sur l'appareil, usages réseau, publicité Google et cookies, droits,
+  hébergeurs), liée depuis le texte de confidentialité de l'app. Exigée par Google AdSense.
+
 ## v5.2 — 5 novembre 2026 (connexion sécurisée imposée)
 - Certificat HTTPS de retoucheproai.com en place. Toute visite en http (ou via l'ancienne adresse github.io, qui
   redirige en http) est renvoyée vers https://retoucheproai.com, nécessaire pour la carte graphique et la version hors ligne.

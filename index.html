@@ -60,6 +60,7 @@ body.loaded .steps{display:none}
 body.loaded .pickbtn{min-height:0;flex-direction:row;align-items:center;padding:10px 12px;font-size:14px;gap:10px}
 body.loaded .pickbtn svg{width:22px;height:22px}
 .privacy{margin:14px 0 0;font-size:13px;color:var(--mut)}
+.pied{max-width:720px;margin:0 auto;padding:8px 16px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;font-size:13px}.pied a{color:var(--mut)}
 body.loaded .privacy,body.loaded .note{display:none}
 .note{margin-top:14px;padding:14px;border:1px dashed var(--line);border-radius:14px;background:var(--panel)}
 .note strong{display:block;margin-bottom:4px;font-family:var(--fd)}
@@ -524,6 +525,7 @@ body:not(.simple) .simple-only{display:none!important}
     </div>
   </div>
 </main>
+<footer class="pied" id="pied"><a href="confidentialite.html">Confidentialité et cookies</a></footer>
 
 <script src="models.js"></script>
 <script src="sr-gpu.js"></script>
@@ -532,7 +534,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v5.2";/* seul endroit où changer le numéro de version */
+const VER="v5.3";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};

@@ -3,7 +3,7 @@
    les boutons « Enregistrer » marchent exactement comme avant. Pour allumer : voir PUBLICITE.md.
 
    Ce qui est prévu une fois allumé, sur le nom de domaine indiqué ci-dessous uniquement :
-   - une bannière discrète tout en bas de la page (Google AdSense, taille automatique) ;
+   - une bannière discrète tout en bas de la page, juste au-dessus du pied de page (Google AdSense, taille automatique) ;
    - avant d'enregistrer une vidéo ou une photo : une fenêtre propose une courte pub « récompensée » (Google Ad Manager).
      Règles Google respectées : la récompense est annoncée avant, la pub n'est montrée qu'après « oui », elle peut être fermée.
    - si aucune pub n'est prête (pas de pub disponible, bloqueur, connexion lente…), l'enregistrement se fait directement :
@@ -36,20 +36,20 @@ window.PUB = (() => {
 
   /* ---------- bannière du bas ---------- */
   function banniere() {
-    const priv = document.querySelector(".privacy"); if (!priv || !C.banniere) return;
+    const pied = document.getElementById("pied"); if (!pied || !C.banniere) return;
     const z = document.createElement("div"); z.id = "pub-bas"; z.setAttribute("aria-label", "Publicité");
     z.innerHTML = '<p class="pub-tag">Publicité — elle garde l’app gratuite</p><ins class="adsbygoogle" style="display:block" data-ad-client="' + C.adsense +
       '" data-ad-slot="' + C.banniere + '" data-ad-format="auto" data-full-width-responsive="true"></ins>';
-    priv.after(z);
+    pied.before(z);
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}) } catch (e) {}
   }
 
   /* ---------- lien « Cookies et pubs » (changer son choix de consentement) ---------- */
   function lienCookies() {
-    const priv = document.querySelector(".privacy"); if (!priv) return;
+    const pied = document.getElementById("pied"); if (!pied) return;
     const a = document.createElement("button"); a.type = "button"; a.className = "pub-cookies"; a.textContent = "Cookies et pubs : modifier mon choix";
     a.onclick = () => { try { window.googlefc = window.googlefc || {}; (googlefc.callbackQueue = googlefc.callbackQueue || []).push({ CONSENT_DATA_READY: () => googlefc.showRevocationMessage() }) } catch (e) {} };
-    priv.after(a);
+    pied.appendChild(a);
   }
 
   /* ---------- pub récompensée : préchargée à l'avance pour qu'un clic n'attende jamais ---------- */
@@ -124,7 +124,7 @@ window.PUB = (() => {
   }
 
   const css = document.createElement("style");
-  css.textContent = "#pub-bas{margin:18px 0 0;min-height:60px}.pub-tag{margin:0 0 4px;font-size:11px;color:var(--mut);text-align:center}" +
+  css.textContent = "#pub-bas{max-width:720px;margin:18px auto 0;padding:0 16px;min-height:60px}.pub-tag{margin:0 0 4px;font-size:11px;color:var(--mut);text-align:center}" +
     ".pub-cookies{display:block;margin:10px auto 0;background:none;border:0;color:var(--mut);font-size:12px;text-decoration:underline;cursor:pointer}" +
     ".pub-dlg{max-width:min(92vw,420px);border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);padding:20px}" +
     ".pub-dlg::backdrop{background:rgba(0,0,0,.55)}.pub-dlg h2{margin:0 0 8px;font-size:19px}.pub-dlg p{margin:0 0 14px;color:var(--mut)}";
