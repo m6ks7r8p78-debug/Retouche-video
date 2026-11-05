@@ -37,8 +37,13 @@ const res = []; const test = async (n, f) => { let ok = false, info = ""; try { 
 const save = async f => { const d = await p.evaluate(async () => { const a = new Uint8Array(await (await fetch(outUrl)).arrayBuffer()); let s = ""; for (let i = 0; i < a.length; i += 32768) s += String.fromCharCode(...a.subarray(i, i + 32768)); return btoa(s) }); fs.writeFileSync(f, Buffer.from(d, "base64")); return f };
 const nbImages = f => +JSON.parse(execFileSync("ffprobe", ["-v", "error", "-count_frames", "-select_streams", "v", "-show_entries", "stream=nb_read_frames", "-of", "json", f]).toString()).streams[0].nb_read_frames;
 /* PSNR image par image entre deux exports (même taille, même nombre d'images) */
-const psnr = (a, c) => { const o = execFileSync("ffmpeg", ["-loglevel", "error", "-i", a, "-i", c, "-lavfi", "psnr=stats_file=-", "-f", "null", "-"], { maxBuffer: 1 << 26 }).toString();
-  return o.trim().split("\n").filter(l => /psnr_avg/.test(l)).map(l => { const m = l.match(/psnr_avg:(\S+)/)[1]; return m === "inf" ? 99 : +m }) };
+/* L'export sans IA à l'envers relit la vidéo par l'élément vidéo, l'export avec l'IA rapide image par image ; sur les vidéos
+   dont l'horloge commence après 0 (2 images pour video_vieuxtel), les deux sont donc décalés d'un nombre d'images constant.
+   On cherche ce décalage constant (−6…+6) : un mauvais choix d'image du serveur, lui, ne serait jamais constant (fantômes). */
+const psnr1 = (a, c, d) => { const fa = d > 0 ? `trim=start_frame=${d},setpts=PTS-STARTPTS` : "null", fc = d < 0 ? `trim=start_frame=${-d},setpts=PTS-STARTPTS` : "null";
+  const o = execFileSync("ffmpeg", ["-loglevel", "error", "-i", a, "-i", c, "-lavfi", `[0:v]${fa}[x];[1:v]${fc}[y];[x][y]psnr=stats_file=-`, "-f", "null", "-"], { maxBuffer: 1 << 26 }).toString();
+  return o.trim().split("\n").filter(l => /psnr_avg/.test(l)).map(l => { const m = l.match(/psnr_avg:(\S+)/)[1]; return m === "inf" ? 99 : +m }).slice(0, -8) };
+const psnr = (a, c) => { let best = null; for (let d = -6; d <= 6; d++) { const q = psnr1(a, c, d), m = q.reduce((x, y) => x + y, 0) / q.length; if (!best || m > best.m) best = { q, m, d } } return best };
 const done = () => p.waitForFunction(() => !exporting && !analyzing && /Terminé|Échec|IA rapide|rien n’a été envoyé/.test(document.querySelector("#st1").textContent), null, { timeout: 3600000 });
 const reglages = (srvOn, fluid) => p.evaluate(([s, fl]) => {
   for (const id of ["o_dust", "o_fast", "o_defl", "o_stab"]) { const e = document.querySelector("#" + id); if (e && e.checked) { e.checked = false; e.dispatchEvent(new Event("change")) } }
@@ -67,9 +72,9 @@ for (const [nom, lancer, fluid] of cas.filter(c => !process.env.CAS || new RegEx
     await reglages(true, fluid); appels = []; await p.evaluate(() => { window.__lus = [] }); await lancer(); await done(); t = await p.textContent("#st1");
     if (!/Terminé/.test(t)) return { ok: false, info: "avec IA rapide : " + t.slice(0, 200) };
     await save(ia);
-    const lus = await p.evaluate(() => window.__lus), n1 = nbImages(ref), n2 = nbImages(ia), q = psnr(ref, ia), mn = Math.min(...q), moy = q.reduce((a, c) => a + c, 0) / q.length;
+    const lus = await p.evaluate(() => window.__lus), n1 = nbImages(ref), n2 = nbImages(ia), P = psnr(ref, ia), q = P.q, mn = Math.min(...q), moy = P.m;
     const inter = lus.filter(x => typeof x === "object").length, envers = lus.some((x, i) => i && (typeof x === "number" ? x : x.a) < (typeof lus[i - 1] === "number" ? lus[i - 1] : lus[i - 1].a));
-    return { ok: n1 === n2 && lus.length === n2 && mn > 24, info: `${n2} images (sans IA ${n1}), relues ${lus.length} dont ${inter} intermédiaires${envers ? ", à l'envers" : ""}, -g ${appels[0] && appels[0].gop}, PSNR moyen ${moy.toFixed(1)} dB, min ${mn.toFixed(1)} dB` } });
+    return { ok: n1 === n2 && lus.length === n2 && moy > 38 && mn > 30, info: `décalage ${P.d}, ${n2} images (sans IA ${n1}), relues ${lus.length} dont ${inter} intermédiaires${envers ? ", à l'envers" : ""}, -g ${appels[0] && appels[0].gop}, PSNR moyen ${moy.toFixed(1)} dB, min ${mn.toFixed(1)} dB` } });
 }
 console.log(errs.length ? "Erreurs de page : " + errs.join(" | ") : "Aucune erreur de page.");
 console.log(res.filter(Boolean).length + " / " + res.length + " réussis");
