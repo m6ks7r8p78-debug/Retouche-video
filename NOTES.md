@@ -117,3 +117,7 @@ Retour : vidéo 848×480 (dominante 0,82/1,05/1,22, blocs 1,10) trop froide/bleu
 ## v3.10 (5 nov. 2026) — chaleur : juste un peu plus froid que l'original
 Retour sur la vidéo 848×480 : correction −0,061 trop bleue, original « un tout petit peu trop orange ».
 Chaleur = −(bleu − rouge) × 0,05, bornée −0,025 à +0,01. Cette vidéo : −0,02 ; vidéo de référence : −0,021.
+
+## v3.11 (5 nov. 2026) — aperçu fluide
+Depuis la v3.9, l'anti-blocs (2 passes GPU) est actif sur la plupart des vidéos → aperçu saccadé pendant la lecture.
+Il est maintenant sauté pendant la lecture de l'aperçu seulement ; appliqué à l'arrêt, sur les photos et à l'export (qualité inchangée).

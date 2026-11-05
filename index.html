@@ -500,7 +500,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v3.10";/* seul endroit où changer le numéro de version */
+const VER="v3.11";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -711,7 +711,7 @@ function draw(el){
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,s0);
   if(fw!==w||fh!==h){fw=w;fh=h;[[tex3,w,h],[texD,w,h],[texK,w,h]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
   let dustSwap=false,dbSwap=false;const tex0=tex;
-  if(show&&!srIn&&!dustOnly&&P.db>0&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
+  if(show&&!srIn&&!dustOnly&&P.db>0&&(exporting||mode!=="video"||v.paused)/* v3.11 : anti-blocs sauté pendant la lecture de l'aperçu (fluidité) ; à l'arrêt et à l'export il est appliqué */&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
     const bw=Math.ceil(w/8)+2,bh=Math.ceil(h/8)+2;
     if(kmW!==bw||kmH!==bh){kmW=bw;kmH=bh;gl.bindTexture(gl.TEXTURE_2D,texKM);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,bw,bh,0,gl.RGBA,gl.UNSIGNED_BYTE,null)}
     pass(progKM,tex,texKM,bw,bh,()=>{gl.uniform1i(UKM.t,0);gl.uniform2f(UKM.px,1/w,1/h);gl.uniform2f(UKM.ph,DB.ph[0],DB.ph[1])});
