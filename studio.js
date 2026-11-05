@@ -92,7 +92,7 @@ var STUDIO = (() => {
         <p class="mdl-m">${p.envoi}. Compte : ${p.compte}.</p><div class="mdl-acts">${a[k] && a[k].ok ? `<button class="btn" data-s="revoke" data-k="${k}">Retirer</button>` : `<button class="btn" data-s="grant" data-k="${k}">Autoriser</button>${a[k] ? `<button class="btn" data-s="revoke" data-k="${k}">Redemander plus tard</button>` : ""}`}</div></div>`).join("")}</div>
       <div class="mdl-sto"><b>IA rapide sur serveur (Kaggle)</b><span>${window.KG && KG.actif() ? "Jeton enregistré sur ce téléphone." : "Aucun jeton. Sur kaggle.com : ton profil → Settings → API → Create New Token, puis colle-le ici."} Il reste sur ce téléphone : il n’est jamais mis dans les sauvegardes ni envoyé ailleurs qu’à Kaggle (et au relais de l’app, sans y être gardé).</span>
         <input id="kgj" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Jeton Kaggle (KGAT_…)" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);margin:6px 0">
-        <div class="mdl-acts"><button class="btn" data-s="kgsave">Enregistrer le jeton</button>${window.KG && KG.actif() ? `<button class="btn" data-s="kgdel">Retirer le jeton</button>` : ""}</div></div>
+        <div class="mdl-acts"><button class="btn" data-s="kgsave">Enregistrer le jeton</button>${window.KG && KG.actif() ? `<button class="btn" data-s="kgdel">Retirer le jeton</button>` : ""}</div><p class="mdl-note" id="kg_note" ${window.KG && KG.actif() ? "" : "hidden"} style="font-weight:600">${window.KG && KG.actif() ? "✅ Un jeton Kaggle est enregistré sur ce téléphone." : ""}</p></div>
       <div class="mdl-sto"><b>Sauvegarde des réglages</b><span>Profils, préférences, autorisations, historique et état des modèles (jamais tes photos ni tes vidéos). Avec une phrase secrète, le fichier est chiffré (AES-256-GCM) : sans elle, il ne peut pas être relu.</span>
         <label class="s"><span>Phrase secrète (facultative)</span><input id="st_pass" type="password" autocomplete="new-password" style="width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)"></label>
         <div class="mdl-acts"><button class="btn main" data-s="save">Créer la sauvegarde</button><button class="btn" data-s="load">Restaurer une sauvegarde</button></div><input type="file" id="st_file" accept=".json,application/json" hidden></div>
@@ -115,8 +115,15 @@ var STUDIO = (() => {
         if (s === "close") dlg.close();
         else if (s === "revoke") { revoke(x.dataset.k); render(); note("Autorisation retirée : elle sera redemandée au prochain usage.") }
         else if (s === "grant") { grant(x.dataset.k); render(); note("Autorisation donnée. Tu peux la retirer ici à tout moment."); if (x.dataset.k === "diagnostic") try { DIAG.flush() } catch (e) {} }
-        else if (s === "kgsave") { const t = (dlg.querySelector("#kgj") || {}).value || ""; if (!/^\S{20,200}$/.test(t.trim())) { note("Colle le jeton Kaggle complet (il commence souvent par KGAT_)."); return }
-          KG.regle(t); note("Vérification du jeton…"); KG.moi().then(u => { render(); note("Jeton enregistré : compte Kaggle « " + u + " ».") }).catch(e => { KG.regle(""); render(); note("Jeton refusé par Kaggle (" + e.message + "). Rien n’a été gardé.") }) }
+        else if (s === "kgsave") { const t = (dlg.querySelector("#kgj") || {}).value || ""; if (!/^\S{20,200}$/.test(t.trim())) { const n = dlg.querySelector("#kg_note"); const m = t.trim() ? "❌ Jeton incomplet : copie-le en entier (il commence par KGAT_)." : "❌ La case est vide : colle d’abord ton jeton Kaggle."; if (n) { n.textContent = m; n.hidden = false } else note(m); return }
+          /* v3.13 : le message s'affiche juste sous le bouton (avant : tout en bas de la fenêtre, invisible → « rien ne se passe ») ;
+             le jeton n'est retiré que si Kaggle le refuse vraiment (401/403), pas pour un simple souci de réseau */
+          const kn = m => { const n = dlg.querySelector("#kg_note"); if (n) { n.textContent = m; n.hidden = !m; try { n.scrollIntoView({ block: "center", behavior: "smooth" }) } catch (x) {} } };
+          KG.regle(t); kn("⏳ Vérification du jeton auprès de Kaggle…");
+          KG.moi().then(u => { render(); kn("✅ Jeton enregistré : compte Kaggle « " + u + " ». L’IA rapide est prête.") })
+            .catch(e => { const refuse = e && (e.status === 401 || e.status === 403 || /refusé|expiré/.test(e.message || ""));
+              if (refuse) { KG.regle(""); render(); kn("❌ Kaggle refuse ce jeton (" + e.message + "). Recrée-en un sur kaggle.com → Settings → API, puis recolle-le.") }
+              else { render(); kn("✅ Jeton enregistré. La vérification n’a pas pu joindre Kaggle (" + ((e && e.message) || "réseau") + ") : elle sera refaite au premier envoi.") } }) }
         else if (s === "kgdel") { KG.regle(""); render(); note("Jeton retiré de ce téléphone.") }
         else if (s === "clearh") { if (confirm("Effacer l’historique des traitements ?")) { localStorage.removeItem("recettes"); render() } }
         else if (s === "save") { const pass = dlg.querySelector("#st_pass").value; const o = await backup(pass);

@@ -125,3 +125,7 @@ Il est maintenant sauté pendant la lecture de l'aperçu seulement ; appliqué �
 ## v3.12 (5 nov. 2026) — noirs profonds conservés
 Mesure sur captures v3.11 (vidéo sombre 848×480) : noirs 2 → 10, contraste 39,9 → 35,7 (image voilée), bleu−rouge −21 → −15, netteté +18 %.
 Contraste −0,10 maintenant proportionnel à la hausse décidée par l'analyse (0 si contraste de base = 1) ; scène sombre (médiane < 0,25) : pas d'assombrissement.
+
+## v3.13 (5 nov. 2026) — enregistrement du jeton Kaggle visible
+Retour : « rien ne se passe » en touchant Enregistrer le jeton. Le message s'affichait tout en bas de la fenêtre Paramètres (hors écran).
+Il s'affiche maintenant juste sous le bouton (avec défilement), et un jeton n'est effacé que si Kaggle le refuse (401/403), pas pour un souci réseau.
