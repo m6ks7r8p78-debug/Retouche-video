@@ -924,14 +924,17 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
      à l'image affichée (décalage constant de −4 à +4 images, l'horloge du fichier pouvant commencer après 0). Comparaison de la forme
      de l'image (corrélation de la luminance), insensible aux différences de couleurs entre lecteurs (HDR). */
   async caler(nums,fps){
-    const W=48,H=27,t=document.createElement("canvas");t.width=W;t.height=H;const x=t.getContext("2d",{willReadFrequently:true});
+    const W=96,H=54,t=document.createElement("canvas");t.width=W;t.height=H;const x=t.getContext("2d",{willReadFrequently:true});
     const lum=el=>{x.drawImage(el,0,0,W,H);const d=x.getImageData(0,0,W,H).data,o=new Float32Array(W*H);let m=0;for(let i=0;i<o.length;i++){o[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];m+=o[i]}m/=o.length;let s2=0;for(let i=0;i<o.length;i++){o[i]-=m;s2+=o[i]*o[i]}s2=Math.sqrt(s2)||1;for(let i=0;i<o.length;i++)o[i]/=s2;return o};
     const mp=new SeqReader(curFile,SRX.srcInf);mp.setFps(fps);SRX.mapr=mp;
+    /* images prises loin des bords (au début et à la fin, le rang est borné et fausserait le décalage) */
     const R=4,sc=new Float32Array(2*R+1),tot=mp.total;let n=0;
-    for(const a of [...new Set(nums)].sort((p,q)=>p-q)){
+    const ok=[...new Set(nums)].filter(a=>{const r=mp.map(a);return r-R>=0&&r+R<tot}).sort((p,q)=>p-q);
+    if(!ok.length)throw new Error("vidéo trop courte pour recaler les images du serveur");
+    for(const a of ok){
       if(cancel)throw new Error("annulé");
       await seekEl(v,Math.min((a+.5)/fps,v.duration-.001));const ref=lum(v),r0=mp.map(a);
-      for(let d=-R;d<=R;d++){const k=r0+d;if(k<0||k>=tot){sc[d+R]+=-1;continue}const o=lum(await SRX.remote.image(k));let c=0;for(let i=0;i<o.length;i++)c+=o[i]*ref[i];sc[d+R]+=c}
+      for(let d=-R;d<=R;d++){const o=lum(await SRX.remote.image(r0+d));let c=0;for(let i=0;i<o.length;i++)c+=o[i]*ref[i];sc[d+R]+=c}
       n++}
     let best=0;for(let d=1;d<sc.length;d++)if(sc[d]>sc[best]+1e-6||(Math.abs(sc[d]-sc[best])<=1e-6&&Math.abs(d-R)<Math.abs(best-R)))best=d;
     const c=sc[best]/Math.max(1,n);SRX.decal=best-R;window.__iaCalage={decalage:SRX.decal,correlation:+c.toFixed(3)};
@@ -2356,7 +2359,7 @@ $("#ex").onclick=async()=>{
     }
     let pMax=-1;
     if(!rdr&&SRX.remote){msg("IA rapide : recalage des images du serveur sur ta vidéo…");
-      const L=plan?plan.map(pp=>pp.a):Array.from({length:total},(_,k)=>k+off),ns=[0,.2,.4,.6,.8,.99].map(f=>L[Math.min(L.length-1,Math.floor(f*L.length))]);
+      const L=plan?plan.map(pp=>pp.a):Array.from({length:total},(_,k)=>k+off),ns=[.08,.2,.32,.44,.56,.68,.8,.92].map(f=>L[Math.min(L.length-1,Math.floor(f*L.length))]);
       try{await SRX.caler(ns,OFPS)}catch(e){if(cancel)throw e;throw new Error("IA rapide : "+((e&&e.message)||e)+". Rien n’est perdu : décoche « Qualité IA » pour l’améliorer sans IA.")}}
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
     poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();
