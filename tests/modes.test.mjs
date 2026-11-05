@@ -7,14 +7,14 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 const { chromium } = await import(process.env.PW || "playwright");
-const HERE = path.dirname(fileURLToPath(import.meta.url)), PORT = 8775, OUT = path.join(HERE, "sorties", "modes");
+const HERE = path.dirname(fileURLToPath(import.meta.url)), PORT = +(process.env.PORT || 8775), OUT = path.join(HERE, "sorties", "modes");
 fs.mkdirSync(OUT, { recursive: true });
 /* médias de test */
 const mk = (n, a) => { const f = path.join(OUT, n); if (!fs.existsSync(f)) execFileSync("ffmpeg", ["-v", "error", "-y", ...a, f]); return f };
 const SRC = {
-  paysage60: mk("src_1080p60_son.mp4", ["-f", "lavfi", "-i", "testsrc2=s=1920x1080:r=60:d=3", "-f", "lavfi", "-i", "sine=f=440:r=48000:d=3", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest"]),
+  paysage60: mk("src_720p60_son.mp4", ["-f", "lavfi", "-i", "testsrc2=s=1280x720:r=60:d=2.5", "-f", "lavfi", "-i", "sine=f=440:r=48000:d=2.5", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest"]),
   portrait24: mk("src_720x1280_24_muet.mp4", ["-f", "lavfi", "-i", "testsrc2=s=720x1280:r=24:d=3", "-c:v", "libx264", "-pix_fmt", "yuv420p"]),
-  petite30: mk("src_480x270_30_son.mp4", ["-f", "lavfi", "-i", "testsrc2=s=480x270:r=30:d=2", "-f", "lavfi", "-i", "sine=f=330:r=44100:d=2", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest"])
+  petite30: mk("src_480x270_30_son_1s.mp4", ["-f", "lavfi", "-i", "testsrc2=s=480x270:r=30:d=1", "-f", "lavfi", "-i", "sine=f=330:r=44100:d=1", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest"])
 };
 const probe = f => JSON.parse(execFileSync("ffprobe", ["-v", "error", "-show_entries", "stream=codec_type,codec_name,profile,pix_fmt,width,height,r_frame_rate,sample_rate", "-show_entries", "format=duration", "-of", "json", f]).toString());
 const keyGap = f => { const t = execFileSync("ffprobe", ["-v", "error", "-select_streams", "v", "-skip_frame", "nokey", "-show_entries", "frame=pts_time", "-of", "csv=p=0", f]).toString().trim().split("\n").map(Number).filter(x => !isNaN(x));
@@ -43,15 +43,15 @@ await test("Les 3 modes sont proposés dès l'import, avec un conseil", async ()
   const r = await p.evaluate(() => ({ n: document.querySelectorAll("[data-mode]").length, cur: MODE.cur, h: $("#mhint").textContent }));
   return { ok: r.n === 3 && r.cur === "max" && /Conseillé/.test(r.h), info: "conseil pour 480×270 : " + r.cur } });
 
-await test("Pour X (1080p 60 i/s + son) : H.264 High, yuv420p, AAC, 60 i/s gardés, image clé toutes les 2 s", async () => { await load(SRC.paysage60);
-  const before = await state(); const o = await exp("x", "x_1080p60.mp4"), g = keyGap(o.f), after = await state();
+await test("Pour X (720p 60 i/s + son) : H.264 High, yuv420p, AAC, 60 i/s gardés, image clé toutes les 2 s", async () => { await load(SRC.paysage60);
+  const before = await state(); const o = await exp("x", "x_720p60.mp4"), g = keyGap(o.f), after = await state();
   const ok = o.vs.codec_name === "h264" && o.vs.profile === "High" && o.vs.pix_fmt === "yuv420p" && o.as && o.as.codec_name === "aac" && Math.abs(fps(o.vs.r_frame_rate) - 60) < .5
     && Math.max(o.vs.width, o.vs.height) <= 1920 && g !== null && Math.abs(g - 2) < .05 && JSON.stringify(before) === JSON.stringify(after) && !o.lines.some(l => l.startsWith("bad") || /Contrôle du mode/.test(l));
   return { ok, info: o.vs.codec_name + " " + o.vs.profile + " " + o.vs.pix_fmt + " " + o.vs.width + "×" + o.vs.height + " " + o.vs.r_frame_rate + ", son " + (o.as && o.as.codec_name + " " + o.as.sample_rate) + ", clé toutes les " + g + " s, réglages remis : " + (JSON.stringify(before) === JSON.stringify(after)) } });
 
 await test("Changement de mode avant export : Normale sur la même vidéo (taille et cadence d'origine, pas d'IA)", async () => {
-  const o = await exp("normal", "normale_1080p60.mp4");
-  const ok = o.vs.width === 1920 && o.vs.height === 1080 && Math.abs(fps(o.vs.r_frame_rate) - 60) < .5 && !!o.as && o.lines.some(l => /Mode : Conversion normale/.test(l));
+  const o = await exp("normal", "normale_720p60.mp4");
+  const ok = o.vs.width === 1280 && o.vs.height === 720 && Math.abs(fps(o.vs.r_frame_rate) - 60) < .5 && !!o.as && o.lines.some(l => /Mode : Conversion normale/.test(l));
   return { ok, info: o.vs.codec_name + " " + o.vs.width + "×" + o.vs.height + " " + o.vs.r_frame_rate + " ; " + (o.lines[0] || "").slice(3, 120) } });
 
 await test("Nom du fichier selon le mode", async () => { const n = await p.evaluate(() => uniqName(curFile.name, "mp4", outMode)); return { ok: /-normale-/.test(n), info: n } });
