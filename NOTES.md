@@ -107,3 +107,9 @@ chaleur −0,06 fixe, dominante 0,1 sans effet, nettoyage des couleurs qui déri
 Diagnostics v3.7 (5 vidéos) : netteté, bruit et chaleur varient bien selon la vidéo, mais luminosité −0,02 / contraste 0,90 /
 couleurs 1,33 restaient identiques et le nettoyage baissait de 0,05 à chaque vidéo : ces réglages repartaient de la vidéo précédente.
 Correctif : analyze() (lumière, contraste, couleurs de la vidéo courante) est relancée avant le style ; nettoyage repart de 0,7.
+
+## v3.9 (5 nov. 2026) — moins froid, carrés de compression lissés
+Retour : vidéo 848×480 (dominante 0,82/1,05/1,22, blocs 1,10) trop froide/bleue, carrés de compression gênants.
+- Chaleur : −(bleu − rouge) × 0,10, bornée −0,04 à +0,02 (avant × 0,15, jusqu'à −0,08).
+- Anti-blocs dès 1,08 (avant 1,25), force (r − 1)/0,25 (0,30 à 1) ; netteté × (1 − (r − 1,05) × 4), au moins × 0,55.
+  Exemple blocs 1,10 : anti-blocs 0,40, netteté × 0,80.
