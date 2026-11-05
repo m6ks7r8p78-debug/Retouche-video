@@ -54,8 +54,10 @@ await test("Allumé sans Premium : un export 4K lancé par le code (lot, avant/a
 await test("Offre : 3 formules aux bons prix, lien de paiement ouvert, champ code proposé", async () => {
   await p.evaluate(() => ABO.ouvrir()); const r = await p.evaluate(() => [...document.querySelectorAll("#abo-dlg [data-plan]")].map(x => x.querySelector("b").textContent + " " + x.querySelector(".abo-prix").textContent));
   await p.evaluate(() => { window.__ouvert = []; window.open = (u, t, f) => { window.__ouvert.push(u); return null } });
-  await p.click('#abo-dlg [data-plan="annuel"]'); const u = (await p.evaluate(() => window.__ouvert))[0] || ""; const code = await p.evaluate(() => document.querySelector("#abo-dlg .abo-code").open); await fermer(p);
-  return { ok: r.join("|") === "Pass 7 jours 2,99 €|Mensuel 5,99 €|Annuel 34,99 €" && /exemple\.test\/a/.test(u) && code, info: r.join(" | ") + " → " + u } });
+  await p.click('#abo-dlg [data-plan="annuel"]'); const bloque = (await p.evaluate(() => window.__ouvert)).length === 0 && /Coche/.test(await p.textContent("#abo-dlg .abo-msg"));
+  await p.check("#abo-rc"); await p.click('#abo-dlg [data-plan="annuel"]'); const u = (await p.evaluate(() => window.__ouvert))[0] || ""; const code = await p.evaluate(() => document.querySelector("#abo-dlg .abo-code").open); await fermer(p);
+  const resil = await p.evaluate(() => !!document.getElementById("abo-resil"));
+  return { ok: bloque && resil && r.join("|") === "Pass 7 jours 2,99 €|Mensuel 5,99 €|Annuel 34,99 €" && /exemple\.test\/a/.test(u) && code, info: r.join(" | ") + " → " + u + " ; bloqué sans accord " + bloque + " ; lien résilier " + resil } });
 await p.close();
 
 p = await page({ on: true, verif: { body: { premium: true, plan: "abonnement", fin: null } } });

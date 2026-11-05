@@ -17,7 +17,7 @@ const SIZE = 6 * 1048576;
 function model(v) { const b = Buffer.alloc(SIZE); let x = v === 2 ? 99991 : 12345; for (let i = 0; i < SIZE; i++) { x = (x * 1103515245 + 12345) >>> 0; b[i] = x >>> 24 } return b }
 const M = { 1: model(1), 2: model(2) }, SHA = { 1: crypto.createHash("sha256").update(M[1]).digest("hex"), 2: crypto.createHash("sha256").update(M[2]).digest("hex") };
 const cutDone = new Set(), log = [];
-const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".webmanifest": "application/manifest+json", ".bin": "application/octet-stream", ".mp4": "video/mp4", ".onnx": "application/octet-stream" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".webmanifest": "application/manifest+json", ".bin": "application/octet-stream", ".mp4": "video/mp4", ".onnx": "application/octet-stream", ".css": "text/css", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8", ".xml": "application/xml", ".svg": "image/svg+xml" };
 
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://localhost");

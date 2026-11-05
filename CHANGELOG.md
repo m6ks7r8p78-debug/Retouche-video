@@ -1,5 +1,19 @@
 # Journal des versions
 
+## v5.8 — 5 novembre 2026 (partie légale complète, page Guide)
+- Nouvelles pages : Mentions légales (régime non professionnel, LCEN art. 1-1 II), Conditions d'utilisation, Conditions de vente
+  (prêtes, pas encore en vigueur, noindex), Licences et crédits ; Confidentialité réécrite (responsable, bases légales, cookies,
+  transferts, droits, CNIL). Feuille de style commune pages.css. Pied de page de l'app avec tous les liens.
+- Page Guide (étapes, rendus, astuces, questions fréquentes). robots.txt et sitemap.xml.
+- marquage.js : les photos passées par « Effacer une zone » portent la mention IPTC « généré en partie par IA » (AI Act art. 50 §2).
+- Premium : prix TTC, case d'accord avant paiement (perte du droit de rétractation), lien « Résilier un abonnement ».
+- « Retirer un filtre de réseau social » (plus de marques tierces dans l'interface).
+- Fiches App Store / Google Play prêtes : app-stores/FICHES_STORES.md. État légal : LEGAL.md.
+- Tests : tests/pages.test.mjs (4 réussis) ; le serveur de test sert aussi CSS, polices, textes.
+- Correctif : les polices de l'app ne se chargeaient pas en ligne depuis la v3.2 (chemins relatifs faux dans polices/polices.css,
+  invisibles en test car le serveur de test ne servait pas le CSS) : le site s'affichait avec les polices du système.
+  Le test des polices vérifie désormais qu'elles sont réellement chargées.
+
 ## v5.7 — 5 novembre 2026 (apps App Store et Google Play préparées)
 - Dossier app-stores/ : app Capacitor 8 (com.retoucheproai.app) qui reprend l'app web ; APK Android d'essai compilé.
 - natif.js : « Enregistrer » par le cache de l'app et la feuille de partage ; « Colle un lien » masqué dans l'app.

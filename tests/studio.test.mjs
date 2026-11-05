@@ -60,7 +60,8 @@ await test("Polices de l’app chargées localement (aucune requête vers Google
   const cx = await b.newContext(), p2 = await cx.newPage(); const ext = []; p2.on("request", r => { const u = new URL(r.url()); if (u.hostname !== "localhost") ext.push(u.hostname) });
   await p2.goto("http://localhost:" + PORT + "/index.html", { waitUntil: "domcontentloaded", timeout: 120000 }); await p2.waitForFunction(() => window.STUDIO, null, { timeout: 120000 }); await p2.evaluate(() => document.fonts.ready);
   const f = await p2.evaluate(async () => { await document.fonts.load("700 20px 'Bricolage Grotesque'"); await document.fonts.load("400 14px 'Instrument Sans'"); await document.fonts.load("400 14px 'DM Mono'");
-    return ["700 20px 'Bricolage Grotesque'", "400 14px 'Instrument Sans'", "400 14px 'DM Mono'"].map(x => document.fonts.check(x)) });
+    /* document.fonts.check() répond « vrai » même quand la police n'existe pas : on vérifie qu'elle est réellement chargée */
+    return ["Bricolage Grotesque", "Instrument Sans", "DM Mono"].map(n => [...document.fonts].some(ff => ff.family.replace(/["']/g, "") === n && ff.status === "loaded")) });
   await cx.close(); return { ok: f.every(Boolean) && ext.length === 0, info: "polices : " + f.map(x => x ? "chargée" : "absente").join(", ") + " ; requêtes externes : " + (ext.length ? [...new Set(ext)].join(", ") : "aucune") } });
 console.log("Erreurs JavaScript : " + (errs.length ? errs.join(" | ") : "aucune"));
 console.log(`Résultat : ${res.filter(Boolean).length} réussis, ${res.filter(x => !x).length} échoués.`); await b.close(); srv.kill(); process.exit(res.every(Boolean) && !errs.length ? 0 : 1);

@@ -19,11 +19,11 @@ window.ABO_CONFIG = {
 window.ABO = (() => {
   const C = window.ABO_CONFIG, CLE = "abo_etat", JOUR = 864e5;
   const PLANS = [
-    { id: "pass", nom: "Pass 7 jours", prix: "2,99 €", detail: "une seule fois, sans abonnement" },
-    { id: "mensuel", nom: "Mensuel", prix: "5,99 €", detail: "par mois, sans engagement" },
-    { id: "annuel", nom: "Annuel", prix: "34,99 €", detail: "par an, soit 2,92 € par mois", top: "−51 %" }
+    { id: "pass", nom: "Pass 7 jours", prix: "2,99 €", detail: "TTC, une seule fois, sans abonnement" },
+    { id: "mensuel", nom: "Mensuel", prix: "5,99 €", detail: "TTC par mois, sans engagement, résiliable à tout moment" },
+    { id: "annuel", nom: "Annuel", prix: "34,99 €", detail: "TTC par an, soit 2,92 € par mois, renouvelé chaque année", top: "−51 %" }
   ];
-  const AVANTAGES = ["Export en 4K", "IA qualité maximale", "Retirer un filtre Snapchat / Instagram", "Effacer une zone (IA)",
+  const AVANTAGES = ["Export en 4K", "IA qualité maximale", "Retirer un filtre de réseau social", "Effacer une zone (IA)",
     "Corriger une vidéo accélérée ou ralentie", "Regrouper des vidéos et améliorer tout un lot", "Aucune publicité", "Utilisable hors ligne"];
   const RAISONS = { k4: "L’export en 4K", ia: "L’IA qualité maximale", filtre: "Le retrait de filtre", effacer: "« Effacer une zone »",
     tr: "La correction de vitesse (Time Repair)", regrouper: "Le regroupement de vidéos", lot: "L’amélioration d’un lot de vidéos",
@@ -102,10 +102,12 @@ window.ABO = (() => {
       '<ul class="abo-av">' + AVANTAGES.map(a => "<li>" + a + "</li>").join("") + '</ul>' +
       '<div class="abo-plans">' + PLANS.map(p => '<button type="button" class="abo-plan' + (p.top ? " top" : "") + '" data-plan="' + p.id + '">' +
         (p.top ? '<span class="abo-badge">' + p.top + '</span>' : "") + '<b>' + p.nom + '</b><span class="abo-prix">' + p.prix + '</span><small>' + p.detail + '</small></button>').join("") + '</div>' +
+      /* droit de rétractation (code de la consommation, art. L221-28 13°) : accord exprès avant tout paiement sur le site */
+      (n ? "" : '<label class="abo-retract"><input type="checkbox" id="abo-rc"> <span>Je demande l’accès immédiat à Premium et je reconnais perdre mon droit de rétractation de 14 jours dès son activation (<a href="cgv.html" target="_blank">conditions de vente</a>).</span></label>') +
       '<p class="abo-msg" role="status"></p>' +
       (n ? '<button type="button" class="btn" data-a="restaurer">Restaurer mes achats</button>'
          : '<details class="abo-code"><summary>J’ai déjà un code Premium</summary><div class="row"><input type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Colle ton code ici" aria-label="Code Premium"><button type="button" class="btn" data-a="code">Activer</button></div></details>') +
-      '<p class="abo-pied">Paiement sécurisé' + (n ? " par ton compte " + (Capacitor.getPlatform() === "ios" ? "Apple" : "Google") : " par Polar") + '. Résiliable à tout moment. <a href="tarifs.html">Détail des offres</a></p>';
+      '<p class="abo-pied">Paiement sécurisé' + (n ? " par ton compte " + (Capacitor.getPlatform() === "ios" ? "Apple" : "Google") : " par Polar") + '. Résiliable à tout moment. <a href="tarifs.html">Détail des offres</a>' + (n ? "" : ' · <a href="cgv.html" target="_blank">Conditions de vente</a>') + '</p>';
     const msg = t => { d.querySelector(".abo-msg").textContent = t };
     d.onclick = async e => {
       if (e.target.closest(".abo-x")) return d.close();
@@ -114,6 +116,7 @@ window.ABO = (() => {
         if (p) {
           if (n) { msg("Ouverture du paiement…"); if (await storeAcheter(p.dataset.plan)) { msg("Merci ! Premium est activé."); setTimeout(() => location.reload(), 900) } return }
           const u = C.paiement[p.dataset.plan]; if (!u) return msg("Le paiement ouvre très bientôt.");
+          const rc = d.querySelector("#abo-rc"); if (rc && !rc.checked) { rc.closest("label").classList.add("abo-alerte"); rc.focus(); return msg("Coche la case ci-dessus pour continuer.") }
           window.open(u, "_blank", "noopener"); msg("Après le paiement, ton code Premium s’affiche et arrive par e-mail : colle-le ci-dessous.");
           d.querySelector(".abo-code").open = true;
         } else if (a && a.dataset.a === "code") {
@@ -199,12 +202,28 @@ window.ABO = (() => {
     ".abo-plan.top{border-color:#ff3d8b;box-shadow:0 0 0 1px #ff3d8b inset}.abo-badge{position:absolute;top:-9px;right:12px;padding:2px 8px;border-radius:999px;background:#ff3d8b;color:#fff;font-size:11px;font-weight:700}" +
     ".abo-msg{min-height:1.2em;margin:10px 0 6px;font-size:14px;color:var(--acc)}.abo-code summary{cursor:pointer;font-size:14px;color:var(--mut);margin:4px 0 8px}" +
     ".abo-code .row{display:flex;gap:8px}.abo-code input{flex:1;min-width:0;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:15px/1.2 ui-monospace,monospace}" +
+    ".abo-retract{display:flex;gap:8px;align-items:flex-start;margin:12px 0 0;font-size:12.5px;line-height:1.4;color:var(--mut)}.abo-retract input{margin-top:2px;width:18px;height:18px;flex:none;accent-color:#ff3d8b}.abo-retract a{color:var(--mut)}" +
+    ".abo-alerte{color:var(--acc)}.abo-alerte input{outline:2px solid #ff3d8b;outline-offset:2px}" +
     ".abo-code .btn{width:auto;flex:none}.abo-pied{margin:12px 0 0;font-size:12px;color:var(--mut)}.abo-pied a{color:var(--mut)}";
   document.head.appendChild(css);
 
+  /* résiliation en ligne (code de la consommation, art. L215-1-1) : lien toujours visible en bas de page sur le site */
+  function lienResilier() {
+    const pied = document.getElementById("pied"); if (!pied || natif() || document.getElementById("abo-resil")) return;
+    const a = document.createElement("a"); a.id = "abo-resil"; a.href = "#"; a.textContent = "Résilier un abonnement";
+    a.onclick = ev => { ev.preventDefault(); const d = dlg();
+      d.innerHTML = '<button class="abo-x" type="button" aria-label="Fermer">✕</button><h2 id="abo-t">Résilier mon abonnement</h2>' +
+        '<p>La résiliation est gratuite et prend effet à la fin de la période déjà payée : Premium reste actif jusque-là.</p>' +
+        (C.portail ? '<a class="btn main" href="' + C.portail + '" target="_blank" rel="noopener">Résilier mon abonnement</a><p class="abo-pied">Tu reçois un code par e-mail pour confirmer que c’est bien toi, puis « Annuler l’abonnement ». Une confirmation t’est envoyée.</p>'
+          : '<p class="abo-pied">Le service de résiliation ouvre en même temps que Premium.</p>') +
+        '<p class="abo-pied">Abonnement pris dans l’app iPhone ou Android : Réglages de l’iPhone → ton nom → Abonnements, ou Play Store → Paiements et abonnements.</p>';
+      d.onclick = e2 => { if (e2.target.closest(".abo-x")) d.close() }; d.showModal() };
+    pied.append(" · ", a);
+  }
+
   function demarrer() {
     if (!actif()) return;
-    boutonEntete();
+    boutonEntete(); lienResilier();
     if (!premium()) verrouiller();
     rafraichir().then(() => { const b = document.getElementById("abo-b"); if (b) b.textContent = premium() ? "✓ Premium" : "Premium" });
     if (natif()) { const avant = premium(); storeSync().then(e => { if (e && !avant) location.reload() }) } /* Premium retrouvé sur le compte Apple / Google : on relance sans pubs ni cadenas */

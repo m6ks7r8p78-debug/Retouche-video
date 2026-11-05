@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /tests/
+Disallow: /serveur/
+Disallow: /serveur-ia/
+Disallow: /app-stores/
+Sitemap: https://retoucheproai.com/sitemap.xml

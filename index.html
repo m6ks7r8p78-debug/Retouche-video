@@ -65,7 +65,7 @@ body.loaded .steps{display:none}
 body.loaded .pickbtn{min-height:0;flex-direction:row;align-items:center;padding:10px 12px;font-size:14px;gap:10px}
 body.loaded .pickbtn svg{width:22px;height:22px}
 .privacy{margin:14px 0 0;font-size:13px;color:var(--mut)}
-.pied{max-width:720px;margin:0 auto;padding:8px 16px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;font-size:13px}.pied a{color:var(--mut)}
+.pied{max-width:720px;margin:0 auto;padding:8px 16px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;font-size:13px;line-height:2.1}.pied a{color:var(--mut)}
 body.loaded .privacy,body.loaded .note{display:none}
 .note{margin-top:14px;padding:14px;border:1px dashed var(--line);border-radius:14px;background:var(--panel)}
 .note strong{display:block;margin-bottom:4px;font-family:var(--fd)}
@@ -498,14 +498,14 @@ body:not(.simple) .simple-only{display:none!important}
       </div>
 
       <div class="panel" id="tp3" hidden>
-        <div class="card" id="flt" hidden><h2>Retirer un filtre Snapchat / Instagram <span class="mono" style="font-weight:400">(essai)</span></h2>
+        <div class="card" id="flt" hidden><h2>Retirer un filtre de réseau social <span class="mono" style="font-weight:400">(essai)</span></h2>
           <p class="help" id="flt_h">Touche la miniature qui paraît la plus naturelle (peau, murs, vêtements). « Aucun » garde la vidéo telle quelle.</p>
           <div id="flt_g" class="fgrid"></div>
           <div id="flt_s" hidden><label class="help" style="display:block;margin:10px 0 4px">Force du retrait <span class="mono" id="flt_v">100 %</span></label><input type="range" id="flt_r" min="0" max="1" step=".05" value="1" aria-label="Force du retrait">
 </div>
           <p class="help" style="margin:10px 0 0">Retire les filtres de couleur et de lumière. Pas les autocollants, textes, masques ou déformations.</p></div>
         <button class="btn" id="diagb2" style="margin:0 0 10px">📋 Copier le diagnostic pour Claude</button>
-        <button class="btn" id="fltb" style="margin:10px 0">Retirer un filtre Snapchat / Instagram (essai)</button>
+        <button class="btn" id="fltb" style="margin:10px 0">Retirer un filtre de réseau social (essai)</button>
         <div class="card" id="trc" style="margin:0 0 14px">
           <h2>Vitesse et sens de lecture</h2>
           <p class="help" id="tr_info">Corrige une vidéo accélérée ou ralentie, ou la remet à l’endroit. La partie choisie dans Réglages est respectée.</p>
@@ -530,16 +530,17 @@ body:not(.simple) .simple-only{display:none!important}
     </div>
   </div>
 </main>
-<footer class="pied" id="pied"><a href="tarifs.html">Gratuit ou Premium</a> · <a href="confidentialite.html">Confidentialité et cookies</a></footer>
+<footer class="pied" id="pied"><a href="guide.html">Guide</a> · <a href="tarifs.html">Gratuit ou Premium</a> · <a href="mentions-legales.html">Mentions légales</a> · <a href="conditions.html">Conditions</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="licences.html">Licences</a></footer>
 
 <script src="models.js"></script>
 <script src="sr-gpu.js"></script>
 <script src="sr.js"></script>
 <script src="depth.js"></script>
+<script src="marquage.js"></script>
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v5.7";/* seul endroit où changer le numéro de version */
+const VER="v5.8";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};

@@ -5,62 +5,70 @@
 <script>if(location.protocol==="http:"&&/(^|\.)retoucheproai\.com$/.test(location.hostname))location.replace("https://retoucheproai.com"+location.pathname+location.search+location.hash)</script>
 <meta name="google-adsense-account" content="ca-pub-4826284146220706">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Confidentialité — RetoucheProAI</title>
-<meta name="description" content="Comment RetoucheProAI traite tes photos, tes vidéos et tes données : tout est calculé sur ton téléphone.">
+<title>Confidentialité et cookies — RetoucheProAI</title>
+<meta name="description" content="Comment RetoucheProAI traite tes photos, tes vidéos et tes données : tout est calculé sur ton téléphone, sans compte et sans traçage.">
+
+<link rel="canonical" href="https://retoucheproai.com/confidentialite.html">
+<meta name="theme-color" content="#fff7f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d0a17" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="stylesheet" href="polices/polices.css">
-<style>
-:root{--bg:#fff7f2;--panel:#ffffff;--ink:#1d1530;--mut:#6b6385;--line:#f0dfe6;--acc:#d6266f;--grad:linear-gradient(120deg,#ff7a59,#ff3d8b 45%,#7b5cff)}
-@media (prefers-color-scheme:dark){:root{--bg:#0d0a17;--panel:#171329;--ink:#f4f0ff;--mut:#a79fc4;--line:#2b2447;--acc:#ff6fa8;color-scheme:dark}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Instrument Sans",-apple-system,system-ui,sans-serif;-webkit-text-size-adjust:100%}
-main{max-width:720px;margin:0 auto;padding:max(24px,env(safe-area-inset-top)) 16px 48px}
-a{color:var(--acc)}
-h1{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font:700 28px/1.2 "Bricolage Grotesque",-apple-system,system-ui,sans-serif;margin:8px 0 6px}
-h2{font:700 19px/1.3 "Bricolage Grotesque",-apple-system,system-ui,sans-serif;margin:28px 0 8px}
-.maj{color:var(--mut);font-size:14px;margin:0 0 20px}
-.carte{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:16px 0}
-ul{padding-left:20px}li{margin:6px 0}
-.retour{display:inline-block;margin-bottom:8px;text-decoration:none;font-weight:600}
-</style>
+<link rel="stylesheet" href="pages.css">
 </head>
 <body>
 <main>
 <a class="retour" href="./">← Retour à RetoucheProAI</a>
-<h1>Confidentialité</h1>
+<h1>Confidentialité et cookies</h1>
 <p class="maj">Mise à jour : 5 novembre 2026</p>
+<div class="carte note"><b>En bref :</b> tes photos et tes vidéos sont améliorées <b>sur ton téléphone</b>. Elles ne sont envoyées à aucun serveur de RetoucheProAI et ne servent jamais à entraîner une IA. Pas de compte, pas de traçage, pas de publicité pour l’instant.</div>
+<nav class="sommaire" aria-label="Sommaire"><b>Sommaire</b><ol>
+<li><a href="#qui">Qui est responsable</a></li><li><a href="#medias">Tes photos et vidéos</a></li><li><a href="#internet">Quand l’app utilise internet</a></li><li><a href="#local">Ce qui reste sur ton appareil</a></li>
+<li><a href="#cookies">Cookies et traceurs</a></li><li><a href="#pub">Publicité (plus tard)</a></li><li><a href="#premium">Premium (plus tard)</a></li><li><a href="#apps">Apps iPhone et Android</a></li>
+<li><a href="#transferts">Prestataires et transferts</a></li><li><a href="#droits">Tes droits</a></li></ol></nav>
 
-<div class="carte"><b>En bref :</b> tes photos et tes vidéos sont améliorées directement sur ton téléphone. Elles ne sont envoyées à aucun serveur de RetoucheProAI et ne servent jamais à entraîner une IA.</div>
+<h2 id="qui">1. Qui est responsable</h2>
+<p>L’éditeur de RetoucheProAI (voir <a href="mentions-legales.html">Mentions légales</a>), joignable à <a href="mailto:contact@retoucheproai.com">contact@retoucheproai.com</a>.</p>
 
-<h2>Tes photos et vidéos</h2>
-<p>Tout le traitement (couleurs, netteté, son, IA d’amélioration) est calculé dans ton navigateur, sur ton appareil. RetoucheProAI ne reçoit, ne stocke et ne consulte aucune de tes images.</p>
+<h2 id="medias">2. Tes photos et vidéos</h2>
+<p>Tout le traitement (couleurs, netteté, son, IA d’amélioration, effacement) est calculé dans ton navigateur, sur ton appareil. RetoucheProAI ne reçoit, ne stocke et ne consulte aucune de tes images, sauf si tu actives toi-même l’IA rapide sur ton compte Kaggle (voir ci-dessous).</p>
 
-<h2>Quand l’app utilise internet</h2>
-<p>Chaque usage ci-dessous demande ton accord dans ⚙️ Paramètres, et tu peux le retirer à tout moment :</p>
+<h2 id="internet">3. Quand l’app utilise internet</h2>
+<p>Chacun de ces usages se fait à ta demande et peut être coupé dans ⚙️ Paramètres :</p>
+<table><thead><tr><th>Usage</th><th>Ce qui circule</th><th>Pourquoi</th></tr></thead><tbody>
+<tr><td>Télécharger un modèle d’IA</td><td>Seul le fichier du modèle est téléchargé (Hugging Face, GitHub). Rien de personnel n’est envoyé, hormis ton adresse IP, nécessaire à toute connexion.</td><td>Faire fonctionner l’outil choisi</td></tr>
+<tr><td>IA rapide sur ton compte Kaggle (facultatif)</td><td>La vidéo choisie et ton jeton Kaggle passent par notre relais (Cloudflare) vers <b>ton</b> compte Kaggle, puis l’app demande leur suppression. Le relais ne conserve rien.</td><td>Exécuter ta demande (base : ta demande, art. 6.1.b RGPD)</td></tr>
+</tbody></table>
+<p>Nos petits serveurs (Cloudflare) voient brièvement l’adresse IP de chaque demande pour limiter les abus (nombre de demandes par minute). Elle n’est pas enregistrée par RetoucheProAI. Base : notre intérêt légitime à protéger le service (art. 6.1.f RGPD).</p>
+
+<h2 id="local">4. Ce qui reste sur ton appareil</h2>
+<p>Tes réglages, l’historique de tes 30 derniers traitements (sans aucune image), ton jeton Kaggle si tu l’as ajouté, et les modèles d’IA téléchargés. Ces données ne quittent pas ton appareil. Tu peux tout effacer depuis ⚙️ Paramètres et « Modèles IA », ou en supprimant les données du site dans ton navigateur. Le fichier de sauvegarde, si tu en crées un, reste chez toi ; il est chiffré si tu choisis une phrase secrète.</p>
+
+<h2 id="cookies">5. Cookies et traceurs</h2>
+<p>Aujourd’hui, RetoucheProAI n’utilise <b>aucun cookie publicitaire ni de mesure d’audience</b>. Le stockage local de ton navigateur sert uniquement à mémoriser tes réglages et ton historique, à ta demande : ce sont des traceurs strictement nécessaires au service, dispensés de consentement selon les règles de la CNIL.</p>
+
+<h2 id="pub">6. Publicité (pas encore active)</h2>
+<p>Pour rester gratuit, RetoucheProAI pourra plus tard afficher des publicités fournies par Google. Ce jour-là :</p>
 <ul>
-<li><b>Télécharger un modèle IA</b> : seul le fichier du modèle est téléchargé depuis sa source officielle. Rien de personnel n’est envoyé.</li>
-<li><b>IA rapide sur ton compte Kaggle</b> (facultatif) : si tu ajoutes ton propre jeton Kaggle, la vidéo choisie est envoyée sur <i>ton</i> compte Kaggle pour y être calculée ; l’app demande ensuite sa suppression. Ton jeton reste sur ton téléphone. Les conditions de Kaggle (Google) s’appliquent à cet envoi.</li>
+<li>une fenêtre te demandera ton choix <b>avant</b> tout cookie publicitaire, avec un bouton pour refuser aussi simple que pour accepter ; sans accord, seules des annonces non personnalisées pourront s’afficher ;</li>
+<li>des fournisseurs tiers, dont Google, utilisent des cookies pour diffuser des annonces en fonction de tes visites précédentes sur ce site ou d’autres sites ; tu pourras désactiver la publicité personnalisée dans les <a href="https://adssettings.google.com" rel="noopener">paramètres des annonces Google</a> ;</li>
+<li>en savoir plus : <a href="https://policies.google.com/technologies/partner-sites?hl=fr" rel="noopener">comment Google utilise les données des sites partenaires</a> ;</li>
+<li>tu pourras changer d’avis à tout moment avec le lien « Cookies et pubs : modifier mon choix » en bas de l’app.</li>
 </ul>
+<p>Les abonnés Premium ne verront jamais de publicité.</p>
 
-<h2>Ce qui est gardé sur ton téléphone</h2>
-<p>Tes réglages, l’historique de tes 30 derniers traitements (sans aucune image) et les modèles IA téléchargés. Tu peux tout effacer depuis ⚙️ Paramètres et « Modèles IA ». Le fichier de sauvegarde, si tu en crées un, reste chez toi ; il est chiffré si tu choisis une phrase secrète.</p>
+<h2 id="premium">7. Premium (pas encore ouvert)</h2>
+<p>À son ouverture, le paiement sur le site sera géré par Polar, qui recevra les informations nécessaires au paiement (nom, e-mail, moyen de paiement, pays pour la TVA) en tant que revendeur. RetoucheProAI ne verra jamais ta carte bancaire. Pour activer Premium, l’app enverra seulement ton code Premium à notre serveur, qui le vérifie auprès de Polar sans rien conserver.</p>
 
-<h2>Publicités et cookies</h2>
-<p>RetoucheProAI est gratuite grâce à la publicité. Les annonces sont fournies par Google (AdSense et Ad Manager).</p>
-<ul>
-<li>Des fournisseurs tiers, dont Google, utilisent des cookies pour diffuser des annonces en fonction de tes visites précédentes sur ce site ou sur d’autres sites.</li>
-<li>Les cookies publicitaires permettent à Google et à ses partenaires de diffuser des annonces en fonction de ta navigation sur ce site et/ou sur d’autres sites.</li>
-<li>Tu peux désactiver la publicité personnalisée dans les <a href="https://adssettings.google.com" rel="noopener">paramètres des annonces Google</a>, ou tous les cookies de fournisseurs tiers sur <a href="https://www.aboutads.info/choices/" rel="noopener">aboutads.info</a>.</li>
-<li>En savoir plus : <a href="https://policies.google.com/technologies/partner-sites?hl=fr" rel="noopener">comment Google utilise les données des sites partenaires</a>.</li>
-</ul>
-<p>Dans l’Union européenne, une fenêtre de consentement te demande ton choix avant tout cookie publicitaire. Tu peux le modifier à tout moment avec le lien « Cookies et pubs : modifier mon choix » en bas de l’app. Sans ton accord, seules des annonces non personnalisées peuvent s’afficher.</p>
-<p>La pub facultative avant l’enregistrement d’une vidéo n’est montrée qu’après ton accord ; si aucune pub n’est disponible, l’enregistrement se fait directement.</p>
+<h2 id="apps">8. Apps iPhone et Android (à venir)</h2>
+<p>Dans les apps des stores, les achats seront gérés par Apple ou Google, avec l’aide de RevenueCat qui reçoit un identifiant anonyme d’achat. Les publicités y seront fournies par Google AdMob, après ton choix de consentement et, sur iPhone, la demande d’autorisation de suivi d’Apple.</p>
 
-<h2>Tes droits</h2>
-<p>RetoucheProAI ne crée pas de compte et ne garde aucune donnée personnelle te concernant sur ses serveurs. Pour les données utilisées par Google pour la publicité, tu peux exercer tes droits (accès, effacement, opposition) depuis <a href="https://myaccount.google.com/data-and-privacy" rel="noopener">ton compte Google</a> ou les paramètres des annonces.</p>
+<h2 id="transferts">9. Prestataires et transferts hors de l’Union européenne</h2>
+<p>Hébergement du site : GitHub (États-Unis). Nom de domaine et relais : Cloudflare (États-Unis). Modèles d’IA : Hugging Face et GitHub. Plus tard : Google (publicité), Polar (paiement), RevenueCat (achats dans l’app). Ces sociétés peuvent traiter des données aux États-Unis, dans le cadre du Data Privacy Framework UE–États-Unis ou de clauses contractuelles types de la Commission européenne.</p>
 
-<h2>Hébergement</h2>
-<p>Site hébergé par GitHub, Inc., 88 Colin P Kelly Jr Street, San Francisco, CA 94107, États-Unis. Petit serveur relais pour l’IA rapide sur Kaggle : Cloudflare, Inc., 101 Townsend Street, San Francisco, CA 94107, États-Unis.</p>
+<h2 id="droits">10. Tes droits</h2>
+<p>RetoucheProAI ne crée pas de compte et ne garde aucune donnée te concernant sur ses serveurs ; l’essentiel de tes données est déjà entre tes mains. Tu disposes néanmoins des droits d’accès, de rectification, d’effacement, d’opposition et de limitation : écris à <a href="mailto:contact@retoucheproai.com">contact@retoucheproai.com</a>. Tu peux aussi adresser une réclamation à la <a href="https://www.cnil.fr/fr/plaintes" rel="noopener">CNIL</a>.</p>
 </main>
+<footer class="pied-pages"><a href="./">RetoucheProAI</a> · <a href="guide.html">Guide</a> · <a href="tarifs.html">Gratuit ou Premium</a> · <a href="mentions-legales.html">Mentions légales</a> · <a href="conditions.html">Conditions d’utilisation</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="licences.html">Licences</a></footer>
 </body>
 </html>

@@ -507,7 +507,10 @@ var ERASE = (() => {
   async function exportImg(fmt) {
     if (!S || !S.ops.length) return;
     MSG("Préparation de la photo…");
-    try { const b = await toBlob(S.cur, fmt === "png" ? "image/png" : "image/jpeg", .95); S.saved = true; await out(b, base() + "-efface." + (fmt === "png" ? "png" : "jpg")); MSG("Photo prête. Elle contient des zones inventées par l’IA : garde la carte ou la fiche de provenance si tu veux t’en souvenir.") }
+    try { let b = await toBlob(S.cur, fmt === "png" ? "image/png" : "image/jpeg", .95);
+      /* v5.8 : marquage IA lisible par machine (AI Act, art. 50 §2) */
+      if (window.MARQUAGE) b = await MARQUAGE.marquer(b, { outil: "RetoucheProAI " + (typeof VER !== "undefined" ? VER : ""), modele: "MI-GAN" });
+      S.saved = true; await out(b, base() + "-efface." + (fmt === "png" ? "png" : "jpg")); MSG("Photo prête. Elle contient des zones inventées par l’IA : garde la carte ou la fiche de provenance si tu veux t’en souvenir.") }
     catch (e) { MSG("Export impossible : " + (e.message || e)) }
   }
   async function exportMap() {
