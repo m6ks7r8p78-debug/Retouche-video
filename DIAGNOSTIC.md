@@ -7,7 +7,9 @@ Ce qui part de l'app : des nombres (mesures, réglages, fiche de l'appareil qui 
 Jamais d'image, de son, de nom de fichier ; l'adresse IP n'est pas enregistrée ; lignes effacées après 13 mois (serveur).
 L'accord est demandé une fois, après un premier résultat réussi, et se retire dans ⚙️ Paramètres. Sans accord, rien ne part.
 
-## Mise en service (à faire une fois, par Claude, avec une clé Cloudflare du compte « Jmy.maelhys »)
+## État : EN SERVICE depuis le 5 nov. 2026 (serveur v7, base D1 `retouche-diag` 0a3bb17b…, région Europe de l'Ouest, clé de lecture DIAG_CLE posée)
+
+## Mise en service (faite une fois, par Claude, avec une clé Cloudflare du compte « Jmy.maelhys »)
 Clé à créer dans Cloudflare → Mon profil → Jetons d'API → « Créer un jeton » → modèle « Modifier les Workers Cloudflare »,
 en ajoutant la permission **Compte → D1 → Modifier**. Puis, depuis `serveur/` :
 ```sh

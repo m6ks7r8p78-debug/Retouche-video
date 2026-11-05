@@ -5,6 +5,7 @@
   "main": "worker.js",
   "compatibility_date": "2026-10-01",
   "observability": { "enabled": true },
-  // identifiant à remplir au déploiement : wrangler d1 create retouche-diag
-  "d1_databases": [{ "binding": "DIAG", "database_name": "retouche-diag", "database_id": "A_REMPLIR" }]
+  "keep_vars": true,
+  // base créée le 5 nov. 2026 (wrangler d1 create retouche-diag --location weur)
+  "d1_databases": [{ "binding": "DIAG", "database_name": "retouche-diag", "database_id": "0a3bb17b-d047-46b9-a188-82dc7e66fbfe" }]
 }

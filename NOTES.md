@@ -16,7 +16,7 @@ Feuille de route du propriétaire : document « Feuille de route — Caméra vir
   Avec l'IA : franges et coins appliqués à l'image IA, pas le flou.
 - Diagnostic : `DIAG.srv()` (POST `LINK.SRV/diag`, drapeau `srv` par mesure, envoi en retard rattrapé), `DIAG.anon()` (système
   simplifié, pas d'UA), `DIAG.demander()` après le premier export réussi. Serveur v7 (`serveur/worker.js`) : `/diag`, `/diag/export`
-  (clé `DIAG_CLE`). **Pas encore déployé** (v6 non plus) : il faut une clé Cloudflare — étapes dans DIAGNOSTIC.md.
+  (clé `DIAG_CLE`). **Déployé le 5 nov. 2026** (serveur v7, inclut /abo/verifier de la v6) ; base D1 `retouche-diag` ; voir DIAGNOSTIC.md.
 - Limites connues : scènes douces (dessin, ciel) → pas de mesure du flou ; la passe ne corrige pas encore le « refilmage » par un
   appareil cible (phase 3 de la feuille de route) ; mesures faites sur la vidéo seulement (pas les photos).
 

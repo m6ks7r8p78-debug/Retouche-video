@@ -10,7 +10,7 @@
   mesuré ne se corrige pas 1 pour 1). Mesuré sur une vidéo simulée : franges 0,0019 / −0,0025 → −0,0003 / 0,0003 ; coins 0,61 → 0,75
   du centre ; flou 1,69 → 1,40 px.
 - **Diagnostic anonyme** (facultatif, demandé une fois après un premier résultat) : envoi au serveur de l'app (route `/diag`, base D1,
-  13 mois) des nombres seulement. Serveur v7 écrit et testé, **à déployer** (voir DIAGNOSTIC.md).
+  13 mois) des nombres seulement. Serveur v7 déployé le 5 nov. 2026 (voir DIAGNOSTIC.md).
 - Tests : `tests/camera.test.mjs` (mesures sur images dégradées), `tests/camera_app.test.mjs` (de bout en bout dans Chrome),
   `tests/diag_serveur.test.mjs` (route /diag avec SQLite) ; simulateurs `tests/camera_simuler.py`, `tests/camera_video.py`.
 
