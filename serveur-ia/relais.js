@@ -5,7 +5,7 @@
    - Seuls les calculs nommés « retouche-ia-… » du compte de ce jeton, et seuls les fichiers ia.mp4 / info.json, passent.
    - Seuls les sites de l'app peuvent l'appeler depuis un navigateur ; rien n'est stocké ici. */
 const VERSION = "1";
-const ORIGINS = /^(https:\/\/m6ks7r8p78-debug\.github\.io|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
+const ORIGINS = /^(https:\/\/(m6ks7r8p78-debug\.github\.io|(www\.)?retoucheproai\.com)|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
 const SLUG = /^retouche-ia-[a-z0-9]{4,24}$/, FICHIERS = new Set(["ia.mp4", "info.json"]);
 const HOTES = /^(www\.kaggleusercontent\.com|storage\.googleapis\.com)$/;
 const API = "https://api.kaggle.com/v1/";
