@@ -530,7 +530,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v5.0";/* seul endroit où changer le numéro de version */
+const VER="v5.1";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -1732,7 +1732,7 @@ $("#fm").onchange=e=>{if(exporting){e.target.value="";return}MG.add(e.target.fil
 $("#mggo").onclick=()=>MG.go();
 $("#mgsave").onclick=()=>{if(MG.blob)shareBlob(MG.blob,uniqName((MG.files[0]&&MG.files[0].name||"video").replace(/\.[^.]+$/,"")+"-regroupee","mp4"))};
 /* ===== Import par lien (Twitter / X, Reddit) : tout se fait depuis le téléphone, sans serveur ===== */
-const LINK={busy:false,SRV:"https://retouche-serveur.nfchb5hd9z.workers.dev",
+const LINK={busy:false,SRV:"https://retouche-serveur.retouche-ia.workers.dev",
   px(u){return LINK.SRV+"/proxy?u="+encodeURIComponent(u)},
   say(t){const e=$("#lnkst");e.textContent=t||"";e.hidden=!t},
   site(u){if(/(^|\.)(twitter|x|fxtwitter|vxtwitter|fixupx|fixvx|twittpr)\.com$/i.test(u.hostname))return "twitter";

@@ -27,6 +27,12 @@ le calcul « 4 pixels par fil » n'y gagne que 12 %) → 50 h pour une vidéo 72
 - Reste : test d'intégration complet réussi, vérifier que DeleteKernel est autorisé par le jeton, mesurer une vraie vidéo
   720×1280, documentation (README, CHANGELOG, SECURITE, AUTORISATIONS, GUIDE_IPHONE), fusion dans `main`.
 
+## v5.1 (5 nov. 2026) — domaine retoucheproai.com
+Domaine acheté chez Cloudflare Registrar (compte « Jmy.maelhys », zone 2f6a5a7e…, jusqu'au 5 nov. 2027).
+DNS : 4 A + 4 AAAA GitHub Pages sur la racine, CNAME www → m6ks7r8p78-debug.github.io, tous « DNS only » (pas de proxy).
+Serveur des liens désormais sur ce même compte : retouche-serveur.retouche-ia.workers.dev (`LINK.SRV`).
+Relais Kaggle redéployé avec l'origine retoucheproai.com. Fichier `CNAME` à la racine du dépôt.
+
 ## v5.0 (5 nov. 2026) — l'app s'appelle RetoucheProAI
 Dépôt et adresse GitHub inchangés (Retouche-video). Format de sauvegarde inchangé (« retouche-sauvegarde ») pour garder les anciennes.
 Domaines libres vérifiés le 5 nov. 2026 : retoucheproai.com / .fr / .app.

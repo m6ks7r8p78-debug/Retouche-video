@@ -1,5 +1,15 @@
 # Journal des versions
 
+## v5.1 — 5 novembre 2026 (adresse retoucheproai.com)
+- L'app est servie à https://retoucheproai.com (fichier CNAME ; DNS chez Cloudflare, sans proxy, vers GitHub Pages).
+  L'ancienne adresse github.io redirige vers la nouvelle.
+- Serveur des liens réinstallé sur le compte Cloudflare du domaine : https://retouche-serveur.retouche-ia.workers.dev
+  (même code v5, origine retoucheproai.com ajoutée). L'ancien (nfchb5hd9z) reste en ligne mais n'est plus utilisé.
+- Relais Kaggle : origine retoucheproai.com ajoutée et redéployé.
+- Version hors ligne active aussi sur le nouveau domaine.
+- À savoir : réglages, jeton Kaggle et modèles IA téléchargés sont rangés par adresse dans le navigateur ;
+  sur la nouvelle adresse, ils sont à refaire une fois.
+
 ## v5.0 — 5 novembre 2026 (nouveau nom : RetoucheProAI)
 - L'app s'appelle désormais RetoucheProAI : titre, en-tête, nom sur l'écran d'accueil, nom dans les sauvegardes.
 - Rien d'autre ne change : même adresse pour l'instant, anciennes sauvegardes toujours lisibles, réglages et modèles gardés.
