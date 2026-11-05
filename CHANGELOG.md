@@ -1,5 +1,9 @@
 # Journal des versions
 
+## v5.2 — 5 novembre 2026 (connexion sécurisée imposée)
+- Certificat HTTPS de retoucheproai.com en place. Toute visite en http (ou via l'ancienne adresse github.io, qui
+  redirige en http) est renvoyée vers https://retoucheproai.com, nécessaire pour la carte graphique et la version hors ligne.
+
 ## v5.1 — 5 novembre 2026 (adresse retoucheproai.com)
 - L'app est servie à https://retoucheproai.com (fichier CNAME ; DNS chez Cloudflare, sans proxy, vers GitHub Pages).
   L'ancienne adresse github.io redirige vers la nouvelle.

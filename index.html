@@ -2,6 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
+<script>/* v5.2 : toujours en connexion sécurisée (cadenas) : carte graphique, version hors ligne et pubs l'exigent */
+if(location.protocol==="http:"&&/(^|\.)retoucheproai\.com$/.test(location.hostname))location.replace("https://retoucheproai.com"+location.pathname+location.search+location.hash)</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -530,7 +532,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v5.1";/* seul endroit où changer le numéro de version */
+const VER="v5.2";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
