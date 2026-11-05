@@ -140,3 +140,6 @@ Demande : app plus simple pour débutant, peu de boutons, pas surchargée (« je
 
 ## v4.1 (5 nov. 2026)
 « Regrouper des vidéos » (collage) visible en mode simple, sur toute la largeur sous Vidéo / Photo.
+
+## v4.2 (5 nov. 2026)
+Mode simple : Vidéo / Photo / Regrouper côte à côte, par trois (demande de la personne).

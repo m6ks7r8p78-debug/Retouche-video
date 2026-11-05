@@ -269,8 +269,7 @@ body.simple .tabs,body.simple #prof,body.simple #rec,body.simple #qhint,body.sim
 body.simple #ai,body.simple #rtb,body.simple #socn,body.simple #bab,body.simple #kbb,body.simple #erb,body.simple #orep,body.simple #tech,body.simple #rec_after{display:none!important}
 body.simple #tp2,body.simple #tp3{display:none!important}
 body.simple #tp1{display:block!important}
-body.simple .picks{grid-template-columns:1fr 1fr}
-body.simple #pickm{grid-column:1/-1}/* v4.1 : regrouper des vidéos visible en mode simple */
+/* v4.2 : vidéo, photo et regrouper côte à côte, par trois comme avant */
 body:not(.simple) .simple-only{display:none!important}
 #modeb{font-size:13px}
 #sai{margin-top:12px}
@@ -516,7 +515,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v4.1";/* seul endroit où changer le numéro de version */
+const VER="v4.2";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
