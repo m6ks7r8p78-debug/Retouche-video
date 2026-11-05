@@ -882,7 +882,7 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
       const q=SRX.idx;
       if(q==null||(typeof q==="number"&&q<0)){SRX.miss++;throw new Error("la lecture image par image s’est interrompue")}
       if(typeof q==="number")return SRX.remote.image(q);
-      /* v5.8 : image intermédiaire (ralenti fluide, « Mouvement plus fluide ») : les deux images voisines restaurées
+      /* v6.1 : image intermédiaire (ralenti fluide, « Mouvement plus fluide ») : les deux images voisines restaurées
          par le serveur sont fondues avec le même mouvement estimé que la version classique (mêmes positions, même instant) */
       const A=await SRX.remote.image(q.a),W=A.width,H=A.height,mk=n=>{let c=SRX[n];if(!c)c=SRX[n]=document.createElement("canvas");if(c.width!==W||c.height!==H){c.width=W;c.height=H}return c};
       const ra=mk("rA"),ro=mk("rO");ra.getContext("2d").drawImage(A,0,0);
@@ -915,7 +915,7 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     return{
       async image(k){
         if(!ouvert){await rr.open(k);ouvert=true}
-        else if(k<dern){/* v5.8 : retour en arrière (lecture à l'envers, prolongation) : image encore en mémoire, sinon la lecture repart de l'image clé voisine */
+        else if(k<dern){/* v6.1 : retour en arrière (lecture à l'envers, prolongation) : image encore en mémoire, sinon la lecture repart de l'image clé voisine */
           const h=rr.cache.find(e=>e.r===k);if(h){x.drawImage(h.c,0,0,ow,oh);return c}
           try{rr.close()}catch(e){}rr=new SeqReader(r.file,ri);rr.setFps(0);await rr.open(k)}
         const f=await rr.need(k);dern=k;x.drawImage(f,0,0,ow,oh);return c},
@@ -2246,7 +2246,7 @@ $("#ex").onclick=async()=>{
     SRX.remote=null;SRX.idx=-1;SRX.miss=0;SRX.remoteErr=null;
     try{window.__simpleSync&&window.__simpleSync()}catch(e){}
     if(SRX.on()&&(SRX.fits(v)||SRX.srvOK())&&window.KG&&$("#o_srv")&&$("#o_srv").checked){
-      /* v5.8 : la vitesse (barre ou Time Repair, à l'envers compris) et « Mouvement plus fluide » marchent avec l'IA rapide */
+      /* v6.1 : la vitesse (barre ou Time Repair, à l'envers compris) et « Mouvement plus fluide » marchent avec l'IA rapide */
       const why=!isPlan&&$("#o_dust").checked?"« Anti-poussière »":!window.VideoDecoder?"la lecture image par image (iOS trop ancien)":null;
       if(why)throw new Error("L’IA rapide sur serveur ne fonctionne pas encore avec "+why+". Décoche l’une des deux options, puis relance.");
       /* v4.5 : l'IA de Kaggle est relue image par image ; on vérifie AVANT tout envoi que cette lecture marche sur cette vidéo,
@@ -2328,7 +2328,7 @@ $("#ex").onclick=async()=>{
        et pour la prolongation (quelques sauts en arrière : la lecture repart de l'image clé voisine).
        Seule la lecture à l'envers (un retour en arrière à chaque image) garde l'ancienne méthode. */
     let pBack=0;if(isPlan){let mx=-1;for(const pp of plan){if(pp.a<mx-1)pBack++;mx=Math.max(mx,pp.b!=null?pp.b:pp.a)}}
-    const seqPlanOK=!isPlan||pBack<=Math.max(2,plan.length/45)||!!SRX.remote;/* v5.8 : avec l'IA rapide, même à l'envers (l'image du serveur doit être exactement la même image) */
+    const seqPlanOK=!isPlan||pBack<=Math.max(2,plan.length/45)||!!SRX.remote;/* v6.1 : avec l'IA rapide, même à l'envers (l'image du serveur doit être exactement la même image) */
     if(seqPlanOK&&window.VideoDecoder&&!window.__noseq&&(cv.width*cv.height<=2073600*1.2||SRX.remote||isPlan)){/* v4.5 : avec Kaggle, toujours (4K compris) */
       rdr=await makeSeq(isPlan?plan[0].a:off,OFPS);rdr0=!!rdr;
     }
@@ -2340,7 +2340,7 @@ $("#ex").onclick=async()=>{
       const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
       /* saut en arrière dans un plan (prolongation) : la lecture séquentielle repart de là */
       if(rdr&&isPlan&&(pl.a<pMax-1||(SRX.remote&&pl.a===pMax-1&&!rdr.peek(pl.a)))){
-        /* v5.8 : à l'envers avec l'IA rapide : la lecture repart de l'image clé voisine, sans relire tout le fichier */
+        /* v6.1 : à l'envers avec l'IA rapide : la lecture repart de l'image clé voisine, sans relire tout le fichier */
         if(SRX.remote){const inf=rdr.i;rdr.close();rdr=new SeqReader(curFile,inf);rdr.setFps(OFPS);try{await rdr.open(rdr.map(pl.a))}catch(e){rdr.close();rdr=null}}
         else{rdr.close();rdr=await makeSeq(pl.a,OFPS)}pMax=-1;
         if(!rdr){window.__seqInfo="seq relance impossible";q=0;for(let z=0;z<i;z++){q+=plan[z].b!=null?2:1}await initPool();poolMode=true;for(let z=q;z<q+POOL;z++)go(z)}}
