@@ -39,7 +39,8 @@ window.ABO = (() => {
     return now - e.verifie < 7 * JOUR;               /* hors ligne : 7 jours de grâce entre deux vérifications */
   }
   const actif = () => !!C.actif;
-  const premium = () => !actif() || valide(lire());
+  const proprio = () => !!window.PROPRIO;          /* v5.8 : accès propriétaire (voir index.html) */
+  const premium = () => proprio() || !actif() || valide(lire());
   const besoin = { k4: 1, ia: 1, filtre: 1, effacer: 1, tr: 1, regrouper: 1, lot: 1, hl: 1 };
   const autorise = f => premium() || !besoin[f];
 
@@ -170,11 +171,12 @@ window.ABO = (() => {
   function boutonEntete() {
     const h = document.querySelector("header"); if (!h || document.getElementById("abo-b")) return;
     const b = document.createElement("button"); b.id = "abo-b"; b.type = "button"; b.className = "abo-b";
-    b.textContent = premium() ? "✓ Premium" : "Premium"; b.onclick = () => premium() ? gerer() : ouvrir();
+    b.textContent = proprio() ? "✓ Propriétaire" : premium() ? "✓ Premium" : "Premium"; b.onclick = () => premium() ? gerer() : ouvrir();
     h.appendChild(b);
   }
   function gerer() {
     const e = lire(), d = dlg();
+    if (proprio()) { d.innerHTML = '<button class="abo-x" type="button" aria-label="Fermer">✕</button><h2 id="abo-t">Accès propriétaire ✓</h2><p>Tout est débloqué sur cet appareil, sans limite de durée et sans publicité.</p>'; d.onclick = ev => { if (ev.target.closest(".abo-x")) d.close() }; d.showModal(); return }
     d.innerHTML = '<button class="abo-x" type="button" aria-label="Fermer">✕</button><h2 id="abo-t">Premium est actif ✓</h2><p>' +
       (e && e.fin ? "Valable jusqu’au " + new Date(e.fin).toLocaleDateString("fr-FR") + "." : "Abonnement en cours.") + '</p>' +
       (e && e.source === "store" ? '<p class="abo-pied">Pour le résilier : Réglages de l’iPhone → ton nom → Abonnements (ou Play Store → Paiements et abonnements).</p>'
@@ -206,10 +208,10 @@ window.ABO = (() => {
     if (!actif()) return;
     boutonEntete();
     if (!premium()) verrouiller();
-    rafraichir().then(() => { const b = document.getElementById("abo-b"); if (b) b.textContent = premium() ? "✓ Premium" : "Premium" });
+    rafraichir().then(() => { const b = document.getElementById("abo-b"); if (b) b.textContent = proprio() ? "✓ Propriétaire" : premium() ? "✓ Premium" : "Premium" });
     if (natif()) { const avant = premium(); storeSync().then(e => { if (e && !avant) location.reload() }) } /* Premium retrouvé sur le compte Apple / Google : on relance sans pubs ni cadenas */
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", demarrer); else demarrer();
 
-  return { actif, premium, autorise, ouvrir, natif, verifierCle, PLANS, AVANTAGES, _valide: valide, _ecrire: ecrire, _lire: lire };
+  return { actif, premium, proprio, autorise, ouvrir, natif, verifierCle, PLANS, AVANTAGES, _valide: valide, _ecrire: ecrire, _lire: lire };
 })();

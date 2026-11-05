@@ -5,7 +5,17 @@
 <script>/* v5.2 : toujours en connexion sécurisée (cadenas) : carte graphique, version hors ligne et pubs l'exigent */
 if(location.protocol==="http:"&&/(^|\.)retoucheproai\.com$/.test(location.hostname))location.replace("https://retoucheproai.com"+location.pathname+location.search+location.hash)
 /* v5.5 : sur le site public, pas de chargement par lien (règles Google AdSense sur les outils de téléchargement) ; la fonction reste dans la version Claude */
-if(/(^|\.)retoucheproai\.com$/.test(location.hostname)||(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()))document.documentElement.classList.add("sans-liens")</script>
+/* v5.8 : accès propriétaire. Le lien secret …/#proprio=CODE l'active sur cet appareil (seule l'empreinte SHA-256 du code est ici) ;
+   …/#proprio=off le retire. Propriétaire : tout débloqué pour toujours, aucune pub, « Colle un lien » visible, mode expert. */
+window.PROPRIO=(()=>{try{return localStorage.getItem("proprio")==="1"}catch(e){return false}})();
+(function(){const m=/[#&]proprio=([^&]+)/.exec(location.hash);if(!m)return;const v=decodeURIComponent(m[1]).trim().toUpperCase(),propre=()=>history.replaceState(null,"",location.pathname+location.search);
+  if(v==="OFF"){try{localStorage.removeItem("proprio")}catch(e){}propre();location.reload();return}
+  if(!(window.crypto&&crypto.subtle))return;crypto.subtle.digest("SHA-256",new TextEncoder().encode(v)).then(b=>{const h=[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");propre();
+    if(h!=="d873a68543d4b5451de86d45bec53d74ea67a3dfea5750166a5807e528e03667"){alert("Code propriétaire incorrect.");return}
+    try{localStorage.setItem("proprio","1");localStorage.setItem("ui_mode","expert")}catch(e){alert("Impossible d'enregistrer l'accès propriétaire (navigation privée ?).");return}
+    alert("Accès propriétaire activé sur cet appareil ✓");location.reload()})})();
+addEventListener("hashchange",()=>{if(/[#&]proprio=/.test(location.hash))location.reload()});
+if(!window.PROPRIO&&(/(^|\.)retoucheproai\.com$/.test(location.hostname)||(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())))document.documentElement.classList.add("sans-liens")</script>
 <script src="natif.js"></script>
 <style>.sans-liens #lnkf,.sans-liens #lnkc,.sans-liens #lnkst,.sans-liens .lnkh,.sans-liens .avec-liens{display:none!important}</style>
 <meta name="google-adsense-account" content="ca-pub-4826284146220706">

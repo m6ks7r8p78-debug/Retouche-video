@@ -164,6 +164,7 @@ window.PUB = (() => {
   }
 
   function demarrer() {
+    if (window.PROPRIO) return; /* v5.8 : jamais de pub pour le propriétaire */
     if (window.ABO && ABO.actif() && ABO.premium()) return; /* v5.6 : jamais de pub pour les abonnés Premium */
     if (allumeNatif()) return demarrerNatif();
     if (!allume()) return;
