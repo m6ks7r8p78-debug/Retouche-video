@@ -500,7 +500,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v3.6";/* seul endroit où changer le numéro de version */
+const VER="v3.7";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -1322,10 +1322,16 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       try{PROF.recommend({w:v.videoWidth,h:v.videoHeight,noise:m.noise,blk:m.blk,p50:m.p50,p98:m.p98})}catch(e){}
       const ad=LEARN.adapt(r.o);r.learn=ad.notes;
       REC.apply(r);
-      /* v3.6 : style de retouche de la personne, mesuré le 5 nov. 2026 en comparant ses réglages à la main avec le réglage automatique
-         sur la même vidéo : moins de contraste, couleurs plus vives, plus froid, légère correction de dominante, netteté ×2. */
-      {const ST={cs:-.05,br:-.02,co:-.10,sa:.17,wa:-.06,sh:.33},R={};S.forEach(([k,,lo,hi])=>R[k]=[lo,hi]);
-        for(const k in ST)P[k]=+Math.max(R[k][0],Math.min(R[k][1],P[k]+ST[k])).toFixed(3);P.wb=Math.max(P.wb||0,.1);sync()}
+      /* v3.7 : réglages calculés pour CHAQUE vidéo d'après ses mesures (avant, netteté 0,3 et bruit 0,2 fixes, chaleur fixe :
+         toutes les vidéos recevaient presque les mêmes réglages). Base calée sur le style de la personne (5 nov. 2026). */
+      {const R={};S.forEach(([k,,lo,hi])=>R[k]=[lo,hi]);const cl=(k,x)=>+Math.max(R[k][0],Math.min(R[k][1],x)).toFixed(3);
+        const lsh=(r.o.sh||.3)-.3,ldn=r.o.dn-(m.noise>=REC.T.noiseHi?.5:m.noise>=REC.T.noiseMid?.35:.2);/* part apprise, conservée */
+        const sharp=m.sharp||30,noise=m.noise||0,g=m.gains;
+        P.sh=cl("sh",Math.max(.2,Math.min(.8,1-sharp/70))+lsh);           /* image floue → plus de netteté ; déjà nette → presque rien */
+        P.dn=cl("dn",Math.max(.1,Math.min(.45,.1+noise*.6))+Math.max(0,ldn)); /* bruit mesuré → réduction proportionnelle */
+        const warm=g&&g.length===3?g[2]-g[0]:0;                           /* > 0 : image qui tire vers l'orange ; < 0 : vers le bleu */
+        P.wa=cl("wa",Math.max(-.08,Math.min(.02,-warm*.15)));             /* corrige seulement la dominante réellement présente */
+        P.co=cl("co",P.co-.10);P.sa=cl("sa",P.sa+.17);P.br=cl("br",P.br-.02);P.cs=cl("cs",P.cs-.05);sync()}
       if(r.o.bias){for(const k in r.o.bias)P[k]=Math.max(k==="co"||k==="sa"?.8:-.3,Math.min(k==="co"||k==="sa"?1.4:.3,P[k]+r.o.bias[k]));sync()}
       if(r.o.skip)r.it&&r.it.forEach((k,i)=>{const id={dust:"o_dust",defl:"o_defl",stab:"o_stab",voice:"o_voice"}[k];if(id&&r.o.skip[id]){REC.toggle(k,false,r);(r.off=r.off||{})[i]=true}});
       REC.show(r);LEARN.snap();
@@ -1944,7 +1950,7 @@ const LEARN={K:["br","co","sa","wa","sh","dn","cs","db"],O:["o_dust","o_defl","o
   /* appliqué au réglage automatique suivant : décalage moyen, borné ; une option décochée la plupart du temps n'est plus cochée d'office */
   adapt(o){const d=LEARN.get(),notes=[];if(!d.n||d.n<2)return{o,notes};
     const lab={sh:"netteté",dn:"réduction du bruit",sa:"couleurs",co:"contraste",br:"luminosité",cs:"nettoyage des couleurs",db:"anti-blocs"};
-    for(const k of ["sh","dn","cs","db"]){const b=d.bias&&d.bias[k]||0,[lo,hi]=LEARN.B[k];const c=Math.max(lo,Math.min(hi,b));if(Math.abs(c)>.04){o[k]=Math.max(0,Math.min(k==="sh"?.6:k==="dn"?.5:1,(o[k]!=null?o[k]:P[k])+c));notes.push(lab[k]+(c>0?" un peu plus forte":" un peu plus douce"))}}
+    for(const k of ["sh","dn","cs","db"]){const b=d.bias&&d.bias[k]||0,[lo,hi]=LEARN.B[k];const c=Math.max(lo,Math.min(hi,b));if(Math.abs(c)>.04){o[k]=Math.max(0,Math.min(k==="sh"?.6:k==="dn"?.5:1,(o[k]!=null?o[k]:{sh:.3,dn:.2,cs:.7,db:0}[k])+c))/* v3.7 : base fixe, plus de dérive d'une vidéo à l'autre */;notes.push(lab[k]+(c>0?" un peu plus forte":" un peu plus douce"))}}
     o.bias={};for(const k of ["br","co","sa","wa"]){const b=d.bias&&d.bias[k]||0,[lo,hi]=LEARN.B[k];const c=Math.max(lo,Math.min(hi,b));if(Math.abs(c)>.01){o.bias[k]=c;notes.push(lab[k]||"chaleur")}}
     o.skip={};for(const k of LEARN.O){const st=d.opt&&d.opt[k];if(st&&st.on+st.off>=3&&st.off/(st.on+st.off)>.6)o.skip[k]=true}
     return{o,notes}}

@@ -93,3 +93,12 @@ Constat sur une vidéo test : avec l'IA seule (Équilibré, ai:1), peau lissée 
 Comparaison de ses réglages à la main avec le réglage auto (même vidéo, 0:01). Décalage appliqué après chaque réglage auto :
 nettoyage −0,05 · luminosité −0,02 · contraste −0,10 · couleurs +0,17 · chaleur −0,06 · dominante ≥ 0,10 · netteté +0,33.
 Code : bloc « v3.6 » juste après REC.apply(r) dans index.html. L'apprentissage existant (LEARN) continue par-dessus.
+
+## v3.7 (5 nov. 2026) — réglages auto vraiment adaptés à chaque vidéo
+Constat (diagnostics de 60 analyses) : netteté 0,3 et bruit 0,2 identiques partout (seuils de bruit jamais atteints),
+chaleur −0,06 fixe, dominante 0,1 sans effet, nettoyage des couleurs qui dérivait de 0,7 à 0,05 (LEARN repartait du réglage précédent).
+- Netteté = 1 − netteté mesurée / 70 (bornée 0,2–0,8) ; bruit = 0,1 + bruit mesuré × 0,6 (0,1–0,45) ;
+  chaleur = −(gain bleu − gain rouge) × 0,15 (−0,08 à +0,02) : ne corrige que la dominante présente.
+- Sur la vidéo de référence : 0,63 / 0,21 / −0,063, contre 0,67 / 0,20 / −0,057 réglés à la main par la personne.
+- Contraste −0,10, couleurs +0,17, luminosité −0,02, nettoyage −0,05 restent appliqués par-dessus la base de l'analyse.
+- LEARN.adapt : base fixe (sh 0,3, dn 0,2, cs 0,7) au lieu du réglage précédent → plus de dérive.
