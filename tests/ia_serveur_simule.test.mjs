@@ -38,7 +38,7 @@ await p.waitForFunction(() => !REC.pr, null, { timeout: 120000 }).catch(() => {}
 await test("Case « IA rapide (Kaggle) » cochée d'office quand un jeton est enregistré (aussi en mode expert)", async () => {
   await p.waitForTimeout(2500); const r = await p.evaluate(() => document.querySelector("#o_srv").checked); return { ok: r, info: "cochée : " + r } });
 
-for (const [q, W] of [["1920", 1920], ["3840", 3840]]) {
+for (const [q, W] of [["1920", 1920], ["3840", 3840]].filter(([q]) => !process.env.TAILLES || process.env.TAILLES.split(",").includes(q))) {
   await test("Export " + (W > 1920 ? "4K" : "Full HD") + " avec l'IA serveur (simulée) : vidéo complète, aucune image serveur manquante", async () => {
     await p.evaluate(q => { for (const id of ["o_fluid", "o_dust", "o_fast", "o_stab"]) { const e = document.querySelector("#" + id); if (e && e.checked) { e.checked = false; e.dispatchEvent(new Event("change")) } }
       const m = document.querySelector("#o_max"); m.checked = true; m.dispatchEvent(new Event("change"));
