@@ -16,6 +16,8 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME || un
 const p = await browser.newPage(); await p.goto(BASE + "/index.html"); await p.waitForFunction(() => window.MODELS && window.SR);
 /* v4.0+ : le mode simple cache les réglages ; le banc travaille en mode expert */
 if (await p.evaluate(() => document.body.classList.contains("simple"))) await p.click("#modeb");
+/* v6.0 : téléchargement du modèle du rendu photographe autorisé pour le banc */
+await p.evaluate(() => localStorage.setItem("autorisations", JSON.stringify({ modele: { ok: true, at: Date.now() } })));
 /* SANS_VISAGES=1 : protection des visages coupée (sert à la calibrer) */
 const SV = !!process.env.SANS_VISAGES; await p.evaluate(sv => MODELS.setOff("visages", sv), SV);
 const PROFS = (process.env.PROFS || "naturel,equilibre,details").split(",");

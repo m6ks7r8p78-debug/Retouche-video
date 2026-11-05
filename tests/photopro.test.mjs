@@ -39,10 +39,10 @@ await test("Échelle demandée respectée (×2,5) et résultat réutilisé pour 
   return { ok: r.w === 500 && r.h === 425 && r.meme && r.ms2 < 50, info: JSON.stringify(r) } });
 
 await test("Photo avec l’IA : le rendu photographe est utilisé (et pas le réseau compact)", async () => {
-  if (await p.evaluate(() => document.body.classList.contains("simple"))) await p.click("#modeb");
+  await p.evaluate(() => { if (document.body.classList.contains("simple")) document.getElementById("modeb").click() });
   await p.setInputFiles("#fp", path.join(HERE, "medias", "photopro", "entree.png")); await p.waitForFunction(() => !document.querySelector("#rec").hidden, null, { timeout: 60000 });
   await p.evaluate(() => { const e = document.querySelector("#o_max"); e.checked = true; e.dispatchEvent(new Event("change")) });
-  await p.click("#ex"); await p.waitForFunction(() => !exporting && /Terminé|pas pu/.test(document.querySelector("#st1").textContent), null, { timeout: 900000 });
+  await p.evaluate(() => document.getElementById("ex").click()); await p.waitForFunction(() => !exporting && /Terminé|pas pu/.test(document.querySelector("#st1").textContent), null, { timeout: 900000 });
   const r = await p.evaluate(() => ({ pro: SRX.pro === true, off: !!SRX.proOff, st: document.querySelector("#st1").textContent.slice(0, 80), taille: outBlob && outBlob.size }));
   return { ok: r.pro && !r.off && /Terminé/.test(r.st) && r.taille > 10000, info: JSON.stringify(r) } });
 
