@@ -222,6 +222,9 @@ body.loaded .lnkh{display:none}
 .mdlb{flex:none;padding:8px 11px;border-radius:999px;border:0;background:var(--panel);box-shadow:0 1px 0 var(--line),0 6px 16px -10px rgba(36,21,36,.4);font:600 13px/1 var(--fd);cursor:pointer}
 .top .tag{margin-left:8px}
 .top .brand{margin-right:auto}
+/* v4.4 : en-tête centré, version bien visible au milieu (demande de la personne : ne plus devoir la chercher à droite) */
+.top{justify-content:center;flex-wrap:wrap;gap:8px 10px}.top .brand{margin:0}.top .tag{margin:0;flex:none;white-space:nowrap;padding:6px 10px;border-radius:999px;background:var(--panel);box-shadow:0 1px 0 var(--line);font:700 12px/1 var(--fm);color:var(--ink)}
+.top .mdlb{white-space:nowrap;order:2}.top .tag{order:1}
 dialog.mdl{width:min(640px,100vw - 16px);max-height:calc(100dvh - 24px);padding:0;border:0;border-radius:18px;background:var(--bg);color:var(--ink);box-shadow:0 30px 60px -20px rgba(0,0,0,.5)}
 dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 .mdl-top{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;padding:14px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
@@ -515,7 +518,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v4.3";/* seul endroit où changer le numéro de version */
+const VER="v4.4";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
