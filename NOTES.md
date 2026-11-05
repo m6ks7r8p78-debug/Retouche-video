@@ -137,3 +137,6 @@ Demande : app plus simple pour débutant, peu de boutons, pas surchargée (« je
 - Masqués en mode simple : onglets Réglages/Outils, profils, analyse détaillée, assistant, rapports, regroupement, effacer une zone, Modèles IA, outils annexes.
 - « ⚡ Qualité IA » pilote o_max ; avec un jeton Kaggle enregistré, il active aussi o_srv automatiquement (vidéos calculées sur Kaggle).
 - Bouton « Mode expert » en haut : réaffiche toute l'app telle qu'avant (rien n'est supprimé).
+
+## v4.1 (5 nov. 2026)
+« Regrouper des vidéos » (collage) visible en mode simple, sur toute la largeur sous Vidéo / Photo.

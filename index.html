@@ -264,12 +264,13 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 .recipe{margin:6px 0 0;font-size:12px;color:var(--mut);word-break:break-word}
 
 /* ===== v4.0 : mode simple (par défaut) — l'essentiel seulement ; « Mode expert » réaffiche tout ===== */
-body.simple #mdlb,body.simple .hero .eyebrow,body.simple .hero .lead,body.simple #pickm,body.simple #picke,body.simple .lnkh,body.simple .privacy,
+body.simple #mdlb,body.simple .hero .eyebrow,body.simple .hero .lead,body.simple #picke,body.simple .lnkh,body.simple .privacy,
 body.simple .tabs,body.simple #prof,body.simple #rec,body.simple #qhint,body.simple #qwrap>.help,body.simple #asst,body.simple #frep,body.simple #spl,body.simple #meta,
 body.simple #ai,body.simple #rtb,body.simple #socn,body.simple #bab,body.simple #kbb,body.simple #erb,body.simple #orep,body.simple #tech,body.simple #rec_after{display:none!important}
 body.simple #tp2,body.simple #tp3{display:none!important}
 body.simple #tp1{display:block!important}
 body.simple .picks{grid-template-columns:1fr 1fr}
+body.simple #pickm{grid-column:1/-1}/* v4.1 : regrouper des vidéos visible en mode simple */
 body:not(.simple) .simple-only{display:none!important}
 #modeb{font-size:13px}
 #sai{margin-top:12px}
@@ -515,7 +516,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v4.0";/* seul endroit où changer le numéro de version */
+const VER="v4.1";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
