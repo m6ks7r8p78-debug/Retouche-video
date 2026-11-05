@@ -1,5 +1,17 @@
 # Journal des versions
 
+## v4.8 — 5 novembre 2026 (conversion accélérée des vidéos ralenties / accélérées)
+- Même résultat qu'en v4.7, mêmes réglages : seule la façon de calculer change.
+- Lecture de la vidéo en continu (décodeur de l'iPhone) aussi quand la vitesse est changée. Avant, chaque image
+  était cherchée une par une dans 3 lecteurs vidéo, très lent sur iPhone. Idem pour la prolongation (repart de l'image
+  clé voisine à chaque saut). Seule la lecture à l'envers garde l'ancienne méthode.
+- Images intermédiaires du ralenti calculées par la carte graphique en une seule passe (WebGL), au lieu d'environ
+  1 200 petits dessins par image ; résultat identique à l'œil (PSNR > 50 dB contre l'ancienne méthode), bords plus propres.
+  Ancienne méthode gardée en secours automatique.
+- Recherche du mouvement : mêmes calculs sans tests de bord dans la boucle (résultat identique au bit près, vérifié).
+- « Voix plus claire » est désormais gardée quand la vitesse change (elle était ignorée).
+- Tests : tests/vitesse.test.mjs complété (lecture continue vérifiée, image intermédiaire GPU = ancienne méthode).
+
 ## v4.7 — 5 novembre 2026 (barre de vitesse, comparatif à curseur)
 - Barre « Vitesse » sous la barre de lecture : 0,75× à 1,30× par pas de 0,05 ; le bouton 1,00× la remet à zéro.
   Aperçu : la lecture suit la vitesse. Conversion : la vidéo est refaite à cette vitesse (ralenti avec images intermédiaires,

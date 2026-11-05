@@ -1,4 +1,4 @@
-/* Tests v4.7 : barre de vitesse sous la vidéo (0,75× → 1,30×, pas de 0,05) et comparatif avant / après à curseur.
+/* Tests v4.7–v4.8 : barre de vitesse sous la vidéo (0,75× → 1,30×, pas de 0,05) et comparatif avant / après à curseur.
    node tests/vitesse.test.mjs [medias] [sorties]  — durées vérifiées avec ffprobe ; captures d'écran au format iPhone. */
 import { spawn, execFileSync } from "child_process";
 import fs from "fs";
@@ -39,11 +39,26 @@ for (const [n, name] of [[75, "x075.mp4"], [130, "x130.mp4"]]) {
     await setSpeed(n); await p.evaluate(() => $("#ex").onclick());
     await p.waitForFunction(() => !exporting && !analyzing && /Terminé|Échec/.test(document.querySelector("#st1").textContent), null, { timeout: 1800000 });
     const f = await save(path.join(OUT, name)), st = probe(f), vd = st.find(x => x.codec_type === "video"), ad = st.find(x => x.codec_type === "audio"), want = src / (n / 100);
-    return { ok: Math.abs(vd.duration - want) < .12 && !!ad && Math.abs(ad.duration - want) < .2, info: "vidéo " + (+vd.duration).toFixed(2) + " s, son " + (ad ? (+ad.duration).toFixed(2) + " s" : "absent") } });
+    const tm = await p.evaluate(() => window.__timing || "");
+    /* v4.8 : la conversion lit la vidéo en continu (lecture séquentielle), plus image par image en cherchant */
+    return { ok: Math.abs(vd.duration - want) < .12 && !!ad && Math.abs(ad.duration - want) < .2 && /seq diff/.test(tm) && !/lecture classique/.test(tm), info: "vidéo " + (+vd.duration).toFixed(2) + " s, son " + (ad ? (+ad.duration).toFixed(2) + " s" : "absent") + " ; " + (tm.match(/\[.*\]/) || ["?"])[0] } });
   await test("Comparatif à curseur proposé, original synchronisé à la même vitesse", async () => {
     const r = await p.evaluate(() => ({ ba: !$("#ba").hidden, k: baK, old: !!document.querySelector(".bag") }));
     return { ok: r.ba && Math.abs(r.k - n / 100) < 1e-9 && !r.old, info: JSON.stringify(r) } });
 }
+await test("v4.8 : image intermédiaire du ralenti calculée par la carte graphique, identique à l'ancienne méthode (hors bords)", async () => {
+  const r = await p.evaluate(() => {
+    const W = 320, H = 560, mk = dx => { const c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+      for (let y = 0; y < H; y += 20) for (let k = -40; k < W + 40; k += 20) { x.fillStyle = "hsl(" + ((k * 7 + y * 3) % 360) + ",70%," + (30 + (k + y) % 40) + "%)"; x.fillRect(k + dx, y, 20, 20) } return c };
+    const A = mk(0), B = mk(6), fl = mfFlow(A, B, W, H); if (!fl) return { ok: false, info: "pas de mouvement détecté" };
+    const out = [];
+    for (const t of [.25, .5, .75]) { const g = document.createElement("canvas"), k = document.createElement("canvas"); g.width = k.width = W; g.height = k.height = H;
+      const okg = MFG.blend(g.getContext("2d"), A, B, t, W, H, fl); window.__mfg2d = true; mfBlend(k.getContext("2d"), A, B, t, W, H, fl); window.__mfg2d = false;
+      const dg = g.getContext("2d").getImageData(0, 0, W, H).data, dk = k.getContext("2d").getImageData(0, 0, W, H).data; let se = 0, n = 0;
+      for (let y = 24; y < H - 24; y++) for (let x = 24; x < W - 24; x++) { const o = (y * W + x) * 4; for (let c = 0; c < 3; c++) { const e = dg[o + c] - dk[o + c]; se += e * e; n++ } }
+      out.push({ t, gl: okg, psnr: +(10 * Math.log10(65025 / Math.max(se / n, 1e-9))).toFixed(1) }) }
+    return { ok: out.every(o => o.gl && o.psnr > 30), info: JSON.stringify(out) + (window.__mfgErr ? " err " + window.__mfgErr : "") } });
+  return r });
 await setSpeed(100);
 await test("Export à 1× : chemin habituel (pas de plan Time Repair), comparatif à curseur", async () => {
   await p.evaluate(() => { window.__sawPlan = false; const o = TR.go; TR.go = function () { window.__sawPlan = true; return o.apply(this, arguments) }; $("#ex").onclick() });

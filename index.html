@@ -530,7 +530,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v4.7";/* seul endroit où changer le numéro de version */
+const VER="v4.8";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -2200,15 +2200,25 @@ $("#ex").onclick=async()=>{
     const go=k=>{if(poolUp&&k<reqs.length)pend[k]=seekEl(els[k%POOL],Math.min((reqs[k]+.5)/OFPS,v.duration-.001))};
     let dfg=null;
     if(!isPlan&&$("#o_defl").checked&&window.VideoDecoder){msg("Mesure du scintillement…");const Ltr=await lumaTrace(off,total,OFPS);if(Ltr&&Ltr.length===total){dfg=flickerGains(Ltr);window.__dfgL=Ltr;window.__dfg=Array.from(dfg)}else msg("Anti-scintillement indisponible pour cette vidéo : elle est traitée sans.")}
-    /* lecture séquentielle (bien plus rapide que de chercher chaque image) */
-    if(!isPlan&&window.VideoDecoder&&!window.__noseq&&(cv.width*cv.height<=2073600*1.2||SRX.remote)){/* v4.5 : avec Kaggle, toujours (4K compris) */
-      rdr=await makeSeq(off,OFPS);rdr0=!!rdr;
+    /* lecture séquentielle (bien plus rapide que de chercher chaque image).
+       v4.8 : aussi pour les vidéos ralenties / accélérées (le plan avance dans le temps : images sautées ou répétées)
+       et pour la prolongation (quelques sauts en arrière : la lecture repart de l'image clé voisine).
+       Seule la lecture à l'envers (un retour en arrière à chaque image) garde l'ancienne méthode. */
+    let pBack=0;if(isPlan){let mx=-1;for(const pp of plan){if(pp.a<mx-1)pBack++;mx=Math.max(mx,pp.b!=null?pp.b:pp.a)}}
+    const seqPlanOK=!isPlan||pBack<=Math.max(2,plan.length/45);
+    if(seqPlanOK&&window.VideoDecoder&&!window.__noseq&&(cv.width*cv.height<=2073600*1.2||SRX.remote||isPlan)){/* v4.5 : avec Kaggle, toujours (4K compris) */
+      rdr=await makeSeq(isPlan?plan[0].a:off,OFPS);rdr0=!!rdr;
     }
+    let pMax=-1;
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
     poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();
     for(let i=0;i<total;i++){
       if(cancel||err)break;
       const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
+      /* saut en arrière dans un plan (prolongation) : la lecture séquentielle repart de là */
+      if(rdr&&isPlan&&pl.a<pMax-1){rdr.close();rdr=await makeSeq(pl.a,OFPS);pMax=-1;
+        if(!rdr){window.__seqInfo="seq relance impossible";q=0;for(let z=0;z<i;z++){q+=plan[z].b!=null?2:1}await initPool();poolMode=true;for(let z=q;z<q+POOL;z++)go(z)}}
+      pMax=Math.max(pMax,pl.b!=null?pl.b:pl.a);
       if(rdr){
         try{
           const ca=await rdr.need(pl.a);src=ca;q++;
@@ -2344,14 +2354,15 @@ function mfFlow(elA,elB,vw,vh){
   const gx=MF.gx,gy=Math.max(3,Math.round(gx*vh/vw)),R=4,P=3;
   const ux=new Float32Array((gx+1)*(gy+1)),uy=new Float32Array((gx+1)*(gy+1)),cf=new Float32Array((gx+1)*(gy+1));
   let mx=0;
+  const M=R+P,pw=fw+2*M,ph=fh+2*M,pad=G=>{const o=new Float32Array(pw*ph);for(let y=0;y<ph;y++){const sy=Math.min(fh-1,Math.max(0,y-M));for(let x=0;x<pw;x++)o[y*pw+x]=G[sy*fw+Math.min(fw-1,Math.max(0,x-M))]}return o},Ap=pad(A),Bp=pad(B);
   for(let j=0;j<=gy;j++)for(let i=0;i<=gx;i++){
     const cx=Math.round(i/gx*(fw-1)),cy=Math.round(j/gy*(fh-1));
     let best=1e30,bx=0,by=0,zero=0;const E=new Float32Array((2*R+1)*(2*R+1));
+    /* v4.8 : mêmes calculs, sur des copies bordées (bord répété) : plus aucun test de bord dans la boucle (bien plus rapide) */
     for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){
       let s=0;
-      for(let yy=-P;yy<=P;yy++){const ya=Math.min(fh-1,Math.max(0,cy+yy)),yb=Math.min(fh-1,Math.max(0,cy+yy+dy));
-        for(let xx=-P;xx<=P;xx++){const xa=Math.min(fw-1,Math.max(0,cx+xx)),xb=Math.min(fw-1,Math.max(0,cx+xx+dx));
-          const d=A[ya*fw+xa]-B[yb*fw+xb];s+=d*d}}
+      for(let yy=-P;yy<=P;yy++){let oa=(cy+yy+M)*pw+cx-P+M,ob=(cy+yy+dy+M)*pw+cx-P+dx+M;
+        for(let xx=0;xx<=2*P;xx++){const d=Ap[oa++]-Bp[ob++];s+=d*d}}
       E[(dy+R)*(2*R+1)+dx+R]=s;if(dx===0&&dy===0)zero=s;
       if(s<best||(s===best&&Math.abs(dx)+Math.abs(dy)<Math.abs(bx)+Math.abs(by))){best=s;bx=dx;by=dy}
     }
@@ -2397,9 +2408,59 @@ function mfDrawWarped(ctx,img,fl,vw,vh,k,alpha){
   }
   ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;
 }
+/* v4.8 : la même image intermédiaire calculée par la carte graphique en une seule passe (WebGL).
+   Avant : environ 1 200 petits dessins découpés par image (triangles), très lent sur les ralentis.
+   Le déplacement est interpolé en douceur entre les points de la grille (au lieu de triangles plats) et les bords
+   reprennent le pixel le plus proche au lieu de laisser un liseré vide. En cas d'échec : ancienne méthode. */
+const MFG={gl:null,bad:false,
+  init(){
+    if(this.gl||this.bad)return this.gl;
+    try{
+      const c=document.createElement("canvas"),gl=c.getContext("webgl",{premultipliedAlpha:false,preserveDrawingBuffer:true,antialias:false,depth:false,stencil:false});
+      if(!gl)throw 0;
+      const hp=gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER,gl.HIGH_FLOAT);if(!hp||hp.precision<16)throw 0;
+      const sh=(t,src)=>{const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o};
+      const pr=gl.createProgram();
+      gl.attachShader(pr,sh(gl.VERTEX_SHADER,"attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}"));
+      gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,`precision highp float;varying vec2 uv;uniform sampler2D A,B,F;uniform vec2 G,S;uniform float t,R;
+        vec2 fl(vec2 q){vec4 e=texture2D(F,(q+.5)/(G+1.));return (vec2(e.r*255.*256.+e.g*255.,e.b*255.*256.+e.a*255.)/65535.*2.-1.)*R;}
+        void main(){vec2 d=vec2(uv.x,1.-uv.y),g=d*G,i=min(floor(g),G-1.),f=g-i;
+          vec2 u=mix(mix(fl(i),fl(i+vec2(1.,0.)),f.x),mix(fl(i+vec2(0.,1.)),fl(i+vec2(1.,1.)),f.x),f.y)*S;
+          vec4 a=texture2D(A,clamp(d-t*u,0.,1.)),b=texture2D(B,clamp(d+(1.-t)*u,0.,1.));
+          gl_FragColor=vec4(mix(a.rgb,b.rgb,t),1.);}`));
+      gl.linkProgram(pr);if(!gl.getProgramParameter(pr,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(pr));
+      gl.useProgram(pr);const bf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,bf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+      const lp=gl.getAttribLocation(pr,"p");gl.enableVertexAttribArray(lp);gl.vertexAttribPointer(lp,2,gl.FLOAT,false,0,0);
+      const tex=(n,lin)=>{const o=gl.createTexture();gl.activeTexture(gl.TEXTURE0+n);gl.bindTexture(gl.TEXTURE_2D,o);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,lin?gl.LINEAR:gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,lin?gl.LINEAR:gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return o};
+      this.tA=tex(0,true);this.tB=tex(1,true);this.tF=tex(2,false);
+      gl.uniform1i(gl.getUniformLocation(pr,"A"),0);gl.uniform1i(gl.getUniformLocation(pr,"B"),1);gl.uniform1i(gl.getUniformLocation(pr,"F"),2);
+      this.uG=gl.getUniformLocation(pr,"G");this.uS=gl.getUniformLocation(pr,"S");this.ut=gl.getUniformLocation(pr,"t");this.uR=gl.getUniformLocation(pr,"R");
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);this.c=c;this.gl=gl;
+    }catch(e){this.bad=true;this.gl=null;window.__mfgErr=String((e&&e.message)||e)}
+    return this.gl},
+  blend(ctx,elA,elB,t,vw,vh,fl){
+    const gl=this.init();if(!gl)return false;
+    try{
+      const {ux,uy,gx,gy,fw,fh}=fl,n=(gx+1)*(gy+1);let R=1;for(let q=0;q<n;q++)R=Math.max(R,Math.abs(ux[q]),Math.abs(uy[q]));
+      const d=new Uint8Array(n*4),enc=x=>Math.max(0,Math.min(65535,Math.round((x/R*.5+.5)*65535)));
+      for(let q=0;q<n;q++){const a=enc(ux[q]),b=enc(uy[q]);d[q*4]=a>>8;d[q*4+1]=a&255;d[q*4+2]=b>>8;d[q*4+3]=b&255}
+      if(this.c.width!==vw||this.c.height!==vh){this.c.width=vw;this.c.height=vh}
+      gl.viewport(0,0,vw,vh);
+      gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,this.tA);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,elA);
+      gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,this.tB);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,elB);
+      gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,this.tF);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gx+1,gy+1,0,gl.RGBA,gl.UNSIGNED_BYTE,d);
+      gl.uniform2f(this.uG,gx,gy);gl.uniform2f(this.uS,1/fw,1/fh);gl.uniform1f(this.ut,t);gl.uniform1f(this.uR,R);
+      gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+      if(gl.getError()!==gl.NO_ERROR||gl.isContextLost())throw new Error("webgl");
+      ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.clearRect(0,0,vw,vh);ctx.drawImage(this.c,0,0);return true;
+    }catch(e){this.bad=true;window.__mfgErr=String((e&&e.message)||e);return false}}
+};
 /* t = poids de B (0..1). Renvoie true si la déformation a été appliquée, false : simple fondu. */
 function mfBlend(ctx,elA,elB,t,vw,vh,fl){
   if(!fl){ctx.globalAlpha=1;ctx.drawImage(elA,0,0);ctx.globalAlpha=t;ctx.drawImage(elB,0,0);ctx.globalAlpha=1;return false}
+  if(!window.__mfg2d&&MFG.blend(ctx,elA,elB,t,vw,vh,fl))return true;
   /* A(x) ≈ B(x+u) : l'image intermédiaire I(x) = (1-t)·A(x - t·u) + t·B(x + (1-t)·u) */
   /* on copie d'abord chaque image dans un canevas : dessiner plusieurs centaines de fois depuis un élément vidéo sature la mémoire de l'iPhone */
   if(!MF.ca){MF.ca=document.createElement("canvas");MF.cb=document.createElement("canvas")}
@@ -2595,9 +2656,13 @@ const TR={
     if(how==="sans")return{why:"son retiré à ta demande"};
     if(rev&&how!=="inverse")return{why:"son retiré : un son à l’envers n’a en général pas de sens (choisis « Inversé » pour le garder)"};
     if(await hasSound(curFile)===false)return{why:"ta vidéo n’a pas de son"};
-    let ab;try{ab=await decodeAudioAny(await demuxAudio(curFile),curFile)}catch(e){return{why:"le son n’a pas pu être lu"}}
-    const sr=ab.sampleRate,i0=Math.max(0,Math.round(a*sr)),i1=Math.min(ab.length,Math.round(b*sr)),C=Math.min(2,ab.numberOfChannels);
-    let ch=[];for(let c=0;c<C;c++)ch.push(ab.getChannelData(c).slice(i0,i1));ab=null;
+    let ab=null,cut=false,raw=null;try{raw=await demuxAudio(curFile)}catch(e){}
+    /* v4.8 : « Voix plus claire » est gardée avec la vitesse (avant, elle était ignorée) */
+    if($("#o_voice").checked&&!rev){try{msg("Nettoyage du son…");ab=await voiceClean(raw,curFile,a,b,true);cut=true}catch(e){ab=null;window.__voiceErr=e}}
+    if(!ab){try{ab=await decodeAudioAny(raw,curFile)}catch(e){return{why:"le son n’a pas pu être lu"}}}
+    raw=null;
+    const sr=ab.sampleRate,i0=cut?0:Math.max(0,Math.round(a*sr)),i1=cut?ab.length:Math.min(ab.length,Math.round(b*sr)),C=Math.min(2,ab.numberOfChannels);
+    let ch=[];for(let c=0;c<C;c++)ch.push(cut?ab.getChannelData(c):ab.getChannelData(c).slice(i0,i1));ab=null;
     if(Math.abs(s-1)>1e-3){
       if(how==="cassette"){const n=Math.floor(ch[0].length/s);ch=ch.map(x=>{const y=new Float32Array(n);for(let i=0;i<n;i++){const p=i*s,j=Math.floor(p),f=p-j;y[i]=x[j]*(1-f)+(j+1<x.length?x[j+1]:0)*f}return y})}
       else{msg("Son : adaptation de la durée (hauteur conservée)…");await wait(20);ch=TR.stretch(ch,s)}}

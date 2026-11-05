@@ -160,3 +160,7 @@ Case Kaggle retenue entre deux ouvertures (avant : décochée à chaque ouvertur
 
 ## v4.7 (5 nov. 2026)
 Barre de vitesse 0,75–1,30× (objet SPD dans index.html ; export via TR.go(vitesse), window.__planK garde vitesse et début pour le comparatif). Comparatif vidéo à curseur (#bsx, baSplit, baK) à la place de la grille côte à côte.
+
+## v4.8 (5 nov. 2026)
+Vitesse changée (barre ou Time Repair) : l'export lit la vidéo avec SeqReader (makeSeq) au lieu de la réserve de 3 lecteurs qui cherchent chaque image. Condition : plan qui avance (moins d'un retour en arrière pour 45 images) ; un retour en arrière relance makeSeq à cet endroit (prolongation). Lecture à l'envers : ancienne méthode. Image intermédiaire du ralenti : objet MFG (WebGL, une passe, déplacement interpolé entre les points de grille, bords répétés) ; repli automatique sur mfDrawWarped (2D) en cas d'échec, window.__mfg2d=true force l'ancienne méthode. mfFlow : copies bordées, résultat identique au bit près. « Voix plus claire » appliquée avant l'adaptation de durée (TR.audio).
+Mesure faite par le propriétaire avant correctif (diagnostic du 5 nov., v4.7) : export à 0,85× d'une vidéo 624×1232 de 58 s non terminé.
