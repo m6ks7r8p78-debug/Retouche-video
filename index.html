@@ -518,7 +518,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v4.5";/* seul endroit où changer le numéro de version */
+const VER="v4.6";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -1129,9 +1129,11 @@ async function stabEnable(on){
    seules « mode rapide », « qualité maximale » et « fluidité » gardent le choix d'une vidéo à l'autre. */
 const pref=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
 const OPT_AFTER={o_stab:e=>stabEnable(e.checked),o_defl:()=>draw(),o_max:()=>{SRX.pc=null;SRX.key="";updateEst();draw()}};
-["o_stab","o_voice","o_defl","o_dust","o_fast","o_max","o_fluid"].forEach(id=>{const e=$("#"+id);
+["o_stab","o_voice","o_defl","o_dust","o_fast","o_max","o_fluid","o_srv"].forEach(id=>{const e=$("#"+id);
   e.addEventListener("change",()=>{pref(id,e.checked?"1":"0");if(id==="o_max")SRX.autoOff=null;if(OPT_AFTER[id])OPT_AFTER[id](e)})});
 $("#o_fast").checked=pref("o_fast")==="1";$("#o_max").checked=(pref("o_max")||"1")==="1";
+/* v4.6 : la case Kaggle est retenue ; par défaut, cochée dès qu'un jeton est enregistré (avant : décochée à chaque ouverture) */
+{const sv=$("#o_srv");if(sv)sv.checked=(pref("o_srv")||(window.KG&&KG.actif()?"1":"0"))==="1"}
 /* ===== Découpe début/fin ===== */
 function trimRange(){const d=v.duration||0;return[$("#t_in").value/1000*d,$("#t_out").value/1000*d]}
 function trimUpdate(src){
@@ -1481,7 +1483,7 @@ const DIAG={last:null,
   ctx(){const o=id=>{const e=$("#"+id);return e?e.checked:null};
     return{ver:VER,ua:navigator.userAgent,ecran:screen.width+"x"+screen.height+"@"+(window.devicePixelRatio||1),coeurs:navigator.hardwareConcurrency||0,
       mode,src:mode==="video"?v.videoWidth+"x"+v.videoHeight+" "+(Math.round((v.duration||0)*10)/10)+"s "+(Math.round(OFPS*10)/10)+"i/s "+(curFile?(curFile.size/1048576).toFixed(0)+"Mo":""):"photo",
-      taille:$("#q")?$("#q").value:"",options:{ia:o("o_max"),rapide:o("o_fast"),stab:o("o_stab"),scint:o("o_defl"),pouss:o("o_dust"),voix:o("o_voice"),fluide:o("o_fluid")},
+      taille:$("#q")?$("#q").value:"",options:{ia:o("o_max"),kaggle:o("o_srv"),jeton:!!(window.KG&&KG.actif()),ui:(()=>{try{return localStorage.getItem("ui_mode")||"simple"}catch(e){return "?"}})(),rapide:o("o_fast"),stab:o("o_stab"),scint:o("o_defl"),pouss:o("o_dust"),voix:o("o_voice"),fluide:o("o_fluid")},
       filtre:FLT.sel>=0?(FLT.sel+(FLT.sel2>=0?"+"+FLT.sel2+"@"+FLT.mx:"")):"aucun",
       timing:window.__timing||"",seq:window.__seqInfo||"",
       /* réglages réellement appliqués (pour comprendre un rendu trop clair, trop sombre…) : des nombres seulement, aucune image */
@@ -2109,6 +2111,7 @@ $("#ex").onclick=async()=>{
     /* IA rapide (v3.4) : toutes les images IA sont calculées sur les cartes graphiques gratuites du compte Kaggle,
        puis relues ici à la place du calcul IA du téléphone ; tout le reste de l'export est inchangé */
     SRX.remote=null;SRX.idx=-1;SRX.miss=0;SRX.remoteErr=null;
+    try{window.__simpleSync&&window.__simpleSync()}catch(e){}
     if(SRX.on()&&(SRX.fits(v)||SRX.srvOK())&&window.KG&&$("#o_srv")&&$("#o_srv").checked){
       const why=isPlan?"Vitesse et sens (Time Repair)":fluid?"« Mouvement plus fluide »":$("#o_dust").checked?"« Anti-poussière »":!window.VideoDecoder?"la lecture image par image (iOS trop ancien)":null;
       if(why)throw new Error("L’IA rapide sur serveur ne fonctionne pas encore avec "+why+". Décoche l’une des deux options, puis relance.");
@@ -3171,7 +3174,8 @@ try{if("serviceWorker" in navigator&&location.protocol==="https:"&&/github\.io$/
   apply();
   /* l'app peut changer la case IA d'elle-même (ex. vidéo trop longue pour l'iPhone) : on garde l'interrupteur à jour */
   if(mx)mx.addEventListener("change",()=>{if(ia&&ia.checked!==mx.checked){ia.checked=mx.checked;hint()}});
-  setInterval(()=>{if(m==="simple"&&ia&&mx&&ia.checked!==mx.checked)syncFromApp();else if(m==="simple")hint()},1500);
+  setInterval(()=>{if(m==="simple")syncFromApp()},1000);/* v4.6 : resynchronise toujours (Kaggle chargé après le démarrage) */
+  window.__simpleSync=()=>{if(m==="simple")syncFromApp()};
 })();
 </script>
 </body>

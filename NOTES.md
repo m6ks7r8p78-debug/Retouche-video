@@ -154,3 +154,6 @@ En-tête centré : la version (pastille bien lisible) est juste à côté du nom
 
 ## v4.5 (5 nov. 2026)
 Kaggle en 4K : la lecture image par image exacte est toujours utilisée avec Kaggle (avant : limitée au Full HD, d’où « la lecture image par image s’est interrompue » après le calcul). Vérification de cette lecture AVANT tout envoi à Kaggle.
+
+## v4.6 (5 nov. 2026)
+Case Kaggle retenue entre deux ouvertures (avant : décochée à chaque ouverture, l’écran annonçait Kaggle mais l’IA tournait sur le téléphone ou pas du tout). Par défaut cochée dès qu’un jeton existe ; mode simple resynchronisé chaque seconde et juste avant l’export. Diagnostic : options.kaggle, options.jeton, options.ui.
