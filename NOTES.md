@@ -65,6 +65,11 @@ Domaines libres vérifiés le 5 nov. 2026 : retoucheproai.com / .fr / .app.
 Le propriétaire veut une app gratuite rentabilisée par des petites pubs + une pub de 3–5 s avant le téléchargement.
 Note : `tests/v3.test.mjs` a 3 échecs (« Photo sombre … selectOption ») déjà présents en v4.8, sans lien avec les pubs.
 
+## v6.2 (5 nov. 2026) — IA rapide sans lecture image par image
+Si makeSeq échoue (raison dans __seqInfo), l'export avec IA rapide passe par le lecteur vidéo (pool) ; avant la boucle,
+SRX.caler(nums,fps) choisit SRX.decal ; SRX.rang(a) = map(a + decal) (décalage en temps, juste aux extrémités).
+Test : `NOSEQ=1 node tests/ia_serveur_vitesse.test.mjs` (lancer chaque cas avec CAS : en série, le Chrome de test bloque parfois).
+
 ## v6.1 (5 nov. 2026) — IA rapide sur serveur avec la vitesse
 `SRX.idx` vaut un rang (image simple) ou {a,b,w,fl} (image intermédiaire : fondu `mfBlend` des deux images du serveur).
 Avec `SRX.remote`, la lecture image par image (`rdr`) est imposée même à l'envers ; les retours en arrière recréent un

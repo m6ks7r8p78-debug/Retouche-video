@@ -1,5 +1,13 @@
 # Journal des versions
 
+## v6.2 — 5 novembre 2026 (IA rapide : vidéos que l'iPhone ne relit pas image par image)
+- Avant : « IA rapide : cette vidéo ne peut pas être relue image par image sur ton iPhone » (vidéo HD/HDR récente), export refusé.
+- Maintenant : l'original est lu par le lecteur vidéo, et le rang de l'image du serveur est recalé sur lui (SRX.caler :
+  8 images loin des bords, décalage −4…+4, corrélation de la luminance, insensible aux couleurs HDR). Refus seulement si le
+  fichier est illisible ou si la correspondance est < 60 %. Message d'erreur sans le conseil incohérent « Choisis Full HD ».
+- Diagnostic : raison précise de l'échec de la lecture image par image et résultat du recalage (champ `seq`).
+- Tests (lecture image par image coupée, NOSEQ=1) : 0,75× 43,9 dB (min 40,6) ; 1,30× 43,4 dB ; vitesse normale 43,8 dB.
+
 ## v6.1 — 5 novembre 2026 (IA rapide sur serveur + vitesse)
 - L'IA rapide sur serveur marche maintenant avec la barre de vitesse (0,75× à 1,30×), Time Repair (ralenti, accéléré,
   lecture à l'envers) et « Mouvement plus fluide ». Avant, l'export s'arrêtait avec « ne fonctionne pas encore avec Vitesse et sens ».
