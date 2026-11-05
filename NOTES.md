@@ -102,3 +102,8 @@ chaleur −0,06 fixe, dominante 0,1 sans effet, nettoyage des couleurs qui déri
 - Sur la vidéo de référence : 0,63 / 0,21 / −0,063, contre 0,67 / 0,20 / −0,057 réglés à la main par la personne.
 - Contraste −0,10, couleurs +0,17, luminosité −0,02, nettoyage −0,05 restent appliqués par-dessus la base de l'analyse.
 - LEARN.adapt : base fixe (sh 0,3, dn 0,2, cs 0,7) au lieu du réglage précédent → plus de dérive.
+
+## v3.8 (5 nov. 2026) — fin de l'accumulation d'une vidéo à l'autre
+Diagnostics v3.7 (5 vidéos) : netteté, bruit et chaleur varient bien selon la vidéo, mais luminosité −0,02 / contraste 0,90 /
+couleurs 1,33 restaient identiques et le nettoyage baissait de 0,05 à chaque vidéo : ces réglages repartaient de la vidéo précédente.
+Correctif : analyze() (lumière, contraste, couleurs de la vidéo courante) est relancée avant le style ; nettoyage repart de 0,7.

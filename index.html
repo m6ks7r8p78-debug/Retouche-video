@@ -500,7 +500,7 @@ dialog.mdl::backdrop{background:rgba(10,8,20,.55)}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v3.7";/* seul endroit où changer le numéro de version */
+const VER="v3.8";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -1325,6 +1325,8 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       /* v3.7 : réglages calculés pour CHAQUE vidéo d'après ses mesures (avant, netteté 0,3 et bruit 0,2 fixes, chaleur fixe :
          toutes les vidéos recevaient presque les mêmes réglages). Base calée sur le style de la personne (5 nov. 2026). */
       {const R={};S.forEach(([k,,lo,hi])=>R[k]=[lo,hi]);const cl=(k,x)=>+Math.max(R[k][0],Math.min(R[k][1],x)).toFixed(3);
+        try{analyze()}catch(e){Object.assign(P,{br:0,co:1,sa:1})}       /* v3.8 : base lumière/contraste/couleurs recalculée sur CETTE vidéo (avant : reprise de la vidéo précédente, d'où l'accumulation) */
+        P.cs=r.o.cs!=null?r.o.cs:.7;
         const lsh=(r.o.sh||.3)-.3,ldn=r.o.dn-(m.noise>=REC.T.noiseHi?.5:m.noise>=REC.T.noiseMid?.35:.2);/* part apprise, conservée */
         const sharp=m.sharp||30,noise=m.noise||0,g=m.gains;
         P.sh=cl("sh",Math.max(.2,Math.min(.8,1-sharp/70))+lsh);           /* image floue → plus de netteté ; déjà nette → presque rien */
