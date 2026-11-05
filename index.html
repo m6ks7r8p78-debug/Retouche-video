@@ -583,7 +583,7 @@ body:not(.loaded) #picke{grid-column:1/-1}
 <script src="kaggle.js"></script>
 <script src="camera.js"></script>
 <script>
-const VER="v6.1";/* seul endroit où changer le numéro de version */
+const VER="v6.2";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -896,7 +896,7 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
   /* IA rapide : envoi à Kaggle, attente, récupération ; renvoie un lecteur d'images {image(rang), fermer()} */
   async lancerServeur(ow,oh,gop){
     if(!KG.actif())throw new Error("IA rapide : ajoute d’abord ton jeton Kaggle dans ⚙️ Paramètres.");
-    const inf=await demuxVideo(curFile);if(!inf||!inf.ns)throw new Error("IA rapide : vidéo illisible pour l’envoi.");
+    const inf=await demuxVideo(curFile);if(!inf||!inf.ns)throw new Error("IA rapide : vidéo illisible pour l’envoi.");SRX.srcInf=inf;
     const mo=x=>Math.round(x/1048576),reçu=Math.round(ow*oh*inf.ns*0.55*(gop?1.8:1)/1048576);
     if(!(await STUDIO.consent("cloud")))throw new Error("IA rapide non autorisée : rien n’a été envoyé.");
     if(!confirm("IA rapide sur serveur — envoi de ta vidéo\n\nFournisseur : Kaggle (Google), dans un espace PRIVÉ de ton compte.\nModèle : Real-ESRGAN general v3 (le même que dans l’app).\nBut : calculer la restauration IA de chaque image ("+inf.ns+" images, résultat en "+ow+"×"+oh+").\nConservation : la vidéo et le résultat sont supprimés de Kaggle dès le résultat récupéré, ou en cas d’échec.\nEnvoi : "+mo(curFile.size)+" Mo ; réception : environ "+reçu+" Mo (Wi-Fi conseillé).\n\nEnvoyer maintenant ?"))throw new Error("envoi refusé : rien n’a été envoyé.");
@@ -920,6 +920,24 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
           try{rr.close()}catch(e){}rr=new SeqReader(r.file,ri);rr.setFps(0);await rr.open(k)}
         const f=await rr.need(k);dern=k;x.drawImage(f,0,0,ow,oh);return c},
       async fermer(){try{rr.close()}catch(e){}try{const d=await navigator.storage.getDirectory();await d.removeEntry("ia-serveur.mp4")}catch(e){}}}},
+  /* v6.2 : l'original est lu par le lecteur vidéo (pas image par image) : on cherche quel rang du résultat du serveur correspond
+     à l'image affichée (décalage constant de −4 à +4 images, l'horloge du fichier pouvant commencer après 0). Comparaison de la forme
+     de l'image (corrélation de la luminance), insensible aux différences de couleurs entre lecteurs (HDR). */
+  async caler(nums,fps){
+    const W=48,H=27,t=document.createElement("canvas");t.width=W;t.height=H;const x=t.getContext("2d",{willReadFrequently:true});
+    const lum=el=>{x.drawImage(el,0,0,W,H);const d=x.getImageData(0,0,W,H).data,o=new Float32Array(W*H);let m=0;for(let i=0;i<o.length;i++){o[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];m+=o[i]}m/=o.length;let s2=0;for(let i=0;i<o.length;i++){o[i]-=m;s2+=o[i]*o[i]}s2=Math.sqrt(s2)||1;for(let i=0;i<o.length;i++)o[i]/=s2;return o};
+    const mp=new SeqReader(curFile,SRX.srcInf);mp.setFps(fps);SRX.mapr=mp;
+    const R=4,sc=new Float32Array(2*R+1),tot=mp.total;let n=0;
+    for(const a of [...new Set(nums)].sort((p,q)=>p-q)){
+      if(cancel)throw new Error("annulé");
+      await seekEl(v,Math.min((a+.5)/fps,v.duration-.001));const ref=lum(v),r0=mp.map(a);
+      for(let d=-R;d<=R;d++){const k=r0+d;if(k<0||k>=tot){sc[d+R]+=-1;continue}const o=lum(await SRX.remote.image(k));let c=0;for(let i=0;i<o.length;i++)c+=o[i]*ref[i];sc[d+R]+=c}
+      n++}
+    let best=0;for(let d=1;d<sc.length;d++)if(sc[d]>sc[best]+1e-6||(Math.abs(sc[d]-sc[best])<=1e-6&&Math.abs(d-R)<Math.abs(best-R)))best=d;
+    const c=sc[best]/Math.max(1,n);SRX.decal=best-R;window.__iaCalage={decalage:SRX.decal,correlation:+c.toFixed(3)};
+    if(c<.6)throw new Error("le résultat du serveur ne correspond pas aux images de ta vidéo (correspondance "+Math.round(c*100)+" %)");
+  },
+  rang(a){const m=SRX.mapr;return Math.max(0,Math.min(m.total-1,m.map(a)+(SRX.decal||0)))},
   /* dessine el restaurée par l'IA ; renvoie false si l'IA n'est pas utilisable (l'appelant dessine alors normalement) */
   async render(el,onTile,key){
     if(!SRX.on())return false;
@@ -1181,7 +1199,8 @@ async function makeSeq(start,fps){
   let r=null;
   try{
     const inf=await demuxVideo(curFile);
-    if(!inf||inf.dw!==v.videoWidth||inf.dh!==v.videoHeight)return null;
+    if(!inf){window.__seqInfo="seq fichier illisible";return null}
+    if(inf.dw!==v.videoWidth||inf.dh!==v.videoHeight){window.__seqInfo="seq taille "+inf.dw+"x"+inf.dh+" au lieu de "+v.videoWidth+"x"+v.videoHeight;return null}
     r=new SeqReader(curFile,inf);r.setFps(fps);await r.open(r.map(start));const c0=await r.need(start);
     const t=document.createElement("canvas");t.width=24;t.height=18;const x=t.getContext("2d",{willReadFrequently:true});
     x.drawImage(c0,0,0,24,18);const da=x.getImageData(0,0,24,18).data;
@@ -1601,7 +1620,7 @@ const DIAG={last:null,
       mode,src:mode==="video"?v.videoWidth+"x"+v.videoHeight+" "+(Math.round((v.duration||0)*10)/10)+"s "+(Math.round(OFPS*10)/10)+"i/s "+(curFile?(curFile.size/1048576).toFixed(0)+"Mo":""):"photo",
       taille:$("#q")?$("#q").value:"",options:{ia:o("o_max"),kaggle:o("o_srv"),jeton:!!(window.KG&&KG.actif()),ui:(()=>{try{return localStorage.getItem("ui_mode")||"simple"}catch(e){return "?"}})(),rapide:o("o_fast"),stab:o("o_stab"),scint:o("o_defl"),pouss:o("o_dust"),voix:o("o_voice"),fluide:o("o_fluid")},
       filtre:FLT.sel>=0?(FLT.sel+(FLT.sel2>=0?"+"+FLT.sel2+"@"+FLT.mx:"")):"aucun",
-      timing:window.__timing||"",seq:window.__seqInfo||"",
+      timing:window.__timing||"",seq:(window.__seqInfo||"")+(window.__iaCalage?" ; calage IA "+JSON.stringify(window.__iaCalage):""),
       /* réglages réellement appliqués (pour comprendre un rendu trop clair, trop sombre…) : des nombres seulement, aucune image */
       reglages:Object.fromEntries(Object.entries(P).map(([k,x])=>[k,+(+x).toFixed(3)])),balance:WBG.map(x=>+x.toFixed(3)),protection:PROF.k().hp,profil:PROF.id,appris:(()=>{try{const d=LEARN.get();return d&&d.bias?d.bias:null}catch(e){return null}})(),ia:window.SR?{actif:SR.ok,moteur:SR.engine,vitesse_ms_par_Mpx:SR.speed,raison:SR.why,noyau:window.SRGPU&&SRGPU.kernel||null}:null}},
   hist(){try{return JSON.parse(localStorage.getItem("diag_hist")||"[]")}catch(e){return[]}},
@@ -2243,7 +2262,7 @@ $("#ex").onclick=async()=>{
     if(!cfg)throw new Error("Encodage vidéo non pris en charge.");
     /* IA rapide (v3.4) : toutes les images IA sont calculées sur les cartes graphiques gratuites du compte Kaggle,
        puis relues ici à la place du calcul IA du téléphone ; tout le reste de l'export est inchangé */
-    SRX.remote=null;SRX.idx=-1;SRX.miss=0;SRX.remoteErr=null;
+    SRX.remote=null;SRX.idx=-1;SRX.miss=0;SRX.remoteErr=null;SRX.mapr=null;SRX.decal=0;window.__iaCalage=null;
     try{window.__simpleSync&&window.__simpleSync()}catch(e){}
     if(SRX.on()&&(SRX.fits(v)||SRX.srvOK())&&window.KG&&$("#o_srv")&&$("#o_srv").checked){
       /* v6.1 : la vitesse (barre ou Time Repair, à l'envers compris) et « Mouvement plus fluide » marchent avec l'IA rapide */
@@ -2252,8 +2271,11 @@ $("#ex").onclick=async()=>{
       /* v4.5 : l'IA de Kaggle est relue image par image ; on vérifie AVANT tout envoi que cette lecture marche sur cette vidéo,
          pour ne jamais gaspiller le temps de calcul (avant, en 4K, l'échec n'arrivait qu'après le calcul) */
       {msg("Vérification de la lecture image par image…");const t=await makeSeq(isPlan?window.__plan[0].a:Math.round(tS*OFPS),OFPS);
-        if(!t)throw new Error("IA rapide : cette vidéo ne peut pas être relue image par image sur ton iPhone. Rien n’a été envoyé. Choisis « Full HD » ou décoche « Qualité IA », puis relance.");
-        try{t.close()}catch(e){}}
+        /* v6.2 : si la lecture image par image de l'original échoue (vidéo HDR, format particulier…), l'export lit l'original
+           par le lecteur vidéo, et l'image du serveur à utiliser est recalée sur lui (SRX.caler) : on refuse seulement un fichier illisible */
+        if(t){try{t.close()}catch(e){}}
+        else{const fi=await demuxVideo(curFile).catch(()=>null);
+          if(!fi||!fi.ns)throw new Error("IA rapide : le format de cette vidéo n’est pas lisible pour l’envoi. Rien n’a été envoyé. Décoche « Qualité IA » pour l’améliorer sans IA, ou enregistre-la d’abord dans Photos puis réimporte-la.")}}
       /* lecture à l'envers : beaucoup de retours en arrière → images clés rapprochées dans le résultat du serveur */
       let nb=0;if(isPlan){let mx=-1;for(const pp of window.__plan){if(pp.a<mx-1)nb++;mx=Math.max(mx,pp.b!=null?pp.b:pp.a)}}
       SRX.remote=await SRX.lancerServeur(cv.width,Math.max(2,Math.round(v.videoHeight*(cv.width/v.videoWidth))),nb>Math.max(2,window.__plan?window.__plan.length/45:0)?4:0);
@@ -2333,6 +2355,9 @@ $("#ex").onclick=async()=>{
       rdr=await makeSeq(isPlan?plan[0].a:off,OFPS);rdr0=!!rdr;
     }
     let pMax=-1;
+    if(!rdr&&SRX.remote){msg("IA rapide : recalage des images du serveur sur ta vidéo…");
+      const L=plan?plan.map(pp=>pp.a):Array.from({length:total},(_,k)=>k+off),ns=[0,.2,.4,.6,.8,.99].map(f=>L[Math.min(L.length-1,Math.floor(f*L.length))]);
+      try{await SRX.caler(ns,OFPS)}catch(e){if(cancel)throw e;throw new Error("IA rapide : "+((e&&e.message)||e)+". Rien n’est perdu : décoche « Qualité IA » pour l’améliorer sans IA.")}}
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
     poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();
     for(let i=0;i<total;i++){
@@ -2375,7 +2400,7 @@ $("#ex").onclick=async()=>{
       if(window.__baMode)split=BA.split(i,total);
       let f=null,p1=performance.now();
       try{
-        const p0=performance.now();SRX.idx=!SRX.remote||!rdr?-1:pl.b==null?rdr.map(pl.a):{a:rdr.map(pl.a),b:rdr.map(pl.b),w:pl.w,fl:fcache&&fcache.j===pl.j?fcache.fl:null};if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
+        const p0=performance.now();{const M=!SRX.remote?null:rdr?z=>rdr.map(z):SRX.mapr?z=>SRX.rang(z):null;SRX.idx=!M?-1:pl.b==null?M(pl.a):{a:M(pl.a),b:M(pl.b),w:pl.w,fl:fcache&&fcache.j===pl.j?fcache.fl:null}}if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
         if(rdr)f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       }catch(e){
         if(!rdr||SRX.remote)throw e;

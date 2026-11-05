@@ -52,6 +52,8 @@ const reglages = (srvOn, fluid) => p.evaluate(([s, fl]) => {
   const r = document.querySelector("#o_srv"); if (r.checked !== s) { r.checked = s; r.dispatchEvent(new Event("change")) } }, [srvOn, fluid]);
 const vitesse = n => p.evaluate(n => { const e = $("#spd"); e.value = n; e.dispatchEvent(new Event("input")); e.dispatchEvent(new Event("change")) }, n);
 
+/* NOSEQ=1 : l'original ne peut pas être lu image par image (cas de certaines vidéos d'iPhone) → lecteur vidéo + recalage */
+if (process.env.NOSEQ === "1") await p.evaluate(() => { window.__noseq = true });
 await p.setInputFiles("#f", path.join(MED, VID)); await p.waitForFunction(() => v.videoWidth > 0);
 await p.waitForFunction(() => !REC.pr, null, { timeout: 120000 }).catch(() => {});
 await p.click('[data-q="1920"]');
@@ -74,7 +76,8 @@ for (const [nom, lancer, fluid] of cas.filter(c => !process.env.CAS || new RegEx
     await save(ia);
     const lus = await p.evaluate(() => window.__lus), n1 = nbImages(ref), n2 = nbImages(ia), P = psnr(ref, ia), q = P.q, mn = Math.min(...q), moy = P.m;
     const inter = lus.filter(x => typeof x === "object").length, envers = lus.some((x, i) => i && (typeof x === "number" ? x : x.a) < (typeof lus[i - 1] === "number" ? lus[i - 1] : lus[i - 1].a));
-    return { ok: n1 === n2 && lus.length === n2 && moy > 38 && mn > 30, info: `décalage ${P.d}, ${n2} images (sans IA ${n1}), relues ${lus.length} dont ${inter} intermédiaires${envers ? ", à l'envers" : ""}, -g ${appels[0] && appels[0].gop}, PSNR moyen ${moy.toFixed(1)} dB, min ${mn.toFixed(1)} dB` } });
+    const cal = await p.evaluate(() => window.__iaCalage);
+    return { ok: n1 === n2 && (process.env.NOSEQ !== "1" || !!cal) && lus.length === n2 && moy > 38 && mn > 30, info: `${cal ? "recalage " + JSON.stringify(cal) + ", " : ""}décalage ${P.d}, ${n2} images (sans IA ${n1}), relues ${lus.length} dont ${inter} intermédiaires${envers ? ", à l'envers" : ""}, -g ${appels[0] && appels[0].gop}, PSNR moyen ${moy.toFixed(1)} dB, min ${mn.toFixed(1)} dB` } });
 }
 console.log(errs.length ? "Erreurs de page : " + errs.join(" | ") : "Aucune erreur de page.");
 console.log(res.filter(Boolean).length + " / " + res.length + " réussis");
