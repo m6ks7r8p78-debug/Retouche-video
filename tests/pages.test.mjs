@@ -54,6 +54,19 @@ await test("Marquage IA : une photo JPEG et PNG reçoit les métadonnées IPTC �
   await p.close(); const ok = r["image/jpeg"].xmp && r["image/jpeg"].lisible && r["image/png"].xmp && r["image/png"].lisible && r.erreur;
   return { ok, info: JSON.stringify(r) } });
 
+await test("Premier écran : avant / après qui glisse seul, s’arrête au toucher, carte « écran d’accueil » seulement sur iPhone", async () => {
+  const ios = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+  const p = await b.newPage({ viewport: { width: 390, height: 844 } }); await p.goto(BASE + "index.html"); await p.waitForTimeout(300);
+  const a = await p.evaluate(() => getComputedStyle(document.getElementById("demo")).getPropertyValue("--p")); await p.waitForTimeout(500);
+  const a2 = await p.evaluate(() => getComputedStyle(document.getElementById("demo")).getPropertyValue("--p"));
+  await p.evaluate(() => { const r = document.querySelector("#demo input"); r.dispatchEvent(new Event("pointerdown")); r.value = 20; r.dispatchEvent(new Event("input")) });
+  await p.waitForTimeout(400); const fixe = await p.evaluate(() => getComputedStyle(document.getElementById("demo")).getPropertyValue("--p"));
+  const r = await p.evaluate(() => ({ imgs: [...document.querySelectorAll("#demo img")].every(i => i.complete && i.naturalWidth === 720), inst: !document.getElementById("inst").hidden, h: document.querySelector("header.top").offsetHeight }));
+  await p.close();
+  const q = await b.newPage({ viewport: { width: 390, height: 844 }, userAgent: ios }); await q.goto(BASE + "index.html"); await q.waitForTimeout(200);
+  const instIos = await q.evaluate(() => !document.getElementById("inst").hidden); await q.close();
+  return { ok: a !== a2 && fixe.trim() === "20%" && r.imgs && !r.inst && instIos && r.h < 80, info: `bouge ${a.trim()}→${a2.trim()}, après toucher ${fixe.trim()}, images ${r.imgs}, carte Chrome ${r.inst} / iPhone ${instIos}, en-tête ${r.h}px` } });
+
 await b.close(); srv.kill();
 console.log("\nRésultat : " + res.filter(x => x).length + " réussis, " + res.filter(x => !x).length + " échoués.");
 process.exit(res.every(x => x) ? 0 : 1);

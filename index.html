@@ -290,6 +290,37 @@ body:not(.simple) .simple-only{display:none!important}
 #sai{margin-top:12px}
 #sai .chk{margin:0}
 #s_iah{display:block;font-weight:400;opacity:.8;margin-top:2px}
+
+/* ===== v5.9 : premier écran — en-tête sur une ligne, preuves de confiance, avant / après réel, gros bouton principal ===== */
+header.top{flex-wrap:nowrap!important;justify-content:flex-start!important;gap:8px!important}
+header.top .brand{margin:0 auto 0 0!important;min-width:0}
+header.top .brand span{white-space:nowrap}
+header.top .mdlb{order:0!important}
+body.simple header.top .tag{display:none!important}
+header.top #stb{width:40px;height:40px;padding:0;display:grid;place-items:center;font-size:18px}
+#modeb{padding:9px 12px}
+.confiance{display:flex;flex-wrap:wrap;gap:5px;margin:12px 0 16px;padding:0;list-style:none}
+.confiance li{display:inline-flex;align-items:center;gap:4px;padding:6px 9px;white-space:nowrap;border-radius:999px;background:var(--panel);font:600 12.5px/1.2 var(--fd);color:var(--ink);box-shadow:0 1px 0 var(--line),0 6px 16px -12px rgba(123,92,255,.6)}
+.demo{position:relative;margin:0 0 16px;border-radius:20px;overflow:hidden;aspect-ratio:3/2;background:#2a2238;box-shadow:0 18px 40px -22px rgba(123,92,255,.75);touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.demo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.demo .demo-avant{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--p,50%)) 0 0)}
+.demo .demo-ligne{position:absolute;top:0;bottom:0;left:var(--p,50%);width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 12px rgba(0,0,0,.35)}
+.demo .demo-poignee{position:absolute;top:50%;left:50%;width:42px;height:42px;margin:-21px 0 0 -21px;border-radius:50%;background:#fff;color:#1d1530;display:grid;place-items:center;font:700 17px/1 var(--fd);box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.demo .demo-l{position:absolute;top:12px;padding:5px 10px;border-radius:999px;font:700 12px/1 var(--fd);letter-spacing:.04em;text-transform:uppercase;color:#fff;background:rgba(20,14,32,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.demo .demo-l.avant{left:12px}.demo .demo-l.apres{right:12px;background:linear-gradient(120deg,#ff7a59,#ff3d8b 55%,#7b5cff)}
+.demo input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize;-webkit-appearance:none;appearance:none}
+.demo figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 9px;font:500 12px/1.35 "Instrument Sans",-apple-system,system-ui,sans-serif;letter-spacing:0;color:#fff;background:linear-gradient(transparent,rgba(10,6,20,.6));pointer-events:none}
+.demo input:focus-visible+figcaption{outline:3px solid #fff;outline-offset:-6px}
+body.loaded .demo,body.loaded .confiance{display:none}
+.hero:has(.demo) .steps{display:none}
+body:not(.loaded) .picks{grid-template-columns:1fr 1fr!important;gap:10px!important}
+body:not(.loaded) .pickbtn{min-height:64px!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;text-align:left!important;gap:10px!important;padding:12px 14px!important;font-size:15px!important}
+body:not(.loaded) #pick{grid-column:1/-1;min-height:84px!important;padding:16px 18px!important;font-size:19px!important}
+body:not(.loaded) #pick svg{width:34px;height:34px}
+#pick .simple-sub{display:none}
+body:not(.loaded) #pick .lbl small{display:block;font:500 13px/1.3 var(--fb,inherit);opacity:.9;margin-top:3px}
+body:not(.loaded) #picke{grid-column:1/-1}
+@media (prefers-reduced-motion:reduce){.demo{--p:50%}}
 </style>
 </head>
 <body>
@@ -311,6 +342,15 @@ body:not(.simple) .simple-only{display:none!important}
   <section class="hero">
     <p class="eyebrow">Vidéos et photos anciennes</p>
     <h1>Redonne de l’<em>éclat</em> à tes vieux films de famille 🎞️</h1>
+    <ul class="confiance" aria-label="Nos engagements"><li title="Tes photos et vidéos ne quittent jamais ton téléphone">🔒 100 % privé</li><li>✨ Gratuit</li><li>👤 Sans compte</li></ul>
+    <figure class="demo" id="demo">
+      <picture><source srcset="demo/chat-apres.webp" type="image/webp"><img src="demo/chat-apres.jpg" alt="Après : photo nette, sans blocs ni bruit" width="720" height="480" decoding="async"></picture>
+      <div class="demo-avant"><picture><source srcset="demo/chat-avant.webp" type="image/webp"><img src="demo/chat-avant.jpg" alt="Avant : photo de vieux téléphone, floue et pixelisée" width="720" height="480" decoding="async"></picture></div>
+      <span class="demo-l avant" aria-hidden="true">Avant</span><span class="demo-l apres" aria-hidden="true">Après</span>
+      <div class="demo-ligne" aria-hidden="true"><span class="demo-poignee">⇆</span></div>
+      <input type="range" min="0" max="100" value="50" aria-label="Glisse pour comparer avant et après">
+      <figcaption>Exemple réel : photo de vieux téléphone améliorée par l’app, sans retouche à la main.</figcaption>
+    </figure>
     <p class="lead">Moins de blocs et de bruit, des couleurs plus justes, une image plus nette. Tout est calculé sur ton téléphone : gratuit, sans filigrane, sans inscription, et ça marche même en mode avion.</p>
     <ol class="steps">
       <li><span class="em">📱</span><b>Choisir</b>une vidéo ou une photo</li>
@@ -322,7 +362,7 @@ body:not(.simple) .simple-only{display:none!important}
   <input type="file" id="f" accept="video/*" multiple hidden>
   <input type="file" id="fp" accept="image/*" hidden>
   <div class="picks">
-    <button class="pickbtn main" id="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span class="lbl">Choisir une vidéo</span></button>
+    <button class="pickbtn main" id="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span class="lbl">Choisir une vidéo<small class="simple-sub">Depuis ta photothèque</small></span></button>
     <button class="pickbtn" id="pickp"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg><span class="lbl">Choisir une photo</span></button>
     <button class="pickbtn" id="pickm"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="7" height="10" rx="1.5"/><rect x="14.5" y="7" width="7" height="10" rx="1.5"/><path d="M9.5 12h5"/></svg><span class="lbl">Regrouper des vidéos</span></button>
     <button class="pickbtn wide" id="picke"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M4 21h16"/><path d="M13 7l4 4"/></svg><span class="lbl">Effacer une zone d’une photo <small>(IA)</small></span></button>
@@ -504,7 +544,7 @@ body:not(.simple) .simple-only{display:none!important}
           <div id="flt_s" hidden><label class="help" style="display:block;margin:10px 0 4px">Force du retrait <span class="mono" id="flt_v">100 %</span></label><input type="range" id="flt_r" min="0" max="1" step=".05" value="1" aria-label="Force du retrait">
 </div>
           <p class="help" style="margin:10px 0 0">Retire les filtres de couleur et de lumière. Pas les autocollants, textes, masques ou déformations.</p></div>
-        <button class="btn" id="diagb2" style="margin:0 0 10px">📋 Copier le diagnostic pour Claude</button>
+        <button class="btn" id="diagb2" style="margin:0 0 10px">📋 Copier le diagnostic</button>
         <button class="btn" id="fltb" style="margin:10px 0">Retirer un filtre de réseau social (essai)</button>
         <div class="card" id="trc" style="margin:0 0 14px">
           <h2>Vitesse et sens de lecture</h2>
@@ -540,7 +580,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v5.8";/* seul endroit où changer le numéro de version */
+const VER="v5.9";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -1529,7 +1569,7 @@ setTimeout(()=>{try{DIAG.flush()}catch(e){}},4000);
 $("#diagb2").onclick=async()=>{const b=$("#diagb2");try{DIAG.send("diagnostic",{})}catch(e){}/* réglages de l'instant ajoutés */
   const t=JSON.stringify(DIAG.hist().map(({sent,...x})=>x));
   try{await navigator.clipboard.writeText(t);b.textContent="✓ Copié : colle-le dans la conversation avec Claude"}catch(e){b.textContent="Copie impossible ici"}
-  setTimeout(()=>{b.textContent="📋 Copier le diagnostic pour Claude"},4000)};
+  setTimeout(()=>{b.textContent="📋 Copier le diagnostic"},4000)};
 $("#diagb").onclick=async()=>{const t=JSON.stringify(DIAG.hist().map(({sent,...x})=>x));try{await navigator.clipboard.writeText(t);msg("Diagnostic copié ("+DIAG.hist().length+" mesures) : colle-le dans la conversation avec Claude.")}catch(e){msg("Copie impossible ici.")}};
 /* nom de fichier unique : nom d'origine + numéro qui augmente à chaque export + date et heure (jamais deux fois le même nom) */
 /* fichier MP4 écrit en mémoire par morceaux (moins de mémoire qu'un seul gros tampon : l'iPhone ne recharge pas la page
@@ -3180,12 +3220,26 @@ $("#pvsolo").onclick=()=>{PV.solo=!PV.solo;$("#pvb").hidden=PV.solo;$("#pvs").hi
     PV.tx=drag.tx+e.clientX-drag.x;PV.ty=drag.ty+e.clientY-drag.y;PV.apply()});
   const end=()=>{drag=null;b.style.cursor=PV.z>1?"grab":"default"};b.addEventListener("pointerup",end);b.addEventListener("pointercancel",end);
   window.addEventListener("resize",()=>{if(!$("#pv").hidden)PV.apply()})})();
+/* v5.9 : démonstration avant / après — glisse toute seule tant qu'on n'y touche pas */
+(function(){
+  const d=$("#demo");if(!d)return;const r=d.querySelector("input"),set=v=>d.style.setProperty("--p",v+"%");
+  let auto=!(matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches),t0=performance.now(),vis=true;
+  const stop=()=>{auto=false};r.addEventListener("input",()=>{stop();set(r.value)});["pointerdown","touchstart","keydown"].forEach(e=>r.addEventListener(e,stop,{passive:true}));
+  try{new IntersectionObserver(e=>{vis=e[0].isIntersecting}).observe(d)}catch(e){}
+  (function tick(now){if(!auto)return;if(vis&&!document.hidden&&!document.body.classList.contains("loaded")){const x=50+34*Math.sin((now-t0)/1400);set(x.toFixed(1));r.value=Math.round(x)}requestAnimationFrame(tick)})(t0);
+})();
 /* Raccourci écran d’accueil */
 (function(){
   let seen=false;try{seen=localStorage.getItem("inst")==="1"}catch(e){}
   const sa=window.navigator.standalone||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
-  const b=$("#inst");if(!sa&&!seen)b.hidden=false;
-  $("#instx").onclick=()=>{b.hidden=true;try{localStorage.setItem("inst","1")}catch(e){}};
+  const b=$("#inst"),natif=window.NATIF&&NATIF.actif();
+  /* v5.9 : la consigne Safari ne s'affiche que sur iPhone / iPad ; sur Android, bouton « Installer » du navigateur */
+  const ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  if(!sa&&!seen&&!natif&&ios)b.hidden=false;
+  let invite=null;addEventListener("beforeinstallprompt",e=>{if(sa||seen||natif)return;e.preventDefault();invite=e;
+    b.querySelector("strong").textContent="Installer RetoucheProAI";b.querySelector("p").textContent="Ajoute l’app à ton écran d’accueil : elle s’ouvrira comme une vraie app, en plein écran.";
+    $("#instx").textContent="Installer";b.hidden=false});
+  $("#instx").onclick=async()=>{if(invite){try{invite.prompt();await invite.userChoice}catch(e){}invite=null}b.hidden=true;try{localStorage.setItem("inst","1")}catch(e){}};
 })();
 /* Enregistrement */
 (async()=>{try{if(window.claude&&claude.use)dl=await claude.use("downloads")}catch(e){dl=null}})();

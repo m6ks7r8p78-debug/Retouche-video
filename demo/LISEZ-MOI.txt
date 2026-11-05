@@ -1,0 +1,6 @@
+Démonstration avant / après de la page d'accueil (exemple réel, honnête) :
+- source : photo « chelsea » de scikit-image (CC0), réduite à 320 px et abîmée comme par un vieux téléphone
+  (flou, couleurs ternes, bruit, JPEG très compressé) — fichier tests/… recréé par le script du 5 nov. 2026 ;
+- « après » : cette image basse qualité traitée par RetoucheProAI v5.8 lui-même (rendu Équilibré, IA qualité maximale),
+  sans aucune retouche manuelle ;
+- « avant » : la même image basse qualité agrandie simplement (bicubique) à la même taille.

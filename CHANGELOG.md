@@ -1,5 +1,15 @@
 # Journal des versions
 
+## v5.9 — 5 novembre 2026 (premier écran)
+- Avant / après réel sur la page d'accueil (photo de vieux téléphone traitée par l'app elle-même, sans retouche ; détails dans
+  demo/LISEZ-MOI.txt) : le curseur glisse tout seul, s'arrête dès qu'on le touche ; immobile si « réduire les animations ».
+- Engagements visibles : « 100 % privé · Gratuit · Sans compte ». Gros bouton « Choisir une vidéo », les autres en dessous.
+- En-tête sur une seule ligne (le ⚙️ ne passe plus à la ligne) ; numéro de version masqué en mode simple.
+- Carte « Ajouter à l'écran d'accueil » : seulement sur iPhone/iPad ; sur Android, vrai bouton « Installer ».
+- « Copier le diagnostic » (sans « pour Claude »).
+- Banc de qualité : passe en mode expert tout seul (les réglages sont cachés en mode simple).
+- Idées des prochaines versions : ROADMAP.md.
+
 ## v5.8 — 5 novembre 2026 (partie légale complète, page Guide)
 - Nouvelles pages : Mentions légales (régime non professionnel, LCEN art. 1-1 II), Conditions d'utilisation, Conditions de vente
   (prêtes, pas encore en vigueur, noindex), Licences et crédits ; Confidentialité réécrite (responsable, bases légales, cookies,
