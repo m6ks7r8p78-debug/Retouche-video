@@ -86,7 +86,7 @@ await test("Site public retoucheproai.com : « Colle un lien » masqué ; ailleu
   await q.route(/googlesyndication|doubleclick/, r => r.abort());
   await q.goto("https://retoucheproai.com/"); await q.waitForFunction(() => window.PUB);
   const pub = await q.evaluate(() => ["#lnkf", ".lnkh"].map(s => getComputedStyle(document.querySelector(s)).display));
-  const txt = await q.evaluate(() => document.querySelector(".privacy").innerText.includes("lien")); await q.close();
+  const txt = await q.evaluate(() => getComputedStyle(document.querySelector(".privacy .avec-liens")).display !== "none"); await q.close();
   const r = await b.newPage(); await r.goto(URLAPP); await r.waitForFunction(() => window.PUB);
   const loc = await r.evaluate(() => getComputedStyle(document.getElementById("lnkf")).display); await r.close();
   return { ok: pub.every(x => x === "none") && !txt && loc !== "none", info: "public " + pub.join("/") + ", texte sans lien " + !txt + ", local " + loc } });
