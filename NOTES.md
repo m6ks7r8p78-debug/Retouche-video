@@ -151,3 +151,6 @@ Testé : script Kaggle en local (CPU) 1080×1920 → calcul 540×960 → sortie 
 
 ## v4.4 (5 nov. 2026)
 En-tête centré : la version (pastille bien lisible) est juste à côté du nom « Retouche », au milieu, au lieu d’être tout à droite. Si la place manque (texte agrandi), les boutons passent à la ligne, centrés.
+
+## v4.5 (5 nov. 2026)
+Kaggle en 4K : la lecture image par image exacte est toujours utilisée avec Kaggle (avant : limitée au Full HD, d’où « la lecture image par image s’est interrompue » après le calcul). Vérification de cette lecture AVANT tout envoi à Kaggle.

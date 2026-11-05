@@ -518,7 +518,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v4.4";/* seul endroit où changer le numéro de version */
+const VER="v4.5";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -2112,6 +2112,11 @@ $("#ex").onclick=async()=>{
     if(SRX.on()&&(SRX.fits(v)||SRX.srvOK())&&window.KG&&$("#o_srv")&&$("#o_srv").checked){
       const why=isPlan?"Vitesse et sens (Time Repair)":fluid?"« Mouvement plus fluide »":$("#o_dust").checked?"« Anti-poussière »":!window.VideoDecoder?"la lecture image par image (iOS trop ancien)":null;
       if(why)throw new Error("L’IA rapide sur serveur ne fonctionne pas encore avec "+why+". Décoche l’une des deux options, puis relance.");
+      /* v4.5 : l'IA de Kaggle est relue image par image ; on vérifie AVANT tout envoi que cette lecture marche sur cette vidéo,
+         pour ne jamais gaspiller le temps de calcul (avant, en 4K, l'échec n'arrivait qu'après le calcul) */
+      {msg("Vérification de la lecture image par image…");const t=await makeSeq(Math.round(tS*OFPS),OFPS);
+        if(!t)throw new Error("IA rapide : cette vidéo ne peut pas être relue image par image sur ton iPhone. Rien n’a été envoyé. Choisis « Full HD » ou décoche « Qualité IA », puis relance.");
+        try{t.close()}catch(e){}}
       SRX.remote=await SRX.lancerServeur(cv.width,Math.max(2,Math.round(v.videoHeight*(cv.width/v.videoWidth))));
       if(cancel)throw new Error("annulé");
     }
@@ -2180,7 +2185,7 @@ $("#ex").onclick=async()=>{
     let dfg=null;
     if(!isPlan&&$("#o_defl").checked&&window.VideoDecoder){msg("Mesure du scintillement…");const Ltr=await lumaTrace(off,total,OFPS);if(Ltr&&Ltr.length===total){dfg=flickerGains(Ltr);window.__dfgL=Ltr;window.__dfg=Array.from(dfg)}else msg("Anti-scintillement indisponible pour cette vidéo : elle est traitée sans.")}
     /* lecture séquentielle (bien plus rapide que de chercher chaque image) */
-    if(!isPlan&&window.VideoDecoder&&!window.__noseq&&cv.width*cv.height<=2073600*1.2){
+    if(!isPlan&&window.VideoDecoder&&!window.__noseq&&(cv.width*cv.height<=2073600*1.2||SRX.remote)){/* v4.5 : avec Kaggle, toujours (4K compris) */
       rdr=await makeSeq(off,OFPS);rdr0=!!rdr;
     }
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
@@ -2221,7 +2226,7 @@ $("#ex").onclick=async()=>{
         const p0=performance.now();SRX.idx=SRX.remote&&rdr?rdr.map(pl.a):-1;if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
         if(rdr)f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       }catch(e){
-        if(!rdr)throw e;
+        if(!rdr||SRX.remote)throw e;
         window.__seqInfo="seq abandon image "+((e&&e.message)||e);rdr.close();rdr=null;
         q=0;for(let z=0;z<i;z++){q+=plan&&plan[z].b!=null?2:1}
         await initPool();poolMode=true;for(let z=q;z<q+POOL;z++)go(z);
