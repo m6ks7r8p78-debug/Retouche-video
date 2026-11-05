@@ -157,3 +157,6 @@ Kaggle en 4K : la lecture image par image exacte est toujours utilisée avec Kag
 
 ## v4.6 (5 nov. 2026)
 Case Kaggle retenue entre deux ouvertures (avant : décochée à chaque ouverture, l’écran annonçait Kaggle mais l’IA tournait sur le téléphone ou pas du tout). Par défaut cochée dès qu’un jeton existe ; mode simple resynchronisé chaque seconde et juste avant l’export. Diagnostic : options.kaggle, options.jeton, options.ui.
+
+## v4.7 (5 nov. 2026)
+Barre de vitesse 0,75–1,30× (objet SPD dans index.html ; export via TR.go(vitesse), window.__planK garde vitesse et début pour le comparatif). Comparatif vidéo à curseur (#bsx, baSplit, baK) à la place de la grille côte à côte.

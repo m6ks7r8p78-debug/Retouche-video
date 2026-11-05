@@ -111,12 +111,16 @@ progress::-moz-progress-bar{background:var(--acc)}
 .card h2{font:700 17px/1.2 var(--fd);margin:0 0 10px}
 #rv{width:100%;border-radius:12px;background:#000;max-height:52vh}
 #ba{display:flex;flex-direction:column;gap:10px}
-.bag{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.bag figure{margin:0;min-width:0}
-.bag figcaption{font:600 12px/1 var(--fb);letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:6px;display:flex;justify-content:space-between}
-.bag figcaption b{color:var(--acc)}
-.bag video{width:100%;border-radius:10px;background:#000;max-height:46vh;display:block}
 .bac{display:flex;align-items:center;gap:10px}
+.bsx{position:relative;width:100%;margin:0 auto;aspect-ratio:9/16;max-height:56vh;overflow:hidden;border-radius:12px;background:#000;touch-action:none;-webkit-user-select:none;user-select:none;cursor:ew-resize}
+.bsx video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+#bar{-webkit-clip-path:inset(0 0 0 50%);clip-path:inset(0 0 0 50%)}
+#bsp{width:100%;accent-color:var(--acc)}
+.spd{display:flex;align-items:center;gap:10px;margin:10px 0 2px}
+.spd-l{flex:none;font:600 13px/1 var(--fb);color:var(--mut)}
+.spd input{flex:1;min-width:0;accent-color:var(--acc)}
+.spd-v{flex:none;min-width:64px;padding:8px 10px;border-radius:999px;border:0;background:var(--panel);box-shadow:0 1px 0 var(--line);color:inherit;font-size:14px;cursor:pointer}
+.spd-v.on{background:var(--grad);color:#fff}
 .bac button{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:18px}
 .bac input{flex:1;min-width:0;accent-color:var(--acc)}
 #ri{width:100%;border-radius:12px;max-height:60vh;object-fit:contain}
@@ -354,6 +358,11 @@ body:not(.simple) .simple-only{display:none!important}
         <span class="tcb mono" id="tc">0:00 / 0:00</span>
       </div>
       <input type="range" id="tm" min="0" max="1000" value="0" aria-label="Position dans la vidéo">
+      <div class="spd vonly" id="spdw">
+        <span class="spd-l">Vitesse</span>
+        <input type="range" id="spd" min="75" max="130" step="5" value="100" aria-label="Vitesse de la vidéo">
+        <button type="button" class="spd-v mono" id="spdv" aria-label="Revenir à la vitesse normale">1,00×</button>
+      </div>
       <div class="row">
         <button class="btn" id="pp">Lecture</button>
         <button class="btn" id="cmp">Maintenir : original</button>
@@ -414,11 +423,14 @@ body:not(.simple) .simple-only{display:none!important}
             <button class="btn" id="pvsolo" type="button" style="margin-top:8px">Voir la photo retouchée seule</button>
           </div>
           <div id="ba" hidden>
-            <div class="bag">
-              <figure><figcaption>Avant</figcaption><video id="bao" muted playsinline preload="auto"></video></figure>
-              <figure><figcaption><b>Après</b></figcaption><video id="bar" playsinline preload="auto"></video></figure>
+            <div class="bsx" id="bsx">
+              <video id="bao" muted playsinline preload="auto"></video>
+              <video id="bar" playsinline preload="auto"></video>
+              <div class="pv-line" id="bsl"></div><span class="pv-t l">Avant</span><span class="pv-t r">Après</span>
             </div>
+            <input type="range" id="bsp" min="0" max="1000" value="500" aria-label="Séparation avant / après">
             <div class="bac"><button id="bap" aria-label="Lecture">▶</button><input type="range" id="bas" min="0" max="1000" value="0" aria-label="Position"></div>
+            <p class="help" style="margin:0">Fais glisser le doigt sur la vidéo (ou le curseur du dessous) : à gauche l’original, à droite le résultat.</p>
           </div>
           <button class="btn" id="bat" style="margin-top:8px" hidden>Voir le résultat seul</button>
           <video id="rv" controls playsinline></video>
@@ -518,7 +530,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v4.6";/* seul endroit où changer le numéro de version */
+const VER="v4.7";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -591,7 +603,7 @@ async function measureFps(){
       const d=[];for(let i=1;i<ts.length;i++){const x=ts[i]-ts[i-1];if(x>.008&&x<.2)d.push(x)}
       d.sort((a,b)=>a-b);res(d.length>5?snapFps(1/d[d.length>>1]):FPS)};
     const cb=(n,md)=>{ts.push(md.mediaTime);if(ts.length>=45)fin();else v.requestVideoFrameCallback(cb)};
-    v.muted=true;
+    v.muted=true;v.playbackRate=1;
     seekEl(v,0).then(()=>v.play()).then(()=>v.requestVideoFrameCallback(cb)).catch(fin);
     setTimeout(fin,3000);
   });
@@ -1179,7 +1191,7 @@ function btUpdate(){
       if(d.u1)URL.revokeObjectURL(d.u1);if(d.u2)URL.revokeObjectURL(d.u2);
       d.u1=URL.createObjectURL(d.src);d.u2=URL.createObjectURL(d.blob);
       $("#out").hidden=false;$("#ri").hidden=true;$("#sv").hidden=true;$("#rtb").hidden=true;$("#rv").src=d.u2;
-      baShow(d.ok,d.off,d.u1,d.u2);$("#out").scrollIntoView({behavior:"smooth"})};
+      baShow(d.ok,d.off,d.u1,d.u2,d.k);$("#out").scrollIntoView({behavior:"smooth"})};
     L.appendChild(bt)});
 }
 function loadFile(f){
@@ -1991,12 +2003,12 @@ const LEARN={K:["br","co","sa","wa","sh","dn","cs","db"],O:["o_dust","o_defl","o
     return{o,notes}}
 };
 /* Lecture */
-$("#pp").onclick=()=>{if(v.paused)v.play();else v.pause()};
+$("#pp").onclick=()=>{if(v.paused){v.playbackRate=SPD.k();v.play()}else v.pause()};
 /* économie de batterie : pendant la lecture, l'aperçu est calculé un peu plus petit (l'export, lui, reste en pleine qualité) ;
    à l'arrêt, il repasse en pleine définition pour bien juger le résultat */
 const PREVIEW_PLAY=960;
 v.onplay=()=>{$("#pp").textContent="Pause";if(!exporting&&mode==="video"&&!window.__baMode)size(PREVIEW_PLAY)};
-v.onpause=()=>{$("#pp").textContent="Lecture";if(!exporting&&mode==="video")size(PREVIEW)};
+v.onpause=()=>{v.playbackRate=1;$("#pp").textContent="Lecture";if(!exporting&&mode==="video")size(PREVIEW)};
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&!exporting&&!v.paused)v.pause()});
 v.ontimeupdate=()=>{if(v.duration&&!exporting)$("#tm").value=v.currentTime/v.duration*1000;$("#tc").textContent=fmtT(v.currentTime)+" / "+fmtT(v.duration)};
 $("#tm").oninput=e=>{if(v.duration&&!exporting)v.currentTime=e.target.value/1000*v.duration};
@@ -2038,7 +2050,7 @@ async function realtime(){
   rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
   const done=new Promise(r=>{rec.onstop=r});
   v.onended=()=>{if(rec.state!=="inactive")rec.stop()};
-  rtNoSound=false;v.muted=false;
+  rtNoSound=false;v.muted=false;v.playbackRate=1;
   rec.start(500);
   try{await v.play()}catch(e){v.muted=true;rtNoSound=true;await v.play()}
   const iv=setInterval(()=>{$("#pg").value=v.currentTime/v.duration;if(cancel){v.pause();if(rec.state!=="inactive")rec.stop()}},300);
@@ -2076,6 +2088,7 @@ $("#ex").onclick=async()=>{
   if(!v.videoWidth)return;
   if(REC.pr){window.__exStarting=true;msg("Fin de l’analyse, puis l’export démarre…");REC.stop=true;REC.redo=curFile;try{await REC.pr}catch(e){}finally{window.__exStarting=false}}
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
+  if(SPD.k()!==1&&!window.__plan&&!window.__baMode)return TR.go(SPD.k());
   exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
   try{const ch=window.__baMode||window.__plan?null:LEARN.record();DIAG.send("export_debut",ch&&Object.keys(ch).length?{ajustements:ch}:{})}catch(e){}
   window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
@@ -2282,7 +2295,7 @@ $("#ex").onclick=async()=>{
       vch.length=0;ach.length=0;
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
-      $("#rv").hidden=false;$("#pv").hidden=true;baShow(!isPlan,tS);if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#erb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
+      $("#rv").hidden=false;$("#pv").hidden=true;{const pk=window.__planK;baShow(!isPlan||!!(pk&&!pk.rev),pk?pk.a:tS,null,null,pk&&!pk.rev?pk.s:1)}if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#erb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
       /* images identiques à la suivante : signe d'une recherche d'image ratée SEULEMENT en lecture par recherche (repli) ;
          en lecture séquentielle, ce sont les images de la source elle-même (plan fixe, mouvement très lent) : pas une erreur */
       const frozen=!plan&&poolUp&&maxRun>=3;
@@ -2305,7 +2318,7 @@ $("#ex").onclick=async()=>{
     try{DIAG.send("export",{ok:false,err:m.slice(0,300)})}catch(x){}}
   finally{
     if(SRX.remote){try{SRX.remote.fermer()}catch(e){}SRX.remote=null;SRX.idx=-1}
-    window.__plan=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
+    window.__plan=null;window.__planK=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}
     if(window.__retryPending)try{$("#q").dispatchEvent(new Event("change"));document.querySelectorAll("[data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q===$("#q").value?"true":"false"))}catch(e){}
@@ -2590,9 +2603,10 @@ const TR={
       else{msg("Son : adaptation de la durée (hauteur conservée)…");await wait(20);ch=TR.stretch(ch,s)}}
     if(rev)ch.forEach(x=>x.reverse());
     return{buf:{sampleRate:sr,length:ch[0].length,numberOfChannels:C,getChannelData:i=>ch[i]}}},
-  async go(){
+  async go(sp){
     if(exporting||analyzing||mode!=="video"||!v.videoWidth)return;
-    const s=+$("#tr_v").value,rev=$("#tr_r").checked,smooth=$("#tr_f").checked&&s<1,how=$("#tr_a").value;
+    /* sp : vitesse de la barre sous la vidéo (export normal) ; sinon réglages de l'outil Time Repair */
+    const bar=sp!=null,s=bar?sp:+$("#tr_v").value,rev=bar?false:$("#tr_r").checked,smooth=(bar?true:$("#tr_f").checked)&&s<1,how=bar?"garde":$("#tr_a").value;
     if(s===1&&!rev){msg("Choisis une autre vitesse ou « Lire à l’envers » : la vidéo serait identique.");return}
     analyzing=true;$("#tr_go").disabled=true;
     try{
@@ -2600,7 +2614,7 @@ const TR={
       for(let k=0;k<nOut;k++){const kk=rev?nOut-1-k:k,p=Math.min(nIn-1,kk*s),i=Math.floor(p),w=p-i;
         plan.push(smooth&&w>.04&&i+1<nIn?{a:f0+i,b:f0+i+1,w,j:f0+i}:{a:f0+Math.min(nIn-1,Math.round(p))})}
       const au=await TR.audio(a,a+nIn/fps,s,rev,how);
-      window.__planAudio=au.buf||null;window.__planAudioWhy=au.why||null;window.__planFps=fps;window.__plan=plan;
+      window.__planAudio=au.buf||null;window.__planAudioWhy=au.why||null;window.__planFps=fps;window.__plan=plan;window.__planK={s,rev,a};
       try{DIAG.send("vitesse",{vitesse:s,envers:rev,fluide:smooth,son:how,images:nOut})}catch(e){}
       msg("Création de la version "+(rev?"à l’envers":"")+(s!==1?(rev?" et ":"")+"à "+String(s).replace(".",",")+"×":"")+"…");
       await $("#ex").onclick();
@@ -2919,27 +2933,54 @@ class SeqReader{
   close(){this.closed=true;for(const fr of this.frames.values())fr.close();this.frames.clear();try{this.dec.close()}catch(e){}this._wake()}
 }
 
-/* ===== Comparatif avant / après ===== */
-const baO=$("#bao"),baR=$("#bar"),baP=$("#bap"),baS=$("#bas");let baOff=0,baOn=false,baSolo=false;
-function baShow(ok,off,uo,ur){
+/* ===== Vitesse de la vidéo (barre sous la position) =====
+   0,75× à 1,30× par pas de 0,05. Aperçu : vitesse de lecture (voix à hauteur conservée par Safari).
+   Export : plan d'images Time Repair (ralenti avec images intermédiaires, son WSOLA à hauteur conservée). */
+const SPD={el:$("#spd"),
+  k(){const n=Math.round(+SPD.el.value/5)*5;return Math.min(130,Math.max(75,n))/100},
+  txt(){return SPD.k().toFixed(2).replace(".",",")+"×"},
+  ui(){const k=SPD.k(),b=$("#spdv");b.textContent=SPD.txt();b.classList.toggle("on",k!==1);
+    SPD.el.setAttribute("aria-valuetext",SPD.txt());if(!v.paused&&!exporting)v.playbackRate=k}};
+SPD.el.addEventListener("input",SPD.ui);
+SPD.el.addEventListener("change",()=>{SPD.ui();if(mode==="video"&&v.duration){const k=SPD.k();
+  msg(k===1?"Vitesse normale.":"Vitesse "+SPD.txt()+" : appliquée à l’aperçu et à la vidéo convertie (durée "+fmtT(v.duration/k)+" pour toute la vidéo).")}});
+$("#spdv").onclick=()=>{SPD.el.value=100;SPD.ui();msg("Vitesse normale.")};
+SPD.ui();
+
+/* ===== Comparatif avant / après : une seule vidéo, curseur de séparation =====
+   Original dessous, résultat dessus, découpé à la position du curseur ; les deux restent synchronisés
+   (décalage baOff de la partie choisie, facteur baK si la vitesse a été changée). */
+const baO=$("#bao"),baR=$("#bar"),baP=$("#bap"),baS=$("#bas"),bsx=$("#bsx");let baOff=0,baK=1,baOn=false,baSolo=false,baSp=.5;
+function baSplit(x){baSp=Math.min(1,Math.max(0,x));const pc=(baSp*100).toFixed(2)+"%",c="inset(0 0 0 "+pc+")";
+  baR.style.clipPath=c;baR.style.webkitClipPath=c;$("#bsl").style.left=pc;$("#bsp").value=Math.round(baSp*1000)}
+function baFit(){const w=baR.videoWidth||baO.videoWidth,h=baR.videoHeight||baO.videoHeight;if(!w||!h)return;
+  bsx.style.aspectRatio=w+" / "+h;bsx.style.width="min(100%, calc(56vh * "+(w/h).toFixed(4)+"))"}
+baR.addEventListener("loadedmetadata",baFit);baO.addEventListener("loadedmetadata",baFit);
+function baShow(ok,off,uo,ur,k){
   uo=uo||url;ur=ur||outUrl;
   baOn=false;baSolo=false;baO.pause();baR.pause();
   const can=ok&&uo&&ur;
-  $("#bat").hidden=!can;
+  $("#bat").hidden=!can;window.__baLastOk=!!can;
   if(!can){$("#ba").hidden=true;$("#rv").hidden=false;return}
-  window.__baLastOff=off||0;baOff=off||0;baO.src=uo;baR.src=ur;baO.load();baR.load();baS.value=0;baP.textContent="▶";
+  window.__baLastOff=off||0;window.__baLastK=k||1;baOff=off||0;baK=k||1;baO.src=uo;baR.src=ur;baO.load();baR.load();baS.value=0;baP.textContent="▶";baSplit(.5);
   $("#ba").hidden=false;$("#rv").hidden=true;$("#bat").textContent="Voir le résultat seul";
 }
-function baSync(){const t=baR.currentTime;if(Math.abs(baO.currentTime-(t+baOff))>.12)try{baO.currentTime=t+baOff}catch(e){}}
+const baT=t=>baOff+t*baK;
+function baSync(){const t=baR.currentTime;if(Math.abs(baO.currentTime-baT(t))>.12*Math.max(1,baK))try{baO.currentTime=baT(t)}catch(e){}}
 baP.onclick=async()=>{
   if(!baR.paused){baR.pause();baO.pause();baP.textContent="▶";return}
   if(baR.ended||baR.currentTime>=baR.duration-.05){baR.currentTime=0}
-  baSync();baR.muted=false;
+  baSync();baR.muted=false;baR.playbackRate=1;baO.playbackRate=baK;
   try{await Promise.all([baR.play(),baO.play()]);baP.textContent="❚❚"}catch(e){baP.textContent="▶"}
 };
 baR.addEventListener("timeupdate",()=>{if(baR.duration)baS.value=Math.round(baR.currentTime/baR.duration*1000);if(!baR.paused)baSync()});
 baR.addEventListener("ended",()=>{baO.pause();baP.textContent="▶"});
-baS.oninput=()=>{if(!baR.duration)return;const t=baS.value/1000*baR.duration;baR.currentTime=t;try{baO.currentTime=t+baOff}catch(e){}};
+baS.oninput=()=>{if(!baR.duration)return;const t=baS.value/1000*baR.duration;baR.currentTime=t;try{baO.currentTime=baT(t)}catch(e){}};
+$("#bsp").oninput=e=>baSplit(e.target.value/1000);
+{const mv=e=>{const r=bsx.getBoundingClientRect();if(r.width)baSplit((e.clientX-r.left)/r.width)};let dn=false;
+  bsx.addEventListener("pointerdown",e=>{dn=true;try{bsx.setPointerCapture(e.pointerId)}catch(_){}mv(e)});
+  bsx.addEventListener("pointermove",e=>{if(dn)mv(e)});
+  ["pointerup","pointercancel"].forEach(t=>bsx.addEventListener(t,()=>{dn=false}));}
 $("#bat").onclick=()=>{
   baR.pause();baO.pause();baP.textContent="▶";baSolo=!baSolo;
   $("#ba").hidden=baSolo;$("#rv").hidden=!baSolo;$("#bat").textContent=baSolo?"Comparer avec l’original":"Voir le résultat seul";
@@ -3108,7 +3149,7 @@ $("#exall").onclick=async()=>{
       if(window.__retryPending){window.__retryPending=false;await wait(800);continue}
       if(!outBlob)break; /* annulé ou échec */
       const nm=uniqName(curFile.name,outBlob.type.includes("webm")?"webm":"mp4");
-      batch.done.push({blob:outBlob,name:nm,src:curFile,off:(window.__baLastOff||0),ok:!window.__plan});outBlob=null;btUpdate();
+      batch.done.push({blob:outBlob,name:nm,src:curFile,off:(window.__baLastOff||0),k:(window.__baLastK||1),ok:window.__baLastOk!==false});outBlob=null;btUpdate();
       if(!batch.todo.length)break;
       await loadFile(batch.todo.shift());await wait(300);
     }

@@ -1,5 +1,13 @@
 # Journal des versions
 
+## v4.7 — 5 novembre 2026 (barre de vitesse, comparatif à curseur)
+- Barre « Vitesse » sous la barre de lecture : 0,75× à 1,30× par pas de 0,05 ; le bouton 1,00× la remet à zéro.
+  Aperçu : la lecture suit la vitesse. Conversion : la vidéo est refaite à cette vitesse (ralenti avec images intermédiaires,
+  son à hauteur de voix conservée), via le moteur Time Repair.
+- Résultat vidéo : les deux vidéos côte à côte sont remplacées par une seule vidéo avec curseur avant / après
+  (glisser le doigt sur la vidéo ou le curseur du dessous), original synchronisé même si la vitesse a changé.
+- Tests : tests/vitesse.test.mjs (12/12) ; Time Repair (tests/v3) inchangé.
+
 ## v3.4 — 5 novembre 2026 (IA rapide sur serveur gratuit Kaggle)
 - Option « IA rapide sur serveur gratuit (Kaggle) » : la même IA (même fichier sr.bin, résultat identique à l'œil : PSNR 57–59 dB
   contre l'app), calculée sur les 2 cartes graphiques gratuites du compte Kaggle. Vidéo de test : 1,1 min de calcul (180 images).
