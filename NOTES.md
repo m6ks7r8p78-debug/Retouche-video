@@ -65,6 +65,15 @@ Domaines libres vérifiés le 5 nov. 2026 : retoucheproai.com / .fr / .app.
 Le propriétaire veut une app gratuite rentabilisée par des petites pubs + une pub de 3–5 s avant le téléchargement.
 Note : `tests/v3.test.mjs` a 3 échecs (« Photo sombre … selectOption ») déjà présents en v4.8, sans lien avec les pubs.
 
+## v6.1 (5 nov. 2026) — IA rapide sur serveur avec la vitesse
+`SRX.idx` vaut un rang (image simple) ou {a,b,w,fl} (image intermédiaire : fondu `mfBlend` des deux images du serveur).
+Avec `SRX.remote`, la lecture image par image (`rdr`) est imposée même à l'envers ; les retours en arrière recréent un
+SeqReader à partir de `rdr.i` (pas de nouveau demuxVideo). `remote.image(k)` rouvre le résultat du serveur si k recule.
+Plan avec beaucoup de retours en arrière → `gop: 4` envoyé à Kaggle (`-g 4` dans traitement_kaggle.py).
+Constaté en test : l'export sans IA à l'envers (lecture par l'élément vidéo) et la lecture image par image diffèrent
+d'un décalage constant de 2 images sur video_vieuxtel.mp4 (horloge du fichier qui commence après 0) ; préexistant.
+Test : tests/ia_serveur_vitesse.test.mjs (variable CAS pour filtrer les cas ; l'export sans IA 1× à l'envers est très lent en Chrome de test).
+
 ## Règles du projet
 - Règle absolue : ne jamais sacrifier la qualité pour la vitesse ; viser le résultat le plus proche du parfait.
 - Tout se calcule sur le téléphone (PWA), gratuit, utilisable par des débutants : réglages automatiques.

@@ -1,5 +1,15 @@
 # Journal des versions
 
+## v6.1 — 5 novembre 2026 (IA rapide sur serveur + vitesse)
+- L'IA rapide sur serveur marche maintenant avec la barre de vitesse (0,75× à 1,30×), Time Repair (ralenti, accéléré,
+  lecture à l'envers) et « Mouvement plus fluide ». Avant, l'export s'arrêtait avec « ne fonctionne pas encore avec Vitesse et sens ».
+- Images intermédiaires des ralentis : les deux images voisines restaurées par le serveur sont fondues avec le même
+  mouvement estimé que la version classique.
+- Lecture à l'envers : le serveur place des images clés toutes les 4 images (option `gop`), et l'app relit l'original
+  et le résultat du serveur image par image, avec le même lecteur (aucun décalage entre l'image IA et l'image classique).
+- Tests : tests/ia_serveur_vitesse.test.mjs (Kaggle simulé ; 0,75× et 1,30× : 44 dB contre l'export sans IA ;
+  à l'envers : images alignées, corrélation 1,000 ; mouvement fluide : 44,5 dB).
+
 ## v6.0 — 5 novembre 2026 (caméra virtuelle, essai)
 - **Caméra virtuelle** (`camera.js`, case « Caméra virtuelle (essai) » dans les options de la vidéo, décochée par défaut) :
   fiche de l'appareil qui a filmé (marque, modèle, année, format, codec, débit, lus dans le fichier : MP4, MOV, 3GP, AVI, AVCHD) et
