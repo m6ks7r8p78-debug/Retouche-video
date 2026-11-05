@@ -161,6 +161,7 @@ body.loaded .steps li{border-color:inherit}
 .btn.main{background:var(--grad);color:#fff;box-shadow:0 12px 26px -10px var(--glow)}
 .btn.big{position:relative;overflow:hidden;font-size:clamp(16px,5vw,20px);line-height:1.2;white-space:normal;padding:19px 14px;border-radius:18px}
 .btn.big::before{content:"✨ "}
+.btn.big.stop::before{content:none}
 .btn.big::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:shine 3.2s ease-in-out infinite}
 @keyframes shine{0%,55%{left:-80px}100%{left:120%}}
 #cmp{background:var(--grad2);color:#fff}
@@ -518,7 +519,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v4.4";/* seul endroit où changer le numéro de version */
+const VER="v4.5";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -789,7 +790,10 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
       return SRX.remote.image(SRX.idx)}
     /* copie immédiate de l'image (avant toute attente) : l'image d'une vidéo change ou est libérée entre-temps, et WebGPU ne lit pas toujours une vidéo directement */
     if(!(el instanceof HTMLCanvasElement)&&!(el instanceof HTMLImageElement)){const [w,h]=dims(el),c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(el,0,0,w,h);el=c}
-    const job=SRX.lock.then(()=>SR.run(el,s,SRX.dn(),onTile,key));SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed)localStorage.setItem("srspd",SR.speed)}catch(e){}return c},
+    const job=SRX.lock.then(()=>SR.run(el,s,SRX.dn(),onTile,key));SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed){localStorage.setItem("srspd",SR.speed);
+      /* v4.5 : les 6 dernières mesures ; l'estimation prend la plus lente (une mesure d'aperçu sortait 3 fois trop optimiste : 13 min annoncées, 35 réelles) */
+      let L=[];try{L=JSON.parse(localStorage.getItem("srspdL")||"[]")}catch(e){}L.push(SR.speed);localStorage.setItem("srspdL",JSON.stringify(L.slice(-6)))}}catch(e){}return c},
+  spd(){let L=[];try{L=JSON.parse(localStorage.getItem("srspdL")||"[]")}catch(e){}if(L.length)return Math.max(...L);let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}return ms},
   /* IA rapide : envoi à Kaggle, attente, récupération ; renvoie un lecteur d'images {image(rang), fermer()} */
   async lancerServeur(ow,oh){
     if(!KG.actif())throw new Error("IA rapide : ajoute d’abord ton jeton Kaggle dans ⚙️ Paramètres.");
@@ -852,7 +856,7 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     try{DIAG.send("ia_echec",{code:t.code,err:String((e&&e.message)||e).slice(0,200)})}catch(x){}},
   /* durée de l'IA pour toute la vidéo, d'après la vitesse mesurée sur CE téléphone ; au-delà d'une heure, elle est décochée
      pour cette vidéo (l'iPhone ne peut pas rester des heures au premier plan), avec la marche à suivre pour l'utiliser quand même */
-  iaSec(){let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}if(!ms||mode!=="video"||!v.duration)return 0;
+  iaSec(){const ms=SRX.spd();if(!ms||mode!=="video"||!v.duration)return 0;
     const [a,b]=trimRange();return (b-a)*(OFPS||30)*(v.videoWidth*v.videoHeight/1e6)*ms/1000},
   videoCheck(){const o=$("#o_max");if(!o||mode!=="video"||!SRX.fits(v))return;const sec=SRX.iaSec();
     if(sec>3600&&o.checked){o.checked=false;SRX.autoOff=curFile;updateEst();
@@ -1007,7 +1011,9 @@ function updateEst(){
       const dur=(()=>{try{const [a,b]=trimRange();return Math.max(.2,b-a)}catch(e){return v.duration}})();
       let sec=dur*30*(px/sp.p)/sp.r,ia="";
       /* qualité maximale : temps du réseau mesuré sur cet appareil (millisecondes par mégapixel d'image d'origine) */
-      if(SRX.on()&&SRX.fits(v)){let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}
+      const kgOn=SRX.on()&&window.KG&&KG.actif()&&$("#o_srv")&&$("#o_srv").checked&&(SRX.fits(v)||SRX.srvOK());
+      if(kgOn){const n=dur*(OFPS||30);sec+=60+n*.3+(+(curFile&&curFile.size)||0)/4e5;ia=" IA calculée sur Kaggle (envoi, calcul et retour compris)."}
+      else if(SRX.on()&&SRX.fits(v)){const ms=SRX.spd();
         if(ms>0)sec+=dur*(OFPS||30)*(w*h/1e6)*ms/1000;else ia=" L’IA ajoutera du temps : il sera connu après un premier essai (aperçu en pause)."}
       t+=" Durée estimée : "+(sec>90?"environ "+(sec>5400?String(Math.round(sec/3600*10)/10).replace(".",",")+" h":Math.round(sec/60)+" min"):"moins de 2 min")+" (d’après ton dernier export)."+ia;
     }else t+=" La durée estimée s’affichera après ton premier export.";
@@ -1131,7 +1137,12 @@ const pref=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStor
 const OPT_AFTER={o_stab:e=>stabEnable(e.checked),o_defl:()=>draw(),o_max:()=>{SRX.pc=null;SRX.key="";updateEst();draw()}};
 ["o_stab","o_voice","o_defl","o_dust","o_fast","o_max","o_fluid"].forEach(id=>{const e=$("#"+id);
   e.addEventListener("change",()=>{pref(id,e.checked?"1":"0");if(id==="o_max")SRX.autoOff=null;if(OPT_AFTER[id])OPT_AFTER[id](e)})});
-$("#o_fast").checked=pref("o_fast")==="1";$("#o_max").checked=(pref("o_max")||"1")==="1";
+$("#o_fast").checked=pref("o_fast")==="1";
+/* v4.5 : « IA rapide sur Kaggle » mémorisée, et cochée d'office dès qu'un jeton Kaggle est enregistré (mode simple comme expert) :
+   sinon, en mode expert, l'IA tournait sur l'iPhone (35 min pour une vidéo de 10 s) */
+{const e=$("#o_srv");if(e){e.addEventListener("change",()=>{pref("o_srv",e.checked?"1":"0");try{updateEst()}catch(x){}});
+  const kg=()=>!!(window.KG&&KG.actif());e.checked=kg()&&(pref("o_srv")||"1")==="1";
+  setInterval(()=>{if(kg()&&!e.checked&&pref("o_srv")!=="0"){e.checked=true;try{updateEst()}catch(x){}}},2000)}}$("#o_max").checked=(pref("o_max")||"1")==="1";
 /* ===== Découpe début/fin ===== */
 function trimRange(){const d=v.duration||0;return[$("#t_in").value/1000*d,$("#t_out").value/1000*d]}
 function trimUpdate(src){
@@ -2076,7 +2087,7 @@ $("#ex").onclick=async()=>{
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
   exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
   try{const ch=window.__baMode||window.__plan?null:LEARN.record();DIAG.send("export_debut",ch&&Object.keys(ch).length?{ajustements:ch}:{})}catch(e){}
-  window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
+  window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";btn.classList.add("stop");
   $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;$("#dupn").hidden=true;
   let wl=null,err=null;
   try{
@@ -2108,10 +2119,14 @@ $("#ex").onclick=async()=>{
     if(!cfg)throw new Error("Encodage vidéo non pris en charge.");
     /* IA rapide (v3.4) : toutes les images IA sont calculées sur les cartes graphiques gratuites du compte Kaggle,
        puis relues ici à la place du calcul IA du téléphone ; tout le reste de l'export est inchangé */
-    SRX.remote=null;SRX.idx=-1;SRX.miss=0;SRX.remoteErr=null;
+    SRX.remote=null;SRX.kmap=null;SRX.idx=-1;SRX.miss=0;SRX.remoteErr=null;
     if(SRX.on()&&(SRX.fits(v)||SRX.srvOK())&&window.KG&&$("#o_srv")&&$("#o_srv").checked){
       const why=isPlan?"Vitesse et sens (Time Repair)":fluid?"« Mouvement plus fluide »":$("#o_dust").checked?"« Anti-poussière »":!window.VideoDecoder?"la lecture image par image (iOS trop ancien)":null;
       if(why)throw new Error("L’IA rapide sur serveur ne fonctionne pas encore avec "+why+". Décoche l’une des deux options, puis relance.");
+      /* v4.5 : correspondance « image de l'export → image calculée par Kaggle » préparée AVANT l'envoi, indépendante du mode de lecture.
+         Avant, elle dépendait de la lecture séquentielle, coupée en 4K (sortie > Full HD) : l'export échouait après le calcul Kaggle. */
+      const kinf=await demuxVideo(curFile);if(!kinf||!kinf.ns)throw new Error("IA rapide : vidéo illisible pour l’envoi.");
+      SRX.kmap=new SeqReader(curFile,kinf);SRX.kmap.setFps(OFPS);
       SRX.remote=await SRX.lancerServeur(cv.width,Math.max(2,Math.round(v.videoHeight*(cv.width/v.videoWidth))));
       if(cancel)throw new Error("annulé");
     }
@@ -2218,7 +2233,7 @@ $("#ex").onclick=async()=>{
       if(window.__baMode)split=BA.split(i,total);
       let f=null,p1=performance.now();
       try{
-        const p0=performance.now();SRX.idx=SRX.remote&&rdr?rdr.map(pl.a):-1;if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
+        const p0=performance.now();SRX.idx=SRX.remote&&SRX.kmap?SRX.kmap.map(pl.a):-1;if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
         if(rdr)f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       }catch(e){
         if(!rdr)throw e;
@@ -2296,8 +2311,8 @@ $("#ex").onclick=async()=>{
     else msg(friendly(m));
     try{DIAG.send("export",{ok:false,err:m.slice(0,300)})}catch(x){}}
   finally{
-    if(SRX.remote){try{SRX.remote.fermer()}catch(e){}SRX.remote=null;SRX.idx=-1}
-    window.__plan=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
+    if(SRX.remote){try{SRX.remote.fermer()}catch(e){}SRX.remote=null;SRX.idx=-1}SRX.kmap=null;
+    window.__plan=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;btn.classList.remove("stop");$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}
     if(window.__retryPending)try{$("#q").dispatchEvent(new Event("change"));document.querySelectorAll("[data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q===$("#q").value?"true":"false"))}catch(e){}

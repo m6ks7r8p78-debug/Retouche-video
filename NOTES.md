@@ -151,3 +151,17 @@ Testé : script Kaggle en local (CPU) 1080×1920 → calcul 540×960 → sortie 
 
 ## v4.4 (5 nov. 2026)
 En-tête centré : la version (pastille bien lisible) est juste à côté du nom « Retouche », au milieu, au lieu d’être tout à droite. Si la place manque (texte agrandi), les boutons passent à la ligne, centrés.
+
+## v4.5 (5 nov. 2026) — IA rapide Kaggle réparée en 4K, plus d'IA sur l'iPhone par erreur
+Diagnostics du 5 nov. (v4.4) :
+- 2 exports 4K d'une vidéo 720×1280 avec Kaggle : calcul réussi (380 images, 2,7 min, 2 × Tesla T4), puis échec
+  « la lecture image par image s'est interrompue ». Cause : la correspondance image d'export → image Kaggle passait par la
+  lecture séquentielle, désactivée quand la sortie dépasse le Full HD (4K). Elle est maintenant préparée avant l'envoi
+  (SRX.kmap, même calcul de rang), quel que soit le mode de lecture. Le test v4.3 ne couvrait que le Full HD.
+- Vidéo 640×360 de 10,7 s : IA sur l'iPhone (≈ 28 s par mégapixel, 35 min restantes) au lieu de Kaggle, en mode expert :
+  la case « IA rapide (Kaggle) » n'était cochée que par l'interrupteur du mode simple et n'était pas mémorisée.
+  Elle est maintenant mémorisée et cochée d'office dès qu'un jeton Kaggle est enregistré (sauf si la personne l'a décochée).
+- Durée estimée 13 min contre 35 réelles : l'estimation prenait la dernière vitesse IA mesurée (souvent un aperçu, jusqu'à
+  3× plus rapide). Elle prend maintenant la plus lente des 6 dernières mesures ; avec Kaggle, elle compte envoi + calcul (~0,3 s/image).
+- Bouton « ✨ Annuler » : l'étincelle n'apparaît plus pendant l'export.
+Test : tests/ia_serveur_simule.test.mjs (Kaggle simulé, Full HD et 4K).

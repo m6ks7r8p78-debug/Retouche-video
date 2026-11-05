@@ -1,5 +1,11 @@
 # Journal des versions
 
+## v4.5 — 5 novembre 2026 (IA rapide Kaggle en 4K)
+- Export 4K avec l'IA rapide Kaggle : ne s'arrête plus après le calcul (« la lecture image par image s'est interrompue »).
+- « IA rapide (Kaggle) » mémorisée et cochée d'office dès qu'un jeton est enregistré, aussi en mode expert (plus d'IA lente sur l'iPhone par oubli).
+- Durée estimée plus juste (vitesse IA la plus lente des dernières mesures ; temps Kaggle compté).
+- Bouton « Annuler » sans étincelle.
+
 ## v3.4 — 5 novembre 2026 (IA rapide sur serveur gratuit Kaggle)
 - Option « IA rapide sur serveur gratuit (Kaggle) » : la même IA (même fichier sr.bin, résultat identique à l'œil : PSNR 57–59 dB
   contre l'app), calculée sur les 2 cartes graphiques gratuites du compte Kaggle. Vidéo de test : 1,1 min de calcul (180 images).
