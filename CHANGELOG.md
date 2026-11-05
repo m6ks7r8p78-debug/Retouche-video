@@ -1,5 +1,19 @@
 # Journal des versions
 
+## v6.0 — 5 novembre 2026 (caméra virtuelle, essai)
+- **Caméra virtuelle** (`camera.js`, case « Caméra virtuelle (essai) » dans les options de la vidéo, décochée par défaut) :
+  fiche de l'appareil qui a filmé (marque, modèle, année, format, codec, débit, lus dans le fichier : MP4, MOV, 3GP, AVI, AVCHD) et
+  mesures de son objectif sur 6 images (coins sombres, franges colorées sur les bords, flou en pixels). Les défauts sont défaits dans
+  l'ordre inverse de leur apparition : compression (anti-blocs) → capteur (débruitage) → objectif (franges et coins avant le nettoyage
+  des couleurs, flou après le débruitage) → rendu de référence. Case décochée : rendu identique au pixel près (testé).
+- Franges : correction étalonnée sur l'image elle-même (dans une vidéo compressée, la couleur est en demi-définition : le décalage
+  mesuré ne se corrige pas 1 pour 1). Mesuré sur une vidéo simulée : franges 0,0019 / −0,0025 → −0,0003 / 0,0003 ; coins 0,61 → 0,75
+  du centre ; flou 1,69 → 1,40 px.
+- **Diagnostic anonyme** (facultatif, demandé une fois après un premier résultat) : envoi au serveur de l'app (route `/diag`, base D1,
+  13 mois) des nombres seulement. Serveur v7 écrit et testé, **à déployer** (voir DIAGNOSTIC.md).
+- Tests : `tests/camera.test.mjs` (mesures sur images dégradées), `tests/camera_app.test.mjs` (de bout en bout dans Chrome),
+  `tests/diag_serveur.test.mjs` (route /diag avec SQLite) ; simulateurs `tests/camera_simuler.py`, `tests/camera_video.py`.
+
 ## v5.9 — 5 novembre 2026 (premier écran)
 - Avant / après réel sur la page d'accueil (photo de vieux téléphone traitée par l'app elle-même, sans retouche ; détails dans
   demo/LISEZ-MOI.txt) : le curseur glisse tout seul, s'arrête dès qu'on le touche ; immobile si « réduire les animations ».

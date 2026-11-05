@@ -9,7 +9,7 @@ var STUDIO = (() => {
     modele: { nom: "Télécharger un modèle IA", envoi: "rien de personnel : seul le fichier du modèle est téléchargé depuis sa source officielle (Hugging Face), puis vérifié", compte: "aucun compte" },
     analyse_ia: { nom: "Analyse IA (version Claude)", envoi: "une image réduite de ta vidéo est envoyée à Claude pour proposer des réglages", compte: "ton compte Claude" },
     cloud: { nom: "IA rapide sur serveur (Kaggle)", envoi: "ta vidéo est envoyée dans un espace privé de ton compte Kaggle (Google) pour y calculer l’IA, puis supprimée avec le résultat ; un accord est aussi redemandé avant chaque envoi", compte: "ton compte Kaggle (jeton gardé sur ce téléphone seulement)" },
-    diagnostic: { nom: "Envoi automatique du diagnostic (version Claude)", envoi: "des nombres seulement (réglages, tailles, durées, vitesse de l’IA, modèle de téléphone) sont rangés dans la base privée de la version Claude ; aucune image, aucun son, aucun nom de fichier", compte: "ton compte Claude" }
+    diagnostic: { nom: "Aider à améliorer RetoucheProAI (diagnostic anonyme)", envoi: "des nombres seulement (mesures de la vidéo, réglages appliqués, appareil qui l’a filmée, modèle de téléphone, durées) sont envoyés au serveur de l’app pour régler les corrections de chaque type d’appareil ; aucune image, aucun son, aucun nom de fichier, aucune adresse IP gardée ; effacés après 13 mois", compte: "aucun compte" }
   };
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const all = () => { try { return JSON.parse(localStorage.getItem(AK) || "{}") } catch (e) { return {} } };

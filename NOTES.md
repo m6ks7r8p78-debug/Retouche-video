@@ -4,6 +4,22 @@
 `sauvegarde-v2.49`, `sauvegarde-v2.50`, `sauvegarde-v3.0`, `sauvegarde-v3.1`, `sauvegarde-v3.2`, `sauvegarde-v3.3` (les tags cités avant n'avaient jamais été créés :
 l'envoi de tags est refusé par l'environnement de travail de Claude, d'où des branches). Serveur Cloudflare : **v5 en ligne**.
 
+## v6.0 (5 nov. 2026) — caméra virtuelle (essai) et diagnostic anonyme
+Feuille de route du propriétaire : document « Feuille de route — Caméra virtuelle RetoucheProAI » (ses artifacts Claude).
+- `camera.js` (objet `CAM`) : `lire(fichier)` → fiche (atomes moov/udta/meta keys-ilst, AVI RIFF, 3GP, MPEG-TS) ; `famille()` ;
+  mesures pures `vignetage`, `franges` (corrélation des passe-haut R/B vs G sur la moitié extérieure, puis étalonnage par sécante),
+  `flou` (largeur 10–90 % de contours isolés et monotones, ±8 px, 30e centile, ≥ 40 contours sinon pas de mesure) ;
+  `synthese()` = règles prudentes (coins : majorité des 6 images < 0,93 ; franges : gain > 4 % et stables ; flou dosé selon bruit/blocs).
+- `index.html` : shader `FSL` (progL), deux passes : franges + coins AVANT `progB` (le nettoyage des couleurs recalait une partie des
+  franges : la correction dépassait), flou APRÈS `progB` ; `CAM.partNettete()` réduit la netteté classique quand le flou est corrigé.
+  Analyse dans `AZ.profile` (toujours faite, pour la fiche et le diagnostic) ; `camShow()` ; case `#o_cam` (localStorage `o_cam`).
+  Avec l'IA : franges et coins appliqués à l'image IA, pas le flou.
+- Diagnostic : `DIAG.srv()` (POST `LINK.SRV/diag`, drapeau `srv` par mesure, envoi en retard rattrapé), `DIAG.anon()` (système
+  simplifié, pas d'UA), `DIAG.demander()` après le premier export réussi. Serveur v7 (`serveur/worker.js`) : `/diag`, `/diag/export`
+  (clé `DIAG_CLE`). **Pas encore déployé** (v6 non plus) : il faut une clé Cloudflare — étapes dans DIAGNOSTIC.md.
+- Limites connues : scènes douces (dessin, ciel) → pas de mesure du flou ; la passe ne corrige pas encore le « refilmage » par un
+  appareil cible (phase 3 de la feuille de route) ; mesures faites sur la vidéo seulement (pas les photos).
+
 ## Chantier en cours : v3.4 « IA rapide sur serveur (Kaggle) » — branche `serveur-ia` (pas encore sur `main`)
 Pourquoi : l'IA « qualité maximale » prend ≈ 27–30 s par image sur l'iPhone du propriétaire (mesuré : 29,8 s/Mpx WebGPU ;
 le calcul « 4 pixels par fil » n'y gagne que 12 %) → 50 h pour une vidéo 720×1280 de 4 min 40. Sur Kaggle (2 × T4 gratuites,

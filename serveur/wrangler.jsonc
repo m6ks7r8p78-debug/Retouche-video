@@ -1,7 +1,10 @@
 {
-  // Serveur gratuit de Retouche vidéo (Cloudflare Workers) : récupère les vidéos à partir d'un lien
+  // Serveur gratuit de RetoucheProAI (Cloudflare Workers) : récupère les vidéos à partir d'un lien, vérifie les abonnements (v6),
+  // reçoit le diagnostic anonyme (v7, base D1 « retouche-diag »)
   "name": "retouche-serveur",
   "main": "worker.js",
   "compatibility_date": "2026-10-01",
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // identifiant à remplir au déploiement : wrangler d1 create retouche-diag
+  "d1_databases": [{ "binding": "DIAG", "database_name": "retouche-diag", "database_id": "A_REMPLIR" }]
 }

@@ -512,6 +512,8 @@ body:not(.loaded) #picke{grid-column:1/-1}
         </div>
         <div class="opts vonly">
           <h2>Options de la vidéo</h2>
+          <label class="chk"><input type="checkbox" id="o_cam"><span><b>Caméra virtuelle (essai)</b>Reconnaît l’appareil qui a filmé, mesure les défauts de son objectif sur ta vidéo, puis les défait dans l’ordre : compression, bruit, puis objectif (flou, coins sombres, franges colorées sur les bords). À comparer avec le rendu habituel : coche, décoche, et garde ce que tu préfères.</span></label>
+          <div id="camf" class="help" hidden style="margin:-2px 0 10px;padding:10px 12px;border-radius:12px;background:var(--panel)"></div>
           <label class="chk"><input type="checkbox" id="o_fast"><span><b>Mode rapide</b>Plus rapide pour les longues vidéos (sans stabilisation ni fluidité).</span></label>
           <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Moins de tremblements (image un peu recadrée).</span></label>
           <label class="chk"><input type="checkbox" id="o_defl"><span><b>Anti-scintillement</b>Pour les vieux films dont la lumière clignote.</span></label>
@@ -579,8 +581,9 @@ body:not(.loaded) #picke{grid-column:1/-1}
 <script src="marquage.js"></script>
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
+<script src="camera.js"></script>
 <script>
-const VER="v5.9";/* seul endroit où changer le numéro de version */
+const VER="v6.0";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -712,6 +715,26 @@ for(int i=-2;i<=2;i++)for(int j=-2;j<=2;j++){vec3 n=texture2D(t,uv+vec2(float(i)
 float k=exp(-dy*dy/.0177-float(i*i+j*j)*4./18.);acc+=k*vec2(n.b-yn,n.r-yn);ws+=k;}
 vec2 u=mix(u0,acc/ws,cs);c.r=y+u.y;c.b=y+u.x;c.g=(y-.299*c.r-.114*c.b)/.587;}
 gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
+/* v6.0 caméra virtuelle — passe « objectif » (camera.js) : défait les défauts de l'objectif mesurés sur CETTE vidéo,
+   après la compression (anti-blocs) et le capteur (débruitage), avant le rendu final :
+   - franges colorées : rouge et bleu ré-échantillonnés à l'échelle mesurée (ca) ;
+   - coins sombres : gain radial 1 + vg·r² (r = 1 dans les coins, en vrais pixels grâce à sc) ;
+   - flou : déconvolution du premier ordre avec un flou gaussien du rayon mesuré (sig), dosée (dk), sur la luminance,
+     bornée par les voisins (pas de halo). */
+const FSL=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px,sc,ca;uniform float vg,sig,dk;
+float L(vec3 c){return dot(c,vec3(.299,.587,.114));}
+float Y(vec2 o){return L(texture2D(t,uv+o*px).rgb);}
+void main(){vec2 d=uv-.5;vec3 c=texture2D(t,uv).rgb;
+  if(ca.x!=0.)c.r=texture2D(t,.5+d*(1.+ca.x)).r;
+  if(ca.y!=0.)c.b=texture2D(t,.5+d*(1.+ca.y)).b;
+  if(dk>0.){float y0=L(c),r1=sig*.9,r2=sig*1.9,a=0.,b=0.;
+    for(int i=0;i<8;i++){float an=float(i)*.7853982;a+=Y(vec2(cos(an),sin(an))*r1);b+=Y(vec2(cos(an+.3926991),sin(an+.3926991))*r2);}
+    float bl=(y0*.15+a*.075+b*.03875)/1.06;
+    float n1=Y(vec2(1.,0.)),n2=Y(vec2(-1.,0.)),n3=Y(vec2(0.,1.)),n4=Y(vec2(0.,-1.));
+    float mn=min(min(n1,n2),min(min(n3,n4),y0))-.015,mx=max(max(n1,n2),max(max(n3,n4),y0))+.015;
+    float y1=clamp(y0+dk*(y0-bl),mn,mx);c+=y1-y0;}
+  if(vg>0.){float r=length(d*sc);c*=1.+vg*r*r;}
+  gl_FragColor=vec4(clamp(c,0.,1.),1.);}`;
 /* anti-blocs : adoucit les frontières des carrés de compression 8×8 (vieux téléphones, vidéos très compressées),
    seulement là où l'écart est petit (un vrai contour, plus marqué, est laissé intact) */
 const FSKM=`precision highp float;uniform sampler2D t;uniform vec2 px,ph;
@@ -759,19 +782,19 @@ if(mx(abs(c-med3(c,p,n)))>thr){cnt+=1.;if(abs(float(i))<1.5&&abs(float(j))<1.5)n
 vec3 m0=med3(c0,texture2D(tp,uv).rgb,texture2D(tn,uv).rgb);float d0=mx(abs(c0-m0));
 float k=(mov<.5&&near>.5&&cnt<=40.)?smoothstep(thr*.35,thr*.7,d0):0.;
 gl_FragColor=vec4(mix(c0,m0,k),1.);}`;
-const U={},UB={},UD={},UK={};let progK=null,texK=null,progKM=null,texKM=null;const UKM={};let kmW=0,kmH=0;let DUST={on:false,p:null,n:null};let srIn=false,srOrig=null,texO,dustOnly=false;let tex,tex3,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progB;
+const U={},UB={},UD={},UK={},UL={};let progL=null,texL=null,texL2=null;let progK=null,texK=null,progKM=null,texKM=null;const UKM={};let kmW=0,kmH=0;let DUST={on:false,p:null,n:null};let srIn=false,srOrig=null,texO,dustOnly=false;let tex,tex3,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progB;
 if(gl){
   const mk=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
   const pg=(vs,fs)=>{const g=gl.createProgram();gl.attachShader(g,mk(gl.VERTEX_SHADER,vs));gl.attachShader(g,mk(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(g,0,"p");gl.linkProgram(g);return g};
-  prog=pg(VS,FS);progB=pg(VSA,FSB);progD=pg(VSA,FSD);progK=pg(VSA,FSK);progKM=pg(VSA,FSKM);
+  prog=pg(VS,FS);progB=pg(VSA,FSB);progL=pg(VSA,FSL);progD=pg(VSA,FSD);progK=pg(VSA,FSK);progKM=pg(VSA,FSKM);
   gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
   gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
   const mt=()=>{const x=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,x);
     [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,c])=>gl.texParameteri(gl.TEXTURE_2D,a,c));return x};
-  texK=mt();texKM=mt();tex=mt();tex3=mt();texP=mt();texN=mt();texD=mt();texO=mt();fbo=gl.createFramebuffer();
+  texL=mt();texL2=mt();texK=mt();texKM=mt();tex=mt();tex3=mt();texP=mt();texN=mt();texD=mt();texO=mt();fbo=gl.createFramebuffer();
   const loc=(g,o,n)=>n.forEach(k=>{o[k]=gl.getUniformLocation(g,k)});
-  loc(progK,UK,["t","tm","px","ph","bs","db"]);loc(progKM,UKM,["t","px","ph"]);loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex","lf","lrow","lrow2","lmx","lnb","tl","hp","gm"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progD,UD,["t","tp","tn","px","thr"]);
+  loc(progK,UK,["t","tm","px","ph","bs","db"]);loc(progL,UL,["t","px","sc","ca","vg","sig","dk"]);loc(progKM,UKM,["t","px","ph"]);loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex","lf","lrow","lrow2","lmx","lnb","tl","hp","gm"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progD,UD,["t","tp","tn","px","thr"]);
 }
 function pass(pg,src,dst,w,h,set){
   gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
@@ -789,7 +812,7 @@ function draw(el){
   const [w,h]=dims(s0);
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,s0);
-  if(fw!==w||fh!==h){fw=w;fh=h;[[tex3,w,h],[texD,w,h],[texK,w,h]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
+  if(fw!==w||fh!==h){fw=w;fh=h;[[tex3,w,h],[texD,w,h],[texK,w,h],[texL,w,h],[texL2,w,h]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
   let dustSwap=false,dbSwap=false;const tex0=tex;
   if(show&&!srIn&&!dustOnly&&P.db>0&&(exporting||mode!=="video"||v.paused)/* v3.11 : anti-blocs sauté pendant la lecture de l'aperçu (fluidité) ; à l'arrêt et à l'export il est appliqué */&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
     const bw=Math.ceil(w/8)+2,bh=Math.ceil(h/8)+2;
@@ -807,8 +830,17 @@ function draw(el){
     }catch(e){gl.activeTexture(gl.TEXTURE0)}
   }
   let src=tex;
-  const eSh=PROF.v("sh"),eDn=PROF.v("dn"),eCs=PROF.v("cs");
+  /* v6.0 caméra virtuelle, 1er temps de l'objectif : franges et coins sombres, AVANT le débruitage et le nettoyage des couleurs
+     (ce nettoyage recale la couleur sur les contours de la luminance : passé avant, il effaçait une partie des franges et la correction
+     dépassait ensuite — mesuré). Appliqué aussi à l'image IA. */
+  const CL=show&&!dustOnly&&window.CAM?CAM.reglages():null;
+  if(CL&&progL&&gl.getProgramParameter(progL,gl.LINK_STATUS)&&(CL.vg>0||CL.ca[0]||CL.ca[1])){const R=.5*Math.hypot(w,h);
+    pass(progL,src,texL,w,h,()=>{gl.uniform1i(UL.t,0);gl.uniform2f(UL.px,1/w,1/h);gl.uniform2f(UL.sc,w/R,h/R);gl.uniform2f(UL.ca,CL.ca[0],CL.ca[1]);gl.uniform1f(UL.vg,CL.vg);gl.uniform1f(UL.sig,1);gl.uniform1f(UL.dk,0)});src=texL}
+  const eSh=PROF.v("sh")*(window.CAM?CAM.partNettete():1),eDn=PROF.v("dn"),eCs=PROF.v("cs");
   if(show&&!srIn&&!dustOnly&&(eSh>0||eDn>0||eCs>0)){pass(progB,src,tex3,w,h,()=>{gl.uniform1i(UB.t,0);gl.uniform2f(UB.px,1/w,1/h);gl.uniform1f(UB.sh,eSh);gl.uniform1f(UB.dn,eDn);gl.uniform1f(UB.cs,eCs)});src=tex3}
+  /* v6.0 caméra virtuelle, 2e temps de l'objectif : le flou, APRÈS le débruitage (sinon le bruit serait accentué) ; pas sur l'image IA, qui a déjà rendu le détail */
+  if(CL&&!srIn&&CL.k>.05&&progL){const R=.5*Math.hypot(w,h),dst=src===texL?texL2:texL;
+    pass(progL,src,dst,w,h,()=>{gl.uniform1i(UL.t,0);gl.uniform2f(UL.px,1/w,1/h);gl.uniform2f(UL.sc,w/R,h/R);gl.uniform2f(UL.ca,0,0);gl.uniform1f(UL.vg,0);gl.uniform1f(UL.sig,CL.sig||1);gl.uniform1f(UL.dk,CL.k)});src=dst}
   gl.useProgram(prog);gl.bindTexture(gl.TEXTURE_2D,src);gl.uniform1i(U.t,0);
   gl.viewport(0,0,cv.width,cv.height);
   gl.uniform2f(U.px,1/w,1/h);gl.uniform1f(U.on,dustOnly?0:show);
@@ -1193,6 +1225,11 @@ const pref=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStor
 const OPT_AFTER={o_stab:e=>stabEnable(e.checked),o_defl:()=>draw(),o_max:()=>{SRX.pc=null;SRX.key="";updateEst();draw()}};
 ["o_stab","o_voice","o_defl","o_dust","o_fast","o_max","o_fluid","o_srv"].forEach(id=>{const e=$("#"+id);
   e.addEventListener("change",()=>{pref(id,e.checked?"1":"0");if(id==="o_max")SRX.autoOff=null;if(OPT_AFTER[id])OPT_AFTER[id](e)})});
+/* v6.0 caméra virtuelle : fiche de l'appareil affichée sous la case, correction appliquée seulement si la case est cochée */
+function camShow(){const b=$("#camf");if(!b||!window.CAM)return;const t=CAM.texte();if(!t){b.hidden=true;return}
+  b.textContent="";const l=(k,x)=>{const d=document.createElement("div");if(k){const s=document.createElement("b");s.textContent=k+" ";d.appendChild(s)}d.appendChild(document.createTextNode(x));b.appendChild(d)};
+  l("📷 Appareil :",t.id);if(t.tech)l("",t.tech);l("Objectif :",t.def+(CAM.actif()?" — corrigé.":" — coche la case pour corriger."));b.hidden=false}
+if(window.CAM){$("#o_cam").checked=CAM.actif();$("#o_cam").onchange=e=>{CAM.setActif(e.target.checked);camShow();draw();try{DIAG.send("camera_choix",{actif:e.target.checked})}catch(x){}}}
 $("#o_fast").checked=pref("o_fast")==="1";$("#o_max").checked=(pref("o_max")||"1")==="1";
 /* v4.6 : la case Kaggle est retenue ; par défaut, cochée dès qu'un jeton est enregistré (avant : décochée à chaque ouverture) */
 {const sv=$("#o_srv");if(sv)sv.checked=(pref("o_srv")||(window.KG&&KG.actif()?"1":"0"))==="1"}
@@ -1247,7 +1284,7 @@ function btUpdate(){
 function loadFile(f){
   return new Promise(res=>{
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
-  curFile=f;az=false;try{FLT.reset()}catch(e){}if(url)URL.revokeObjectURL(url);
+  curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
   msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres","pv","erb"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
@@ -1432,6 +1469,9 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       if(r.o.bias){for(const k in r.o.bias)P[k]=Math.max(k==="co"||k==="sa"?.8:-.3,Math.min(k==="co"||k==="sa"?1.4:.3,P[k]+r.o.bias[k]));sync()}
       if(r.o.skip)r.it&&r.it.forEach((k,i)=>{const id={dust:"o_dust",defl:"o_defl",stab:"o_stab",voice:"o_voice"}[k];if(id&&r.o.skip[id]){REC.toggle(k,false,r);(r.off=r.off||{})[i]=true}});
       REC.show(r);LEARN.snap();
+      /* v6.0 caméra virtuelle : fiche de l'appareil et mesures de l'objectif (6 images), même quand la case est décochée : la fiche s'affiche
+         et, avec l'accord « diagnostic », ses nombres aident à régler l'app pour chaque type d'appareil */
+      if(window.CAM){try{if(await CAM.analyser(v,my,{bruit:m.noise,blocs:m.blk&&m.blk.r,cancel:()=>curFile!==my||exporting||REC.stop})){camShow();DIAG.send("camera",CAM.diag())}}catch(e){}}
       try{DIAG.send("analyse",{ms:Math.round(performance.now()-TA),mesures:{bruit:+m.noise.toFixed(2),nettete:Math.round(m.sharp),poussieres:Math.round(m.dust),tremble:m.shake,blocs:m.blk&&+m.blk.r.toFixed(2),dominante:m.gains&&m.gains.map(x=>+x.toFixed(2)),son:m.audio},scint:fl,reco:r.n})}catch(e){}
     }catch(e){ok=false;$("#rec").hidden=true}
     finally{if(curFile===my){try{await seekEl(v,t0)}catch(e){}draw()}if(REC.pr===pr)REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
@@ -1561,9 +1601,25 @@ const DIAG={last:null,
   async flush(){
     /* v3.2 : rien n'est envoyé sans l'autorisation « diagnostic » (donnée dans ⚙️ Paramètres) ; sinon les mesures restent sur l'appareil */
     if(!window.STUDIO||!STUDIO.granted("diagnostic"))return;
+    DIAG.srv();
     const db=await DIAG.db();if(!db)return;const h=DIAG.hist();let ch=false;
     for(const d of h){if(d.sent)continue;try{const {sent,...x}=d;await db.collection("diag").doc(d.id).set(x);d.sent=true;ch=true}catch(e){break}}
-    if(ch)DIAG.save(h)}
+    if(ch)DIAG.save(h);}
+  ,
+  /* v6.0 : diagnostic anonyme envoyé au serveur de l'app (avec l'accord « diagnostic ») : sert à régler la caméra virtuelle et les corrections
+     pour chaque type d'appareil. Version du système simplifiée (pas l'empreinte complète du navigateur), jamais de nom de fichier. */
+  anon(d){const {sent,srv,ua,...x}=d;const u=String(ua||""),ios=u.match(/(?:iPhone|CPU) OS (\d+)_(\d+)/),and=u.match(/Android (\d+)/);
+    x.systeme=(ios?"iOS "+ios[1]+"."+ios[2]:and?"Android "+and[1]:/Mac OS X/.test(u)?"macOS":/Windows/.test(u)?"Windows":"autre")+(/CriOS|Chrome/.test(u)?" Chrome":/Firefox|FxiOS/.test(u)?" Firefox":/Safari/.test(u)?" Safari":"");
+    return x},
+  async srv(){
+    if(!window.STUDIO||!STUDIO.granted("diagnostic")||DIAG._busy||typeof LINK==="undefined")return;DIAG._busy=true;
+    try{const lot=DIAG.hist().filter(d=>!d.srv).slice(-40);if(!lot.length)return;
+      const r=await fetch(LINK.SRV+"/diag",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({lot:lot.map(DIAG.anon)})});
+      if(!r.ok)return;const ids=new Set(lot.map(d=>d.id)),h=DIAG.hist();h.forEach(d=>{if(ids.has(d.id))d.srv=true});DIAG.save(h)}
+    catch(e){}finally{DIAG._busy=false}},
+  /* demandé une seule fois, après un premier résultat réussi (jamais au premier écran) ; la réponse se change dans ⚙️ Paramètres */
+  demander(){try{const a=JSON.parse(localStorage.getItem("autorisations")||"{}");if(a.diagnostic)return}catch(e){return}
+    setTimeout(async()=>{try{if(exporting)return;if(await STUDIO.consent("diagnostic"))DIAG.flush()}catch(e){}},1800)}
 };
 setTimeout(()=>{try{DIAG.flush()}catch(e){}},4000);
 $("#diagb2").onclick=async()=>{const b=$("#diagb2");try{DIAG.send("diagnostic",{})}catch(e){}/* réglages de l'instant ajoutés */
@@ -2359,6 +2415,7 @@ $("#ex").onclick=async()=>{
       /* images identiques à la suivante : signe d'une recherche d'image ratée SEULEMENT en lecture par recherche (repli) ;
          en lecture séquentielle, ce sont les images de la source elle-même (plan fixe, mouvement très lent) : pas une erreur */
       const frozen=!plan&&poolUp&&maxRun>=3;
+      try{DIAG.demander()}catch(e){}
       msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(frozen?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
       let chk=null;try{chk=await probeInfo(outBlob)}catch(e){}
       try{const ro=FREP.out({chk,w:cfg.width,h:cfg.height,mo:(outBlob.size/1048576).toFixed(1),codec:cfg.codec,mbps:(cfg.bitrate/1e6).toFixed(1),frames:total,expected:plan?total:Math.max(1,Math.round(dT*OUTF)),son:!!wa,why:audioWhy,memDown:!!window.__memDown,retry4k:!!window.__retried4k,dupRun:frozen?maxRun+1:0,slow:!rdr0&&!isPlan,big:cfg.width*cfg.height>2073600*1.2,ar:[v.videoWidth,v.videoHeight],fps:[OFPS,OUTF],dur:[dT,(plan?total:total)/OUTF]});

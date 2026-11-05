@@ -3,7 +3,7 @@
 // trouver le fichier vidéo de meilleure qualité et le renvoyer à l'app, avec les bons en-têtes.
 // Aucune vidéo n'est stockée : elle transite seulement.
 
-const VERSION = "6";
+const VERSION = "7";
 const UA_PC = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 // hôtes que /proxy accepte de relayer (rien d'autre : pas de relais ouvert)
 const PROXY_OK = /^(www\.reddit\.com|old\.reddit\.com|v\.redd\.it|video\.twimg\.com|api\.fxtwitter\.com|[a-z0-9-]+\.media\.tumblr\.com)$/i;
@@ -320,6 +320,8 @@ async function handle(req, env) {
     try {
       if (u.pathname === "/" || u.pathname === "/etat") return json({ ok: true, service: "retouche-serveur", version: VERSION });
       if (u.pathname === "/abo/verifier") return await aboVerifier(req, env);
+      if (u.pathname === "/diag") return await diagRecevoir(req, env);
+      if (u.pathname === "/diag/export") return await diagExporter(req, env, u);
       if (u.pathname === "/video") return await video(u.searchParams.get("url") || "", { sd: u.searchParams.get("q") === "sd" });
       if (u.pathname === "/test") { // diagnostic lisible : ce que chaque méthode a obtenu (sans télécharger la vidéo)
         const link = u.searchParams.get("url") || ""; const log = [];
@@ -373,4 +375,52 @@ async function aboVerifier(req, env) {
   const fin = k.expires_at || null, ok = k.status === "granted" && (!fin || Date.parse(fin) > Date.now());
   return json({ premium: ok, definitif: !ok, plan: fin ? "pass" : "abonnement", fin,
     raison: ok ? "" : k.status === "revoked" ? "Cet abonnement est terminé." : fin && Date.parse(fin) <= Date.now() ? "Ce pass a expiré." : "Ce code n’est plus actif." });
+}
+
+/* ---------- v7 : diagnostic anonyme (avec l'accord de la personne, donné dans l'app) ----------
+   Ce qui arrive : des lots de mesures en nombres (mesures de la vidéo, réglages, appareil qui a filmé, modèle de téléphone simplifié).
+   Ce qui n'arrive jamais : image, son, nom de fichier. L'adresse IP n'est pas enregistrée. Conservation : 13 mois.
+   Base D1 liée sous le nom DIAG (wrangler.jsonc). Lecture réservée au propriétaire : en-tête « authorization: Bearer <DIAG_CLE> »
+   (secret Cloudflare : wrangler secret put DIAG_CLE). */
+const DIAG_SQL = "CREATE TABLE IF NOT EXISTS diag (id TEXT PRIMARY KEY, recu TEXT NOT NULL, t TEXT, kind TEXT, ver TEXT, data TEXT NOT NULL)";
+let diagPret = false;
+async function diagBase(env) {
+  if (!env.DIAG) throw new Err("diag", "Diagnostic pas encore ouvert sur ce serveur.", 503);
+  if (!diagPret) { await env.DIAG.prepare(DIAG_SQL).run(); await env.DIAG.prepare("CREATE INDEX IF NOT EXISTS diag_recu ON diag (recu)").run(); diagPret = true }
+  return env.DIAG;
+}
+/* garde des nombres, des noms courts et des tableaux ; retire tout ce qui pourrait ressembler à un nom de fichier ou à un texte libre long */
+function diagNettoyer(x, d = 0) {
+  if (d > 6) return null;
+  if (x == null || typeof x === "boolean") return x;
+  if (typeof x === "number") return Number.isFinite(x) ? x : null;
+  if (typeof x === "string") return /\.(mp4|mov|m4v|3gp|avi|jpe?g|png|heic|webm)\b/i.test(x) ? "[retiré]" : x.slice(0, 160);
+  if (Array.isArray(x)) return x.slice(0, 64).map(v => diagNettoyer(v, d + 1));
+  if (typeof x === "object") { const o = {}; let n = 0; for (const k in x) { if (n++ > 80) break; if (/^(nom|name|fichier|file|ua)$/i.test(k)) continue; o[k.slice(0, 40)] = diagNettoyer(x[k], d + 1) } return o }
+  return null;
+}
+async function diagRecevoir(req, env) {
+  if (req.method !== "POST") return fail("methode", "Méthode non permise.", 405);
+  const len = +(req.headers.get("content-length") || 0); if (len > 200000) return fail("taille", "Lot trop gros.", 413);
+  let b; try { b = JSON.parse(await req.text()) } catch (e) { return fail("json", "Demande invalide.", 400) }
+  const lot = Array.isArray(b && b.lot) ? b.lot.slice(0, 50) : [];
+  if (!lot.length) return json({ ok: true, n: 0 });
+  const db = await diagBase(env), recu = new Date().toISOString(), st = [];
+  for (const e of lot) {
+    if (!e || typeof e !== "object" || !/^[a-z0-9]{6,24}$/.test(String(e.id || ""))) continue;
+    const d = diagNettoyer(e), txt = JSON.stringify(d); if (txt.length > 24000) continue;
+    st.push(db.prepare("INSERT OR IGNORE INTO diag (id, recu, t, kind, ver, data) VALUES (?, ?, ?, ?, ?, ?)").bind(String(e.id), recu, String(e.t || "").slice(0, 30), String(e.kind || "").slice(0, 30), String(e.ver || "").slice(0, 12), txt));
+  }
+  if (st.length) await db.batch(st);
+  if (Math.random() < .03) await db.prepare("DELETE FROM diag WHERE recu < ?").bind(new Date(Date.now() - 395 * 864e5).toISOString()).run();
+  return json({ ok: true, n: st.length });
+}
+async function diagExporter(req, env, u) {
+  const cle = env.DIAG_CLE, h = req.headers.get("authorization") || "";
+  if (!cle || h !== "Bearer " + cle) return fail("cle", "Accès réservé.", 401);
+  const db = await diagBase(env), depuis = u.searchParams.get("depuis") || "1970", lim = Math.min(2000, +u.searchParams.get("limite") || 500), kind = u.searchParams.get("kind");
+  const q = kind ? db.prepare("SELECT id, recu, t, kind, ver, data FROM diag WHERE recu > ? AND kind = ? ORDER BY recu LIMIT ?").bind(depuis, kind, lim)
+    : db.prepare("SELECT id, recu, t, kind, ver, data FROM diag WHERE recu > ? ORDER BY recu LIMIT ?").bind(depuis, lim);
+  const r = await q.all(), tot = await db.prepare("SELECT COUNT(*) AS n FROM diag").first();
+  return json({ ok: true, total: tot && tot.n, lignes: (r.results || []).map(x => ({ ...x, data: JSON.parse(x.data) })) });
 }
