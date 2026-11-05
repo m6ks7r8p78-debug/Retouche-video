@@ -79,6 +79,18 @@ await test("Sur un autre domaine (ex. github.io) : rien ne s’allume même si a
   await q.waitForTimeout(300); const a = await q.evaluate(() => PUB.allume()); await q.close();
   return { ok: !a && req.length === 0, info: "allumé " + a + ", " + req.length + " requête(s)" } });
 
+await test("Site public retoucheproai.com : « Colle un lien » masqué ; ailleurs (local) toujours visible", async () => {
+  const q = await b.newPage(); const racine = path.join(HERE, "..");
+  await q.route("https://retoucheproai.com/**", r => { const f = path.join(racine, new URL(r.request().url()).pathname.replace(/^\/$/, "/index.html"));
+    fs.existsSync(f) ? r.fulfill({ path: f }) : r.fulfill({ status: 404, body: "" }) });
+  await q.route(/googlesyndication|doubleclick/, r => r.abort());
+  await q.goto("https://retoucheproai.com/"); await q.waitForFunction(() => window.PUB);
+  const pub = await q.evaluate(() => ["#lnkf", ".lnkh"].map(s => getComputedStyle(document.querySelector(s)).display));
+  const txt = await q.evaluate(() => document.querySelector(".privacy").innerText.includes("lien")); await q.close();
+  const r = await b.newPage(); await r.goto(URLAPP); await r.waitForFunction(() => window.PUB);
+  const loc = await r.evaluate(() => getComputedStyle(document.getElementById("lnkf")).display); await r.close();
+  return { ok: pub.every(x => x === "none") && !txt && loc !== "none", info: "public " + pub.join("/") + ", texte sans lien " + !txt + ", local " + loc } });
+
 await b.close(); srv.kill();
 console.log("\nRésultat : " + res.filter(x => x).length + " réussis, " + res.filter(x => !x).length + " échoués.");
 process.exit(res.every(x => x) ? 0 : 1);

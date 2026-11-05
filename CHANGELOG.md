@@ -1,5 +1,11 @@
 # Journal des versions
 
+## v5.5 — 5 novembre 2026 (pas de chargement par lien sur le site public)
+- Sur retoucheproai.com, « Colle un lien ici » est masqué (classe `sans-liens` posée avant l'affichage) : les règles
+  Google AdSense refusent les outils de téléchargement de vidéos d'autres plateformes. Le code et le serveur restent :
+  la fonction marche toujours dans la version Claude et en test local.
+- Textes de confidentialité mis à jour en conséquence (et mention de Kaggle ajoutée dans l'app).
+
 ## v5.4 — 5 novembre 2026 (compte AdSense relié)
 - Identifiant éditeur ca-pub-4826284146220706 : balise meta « google-adsense-account » (vérification du site par Google)
   et fichier ads.txt à la racine. Aucun script de pub n'est chargé : les pubs restent éteintes (PUB_CONFIG.actif = false)
