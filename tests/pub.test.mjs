@@ -23,8 +23,8 @@ async function page(allume, gpt = true) {
   const p = await b.newPage(); const req = []; p.on("request", r => { if (/googlesyndication|doubleclick/.test(r.url())) req.push(r.url()) });
   const errs = []; p.on("pageerror", e => errs.push(e.message)); p.__errs = errs; p.__req = req;
   if (allume) {
-    const src = fs.readFileSync(path.join(HERE, "..", "pub.js"), "utf8").replace("actif: false", "actif: true").replace('domaine: ""', 'domaine: "localhost"')
-      .replace('adsense: ""', 'adsense: "ca-pub-0000000000000000"').replace('banniere: ""', 'banniere: "111"').replace('recompense: ""', 'recompense: "/1/test"');
+    const src = fs.readFileSync(path.join(HERE, "..", "pub.js"), "utf8").replace("actif: false", "actif: true").replace(/domaine: "[^"]*"/, 'domaine: "localhost"')
+      .replace(/adsense: "[^"]*"/, 'adsense: "ca-pub-0000000000000000"').replace('banniere: ""', 'banniere: "111"').replace('recompense: ""', 'recompense: "/1/test"');
     await p.route("**/pub.js", r => r.fulfill({ contentType: "text/javascript", body: src }));
     await p.route("**/adsbygoogle.js*", r => r.fulfill({ contentType: "text/javascript", body: "" }));
     await p.route("**/gpt.js", r => gpt ? r.fulfill({ contentType: "text/javascript", body: FAUX_GPT }) : r.abort());
@@ -73,7 +73,7 @@ await test("Allumées mais pub indisponible (bloqueur, réseau) → enregistreme
 await p.close();
 
 await test("Sur un autre domaine (ex. github.io) : rien ne s’allume même si actif", async () => {
-  const src = fs.readFileSync(path.join(HERE, "..", "pub.js"), "utf8").replace("actif: false", "actif: true").replace('domaine: ""', 'domaine: "retouche-video.fr"').replace('adsense: ""', 'adsense: "ca-pub-1"');
+  const src = fs.readFileSync(path.join(HERE, "..", "pub.js"), "utf8").replace("actif: false", "actif: true").replace(/domaine: "[^"]*"/, 'domaine: "retoucheproai.com"').replace(/adsense: "[^"]*"/, 'adsense: "ca-pub-1"');
   const q = await b.newPage(); const req = []; q.on("request", r => { if (/googlesyndication|doubleclick/.test(r.url())) req.push(1) });
   await q.route("**/pub.js", r => r.fulfill({ contentType: "text/javascript", body: src })); await q.goto(URLAPP); await q.waitForFunction(() => window.PUB);
   await q.waitForTimeout(300); const a = await q.evaluate(() => PUB.allume()); await q.close();

@@ -13,8 +13,8 @@
      de page permet de changer d'avis à tout moment. */
 window.PUB_CONFIG = {
   actif: false,            /* interrupteur général */
-  domaine: "",             /* ex. "retoucheproai.com" : les pubs ne s'affichent que sur ce domaine (jamais sur github.io ni dans Claude) */
-  adsense: "",             /* identifiant éditeur AdSense, ex. "ca-pub-1234567890123456" */
+  domaine: "retoucheproai.com",             /* ex. "retoucheproai.com" : les pubs ne s'affichent que sur ce domaine (jamais sur github.io ni dans Claude) */
+  adsense: "ca-pub-4826284146220706",             /* identifiant éditeur AdSense, ex. "ca-pub-1234567890123456" */
   banniere: "",            /* numéro du bloc d'annonces de la bannière, ex. "1234567890" */
   recompense: "",          /* bloc récompensé Ad Manager, ex. "/12345678/retouche_recompense" */
   masquerLiens: true       /* masque « Coller un lien » quand les pubs sont allumées (règles Google sur les outils de téléchargement) */

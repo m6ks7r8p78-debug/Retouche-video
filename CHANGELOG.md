@@ -1,5 +1,10 @@
 # Journal des versions
 
+## v5.4 — 5 novembre 2026 (compte AdSense relié)
+- Identifiant éditeur ca-pub-4826284146220706 : balise meta « google-adsense-account » (vérification du site par Google)
+  et fichier ads.txt à la racine. Aucun script de pub n'est chargé : les pubs restent éteintes (PUB_CONFIG.actif = false)
+  jusqu'à l'accord de Google et la création des blocs d'annonces.
+
 ## v5.3 — 5 novembre 2026 (page Confidentialité)
 - Nouvelle page confidentialite.html (traitement sur l'appareil, usages réseau, publicité Google et cookies, droits,
   hébergeurs), liée depuis le texte de confidentialité de l'app. Exigée par Google AdSense.
