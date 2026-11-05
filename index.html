@@ -940,7 +940,8 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     const c=sc[best]/Math.max(1,n);SRX.decal=best-R;window.__iaCalage={decalage:SRX.decal,correlation:+c.toFixed(3)};
     if(c<.6)throw new Error("le résultat du serveur ne correspond pas aux images de ta vidéo (correspondance "+Math.round(c*100)+" %)");
   },
-  rang(a){const m=SRX.mapr;return Math.max(0,Math.min(m.total-1,m.map(a)+(SRX.decal||0)))},
+  /* décalage appliqué au temps (et non au rang) : juste aussi aux premières et dernières images, où le rang est borné */
+  rang(a){const m=SRX.mapr;return Math.max(0,Math.min(m.total-1,m.map(a+(SRX.decal||0))))},
   /* dessine el restaurée par l'IA ; renvoie false si l'IA n'est pas utilisable (l'appelant dessine alors normalement) */
   async render(el,onTile,key){
     if(!SRX.on())return false;
