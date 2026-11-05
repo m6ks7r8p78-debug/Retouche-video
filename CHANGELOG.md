@@ -1,5 +1,16 @@
 # Journal des versions
 
+## v6.0 — 5 novembre 2026 (rendu photographe)
+- Photos avec l'IA : nouveau moteur Real-ESRGAN x4plus (RRDBNet, 16,7 M de paramètres, BSD-3), bien plus net que le réseau
+  compact : blocs de compression et bruit effacés, contours et textures reconstruits. Converti en ONNX demi-précision
+  (modeles/realesrgan-x4plus-fp16.onnx, 33,7 Mo, téléchargé une fois, empreinte vérifiée). photopro.js.
+- Calcul sur le téléphone avec ONNX Runtime Web 1.22.0 : WebGPU (puce graphique), repli WebAssembly (ort/ort.webgpu.min.js,
+  ort-wasm-simd-threaded.jsep.*). Tuiles de 160 px avec marge de 12 px, chaque tuile ×4 réduite aussitôt (pas de canevas géant).
+- Mélange avec la version classique allégé pour ce moteur (Naturel 0,8 · Équilibré 0,9 · Détails 1) ; couleurs toujours
+  celles de l'app ; grain plus léger. Repli automatique sur l'IA standard en cas d'échec, avec message.
+- La vidéo garde le réseau compact (x4plus serait des dizaines de fois trop lent sur téléphone).
+- Tests : tests/photopro.test.mjs (identique au modèle d'origine, raccords de tuiles, échelle, utilisation réelle, repli).
+
 ## v5.9 — 5 novembre 2026 (premier écran)
 - Avant / après réel sur la page d'accueil (photo de vieux téléphone traitée par l'app elle-même, sans retouche ; détails dans
   demo/LISEZ-MOI.txt) : le curseur glisse tout seul, s'arrête dès qu'on le touche ; immobile si « réduire les animations ».

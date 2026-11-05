@@ -3,6 +3,7 @@
 | Composant | Code | Poids / données | Usage commercial |
 |---|---|---|---|
 | Real-ESRGAN general v3 | BSD-3-Clause | BSD-3-Clause (release v0.2.5.0) | oui, avec mention |
+| Real-ESRGAN x4plus *(v6.0, rendu photographe)* | BSD-3-Clause | BSD-3-Clause (release v0.1.0, `RealESRGAN_x4plus.pth`, converti en ONNX FP16) | oui, avec mention |
 | Depth Anything V2 **Small** | Apache-2.0 | Apache-2.0 (Small uniquement ; Base/Large CC-BY-NC, non utilisés) | oui |
 | ONNX Runtime Web 1.22.0 | MIT | — | oui |
 | RNNoise | BSD-3-Clause (Xiph) ; enveloppe WASM Apache-2.0 | modèle intégré, BSD-3 | oui |

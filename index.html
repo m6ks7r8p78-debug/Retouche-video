@@ -576,11 +576,12 @@ body:not(.loaded) #picke{grid-column:1/-1}
 <script src="sr-gpu.js"></script>
 <script src="sr.js"></script>
 <script src="depth.js"></script>
+<script src="photopro.js"></script>
 <script src="marquage.js"></script>
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v5.9";/* seul endroit où changer le numéro de version */
+const VER="v6.0";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -851,7 +852,13 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
       return SRX.remote.image(SRX.idx)}
     /* copie immédiate de l'image (avant toute attente) : l'image d'une vidéo change ou est libérée entre-temps, et WebGPU ne lit pas toujours une vidéo directement */
     if(!(el instanceof HTMLCanvasElement)&&!(el instanceof HTMLImageElement)){const [w,h]=dims(el),c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(el,0,0,w,h);el=c}
-    const job=SRX.lock.then(()=>SR.run(el,s,SRX.dn(),onTile,key));SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed)localStorage.setItem("srspd",SR.speed)}catch(e){}return c},
+    /* v6.0 : photo → « rendu photographe » (Real-ESRGAN x4plus) ; en cas d'échec, réseau compact comme avant */
+    const [ew,eh]=dims(el),pro=mode!=="video"&&!SRX.proOff&&window.PHOTOPRO&&PHOTOPRO.dispo()&&PHOTOPRO.fits(ew,eh);
+    const job=SRX.lock.then(async()=>{
+      if(pro){try{const c=await PHOTOPRO.run(el,s,onTile,key,f=>msg("Téléchargement du rendu photographe (34 Mo, une seule fois)… "+Math.round(f*100)+" %"));SRX.pro=true;return c}
+        catch(e){SRX.proOff=true;const t=window.MODELS?MODELS.explain(e):{texte:(e&&e.message)||"erreur"};msg("Rendu photographe indisponible : "+t.texte+" L’IA standard est utilisée.");try{DIAG.send("photopro_echec",{err:String((e&&e.message)||e).slice(0,200)})}catch(x){}}}
+      SRX.pro=false;return SR.run(el,s,SRX.dn(),onTile,key)});
+    SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed)localStorage.setItem("srspd",SR.speed)}catch(e){}return c},
   /* IA rapide : envoi à Kaggle, attente, récupération ; renvoie un lecteur d'images {image(rang), fermer()} */
   async lancerServeur(ow,oh){
     if(!KG.actif())throw new Error("IA rapide : ajoute d’abord ton jeton Kaggle dans ⚙️ Paramètres.");
@@ -892,7 +899,8 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     /* v3.5 : l'IA seule repeignait l'image (peau lissée, reflets faux dans les yeux, couleurs qui virent à l'orange).
        On garde donc : 1) un mélange avec la version classique, 2) les couleurs de la version classique (l'IA n'apporte que la netteté),
        3) un grain très léger pour retrouver la texture naturelle. */
-    const K=PROF.k(),g=Math.max(0,1-K.ai);
+    /* v6.0 : le rendu photographe est assez fidèle pour peser davantage (Naturel 0,8 · Équilibré 0,9 · Détails 1) */
+    const K=PROF.k(),ai=SRX.pro?Math.min(1,K.ai+.35):K.ai,g=Math.max(0,1-ai);
     const W=cv.width,H=cv.height,mk=n=>{let c=SRX[n];if(!c)c=SRX[n]=document.createElement("canvas");if(c.width!==W||c.height!==H){c.width=W;c.height=H}return c};
     const A=mk("cA"),B=mk("cB"),xa=A.getContext("2d"),xb=B.getContext("2d");
     xa.globalCompositeOperation="copy";xa.drawImage(cv,0,0);xa.globalCompositeOperation="source-over";
@@ -903,7 +911,7 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     if(!SRX.gr){const n=document.createElement("canvas");n.width=n.height=256;const x=n.getContext("2d"),im=x.createImageData(256,256);
       let sd=12345;for(let i=0;i<im.data.length;i+=4){sd=(sd*1103515245+12345)>>>0;const q=118+((sd>>>16)%21);im.data[i]=im.data[i+1]=im.data[i+2]=q;im.data[i+3]=255}
       x.putImageData(im,0,0);SRX.gr=n}
-    xa.globalCompositeOperation="overlay";xa.globalAlpha=.35;const ox=Math.random()*256|0,oy=Math.random()*256|0;xa.translate(-ox,-oy);xa.fillStyle=xa.createPattern(SRX.gr,"repeat");xa.fillRect(ox,oy,W,H);xa.setTransform(1,0,0,1,0,0);/* grain léger */
+    xa.globalCompositeOperation="overlay";xa.globalAlpha=SRX.pro?.22:.35;const ox=Math.random()*256|0,oy=Math.random()*256|0;xa.translate(-ox,-oy);xa.fillStyle=xa.createPattern(SRX.gr,"repeat");xa.fillRect(ox,oy,W,H);xa.setTransform(1,0,0,1,0,0);/* grain léger */
     xa.globalCompositeOperation="source-over";xa.globalAlpha=1;blit(A)},
   /* échec de l'IA : message clair selon la cause ; en cas de mémoire saturée, on libère les modèles avant de continuer sans IA */
   fail(e){if(SRX.remote){SRX.remoteErr=SRX.remoteErr||e;return}/* IA rapide : l'export s'arrête proprement, l'IA locale reste active */
