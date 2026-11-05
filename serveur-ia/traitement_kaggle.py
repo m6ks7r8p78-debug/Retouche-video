@@ -2,6 +2,7 @@
 
 Entrée (jeu de données privé, attaché par l'app) : la vidéo + params.json
   {"dn": 0.3, "ow": 2160, "oh": 3840, "dw": 720, "dh": 1280, "images": 6713, "version": 1}
+  (+ "rw", "rh" facultatifs : taille de calcul quand la vidéo est déjà HD, voir plus bas)
 Sortie (/kaggle/working) : ia.mp4 (une image calculée par image de la vidéo, dans l'ordre d'affichage du fichier,
   à la taille ow×oh : exactement ce que SR.run(image, ow/dw, dn) donne dans l'app) + info.json (contrôles).
 Rien d'autre n'est conservé ; l'app efface le jeu de données et le calcul une fois le résultat récupéré.
@@ -33,7 +34,13 @@ plage = "pc" if st.get("color_range") == "pc" else "tv"
 INFO["decodage"] = {"matrice": matrice, "plage": plage, "flux": st}
 
 DW, DH, OW, OH, N = P["dw"], P["dh"], P["ow"], P["oh"], P["images"]
-s = OW / DW
+# v4.3 : vidéo déjà HD (souvent agrandie ou très compressée) : l'image est d'abord ramenée à rw×rh (le vrai niveau de détail),
+# puis l'IA la reconstruit ; sans rw/rh, comportement identique aux versions précédentes
+RW, RH = int(P.get("rw", DW)), int(P.get("rh", DH))
+if RW < 2 or RH < 2 or RW > DW or RH > DH or RW * RH > 2300000:
+    raise SystemExit(f"taille de calcul incohérente {RW}x{RH}")
+INFO["calcul"] = f"{RW}x{RH}"
+s = OW / RW
 # contrôle : la première image décodée doit faire exactement dw×dh (sinon les images seraient décalées : on arrête)
 _png = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", VID, "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "-"], capture_output=True).stdout
 _w, _h = int.from_bytes(_png[16:20], "big"), int.from_bytes(_png[20:24], "big")
@@ -41,11 +48,12 @@ INFO["premiere_image"] = f"{_w}x{_h}"
 if (_w, _h) != (DW, DH):
     json.dump(INFO, open("/kaggle/working/info.json", "w"), indent=1)
     raise SystemExit(f"taille décodée {_w}x{_h} différente de celle de l'app {DW}x{DH}")
-if abs(OH / DH - s) > 0.01:
+if abs(OH / RH - s) > 0.01:
     raise SystemExit("proportions de sortie incohérentes")
 # lecture : ordre d'affichage du fichier, une image par image du fichier (rotation appliquée comme dans l'app)
 dec = subprocess.Popen(["ffmpeg", "-loglevel", "error", "-i", VID, "-vf",
-                        f"scale=in_color_matrix={matrice}:in_range={plage}:out_range=pc:flags=lanczos+full_chroma_int+accurate_rnd",
+                        (f"scale=w={RW}:h={RH}:" if (RW, RH) != (DW, DH) else "scale=") +
+                        f"in_color_matrix={matrice}:in_range={plage}:out_range=pc:flags=lanczos+full_chroma_int+accurate_rnd",
                         "-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], stdout=subprocess.PIPE, bufsize=1 << 26)
 # écriture : H.264 High 8 bits 4:2:0, plage standard (limitée) BT.709 — lu partout, y compris par Safari et WebCodecs —
 # quasi sans perte (qp fixe bas ; écart mesuré par tests/serveur_ia_compare.py)
@@ -59,7 +67,7 @@ enc = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", 
 
 ng = max(1, torch.cuda.device_count())
 modeles = [IA.charger(SR, P["dn"], device=f"cuda:{g}") for g in range(ng)]
-B, taille = 2, DW * DH * 3
+B, taille = 2, RW * RH * 3
 lots_in, lots_out = queue.Queue(maxsize=8), {}
 fini = threading.Event(); verrou = threading.Condition(); erreurs = []
 
@@ -71,7 +79,7 @@ def travail(g):
         k, buf = it
         try:
             n = len(buf) // taille
-            x = torch.frombuffer(bytearray(buf), dtype=torch.uint8).view(n, DH, DW, 3).to(f"cuda:{g}")
+            x = torch.frombuffer(bytearray(buf), dtype=torch.uint8).view(n, RH, RW, 3).to(f"cuda:{g}")
             y = IA.traiter(modeles[g], x, s).cpu().numpy().tobytes()
         except Exception as e:
             erreurs.append(repr(e)); y = None

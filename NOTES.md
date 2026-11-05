@@ -143,3 +143,8 @@ Demande : app plus simple pour débutant, peu de boutons, pas surchargée (« je
 
 ## v4.2 (5 nov. 2026)
 Mode simple : Vidéo / Photo / Regrouper côte à côte, par trois (demande de la personne).
+
+## v4.3 (5 nov. 2026)
+IA sur Kaggle aussi pour les vidéos déjà HD (1080p, 4K) : avant, l’IA y était sautée en silence (diagnostic : ia.actif null), donc Kaggle jamais appelé.
+Sur Kaggle, l’image est ramenée à la moitié de la taille de sortie (params rw/rh), reconstruite ×2 par l’IA, puis mélangée à la version classique (compose).
+Testé : script Kaggle en local (CPU) 1080×1920 → calcul 540×960 → sortie 1080×1920, 6/6 images ; export complet de l’app avec Kaggle simulé ; suites sw 7/7, studio 11/11. v3 : 3 échecs « photo sombre » déjà présents avant (sélecteur masqué par le mode simple v4.0).
