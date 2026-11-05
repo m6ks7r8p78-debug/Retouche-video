@@ -87,7 +87,7 @@ var KG = (() => {
     let fin = false;
     try {
       ev("envoi", 0, "Préparation de l’envoi…");
-      const params = new Blob([JSON.stringify(Object.assign({ dn: o.dn, ow: o.ow, oh: o.oh, dw: o.dw, dh: o.dh, images: o.images, version: 1, qp: 16 }, o.rw ? { rw: o.rw, rh: o.rh } : {}))], { type: "application/json" });
+      const params = new Blob([JSON.stringify(Object.assign({ dn: o.dn, ow: o.ow, oh: o.oh, dw: o.dw, dh: o.dh, images: o.images, version: 1, qp: 16 }, o.rw ? { rw: o.rw, rh: o.rh } : {}, o.gop ? { gop: o.gop } : {}))], { type: "application/json" });
       const sr = await (await texte("sr.bin")).blob(), py = await (await texte("serveur-ia/ia_serveur.py")).blob(), code = await (await texte("serveur-ia/traitement_kaggle.py")).text();
       const ext = ((o.file.name || "").match(/\.(mp4|mov|m4v)$/i) || [".mp4"])[0].toLowerCase();
       const files = [], attendus = {};

@@ -62,6 +62,9 @@ enc = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", 
                         "-vf", "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int",
                         "-c:v", "h264_nvenc", "-profile:v", "high", "-preset", "p6", "-tune", "hq", "-rc", "constqp", "-qp", str(QP),
                         "-bf", "0",   # pas d'images B : ordre de décodage = ordre d'affichage (lecteur image par image de l'app)
+                        # images clés rapprochées si l'app doit relire le résultat à l'envers (Time Repair « Lire à l'envers ») :
+                        # chaque retour en arrière ne redécode alors que quelques images au lieu d'environ 250
+                        *(["-g", str(max(1, int(P["gop"])))] if P.get("gop") else []),
                         "-pix_fmt", "yuv420p", "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
                         "-movflags", "+faststart", "/kaggle/working/ia.mp4"], stdin=subprocess.PIPE)
 
