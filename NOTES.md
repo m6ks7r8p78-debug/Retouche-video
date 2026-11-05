@@ -27,6 +27,13 @@ le calcul « 4 pixels par fil » n'y gagne que 12 %) → 50 h pour une vidéo 72
 - Reste : test d'intégration complet réussi, vérifier que DeleteKernel est autorisé par le jeton, mesurer une vraie vidéo
   720×1280, documentation (README, CHANGELOG, SECURITE, AUTORISATIONS, GUIDE_IPHONE), fusion dans `main`.
 
+## v5.6–5.7 (5 nov. 2026) — Premium et apps des stores, préparés et ÉTEINTS
+Offres et prix : OFFRES.md ; allumer Premium : PREMIUM.md ; pubs : PUBLICITE.md ; apps : app-stores/README.md.
+Interrupteurs : ABO_CONFIG.actif (abo.js), PUB_CONFIG.actif (site) et PUB_CONFIG.app.actif (apps).
+Serveur des liens v6 (route /abo/verifier + origines de l'app) PAS encore déployé : il faudra une clé Cloudflare (Workers Scripts Edit).
+Tests : abo (14), natif (10), pub (9), studio (11), sw (7). Compiler Android ici : SDK dans /home/claude/android-sdk (à réinstaller
+dans une nouvelle session), Gradle avec --max-workers=1 (le proxy limite les téléchargements simultanés).
+
 ## v5.1 (5 nov. 2026) — domaine retoucheproai.com
 Domaine acheté chez Cloudflare Registrar (compte « Jmy.maelhys », zone 2f6a5a7e…, jusqu'au 5 nov. 2027).
 DNS : 4 A + 4 AAAA GitHub Pages sur la racine, CNAME www → m6ks7r8p78-debug.github.io, tous « DNS only » (pas de proxy).

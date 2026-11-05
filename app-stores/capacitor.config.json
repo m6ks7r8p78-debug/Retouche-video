@@ -1,0 +1,8 @@
+{
+  "appId": "com.retoucheproai.app",
+  "appName": "RetoucheProAI",
+  "webDir": "www",
+  "backgroundColor": "#fff7f2",
+  "ios": { "contentInset": "never", "limitsNavigationsToAppBoundDomains": false },
+  "android": { "allowMixedContent": false }
+}

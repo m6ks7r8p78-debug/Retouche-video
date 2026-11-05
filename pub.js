@@ -17,7 +17,14 @@ window.PUB_CONFIG = {
   adsense: "ca-pub-4826284146220706",             /* identifiant éditeur AdSense, ex. "ca-pub-1234567890123456" */
   banniere: "",            /* numéro du bloc d'annonces de la bannière, ex. "1234567890" */
   recompense: "",          /* bloc récompensé Ad Manager, ex. "/12345678/retouche_recompense" */
-  masquerLiens: true       /* masque « Coller un lien » quand les pubs sont allumées (règles Google sur les outils de téléchargement) */
+  masquerLiens: true,      /* masque « Coller un lien » quand les pubs sont allumées (règles Google sur les outils de téléchargement) */
+  /* v5.7 : app des stores (iPhone / Android) — Google AdMob, la régie des apps (AdSense est interdit dans les apps) */
+  app: {
+    actif: false,          /* interrupteur des pubs dans l'app des stores */
+    test: true,            /* true = pubs d'essai officielles de Google (obligatoire tant que l'app n'est pas publiée) */
+    banniere: { ios: "", android: "" },   /* blocs AdMob « Bannière adaptative » */
+    recompense: { ios: "", android: "" }  /* blocs AdMob « Avec récompense » */
+  }
 };
 
 window.PUB = (() => {
@@ -25,6 +32,49 @@ window.PUB = (() => {
   const hote = () => location.hostname.replace(/^www\./, "");
   const allume = () => !!(C.actif && C.adsense && C.domaine && hote() === C.domaine.replace(/^www\./, ""));
   let gptCharge = null, pret = null, enCours = false;
+  /* ---------- app des stores : AdMob ---------- */
+  const natif = () => !!(window.NATIF && NATIF.actif());
+  const admob = () => window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.AdMob;
+  const ESSAI = { banniere: { ios: "ca-app-pub-3940256099942544/2435281174", android: "ca-app-pub-3940256099942544/9214589741" },
+    recompense: { ios: "ca-app-pub-3940256099942544/1712485313", android: "ca-app-pub-3940256099942544/5224354917" } };
+  const unite = t => { const os = natif() ? NATIF.plateforme() : ""; return C.app.test ? ESSAI[t][os] : (C.app[t] || {})[os] };
+  const allumeNatif = () => !!(natif() && C.app && C.app.actif && admob());
+  async function demarrerNatif() {
+    const A = admob();
+    try {
+      await A.initialize({ initializeForTesting: !!C.app.test });
+      /* consentement européen (formulaire certifié de Google), puis demande de suivi d'Apple */
+      try { const ci = await A.requestConsentInfo(); if (ci.isConsentFormAvailable && ci.status === "REQUIRED") await A.showConsentForm() } catch (e) {}
+      try { const t = await A.trackingAuthorizationStatus(); if (t && t.status === "notDetermined") await A.requestTrackingAuthorization() } catch (e) {}
+      const id = unite("banniere");
+      if (id) {
+        await A.addListener("bannerAdSizeChanged", z => { document.body.style.paddingBottom = ((z && z.height) || 0) + "px" });
+        await A.showBanner({ adId: id, adSize: "ADAPTIVE_BANNER", position: "BOTTOM_CENTER", margin: 0, isTesting: !!C.app.test });
+      }
+    } catch (e) {}
+    lienCookiesNatif(); ["sv", "svall", "mgsave"].forEach(proteger); prechargerNatif();
+  }
+  async function prechargerNatif() {
+    const A = admob(), id = unite("recompense"); if (!A || !id || pret || enCours) return;
+    enCours = true;
+    try {
+      await A.prepareRewardVideoAd({ adId: id, isTesting: !!C.app.test });
+      pret = { montrer: () => new Promise(async (ok, ko) => {
+        let accorde = false; const h = [];
+        const fin = () => h.forEach(x => { try { x.remove() } catch (e) {} });
+        h.push(await A.addListener("onRewardedVideoAdReward", () => { accorde = true }));
+        h.push(await A.addListener("onRewardedVideoAdDismissed", () => { fin(); ok(accorde) }));
+        try { await A.showRewardVideoAd() } catch (e) { fin(); ko(e) }
+      }) };
+    } catch (e) {}
+    enCours = false;
+  }
+  function lienCookiesNatif() {
+    const pied = document.getElementById("pied"); if (!pied) return;
+    const a = document.createElement("button"); a.type = "button"; a.className = "pub-cookies"; a.textContent = "Cookies et pubs : modifier mon choix";
+    a.onclick = () => { try { admob().showPrivacyOptionsForm() } catch (e) {} };
+    pied.appendChild(a);
+  }
 
   function script(src, attrs) {
     return new Promise((ok, ko) => {
@@ -65,6 +115,8 @@ window.PUB = (() => {
         slot.addService(g.pubads());
         const pa = g.pubads();
         const etat = { slot, evt: null, accorde: false, ferme: null };
+        etat.montrer = () => { const f = new Promise(r => (etat.ferme = r)); etat.evt.makeRewardedVisible();
+          return f.then(() => { try { g.destroySlots([slot]) } catch (x) {} return etat.accorde }) };
         pa.addEventListener("rewardedSlotReady", e => { if (e.slot === slot) { etat.evt = e; pret = etat; enCours = false } });
         pa.addEventListener("rewardedSlotGranted", e => { if (e.slot === slot) etat.accorde = true });
         pa.addEventListener("rewardedSlotClosed", e => { if (e.slot === slot && etat.ferme) etat.ferme() });
@@ -102,20 +154,19 @@ window.PUB = (() => {
       pret = null;
       const ok = await demander({ t: "Une courte pub, puis c’est enregistré", p: "L’app est gratuite grâce aux pubs. Regarde une courte pub (quelques secondes), puis ta vidéo s’enregistre." }, "Voir la pub et enregistrer", "Annuler");
       if (!ok) { pret = p; return } /* refusé : la pub reste prête pour la prochaine fois */
-      const ferme = new Promise(r => (p.ferme = r));
-      try { p.evt.makeRewardedVisible() } catch (x) { return action.call(b, e) }
-      await ferme;
-      try { googletag.destroySlots([p.slot]) } catch (x) {}
-      setTimeout(precharger, 1000);
-      if (!p.accorde) { await demander({ t: "Pub arrêtée avant la fin", p: "Pour enregistrer, la pub doit être regardée jusqu’au bout. Tu peux réessayer." }, "D’accord"); return }
+      let accorde = false;
+      try { accorde = await p.montrer() } catch (x) { return action.call(b, e) } /* la pub n'a pas pu s'afficher : enregistrement libre */
+      setTimeout(natif() ? prechargerNatif : precharger, 1000);
+      if (!accorde) { await demander({ t: "Pub arrêtée avant la fin", p: "Pour enregistrer, la pub doit être regardée jusqu’au bout. Tu peux réessayer." }, "D’accord"); return }
       const e2 = await demander({ t: "Merci !", p: "Ta vidéo est prête." }, "Enregistrer maintenant");
       if (e2) action.call(b, e2);
     };
   }
 
   function demarrer() {
-    if (!allume()) return;
     if (window.ABO && ABO.actif() && ABO.premium()) return; /* v5.6 : jamais de pub pour les abonnés Premium */
+    if (allumeNatif()) return demarrerNatif();
+    if (!allume()) return;
     document.documentElement.classList.add("avec-pub");
     if (C.masquerLiens) document.querySelectorAll("#lnkf,#lnkc,#lnkst,.lnkh").forEach(z => z.style.setProperty("display", "none", "important"));
     script("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(C.adsense), { crossorigin: "anonymous" }).catch(() => {});
@@ -132,5 +183,5 @@ window.PUB = (() => {
   document.head.appendChild(css);
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", demarrer); else demarrer();
-  return { allume, _etat: () => ({ pret: !!pret, enCours }), _precharger: precharger };
+  return { allume, allumeNatif, _etat: () => ({ pret: !!pret, enCours }), _precharger: precharger };
 })();

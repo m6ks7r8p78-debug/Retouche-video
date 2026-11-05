@@ -121,7 +121,7 @@ window.ABO = (() => {
         } else if (a && a.dataset.a === "restaurer") {
           msg("Recherche de tes achats…"); msg((await storeRestaurer()) ? "Premium restauré." : "Aucun achat Premium trouvé sur ce compte.");
         }
-      } catch (x) { if (!x || !/cancel/i.test(String(x.message || x.code))) msg((x && x.message) || "Erreur, réessaie.") }
+      } catch (x) { if (x && /cancel|annul/i.test(String(x.message || x.code) + (x.userCancelled ? " cancel" : ""))) msg(""); else msg((x && x.message) || "Erreur, réessaie.") }
     };
     d.oncancel = () => d.close();
     if (!d.open) d.showModal();
@@ -207,7 +207,7 @@ window.ABO = (() => {
     boutonEntete();
     if (!premium()) verrouiller();
     rafraichir().then(() => { const b = document.getElementById("abo-b"); if (b) b.textContent = premium() ? "✓ Premium" : "Premium" });
-    if (natif()) storeSync();
+    if (natif()) { const avant = premium(); storeSync().then(e => { if (e && !avant) location.reload() }) } /* Premium retrouvé sur le compte Apple / Google : on relance sans pubs ni cadenas */
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", demarrer); else demarrer();
 

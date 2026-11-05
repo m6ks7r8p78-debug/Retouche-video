@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RetoucheProAI</string>
+    <string name="title_activity_main">RetoucheProAI</string>
+    <string name="package_name">com.retoucheproai.app</string>
+    <string name="custom_url_scheme">com.retoucheproai.app</string>
+</resources>

@@ -1,5 +1,15 @@
 # Journal des versions
 
+## v5.7 — 5 novembre 2026 (apps App Store et Google Play préparées)
+- Dossier app-stores/ : app Capacitor 8 (com.retoucheproai.app) qui reprend l'app web ; APK Android d'essai compilé.
+- natif.js : « Enregistrer » par le cache de l'app et la feuille de partage ; « Colle un lien » masqué dans l'app.
+- pub.js : pubs AdMob dans l'app (bannière, pub récompensée, consentement Google, demande de suivi d'Apple), éteintes.
+- abo.js : achats intégrés Apple / Google (RevenueCat), « Restaurer mes achats », Premium retrouvé au démarrage.
+- Nouvelle icône (dégradé de la marque) pour l'app et le site ; écrans de démarrage.
+- Compilation dans le cloud : .github/workflows/apps-stores.yml (Android + iPhone sur Mac GitHub, versions signées sur demande).
+- Serveurs : origines de l'app (capacitor://localhost, https://localhost) ajoutées — à déployer avec la v6 du serveur.
+- Tests : tests/natif.test.mjs (10 réussis).
+
 ## v5.6 — 5 novembre 2026 (offres Gratuit / Premium préparées, éteintes)
 - Étude de marché et décisions : OFFRES.md (Pass 7 jours 2,99 €, Mensuel 5,99 €, Annuel 34,99 €).
 - `abo.js` : droits Premium, cadenas sur 4K / IA / filtre / effacer / Time Repair / regrouper / lot, fenêtre d'offre,

@@ -10,7 +10,7 @@ const PROXY_OK = /^(www\.reddit\.com|old\.reddit\.com|v\.redd\.it|video\.twimg\.
 
 // sites autorisés à appeler ce serveur depuis un navigateur (l'app sur GitHub Pages, sa version dans Claude, les tests locaux) :
 // un autre site ne peut plus s'en servir comme téléchargeur sur ton quota gratuit
-const ORIGINS = /^https:\/\/(m6ks7r8p78-debug\.github\.io|(www\.)?retoucheproai\.com|[a-z0-9-]+\.claudeusercontent\.com|claude\.ai)$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
+const ORIGINS = /^https:\/\/(m6ks7r8p78-debug\.github\.io|(www\.)?retoucheproai\.com|[a-z0-9-]+\.claudeusercontent\.com|claude\.ai)$|^(capacitor:\/\/localhost|https:\/\/localhost)$|^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i;
 /* l'origine autorisée est posée sur la réponse finale, requête par requête (v5) : avant, une variable globale
    partagée pouvait donner à une requête l'en-tête CORS d'une autre requête traitée en même temps */
 const cors = (h = {}) => ({

@@ -5,7 +5,8 @@
 <script>/* v5.2 : toujours en connexion sécurisée (cadenas) : carte graphique, version hors ligne et pubs l'exigent */
 if(location.protocol==="http:"&&/(^|\.)retoucheproai\.com$/.test(location.hostname))location.replace("https://retoucheproai.com"+location.pathname+location.search+location.hash)
 /* v5.5 : sur le site public, pas de chargement par lien (règles Google AdSense sur les outils de téléchargement) ; la fonction reste dans la version Claude */
-if(/(^|\.)retoucheproai\.com$/.test(location.hostname))document.documentElement.classList.add("sans-liens")</script>
+if(/(^|\.)retoucheproai\.com$/.test(location.hostname)||(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()))document.documentElement.classList.add("sans-liens")</script>
+<script src="natif.js"></script>
 <style>.sans-liens #lnkf,.sans-liens #lnkc,.sans-liens #lnkst,.sans-liens .lnkh,.sans-liens .avec-liens{display:none!important}</style>
 <meta name="google-adsense-account" content="ca-pub-4826284146220706">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -538,7 +539,7 @@ body:not(.simple) .simple-only{display:none!important}
 <script src="effacer.js"></script>
 <script src="kaggle.js"></script>
 <script>
-const VER="v5.6";/* seul endroit où changer le numéro de version */
+const VER="v5.7";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -3187,6 +3188,8 @@ $("#pvsolo").onclick=()=>{PV.solo=!PV.solo;$("#pvb").hidden=PV.solo;$("#pvs").hi
 })();
 /* Enregistrement */
 (async()=>{try{if(window.claude&&claude.use)dl=await claude.use("downloads")}catch(e){dl=null}})();
+/* v5.7 : dans l'app des stores, « Enregistrer » passe par le cache de l'app et la feuille de partage du téléphone (natif.js) */
+if(!dl&&window.NATIF&&NATIF.actif())dl=NATIF;
 /* ===== Profils : boutons ===== */
 document.querySelectorAll("[data-prof]").forEach(b=>b.onclick=()=>PROF.set(b.dataset.prof,true));
 try{const sp=localStorage.getItem("profil");if(sp&&PROF.T[sp]){PROF.id=sp;PROF.manual=true;document.querySelectorAll("[data-prof]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.prof===sp?"true":"false"))}}catch(e){}
