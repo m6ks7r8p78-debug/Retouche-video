@@ -121,3 +121,7 @@ Chaleur = −(bleu − rouge) × 0,05, bornée −0,025 à +0,01. Cette vidéo :
 ## v3.11 (5 nov. 2026) — aperçu fluide
 Depuis la v3.9, l'anti-blocs (2 passes GPU) est actif sur la plupart des vidéos → aperçu saccadé pendant la lecture.
 Il est maintenant sauté pendant la lecture de l'aperçu seulement ; appliqué à l'arrêt, sur les photos et à l'export (qualité inchangée).
+
+## v3.12 (5 nov. 2026) — noirs profonds conservés
+Mesure sur captures v3.11 (vidéo sombre 848×480) : noirs 2 → 10, contraste 39,9 → 35,7 (image voilée), bleu−rouge −21 → −15, netteté +18 %.
+Contraste −0,10 maintenant proportionnel à la hausse décidée par l'analyse (0 si contraste de base = 1) ; scène sombre (médiane < 0,25) : pas d'assombrissement.
