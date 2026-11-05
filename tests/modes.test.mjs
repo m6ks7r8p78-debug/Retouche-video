@@ -25,11 +25,12 @@ const srv = spawn(process.execPath, [path.join(HERE, "serveur.mjs")], { env: { .
 const b = await chromium.launch({ executablePath: process.env.CHROME || undefined, args: ["--use-angle=swiftshader", "--autoplay-policy=no-user-gesture-required"] });
 const p = await (await b.newContext({ viewport: { width: 390, height: 844 } })).newPage(); const errs = []; p.on("pageerror", e => errs.push(e.message)); p.on("dialog", d => d.dismiss());
 await p.goto("http://localhost:" + PORT + "/index.html"); await p.waitForFunction(() => window.MODE && window.SR);
-const res = []; const test = async (n, f) => { const t0 = Date.now(); let ok = false, info = ""; try { const r = await f(); ok = r.ok; info = r.info } catch (e) { info = "exception : " + e.message.split("\n")[0] }
+const FILTRE = process.env.FILTRE ? new RegExp(process.env.FILTRE) : null;
+const res = []; const test = async (n, f) => { if (FILTRE && !FILTRE.test(n)) return; const t0 = Date.now(); let ok = false, info = ""; try { const r = await f(); ok = r.ok; info = r.info } catch (e) { info = "exception : " + e.message.split("\n")[0] }
   res.push(ok); console.log((ok ? "✓ " : "✗ ") + n + (info ? " — " + info : "") + " (" + ((Date.now() - t0) / 1000).toFixed(0) + " s)") };
 const load = async f => { await p.setInputFiles("#f", f); await p.waitForFunction(() => v.videoWidth > 0, null, { timeout: 30000 });
   await p.waitForFunction(() => !REC.pr, null, { timeout: 120000 }).catch(() => {}) };
-const exp = async (m, name) => { await p.click('[data-mode="' + m + '"]');
+const exp = async (m, name) => { await p.evaluate(m => document.querySelector('[data-mode="' + m + '"]').click(), m);
   await p.click("#ex"); await p.waitForFunction(() => !exporting && /Terminé|Échec|Impossible|annulé|pas pu/.test(document.querySelector("#st1").textContent), null, { timeout: 1800000 });
   const d = await p.evaluate(async () => { if (!outUrl) return null; const a = new Uint8Array(await (await fetch(outUrl)).arrayBuffer()); let s = ""; for (let i = 0; i < a.length; i += 32768) s += String.fromCharCode(...a.subarray(i, i + 32768)); return btoa(s) });
   if (!d) throw new Error("pas de fichier : " + (await p.textContent("#st1")).slice(0, 120));

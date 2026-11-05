@@ -2066,7 +2066,7 @@ const probeInfo=b=>new Promise(res=>{const p=document.createElement("video"),u=U
   p.muted=true;p.playsInline=true;p.preload="metadata";p.onloadedmetadata=()=>fin({w:p.videoWidth,h:p.videoHeight,d:p.duration});p.onerror=()=>fin(null);setTimeout(()=>fin(null),6000);p.src=u});
 $("#rv").onerror=()=>msg("La lecture a échoué (code "+($("#rv").error?$("#rv").error.code:"?")+").");
 /* encodeur de son disponible : AAC (le plus compatible, celui de l'iPhone), sinon Opus dans le MP4 ; le fichier final est relu pour vérifier */
-async function audioCfg(sr,ch,br){for(const codec of ["mp4a.40.2","opus"]){const c={codec,sampleRate:sr,numberOfChannels:Math.min(2,ch),bitrate:br};try{if((await AudioEncoder.isConfigSupported(c)).supported)return c}catch(e){}}return null}
+async function audioCfg(sr,ch,br){for(const codec of (MODE.x()?["mp4a.40.2"]:["mp4a.40.2","opus"]))/* X : AAC obligatoire */{const c={codec,sampleRate:sr,numberOfChannels:Math.min(2,ch),bitrate:br};try{if((await AudioEncoder.isConfigSupported(c)).supported)return c}catch(e){}}return null}
 function friendly(m){
   if(/^IA rapide|Kaggle|rien n’a été envoyé/.test(m))return "Échec : "+m+(/quota/i.test(m)?" (quota gratuit de cartes graphiques Kaggle épuisé pour la semaine : décoche « IA rapide » ou réessaie plus tard)":"");
   if(/encod/i.test(m))return "Échec : l’encodeur de ton iPhone a refusé ce format. Choisis Full HD et réessaie.";
@@ -2132,7 +2132,7 @@ $("#ex").onclick=async()=>{
         msg("Nettoyage du son…");
         ab=await voiceClean(rawA,curFile,tS,tE,trimmed);
         acfg=await audioCfg(48000,ab.numberOfChannels,192000);
-        if(acfg){voiceOK=true;rawA=null}else{ab=null;acfg=null;audioWhy="l’iPhone ne peut pas réencoder le son nettoyé"}
+        if(acfg){voiceOK=true;rawA=null}else{ab=null;acfg=null;audioWhy=MODE.x()&&rawA?"le son nettoyé n’a pas pu être encodé en AAC (exigé pour X) : le son d’origine est gardé tel quel":"l’iPhone ne peut pas réencoder le son nettoyé"}
       }catch(e){ab=null;acfg=null;voiceOK=false;audioWhy="le nettoyage du son a échoué ("+((e&&e.message)||"erreur")+")";window.__voiceErr=e}
     }
     if(!voiceOK&&rawA&&trimmed){const a0=Math.round(tS*1e6),a1=Math.round(tE*1e6);rawA.samples=rawA.samples.filter(s=>s.ts>=a0&&s.ts<a1).map(s=>({data:s.data,ts:s.ts-a0,dur:s.dur}))}

@@ -1,5 +1,22 @@
 # Journal des versions
 
+## v4.4 — 5 novembre 2026 (3 modes de conversion, dont « Pour X ») — branche `v4.4-modes`, pas encore en ligne
+- **Choix du mode dès l’import** (onglet principal) : **Normale** (taille, cadence et couleurs d’origine, sans IA ni retouche),
+  **Qualité max** (le traitement habituel de l’app), **Pour X** (fichier prêt à publier soi-même depuis Photos). Un mode est conseillé
+  selon la vidéo (petite ou très compressée → Qualité max, sinon Normale) ; on peut en changer jusqu’à l’export, et refaire un export
+  dans un autre mode : les analyses déjà faites (cadence, stabilisation, compte rendu) sont réutilisées, les images sont recalculées.
+- Un seul moteur d’export (`modes.js` + index.html) : le mode est appliqué le temps de l’export, les Réglages sont remis ensuite (testé).
+- **Pour X** : H.264 High (jamais HEVC), MP4, son AAC obligatoire (si le son nettoyé ne peut pas être encodé en AAC, le son d’origine
+  est gardé tel quel), image clé toutes les 2 s, cadence d’origine (60 i/s gardés), Full HD au maximum, pas d’agrandissement sans IA,
+  débit un peu plus généreux. Aucune connexion à X, aucune publication automatique. X peut recompresser après publication.
+- Compte rendu de l’export : ligne « Mode » (codec, taille, cadence, débit, son) + contrôle automatique du fichier selon le mode.
+- Nom du fichier selon le mode (`-normale-`, `-qualite-max-`, `-pour-X-`).
+- Correction : le niveau H.264 annoncé est maintenant calculé (1080p60 → 4.2, 4K60 → 5.2) ; avant, 4.0 était annoncé pour du 1080p60.
+- Nouveau test `tests/modes.test.mjs` (vraies vidéos ffmpeg, vérifiées par ffprobe).
+- Limites : vidéos HDR toujours converties en SDR (comme avant) ; pas de mesure PSNR/SSIM/VMAF dans l’app ; spécifications officielles
+  de X non relues à la source dans cette session (profil fondé sur les formats les plus compatibles) ; pas encore essayé sur iPhone.
+- Constaté : 3 cas de `tests/v3.test.mjs` (photo sombre exportée) échouent déjà sur la v4.3 en ligne (sélecteur de format introuvable) — sans lien avec cette version.
+
 ## v3.4 — 5 novembre 2026 (IA rapide sur serveur gratuit Kaggle)
 - Option « IA rapide sur serveur gratuit (Kaggle) » : la même IA (même fichier sr.bin, résultat identique à l'œil : PSNR 57–59 dB
   contre l'app), calculée sur les 2 cartes graphiques gratuites du compte Kaggle. Vidéo de test : 1,1 min de calcul (180 images).
