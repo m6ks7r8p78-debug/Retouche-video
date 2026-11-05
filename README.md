@@ -1,4 +1,4 @@
-# Retouche vidéo
+# RetoucheProAI
 
 Application web (installable sur iPhone depuis Safari) qui redonne de la qualité aux vieilles vidéos et photos :
 amélioration automatique, restauration par IA, agrandissement Full HD / 4K (paysage 3840×2160 ou portrait 2160×3840),

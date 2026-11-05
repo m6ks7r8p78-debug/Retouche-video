@@ -27,6 +27,10 @@ le calcul « 4 pixels par fil » n'y gagne que 12 %) → 50 h pour une vidéo 72
 - Reste : test d'intégration complet réussi, vérifier que DeleteKernel est autorisé par le jeton, mesurer une vraie vidéo
   720×1280, documentation (README, CHANGELOG, SECURITE, AUTORISATIONS, GUIDE_IPHONE), fusion dans `main`.
 
+## v5.0 (5 nov. 2026) — l'app s'appelle RetoucheProAI
+Dépôt et adresse GitHub inchangés (Retouche-video). Format de sauvegarde inchangé (« retouche-sauvegarde ») pour garder les anciennes.
+Domaines libres vérifiés le 5 nov. 2026 : retoucheproai.com / .fr / .app.
+
 ## v4.9 (5 nov. 2026) — publicités préparées, ÉTEINTES
 `pub.js` (PUB_CONFIG en haut du fichier) ; mode d'emploi et étapes pour allumer : `PUBLICITE.md` ; tests : `tests/pub.test.mjs`.
 Le propriétaire veut une app gratuite rentabilisée par des petites pubs + une pub de 3–5 s avant le téléchargement.

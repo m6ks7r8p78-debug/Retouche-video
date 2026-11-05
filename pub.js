@@ -13,7 +13,7 @@
      de page permet de changer d'avis à tout moment. */
 window.PUB_CONFIG = {
   actif: false,            /* interrupteur général */
-  domaine: "",             /* ex. "retouche-video.fr" : les pubs ne s'affichent que sur ce domaine (jamais sur github.io ni dans Claude) */
+  domaine: "",             /* ex. "retoucheproai.com" : les pubs ne s'affichent que sur ce domaine (jamais sur github.io ni dans Claude) */
   adsense: "",             /* identifiant éditeur AdSense, ex. "ca-pub-1234567890123456" */
   banniere: "",            /* numéro du bloc d'annonces de la bannière, ex. "1234567890" */
   recompense: "",          /* bloc récompensé Ad Manager, ex. "/12345678/retouche_recompense" */

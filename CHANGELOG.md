@@ -1,5 +1,10 @@
 # Journal des versions
 
+## v5.0 — 5 novembre 2026 (nouveau nom : RetoucheProAI)
+- L'app s'appelle désormais RetoucheProAI : titre, en-tête, nom sur l'écran d'accueil, nom dans les sauvegardes.
+- Rien d'autre ne change : même adresse pour l'instant, anciennes sauvegardes toujours lisibles, réglages et modèles gardés.
+- Noms de domaine libres au 5 nov. 2026 : retoucheproai.com, retoucheproai.fr, retoucheproai.app (pas encore achetés).
+
 ## v4.9 — 5 novembre 2026 (publicités préparées, éteintes)
 - Nouveau `pub.js` : bannière discrète en bas de page, pub récompensée avant l'enregistrement, lien de consentement Google,
   « Coller un lien » masqué quand les pubs sont allumées. Tout est éteint : l'app ne change pas tant que ce n'est pas activé.

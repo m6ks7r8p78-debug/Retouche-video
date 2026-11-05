@@ -34,14 +34,14 @@ var STUDIO = (() => {
   }
   async function backup(pass) {
     const data = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (KEEP.test(k)) data[k] = localStorage.getItem(k) }
-    const plain = new TextEncoder().encode(JSON.stringify({ app: "Retouche vidéo", version: typeof VER !== "undefined" ? VER : "", date: new Date().toISOString(), data }));
+    const plain = new TextEncoder().encode(JSON.stringify({ app: "RetoucheProAI", version: typeof VER !== "undefined" ? VER : "", date: new Date().toISOString(), data }));
     if (!pass) return { format: "retouche-sauvegarde", v: 1, chiffre: false, contenu: JSON.parse(new TextDecoder().decode(plain)) };
     const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
     const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await key(pass, salt), plain));
     return { format: "retouche-sauvegarde", v: 1, chiffre: true, algo: "AES-256-GCM, clé PBKDF2-SHA256 250 000 tours", sel: b64(salt), iv: b64(iv), donnees: b64(ct) };
   }
   async function restore(obj, pass) {
-    if (!obj || obj.format !== "retouche-sauvegarde" || obj.v !== 1) throw new Error("ce fichier n’est pas une sauvegarde de Retouche vidéo");
+    if (!obj || obj.format !== "retouche-sauvegarde" || obj.v !== 1) throw new Error("ce fichier n’est pas une sauvegarde de RetoucheProAI");
     let c = obj.contenu;
     if (obj.chiffre) { if (!pass) throw new Error("phrase secrète nécessaire");
       let pt; try { pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(obj.iv) }, await key(pass, unb64(obj.sel)), unb64(obj.donnees)) } catch (e) { throw new Error("phrase secrète incorrecte ou fichier modifié") }
