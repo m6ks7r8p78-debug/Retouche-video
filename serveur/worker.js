@@ -3,7 +3,7 @@
 // trouver le fichier vidéo de meilleure qualité et le renvoyer à l'app, avec les bons en-têtes.
 // Aucune vidéo n'est stockée : elle transite seulement.
 
-const VERSION = "5";
+const VERSION = "6";
 const UA_PC = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 // hôtes que /proxy accepte de relayer (rien d'autre : pas de relais ouvert)
 const PROXY_OK = /^(www\.reddit\.com|old\.reddit\.com|v\.redd\.it|video\.twimg\.com|api\.fxtwitter\.com|[a-z0-9-]+\.media\.tumblr\.com)$/i;
@@ -15,7 +15,8 @@ const ORIGINS = /^https:\/\/(m6ks7r8p78-debug\.github\.io|(www\.)?retoucheproai\
    partagée pouvait donner à une requête l'en-tête CORS d'une autre requête traitée en même temps */
 const cors = (h = {}) => ({
   vary: "origin",
-  "access-control-allow-methods": "GET, OPTIONS",
+  "access-control-allow-methods": "GET, POST, OPTIONS",
+  "access-control-allow-headers": "content-type",
   "access-control-expose-headers": "x-nom, x-qualite, content-length",
   ...h,
 });
@@ -304,20 +305,21 @@ function tooMany(ip) {
 }
 
 export default {
-  async fetch(req) {
+  async fetch(req, env) {
     const origin = req.headers.get("origin") || "", ok = ORIGINS.test(origin);
     if (origin && !ok) return new Response("Origine non autorisée.", { status: 403 });
-    const res = await handle(req);
+    const res = await handle(req, env || {});
     const out = new Response(res.body, res); out.headers.set("access-control-allow-origin", ok ? origin : "null"); out.headers.set("vary", "origin");
     return out;
   },
 };
-async function handle(req) {
+async function handle(req, env) {
     const u = new URL(req.url);
     if (u.pathname !== "/" && u.pathname !== "/etat" && tooMany(req.headers.get("cf-connecting-ip") || "?")) return fail("limite", "Trop de demandes : réessaie dans une minute.", 429);
     if (req.method === "OPTIONS") return new Response(null, { headers: cors({ "access-control-max-age": "86400" }) });
     try {
       if (u.pathname === "/" || u.pathname === "/etat") return json({ ok: true, service: "retouche-serveur", version: VERSION });
+      if (u.pathname === "/abo/verifier") return await aboVerifier(req, env);
       if (u.pathname === "/video") return await video(u.searchParams.get("url") || "", { sd: u.searchParams.get("q") === "sd" });
       if (u.pathname === "/test") { // diagnostic lisible : ce que chaque méthode a obtenu (sans télécharger la vidéo)
         const link = u.searchParams.get("url") || ""; const log = [];
@@ -350,4 +352,25 @@ async function handle(req) {
       if (e instanceof Err) return fail(e.code, e.message, e.s);
       return fail("erreur", "Erreur du serveur : " + String(e && e.message || e).slice(0, 120), 500);
     }
+}
+
+/* ---------- v6 : Premium — vérification d'une clé de licence Polar ----------
+   Réglages du serveur (variables Cloudflare) : POLAR_ORG = identifiant de l'organisation Polar (obligatoire),
+   POLAR_API = adresse de l'API (facultatif, pour les essais). Aucune donnée n'est gardée : la clé est seulement transmise à Polar. */
+async function aboVerifier(req, env) {
+  if (req.method !== "POST") return json({ premium: false, raison: "Méthode non permise." }, 405);
+  const org = env.POLAR_ORG;
+  if (!org) return json({ premium: false, raison: "Les abonnements ne sont pas encore ouverts." }, 503);
+  let b; try { b = await req.json() } catch (e) { return json({ premium: false, raison: "Demande invalide." }, 400) }
+  const cle = String((b && b.cle) || "").trim();
+  if (!/^[A-Za-z0-9-]{8,80}$/.test(cle)) return json({ premium: false, raison: "Code invalide : vérifie qu’il est copié en entier." }, 400);
+  let r;
+  try { r = await fetch((env.POLAR_API || "https://api.polar.sh") + "/v1/customer-portal/license-keys/validate", { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({ key: cle, organization_id: org }) }) }
+  catch (e) { return json({ premium: false, raison: "Vérification impossible pour l’instant : réessaie dans un moment." }, 502) }
+  if (r.status === 404 || r.status === 422) return json({ premium: false, definitif: true, raison: "Code inconnu : vérifie qu’il est copié en entier." });
+  if (!r.ok) return json({ premium: false, raison: "Vérification impossible pour l’instant : réessaie dans un moment." }, 502);
+  const k = await r.json().catch(() => ({}));
+  const fin = k.expires_at || null, ok = k.status === "granted" && (!fin || Date.parse(fin) > Date.now());
+  return json({ premium: ok, definitif: !ok, plan: fin ? "pass" : "abonnement", fin,
+    raison: ok ? "" : k.status === "revoked" ? "Cet abonnement est terminé." : fin && Date.parse(fin) <= Date.now() ? "Ce pass a expiré." : "Ce code n’est plus actif." });
 }

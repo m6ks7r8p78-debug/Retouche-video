@@ -115,6 +115,7 @@ window.PUB = (() => {
 
   function demarrer() {
     if (!allume()) return;
+    if (window.ABO && ABO.actif() && ABO.premium()) return; /* v5.6 : jamais de pub pour les abonnés Premium */
     document.documentElement.classList.add("avec-pub");
     if (C.masquerLiens) document.querySelectorAll("#lnkf,#lnkc,#lnkst,.lnkh").forEach(z => z.style.setProperty("display", "none", "important"));
     script("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(C.adsense), { crossorigin: "anonymous" }).catch(() => {});

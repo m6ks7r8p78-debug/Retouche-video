@@ -1,5 +1,14 @@
 # Journal des versions
 
+## v5.6 — 5 novembre 2026 (offres Gratuit / Premium préparées, éteintes)
+- Étude de marché et décisions : OFFRES.md (Pass 7 jours 2,99 €, Mensuel 5,99 €, Annuel 34,99 €).
+- `abo.js` : droits Premium, cadenas sur 4K / IA / filtre / effacer / Time Repair / regrouper / lot, fenêtre d'offre,
+  activation par code Polar, achats intégrés des stores (RevenueCat), hors ligne réservé à Premium, aucune pub pour Premium.
+  Éteint (`ABO_CONFIG.actif = false`) : l'app ne change pas.
+- Page tarifs.html (« Gratuit ou Premium »), liée en bas de l'app ; « Premium ouvre très bientôt ».
+- Serveur des liens v6 : route /abo/verifier (clé de licence Polar) — à déployer le jour J.
+- Tests : tests/abo.test.mjs (14 réussis). Mode d'emploi : PREMIUM.md.
+
 ## v5.5 — 5 novembre 2026 (pas de chargement par lien sur le site public)
 - Sur retoucheproai.com, « Colle un lien ici » est masqué (classe `sans-liens` posée avant l'affichage) : les règles
   Google AdSense refusent les outils de téléchargement de vidéos d'autres plateformes. Le code et le serveur restent :
