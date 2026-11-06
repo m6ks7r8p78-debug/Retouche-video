@@ -583,7 +583,7 @@ body:not(.loaded) #picke{grid-column:1/-1}
 <script src="kaggle.js"></script>
 <script src="camera.js"></script>
 <script>
-const VER="v6.2";/* seul endroit où changer le numéro de version */
+const VER="v6.3";/* seul endroit où changer le numéro de version */
 const $=s=>document.querySelector(s);
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
@@ -646,7 +646,7 @@ function ascOnly(desc){
 async function containerFps(file){try{const vi=await demuxVideo(file);if(!vi||vi.ns<3)return null;const span=(vi.dts[vi.ns-1]-vi.dts[0])/vi.ts;if(!(span>0))return null;return snapFps((vi.ns-1)/span)}catch(e){return null}}
 async function measureFps(){
   if(fpsC&&fpsC.f===curFile)return fpsC.v;
-  const cf=await containerFps(curFile);
+  const cf=await Promise.race([containerFps(curFile),new Promise(r=>setTimeout(()=>r(null),6000))]);/* v6.3 : jamais bloqué sur la lecture du fichier */
   if(cf){fpsC={f:curFile,v:cf};return cf}
   const mf=await new Promise(res=>{
     if(!v.requestVideoFrameCallback){res(FPS);return}
@@ -1473,16 +1473,18 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
   async profile(){
     if(mode!=="video"||exporting)return;
     const my=curFile,t0=v.currentTime,TA=performance.now();let ok=true;REC.stop=false;let done;const pr=new Promise(r=>done=r);REC.pr=pr;
+    /* v6.3 : l'analyse s'arrête net dès qu'un export démarre (avant, une étape bloquée faisait attendre l'export sans fin) */
+    const halt=()=>curFile!==my||exporting||REC.stop,lim=(p,ms,def)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(def),ms))]);
     $("#rec").hidden=false;$("#rec_t").textContent="Analyse de ta vidéo en cours…";$("#rec_l").textContent="";
     try{
-      const fps=await measureFps();
-      const m=await AZ.run(v,{fps,cancel:()=>curFile!==my||exporting||REC.stop});if(!m)return;
+      const fps=await lim(measureFps(),8000,FPS);if(halt())return;
+      const m=await AZ.run(v,{fps,cancel:halt});if(!m||halt())return;
       let fl=null;
       if(window.VideoDecoder&&v.duration>.5){
         const total=Math.min(Math.floor(v.duration*fps)-1,150);
-        if(total>=20){const L=await lumaTrace(0,total,fps);if(L&&L.length===total){const g=flickerGains(L);REC.fg=g;REC.ffps=fps;REC.fgf=my;let c=0,sum=0;for(const x of g){if(x!==1)c++;sum+=Math.abs(x-1)}fl={frac:c/total,mean:sum/total}}}}
-      const au=await REC.audio();m.audio=au;
-      if(curFile!==my)return;
+        if(total>=20){const L=await lim(lumaTrace(0,total,fps),20000,null);if(halt())return;if(L&&L.length===total){const g=flickerGains(L);REC.fg=g;REC.ffps=fps;REC.fgf=my;let c=0,sum=0;for(const x of g){if(x!==1)c++;sum+=Math.abs(x-1)}fl={frac:c/total,mean:sum/total}}}}
+      const au=await lim(REC.audio(),12000,null);m.audio=au;
+      if(halt())return;
       const r=REC.recommend(m,fl);REC.last={m,fl,r};window.__prof={m,fl};
       try{PROF.recommend({w:v.videoWidth,h:v.videoHeight,noise:m.noise,blk:m.blk,p50:m.p50,p98:m.p98})}catch(e){}
       const ad=LEARN.adapt(r.o);r.learn=ad.notes;
@@ -1508,10 +1510,10 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       REC.show(r);LEARN.snap();
       /* v6.0 caméra virtuelle : fiche de l'appareil et mesures de l'objectif (6 images), même quand la case est décochée : la fiche s'affiche
          et, avec l'accord « diagnostic », ses nombres aident à régler l'app pour chaque type d'appareil */
-      if(window.CAM){try{if(await CAM.analyser(v,my,{bruit:m.noise,blocs:m.blk&&m.blk.r,cancel:()=>curFile!==my||exporting||REC.stop})){camShow();DIAG.send("camera",CAM.diag())}}catch(e){}}
+      if(window.CAM&&!halt()){try{if(await lim(CAM.analyser(v,my,{bruit:m.noise,blocs:m.blk&&m.blk.r,cancel:halt}),25000,null)&&!halt()){camShow();DIAG.send("camera",CAM.diag())}}catch(e){}}
       try{DIAG.send("analyse",{ms:Math.round(performance.now()-TA),mesures:{bruit:+m.noise.toFixed(2),nettete:Math.round(m.sharp),poussieres:Math.round(m.dust),tremble:m.shake,blocs:m.blk&&+m.blk.r.toFixed(2),dominante:m.gains&&m.gains.map(x=>+x.toFixed(2)),son:m.audio},scint:fl,reco:r.n})}catch(e){}
     }catch(e){ok=false;$("#rec").hidden=true}
-    finally{if(curFile===my){try{await seekEl(v,t0)}catch(e){}draw()}if(REC.pr===pr)REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
+    finally{if(curFile===my&&!exporting){try{await lim(seekEl(v,t0),3500)}catch(e){}draw()}if(REC.pr===pr)REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
   }
 };
 
@@ -2229,7 +2231,7 @@ $("#ex").onclick=async()=>{
   if(exporting){if(Date.now()-(window.__exT||0)<1500)return;cancel=true;return}
   if(mode==="photo"){exportPhoto();return}
   if(!v.videoWidth)return;
-  if(REC.pr){window.__exStarting=true;msg("Fin de l’analyse, puis l’export démarre…");REC.stop=true;REC.redo=curFile;try{await REC.pr}catch(e){}finally{window.__exStarting=false}}
+  if(REC.pr){window.__exStarting=true;msg("Fin de l’analyse, puis l’export démarre…");REC.stop=true;REC.redo=curFile;try{await Promise.race([REC.pr,new Promise(r=>setTimeout(r,4000))])}catch(e){}finally{window.__exStarting=false;REC.pr=null}}
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
   if(SPD.k()!==1&&!window.__plan&&!window.__baMode)return TR.go(SPD.k());
   exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}

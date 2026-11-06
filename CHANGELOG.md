@@ -1,5 +1,7 @@
 # Journal des versions
 
+## v6.3 (6 nov. 2026) — l’export ne reste plus bloqué derrière l’analyse automatique : il attend 4 s au plus, l’analyse s’arrête net sans modifier les réglages, et chaque étape de l’analyse a une durée maximale.
+
 ## v6.2 — 5 novembre 2026 (IA rapide : vidéos que l'iPhone ne relit pas image par image)
 - Avant : « IA rapide : cette vidéo ne peut pas être relue image par image sur ton iPhone » (vidéo HD/HDR récente), export refusé.
 - Maintenant : l'original est lu par le lecteur vidéo, et le rang de l'image du serveur est recalé sur lui (SRX.caler :
