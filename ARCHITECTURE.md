@@ -4,7 +4,7 @@ Application web installable (PWA), sans serveur de calcul : tout tourne dans Saf
 
 | Module | Rôle | Interfaces utilisées |
 |---|---|---|
-| `index.html` (noyau) | interface, import, analyse (`AZ`, `REC`, `PHOTO`), rendu WebGL (`draw`), profils (`PROF`), IA (`SRX`), export WebCodecs, Time Repair (`TR`), son | — |
+| `index.html` + `app.js` (noyau, v6.4 : code sorti de la page, scripts différés ; `effacer.js`/`depth.js` chargés à la demande) | interface, import, analyse (`AZ`, `REC`, `PHOTO`), rendu WebGL (`draw`), profils (`PROF`), IA (`SRX`), export WebCodecs, Time Repair (`TR`), son | — |
 | `models.js` | registre et gestionnaire des modèles (`MODELS`) | `MODELS.bytes(id)`, `register(id, {loaded, busy, unload})`, `download`, `status` |
 | `sr.js`, `sr-gpu.js` | moteur Real-ESRGAN (WebGPU → WebGL2) | `SR.run(src, échelle, débruitage)` |
 | `depth.js` | profondeur (ONNX Runtime Web) | `DEPTH.estimate(image)` |

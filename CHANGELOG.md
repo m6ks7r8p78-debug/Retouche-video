@@ -1,5 +1,15 @@
 # Journal des versions
 
+## v6.4 (6 nov. 2026) — app allégée : ouverture plus rapide, rendu identique
+- Le noyau (≈ 250 Ko de code) est sorti d'`index.html` vers `app.js` ; `index.html` passe de 313 Ko à 59 Ko.
+- Tous les scripts sont différés (`defer`) : l'écran s'affiche avant que le code soit lu, même ordre d'exécution qu'avant.
+- « Effacer une zone » (`effacer.js`, `marquage.js`) et le relief (`depth.js`) ne sont plus lus au démarrage : chargés à la demande,
+  et préchargés quand le téléphone est libre (le gestionnaire « Modèles IA » les connaît comme avant).
+- Hors-ligne : ~7 Mo de fichiers lourds (`sr.bin`, `rnnoise.mjs`, EdgeTAM) téléchargés en arrière-plan après l'installation au lieu de
+  bloquer la première ouverture ; les fichiers du serveur Kaggle (.py), inutiles sur le téléphone, ne sont plus mis en cache.
+- Secours MP4 (jsDelivr, empreinte vérifiée) chargé sans `document.write` ; mode simple dans `mode-simple.js`, fin du démarrage dans `demarrage.js`.
+- Aucun calcul d'image, de son ou d'export modifié. Mesure (Chrome, processeur ralenti ×6) : page prête ~15–25 % plus tôt.
+
 ## v6.3 (6 nov. 2026) — l’export ne reste plus bloqué derrière l’analyse automatique : il attend 4 s au plus, l’analyse s’arrête net sans modifier les réglages, et chaque étape de l’analyse a une durée maximale.
 
 ## v6.2 — 5 novembre 2026 (IA rapide : vidéos que l'iPhone ne relit pas image par image)
