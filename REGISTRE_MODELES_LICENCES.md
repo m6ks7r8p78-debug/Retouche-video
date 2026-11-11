@@ -27,3 +27,9 @@ puis quantifiés int8 (86 Mo au lieu de 345 Mo, qualité mesurée identique) : l
 la source (`LICENSE-GFPGAN.txt`) : Apache-2.0 pour GFPGAN, **sauf composants tiers** dont StyleGAN2 (licence NVIDIA, recherche et
 évaluation seulement) ; le modèle est entraîné sur FFHQ (CC BY-NC-SA 4.0). **Décision juridique requise avant tout usage
 commercial** (publicité, abonnement, boutiques). CodeFormer reste exclu (licence S-Lab non commerciale).
+
+## Détecteur d'éléments de filtre (v7.0)
+`modeles/lourds/detecteur_ajouts_v2.onnx` (SHA-256 e0ed001f29b497713d172de732c4ac8107d8f38d3d702852868b008523083059) : modèle
+RetoucheProAI, entraîné ici (`tests/labo_filtres/entrainer_ajouts.py`) sur des portraits du domaine public (NASA, Wikimedia Commons)
+et des éléments simulés ; aucune donnée sous licence restrictive. MediaPipe Face Landmarker (`tests/labo_filtres/face_landmarker.task`,
+Apache-2.0) ne sert qu'au laboratoire, pas à l'app.

@@ -252,13 +252,17 @@ def reconstruire(img, refs, P=None, journal=None, forme=False, gfpgan=True, maqu
     def ecart_peau(Lab, poids):
         ref_loc = _flou_norm(Lab, poids, .35 * io)   # couleur de peau locale (ombres comprises), sans les candidats
         dc = np.hypot(Lab[..., 1] - ref_loc[..., 1], Lab[..., 2] - ref_loc[..., 2]); dl = np.abs(Lab[..., 0] - ref_loc[..., 0]) / np.maximum(ref_loc[..., 0], 20)
-        return np.maximum(dc / 26, dl / .40)   # teinte très différente, ou bien plus sombre / clair (le fard à joues reste en dessous : étape 4)
+        return np.maximum(dc / 18, dl / .28)   # teinte différente, ou plus sombre / clair que la peau voisine
     # nouveauté de structure : contours nets présents sur la photo mais pas sur la référence alignée (une ombre ou un fard ont des
     # bords doux ; un museau, une moustache ou un nez dessiné ont des bords nets)
     gF = _grad(LabF[..., 0]); gW = _grad(LabR[..., 0]); pk = peau > .5
     kx = np.median(gF[pk]) / max(np.median(gW[pk]), 1e-3) if pk.sum() > 100 else 1
     nouv = gF / (cv2.dilate(gW * kx, np.ones((int(.03 * io) | 1,) * 2)) + 4)
     nouv_f = cv2.dilate((nouv > 2.2).astype(np.uint8), np.ones((3, 3)))
+    # référence ramenée à la lumière de la photo (très grande échelle) : sert à vérifier qu'un candidat n'existe PAS sur la vraie peau
+    Wn = W * (_flou_norm(F, ovale, .3 * io) / np.maximum(_flou_norm(W, ovale, .3 * io), 1))
+    dFW = np.sqrt(((LabF - cv2.cvtColor(np.clip(Wn, 0, 255).astype(np.uint8), cv2.COLOR_BGR2LAB).astype(np.float32)) ** 2).sum(2))
+    dFW = cv2.GaussianBlur(dFW, (0, 0), .01 * io + .5)
     ajout = np.zeros(out.shape[:2], np.float32); amin = (.035 * io) ** 2
     for it in range(3):
         sc = ecart_peau(LabF, peau * (1 - ajout))
@@ -269,7 +273,11 @@ def reconstruire(img, refs, P=None, journal=None, forme=False, gfpgan=True, maqu
             if st_[i, cv2.CC_STAT_AREA] < amin: continue
             ci = lab_ == i; bord = ci & ~cv2.erode(ci.astype(np.uint8), np.ones((3, 3))).astype(bool)
             fr = float(nouv_f[bord].mean()) if bord.sum() else 0; tres_sombre = float((sc[ci] > 1.6).mean())
-            if fr > .35 or tres_sombre > .3: garde[ci] = 1
+            anneau = cv2.dilate(ci.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (int(.12 * io) | 1,) * 2)).astype(bool) & ~ci & (ovale > .5)
+            dIn = float(dFW[ci].mean()); dAn = float(dFW[anneau].mean()) if anneau.sum() > 20 else 99
+            absent_ref = dIn > 1.3 * dAn + 8   # présent sur la photo, absent (ou très différent) sur la référence : un ajout, pas un trait du visage
+            if os.environ.get("DBG"): print("comp", st_[i, cv2.CC_STAT_AREA], round(dIn, 1), round(dAn, 1), round(fr, 2), round(tres_sombre, 2))
+            if absent_ref and (fr > .25 or tres_sombre > .3): garde[ci] = 1
         inv = (1 - garde).astype(np.uint8); n2, l2, s2, _ = cv2.connectedComponentsWithStats(inv, 4)   # trous (reflets d'un museau) bouchés
         for i in range(1, n2):
             if s2[i, cv2.CC_STAT_AREA] < (.25 * io) ** 2: garde[l2 == i] = 1
@@ -364,3 +372,48 @@ def gfpgan_zone(img, P, masque, chemin=None):
     back = cv2.warpAffine(y, Mi, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
     valide = cv2.warpAffine(np.ones((512, 512), np.float32), Mi, (w, h)); m = (masque * cv2.erode(valide, np.ones((5, 5))))[..., None]
     return np.clip(img * (1 - m) + back * m, 0, 255).astype(np.uint8)
+
+# ---------- détecteur appris (entrainer_ajouts.py) et remplissage MI-GAN : la chaîne qui sera portée dans l'app ----------
+_det_aj = None; _mg = None
+def detecter_ajouts(img, P, seuil=.5, chemin=None, S=192):
+    """probabilité « élément ajouté par un filtre » (0..1) pour chaque pixel de l'image, via le petit U-Net du laboratoire"""
+    global _det_aj
+    import onnxruntime as ort
+    if _det_aj is None: _det_aj = ort.InferenceSession(chemin or os.path.join(ICI, '../../modeles/lourds/detecteur_ajouts_v2.onnx'), providers=['CPUExecutionProvider'])
+    o, ux, uy, io = repere_visage(P); c = o + uy * io * .35; s = io * 4.6; a = np.degrees(np.arctan2(ux[1], ux[0]))
+    M = cv2.getRotationMatrix2D((float(c[0]), float(c[1])), a, S / s); M[:, 2] += np.array([S / 2, S / 2]) - c
+    x = cv2.warpAffine(img, M, (S, S), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REFLECT).astype(np.float32).transpose(2, 0, 1)[None]
+    p = 1 / (1 + np.exp(-_det_aj.run(None, {'image': x})[0][0, 0]))
+    h, w = img.shape[:2]; return cv2.warpAffine(p.astype(np.float32), cv2.invertAffineTransform(M), (w, h), flags=cv2.INTER_LINEAR)
+def remplir_migan(img, masque, chemin=None):
+    """MI-GAN (MIT) : reconstruit la zone masque>0 à partir des alentours (comme « Effacer une zone » de l'app)"""
+    global _mg
+    import onnxruntime as ort
+    if _mg is None: _mg = ort.InferenceSession(chemin or os.environ.get('MIGAN', os.path.join(ICI, 'migan_pipeline_v2.onnx')), providers=['CPUExecutionProvider'])
+    ys, xs = np.nonzero(masque > 0)
+    if not len(xs): return img
+    h, w = img.shape[:2]; bw, bh = xs.max() - xs.min() + 1, ys.max() - ys.min() + 1; m = max(96, int(round(max(bw, bh) * .5)))   # même contexte que effacer.js
+    x0, y0, x1, y1 = max(0, xs.min() - m), max(0, ys.min() - m), min(w, xs.max() + 1 + m), min(h, ys.max() + 1 + m)
+    cr = img[y0:y1, x0:x1]; mk = (masque[y0:y1, x0:x1] > 0)
+    r = _mg.run(None, {'image': cv2.cvtColor(cr, cv2.COLOR_BGR2RGB).transpose(2, 0, 1)[None].copy(), 'mask': ((1 - mk) * 255).astype(np.uint8)[None, None]})[0][0]
+    r = cv2.cvtColor(r.transpose(1, 2, 0).astype(np.uint8), cv2.COLOR_RGB2BGR)
+    out = img.copy(); a = mk[..., None].astype(np.float32); out[y0:y1, x0:x1] = (cr * (1 - a) + r * a).astype(np.uint8)   # comme l'app : la pièce ne couvre que le trou
+    return out
+def retirer_ajouts(img, P=None, seuil=.6, journal=None, gfpgan=True):
+    """chaîne de l'app : détecteur appris → MI-GAN → GFPGAN sur le visage (dans la zone touchée seulement). Aucune référence requise."""
+    journal = [] if journal is None else journal; P = reperes(img) if P is None else P
+    if P is None: return img, np.zeros(img.shape[:2], np.float32), ["aucun visage trouvé"]
+    o_, ux_, uy_, io = repere_visage(P); p = detecter_ajouts(img, P)
+    yy, xx = np.mgrid[:img.shape[0], :img.shape[1]].astype(np.float32); dx, dy = xx - o_[0], yy - o_[1]
+    u = (dx * ux_[0] + dy * ux_[1]) / io; v = (dx * uy_[0] + dy * uy_[1]) / io
+    p = p * ((u / 1.7) ** 2 + ((v - .2) / 2.4) ** 2 < 1)   # seulement la tête et juste autour (oreilles d'animal) : pas le décor
+    m = (p > seuil).astype(np.uint8); n_, l_, st_, _ = cv2.connectedComponentsWithStats(m, 8)
+    m = np.isin(l_, [i for i in range(1, n_) if st_[i, cv2.CC_STAT_AREA] >= (.04 * io) ** 2]).astype(np.uint8)
+    if not m.any(): return img, np.zeros(img.shape[:2], np.float32), journal + ["aucun élément de filtre trouvé : photo laissée telle quelle"]
+    m = cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (int(.06 * io) | 1,) * 2))
+    out = remplir_migan(img, m); ov = masque_poly(img.shape, P[OVALE_ORD])
+    journal.append("éléments de filtre retirés (%.1f %% de l'image)" % (100 * m.mean()))
+    if gfpgan and (m * ov).sum() > 0:
+        mg = cv2.GaussianBlur(cv2.dilate((m * (ov > .5)).astype(np.float32), np.ones((int(.08 * io) | 1,) * 2)), (0, 0), .03 * io)
+        out = gfpgan_zone(out, P, np.clip(mg, 0, 1)); journal.append("visage redessiné là où était le filtre")
+    return out, m.astype(np.float32), journal

@@ -22,9 +22,10 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 | **Validées sur données synthétiques** | F06 diagnostic des filtres couleur/lumière · F08 zones de filtre AR proposées (photo) |
 | **Intégrées, non validées** | F02 reprise des exports 4K · F04 IA rapide Kaggle · F07 effacer une zone · F17 anti-scintillement/stabilisation · F18 vitesse / Time Repair · F20 caméra virtuelle · F21 export X · F22 hors-ligne · F26 pubs/Premium (éteints) · F28 thème Néon |
 | **Prototypes** | F09 suivi vidéo du visage + report de masque · F16 directeur de traitement (`ANALYSE.plan()`, non branché) |
-| **Prototypes (labo, non intégrés à l'app)** | F29 retrait de filtre guidé par photos sans filtre · F11 · F12 (mesurés : pas encore meilleurs que l'entrée) |
+| **Nouveau v7.0** | **F30 retirer les éléments d'un filtre AR (photo)** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (vrais visages jamais vus, éléments simulés) · **F11 proportions (réglage guidé)** : INTÉGRÉ, mesuré sur données synthétiques |
+| **Prototypes (labo, non intégrés à l'app)** | F29 recopie depuis une photo sans filtre (mesurée moins bonne que sans référence) · F12 lissage / maquillage (pas encore mieux que l'entrée) |
 | **Non commencées** | F10 effacement AR en vidéo · F14 restauration des visages en vidéo |
-| **Laboratoire** | F15 : EN DÉVELOPPEMENT (12 paires réelles × 7 filtres simulés, mesures automatiques) |
+| **Laboratoire** | F15 : EN DÉVELOPPEMENT (12 paires réelles × 9 filtres simulés + générateur d'éléments AR et de décor, mesures automatiques ; a servi à entraîner le détecteur de F30) |
 | **Bloquées (dépendance externe)** | F23 serveur de consentement (déploiement + juriste) · F24 collecte pour l'entraînement (juriste) · **F13 en usage commercial** (décision juridique sur la licence des poids) |
 | **Régressions détectées** | aucune introduite par la v6.9. **Échecs déjà présents en v6.8** (trouvés en relançant tout) : `tests/pub.test.mjs` 1 cas (pub indisponible → l’enregistrement ne part pas dans le test), `tests/v3.test.mjs` 3 cas (rendus « équilibre / nuit / jour » de photo sombre) — à expliquer et corriger |
 
@@ -279,3 +280,50 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 ### Historique — 11/11/2026 (soir) : laboratoire des filtres, essai du retrait guidé par photos sans filtre
 - F15 : NON COMMENCÉ → EN DÉVELOPPEMENT. F29 créée : PROTOTYPE. F11, F12 : NON COMMENCÉ → PROTOTYPE (mesurés défavorables).
 - Aucune modification de l'app (rien n'a atteint « mieux que l'entrée »). Commit : voir ci-dessous.
+
+
+### F30 — Retirer les éléments d'un filtre AR d'une photo (museau, moustaches, oreilles, nez, autocollants, lunettes, couronne…) · priorité 1
+- **Statut** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (v7.0). Pas validé sur de vrais filtres Snapchat/Instagram/TikTok ni sur iPhone.
+- **Implémenté** : bouton d'accueil « Retirer un filtre du visage (IA, essai) » + bouton après traitement d'une photo ; YuNet →
+  cadrage 192×192 de la tête → **détecteur appris** (U-Net 0,39 M paramètres, 1,5 Mo, entraîné ici sur 2 400 + 2 400 exemples du
+  laboratoire : vrais portraits du domaine public + éléments AR simulés + graphismes de décor et maquillage appris comme « pas un
+  filtre ») → zone limitée à la tête → MI-GAN (moteur d'« Effacer une zone ») → GFPGAN redessine le visage UNIQUEMENT dans la zone
+  touchée (+ marge). Carte rose de tout ce qui est reconstruit (inventé), avant/après, enregistrement marqué. Photo sans élément :
+  intacte au pixel près.
+- **Fichiers** : `defiltre-visage.js` (nouveau), `modeles/lourds/detecteur_ajouts_v2.onnx` (SHA-256 e0ed001f…3059),
+  `restauration-visage.js` (`restaurerZone`), `models.js`, `app.js`, `index.html`, `sw.js` ; labo : `tests/labo_filtres/`
+  (`ajouts.py`, `entrainer_ajouts.py`, `noyau.retirer_ajouts`) ; test : `tests/dfv.test.mjs` ; médias : `tests/medias/filtres_labo/`.
+- **Mesures (personnes JAMAIS vues à l'entraînement)** :
+  - Détecteur seul (300 exemples) : précision 90 %, rappel 91 %, IoU 0,83 ; photos sans élément : 0,06 % de pixels signalés.
+  - Chaîne Python complète (labo, 7 personnes) — écart de couleur ΔE dans la zone du filtre : chien 92 → 38 ; chien + oreilles 70 → 31 ;
+    chat 32 → 13–16 ; éléments au hasard 79 → 26–28 ; photo sans filtre : ΔE 0,02 (inchangée) ; visage lissé/maquillé : inchangé.
+  - **Dans l'app (Chromium, vrais modèles, `tests/dfv.test.mjs`)** — écart moyen à la vraie photo dans la zone : chien 55,8 → **24,0**
+    (rappel 98 %) ; éléments au hasard 56,1 → **27,8** (rappel 85 %) ; chat 29,0 → **21,8** (rappel 77 %) ; ≈ 22 s par photo (1 fil).
+    23 vérifications réussies, 11 échouées : surtout les moustaches fines du chat (seuil exigé : −40 %), deux cas « au hasard »
+    (masque sur les yeux : les yeux reconstruits sont faux) et **un faux repérage** : les étoiles d'un drapeau juste à côté de la tête
+    (p12) prises pour un autocollant (0,2 % de la photo, visible sur la carte).
+- **Limites** : appris sur des éléments SIMULÉS ; un élément qui cache les yeux ou la bouche est remplacé par des traits inventés ;
+  graphismes du décor collés à la tête ; une seule photo (pas la vidéo) ; ≈ 22 s sur ordinateur, iPhone non mesuré.
+- **Reste à faire** : vrais filtres (protocole iPhone) ; moustaches claires et fines ; vidéo (F10) ; utiliser les photos sans filtre
+  pour choisir la reconstruction la plus ressemblante (F29 b).
+- **Critère de fin** : 5 vraies photos filtrées du propriétaire (chien, chat, autres) : éléments retirés, aucun faux repérage, avis
+  favorable ; puis iPhone (temps, mémoire).
+- **Protocole iPhone** : retoucheproai.com → « Retirer un filtre du visage » → choisir une photo Snapchat/Instagram avec museau,
+  oreilles ou moustaches → accepter les téléchargements (1,5 + 28 + 86 Mo, une fois) → noter : éléments retirés ou non, ce qui a été
+  effacé à tort (bouton « Carte »), temps, et si l'onglet s'est fermé.
+
+### F11 — Déformations du visage : réglage guidé « Proportions » (v7.0)
+- **Statut** : INTÉGRÉ, mesuré sur données synthétiques (correction manuelle ; l'automatique reste exclu, voir F29).
+- **Implémenté** : dans « Retirer un filtre du visage », bouton « Proportions » : curseurs Yeux (70–115 %), Nez (85–125 %), Bas du visage
+  (90–120 %), aperçu immédiat, **photo de comparaison sans filtre** affichée dans un coin (elle reste sur le téléphone : l'idée du
+  propriétaire, utilisée pour comparer à l'œil). Mêmes formes de déformation que le labo, appliquées en pleine taille à l'enregistrement.
+- **Mesure** (`tests/dfv.test.mjs`) : yeux agrandis de 25 %, curseur à 80 % : écart à la vraie photo autour des yeux 9,5 → 4,0 (p10) ;
+  3,3 → 3,1 (p08, petit visage : effet faible) — 1 réussi, 1 sous le seuil exigé.
+- **Limite** : repères YuNet (5 points) : le contour du visage est estimé, pas mesuré.
+
+### Historique — v7.0 (11–12/11/2026, nuit)
+- Nouveau : F30 (NON COMMENCÉ → VALIDÉ SUR DONNÉES SYNTHÉTIQUES) ; F11 (PROTOTYPE → INTÉGRÉ, réglage guidé). F15 : générateur
+  d'éléments AR et de décor, entraînement du détecteur (v1 puis v2).
+- Ce qui n'a PAS marché (gardé pour mémoire) : repérage « à la main » (couleur / contours / comparaison avec la référence) : précision
+  2 à 43 % ; recopie de la peau ou du nez depuis la photo sans filtre : moins bon que sans référence.
+- Non-régression : sw 8/8, v67 18/18, visage 12/12, gestionnaire 24/24, studio 11/11, pages 5/5.

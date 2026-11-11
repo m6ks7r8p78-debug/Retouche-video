@@ -1,5 +1,14 @@
 # Journal des versions
 
+## v7.0 (12 nov. 2026) — retirer un filtre du visage (essai)
+- Nouveau « Retirer un filtre du visage (IA, essai) » : repère automatiquement ce qu'un filtre a dessiné (museau, moustaches,
+  oreilles, nez, autocollants, lunettes, couronne…), l'efface et reconstruit la peau et le visage en dessous, sur le téléphone.
+  Carte rose de ce qui est reconstruit. Une photo sans élément de filtre n'est pas touchée.
+- « Proportions » : curseurs yeux / nez / bas du visage pour défaire un filtre qui agrandit les yeux ou affine le visage, avec ta
+  photo sans filtre affichée à côté pour comparer (elle reste sur ton téléphone).
+- Détecteur appris dans notre laboratoire (1,5 Mo) ; mesuré sur des personnes jamais vues : écart à la vraie photo réduit de 57 %
+  (museau de chien), 50 % (éléments variés), 25 % (moustaches de chat). Pas encore essayé sur de vrais filtres Snapchat/Instagram.
+
 ## v6.9 (11 nov. 2026) — restauration des visages sur photo (essai)
 - Nouveau « Restaurer les visages d'une photo (IA, essai) » (accueil, et après le traitement d'une photo) : chaque visage est
   repéré, redressé, restauré par GFPGAN 1.4 sur le téléphone (86 Mo téléchargés une fois, avec accord), recalé en couleur puis

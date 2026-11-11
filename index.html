@@ -403,10 +403,12 @@ progress::-webkit-progress-value{box-shadow:0 0 14px var(--glow)}
     <button class="pickbtn" id="pickp"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg><span class="lbl">Choisir une photo</span></button>
     <button class="pickbtn" id="pickm"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="7" height="10" rx="1.5"/><rect x="14.5" y="7" width="7" height="10" rx="1.5"/><path d="M9.5 12h5"/></svg><span class="lbl">Regrouper des vidéos</span></button>
     <button class="pickbtn wide" id="picke"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M4 21h16"/><path d="M13 7l4 4"/></svg><span class="lbl">Effacer une zone d’une photo <small>(IA)</small></span></button>
+    <button class="pickbtn wide" id="pickd"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M6 6l-2-3M18 6l2-3M9 15h6"/><path d="M3 21L21 3"/></svg><span class="lbl">Retirer un filtre du visage <small>(IA, essai)</small></span></button>
     <button class="pickbtn wide" id="pickv"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="10" r="5"/><path d="M5 20c1.5-3.2 4-4.5 7-4.5s5.5 1.3 7 4.5"/><path d="M19 3l.7 1.6L21.3 5l-1.6.7L19 7.3l-.7-1.6L16.7 5l1.6-.4z"/></svg><span class="lbl">Restaurer les visages d’une photo <small>(IA, essai)</small></span></button>
   </div>
   <input type="file" id="fe" accept="image/*" hidden>
   <input type="file" id="fv" accept="image/*" hidden>
+  <input type="file" id="fd" accept="image/*" hidden>
   <form class="lnk" id="lnkf" autocomplete="off" novalidate>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
     <input id="lnk" type="url" inputmode="url" enterkeyhint="go" placeholder="Colle un lien ici" aria-label="Lien d’une vidéo (TikTok, Facebook, X, Snapchat, Pinterest…)">
@@ -528,6 +530,7 @@ progress::-webkit-progress-value{box-shadow:0 0 14px var(--glow)}
           <button class="btn" id="bab" style="margin-top:8px" hidden>🎬 Créer un avant / après à partager (10 s)</button>
           <button class="btn" id="kbb" style="margin-top:8px" hidden>🎞️ Animer la photo en vidéo (8 s)</button>
           <button class="btn" id="erb" style="margin-top:8px" hidden>🩹 Effacer une zone de la photo d’origine (IA)</button>
+          <button class="btn" id="dfb" style="margin-top:8px" hidden>🐶 Retirer le filtre (museau, oreilles…) de la photo d’origine (IA, essai)</button>
           <button class="btn" id="rvb" style="margin-top:8px" hidden>🙂 Restaurer les visages de la photo d’origine (IA, essai)</button>
           <label class="chk" id="kbo" hidden style="margin-top:8px"><input type="checkbox" id="o_relief" checked><span><b>Effet de relief</b>La caméra se déplace doucement dans la photo : le premier plan bouge plus que le fond. Rien n’est modifié dans la photo. Télécharge 27 Mo la première fois.</span></label>
           <div id="kbres" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Photo animée</h2><video id="kbv" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>

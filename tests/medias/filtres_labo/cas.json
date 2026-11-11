@@ -1,0 +1,245 @@
+{
+ "note": "Photos du domaine public (NASA) avec éléments de filtre SIMULÉS par le laboratoire ; personnes jamais vues par le détecteur. « beaute » = lissage + maquillage, sans élément dessiné : rien ne doit être effacé.",
+ "cas": [
+  {
+   "id": "p07",
+   "filtre": "chien",
+   "image": "p07_chien.jpg",
+   "masque": "p07_chien_masque.png",
+   "vrai": "p07_vrai.jpg",
+   "personne": "Victor Glover"
+  },
+  {
+   "id": "p07",
+   "filtre": "chat",
+   "image": "p07_chat.jpg",
+   "masque": "p07_chat_masque.png",
+   "vrai": "p07_vrai.jpg",
+   "personne": "Victor Glover"
+  },
+  {
+   "id": "p07",
+   "filtre": "hasard",
+   "image": "p07_hasard.jpg",
+   "masque": "p07_hasard_masque.png",
+   "vrai": "p07_vrai.jpg",
+   "personne": "Victor Glover"
+  },
+  {
+   "id": "p07",
+   "filtre": "beaute",
+   "image": "p07_beaute.jpg",
+   "masque": "p07_beaute_masque.png",
+   "vrai": "p07_vrai.jpg",
+   "personne": "Victor Glover"
+  },
+  {
+   "id": "p08",
+   "filtre": "chien",
+   "image": "p08_chien.jpg",
+   "masque": "p08_chien_masque.png",
+   "vrai": "p08_vrai.jpg",
+   "personne": "Jessica Meir"
+  },
+  {
+   "id": "p08",
+   "filtre": "chat",
+   "image": "p08_chat.jpg",
+   "masque": "p08_chat_masque.png",
+   "vrai": "p08_vrai.jpg",
+   "personne": "Jessica Meir"
+  },
+  {
+   "id": "p08",
+   "filtre": "hasard",
+   "image": "p08_hasard.jpg",
+   "masque": "p08_hasard_masque.png",
+   "vrai": "p08_vrai.jpg",
+   "personne": "Jessica Meir"
+  },
+  {
+   "id": "p08",
+   "filtre": "beaute",
+   "image": "p08_beaute.jpg",
+   "masque": "p08_beaute_masque.png",
+   "vrai": "p08_vrai.jpg",
+   "personne": "Jessica Meir"
+  },
+  {
+   "id": "p09",
+   "filtre": "chien",
+   "image": "p09_chien.jpg",
+   "masque": "p09_chien_masque.png",
+   "vrai": "p09_vrai.jpg",
+   "personne": "Jasmin Moghbeli"
+  },
+  {
+   "id": "p09",
+   "filtre": "chat",
+   "image": "p09_chat.jpg",
+   "masque": "p09_chat_masque.png",
+   "vrai": "p09_vrai.jpg",
+   "personne": "Jasmin Moghbeli"
+  },
+  {
+   "id": "p09",
+   "filtre": "hasard",
+   "image": "p09_hasard.jpg",
+   "masque": "p09_hasard_masque.png",
+   "vrai": "p09_vrai.jpg",
+   "personne": "Jasmin Moghbeli"
+  },
+  {
+   "id": "p09",
+   "filtre": "beaute",
+   "image": "p09_beaute.jpg",
+   "masque": "p09_beaute_masque.png",
+   "vrai": "p09_vrai.jpg",
+   "personne": "Jasmin Moghbeli"
+  },
+  {
+   "id": "p10",
+   "filtre": "chien",
+   "image": "p10_chien.jpg",
+   "masque": "p10_chien_masque.png",
+   "vrai": "p10_vrai.jpg",
+   "personne": "Raja Chari"
+  },
+  {
+   "id": "p10",
+   "filtre": "chat",
+   "image": "p10_chat.jpg",
+   "masque": "p10_chat_masque.png",
+   "vrai": "p10_vrai.jpg",
+   "personne": "Raja Chari"
+  },
+  {
+   "id": "p10",
+   "filtre": "hasard",
+   "image": "p10_hasard.jpg",
+   "masque": "p10_hasard_masque.png",
+   "vrai": "p10_vrai.jpg",
+   "personne": "Raja Chari"
+  },
+  {
+   "id": "p10",
+   "filtre": "beaute",
+   "image": "p10_beaute.jpg",
+   "masque": "p10_beaute_masque.png",
+   "vrai": "p10_vrai.jpg",
+   "personne": "Raja Chari"
+  },
+  {
+   "id": "p11",
+   "filtre": "chien",
+   "image": "p11_chien.jpg",
+   "masque": "p11_chien_masque.png",
+   "vrai": "p11_vrai.jpg",
+   "personne": "Anne McClain"
+  },
+  {
+   "id": "p11",
+   "filtre": "chat",
+   "image": "p11_chat.jpg",
+   "masque": "p11_chat_masque.png",
+   "vrai": "p11_vrai.jpg",
+   "personne": "Anne McClain"
+  },
+  {
+   "id": "p11",
+   "filtre": "hasard",
+   "image": "p11_hasard.jpg",
+   "masque": "p11_hasard_masque.png",
+   "vrai": "p11_vrai.jpg",
+   "personne": "Anne McClain"
+  },
+  {
+   "id": "p11",
+   "filtre": "beaute",
+   "image": "p11_beaute.jpg",
+   "masque": "p11_beaute_masque.png",
+   "vrai": "p11_vrai.jpg",
+   "personne": "Anne McClain"
+  },
+  {
+   "id": "p12",
+   "filtre": "chien",
+   "image": "p12_chien.jpg",
+   "masque": "p12_chien_masque.png",
+   "vrai": "p12_vrai.jpg",
+   "personne": "Francisco Rubio"
+  },
+  {
+   "id": "p12",
+   "filtre": "chat",
+   "image": "p12_chat.jpg",
+   "masque": "p12_chat_masque.png",
+   "vrai": "p12_vrai.jpg",
+   "personne": "Francisco Rubio"
+  },
+  {
+   "id": "p12",
+   "filtre": "hasard",
+   "image": "p12_hasard.jpg",
+   "masque": "p12_hasard_masque.png",
+   "vrai": "p12_vrai.jpg",
+   "personne": "Francisco Rubio"
+  },
+  {
+   "id": "p12",
+   "filtre": "beaute",
+   "image": "p12_beaute.jpg",
+   "masque": "p12_beaute_masque.png",
+   "vrai": "p12_vrai.jpg",
+   "personne": "Francisco Rubio"
+  },
+  {
+   "id": "p06",
+   "filtre": "chien",
+   "image": "p06_chien.jpg",
+   "masque": "p06_chien_masque.png",
+   "vrai": "p06_vrai.jpg",
+   "personne": "Matthias Maurer"
+  },
+  {
+   "id": "p06",
+   "filtre": "chat",
+   "image": "p06_chat.jpg",
+   "masque": "p06_chat_masque.png",
+   "vrai": "p06_vrai.jpg",
+   "personne": "Matthias Maurer"
+  },
+  {
+   "id": "p06",
+   "filtre": "hasard",
+   "image": "p06_hasard.jpg",
+   "masque": "p06_hasard_masque.png",
+   "vrai": "p06_vrai.jpg",
+   "personne": "Matthias Maurer"
+  },
+  {
+   "id": "p06",
+   "filtre": "beaute",
+   "image": "p06_beaute.jpg",
+   "masque": "p06_beaute_masque.png",
+   "vrai": "p06_vrai.jpg",
+   "personne": "Matthias Maurer"
+  }
+ ],
+ "proportions": [
+  {
+   "id": "p08",
+   "image": "p08_grandsyeux.jpg",
+   "vrai": "p08_vrai.jpg",
+   "masque": "p08_grandsyeux_masque.png",
+   "yeux": 1.25
+  },
+  {
+   "id": "p10",
+   "image": "p10_grandsyeux.jpg",
+   "vrai": "p10_vrai.jpg",
+   "masque": "p10_grandsyeux_masque.png",
+   "yeux": 1.25
+  }
+ ]
+}

@@ -36,3 +36,10 @@
 3. Note : le temps total, si l’onglet se ferme ou se recharge (= mémoire insuffisante), et si la personne est toujours reconnaissable.
 4. Glisse la barre avant/après, touche « Carte » (rose = détails inventés), baisse la force à 50 % et regarde la différence.
 5. Recommence avec une photo nette récente : le message doit dire « déjà net, laissé tel quel ».
+
+## Vérification v7.0 — Retirer un filtre du visage (5 minutes)
+1. Touche « Retirer un filtre du visage (IA, essai) » et choisis une photo Snapchat/Instagram avec museau, oreilles ou moustaches.
+2. Accepte les téléchargements (une seule fois).
+3. Note : ce qui a été retiré, ce qui reste, ce qui a été effacé à tort (bouton « Carte »), le temps, et si l’onglet s’est fermé.
+4. Si le filtre agrandit les yeux ou affine le visage : « Proportions », ajoute une photo de toi sans filtre, règle les curseurs.
+5. Recommence avec une photo sans filtre : le message doit dire que rien n’a été trouvé.

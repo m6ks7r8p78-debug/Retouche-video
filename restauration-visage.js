@@ -215,5 +215,27 @@ var RVIS = (() => {
     if (typeof shareBlob === "function") return shareBlob(b, typeof uniqName === "function" ? uniqName(n, "jpg") : n + ".jpg");
     const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = n + ".jpg"; a.click();
   }
-  return { analyser, composer, restaurer, resume, ouvrir, fermer, charger, liberer, similitude, inverse, R, ID };
+  /* v7.0 : redessine un visage SEULEMENT dans une zone (ex. là où un filtre AR a été retiré) — sert au retrait de filtre.
+     base : canvas de la photo (modifié sur place) ; pts : 5 repères YuNet ; zone : Float32Array (w×h, 0..1) ; renvoie true si fait */
+  async function restaurerZone(base, pts, zone, onP) {
+    const W = base.width, H = base.height, M = similitude(pts, T), Mi = inverse(M);
+    const al = toile(N, N), ax = al.getContext("2d", { willReadFrequently: true });
+    ax.imageSmoothingQuality = "high"; ax.setTransform(M[0], M[1], -M[1], M[0], M[2], M[3]); ax.drawImage(base, 0, 0);
+    const d = ax.getImageData(0, 0, N, N).data, x = new Float32Array(3 * Q);
+    for (let j = 0, i = 0; j < Q; j++, i += 4) { x[j] = d[i] / 127.5 - 1; x[Q + j] = d[i + 1] / 127.5 - 1; x[2 * Q + j] = d[i + 2] / 127.5 - 1 }
+    const s = await charger(onP); enCours++; let y;
+    try { y = (await s.run({ entree: new ort.Tensor("float32", x, [1, 3, N, N]) })).sortie.data } finally { enCours-- }
+    const mo = [0, 0, 0], ms = [0, 0, 0]; let nc = 0; const r = new ImageData(N, N), rd = r.data;
+    for (let j = 0, i = 0; j < Q; j++, i += 4) { for (let c = 0; c < 3; c++) rd[i + c] = (Math.max(-1, Math.min(1, y[c * Q + j])) + 1) * 127.5; rd[i + 3] = Math.round(255 * ALPHA[j]); if (ALPHA[j] > .9) { nc++; for (let c = 0; c < 3; c++) { mo[c] += d[i + c]; ms[c] += rd[i + c] } } }
+    const dc = mo.map((o, c) => (o - ms[c]) / Math.max(1, nc)); for (let i = 0; i < Q * 4; i += 4) for (let c = 0; c < 3; c++) rd[i + c] += dc[c];
+    const c1 = toile(N, N); c1.getContext("2d").putImageData(r, 0, 0);
+    const tmp = toile(W, H), tx = tmp.getContext("2d"); tx.imageSmoothingQuality = "high"; tx.setTransform(Mi[0], Mi[1], -Mi[1], Mi[0], Mi[2], Mi[3]); tx.drawImage(c1, 0, 0);
+    /* mélange : photo × (1 − zone) + visage redessiné × zone (et seulement là où le visage redessiné existe) */
+    let x0 = W, y0 = H, x1 = -1, y1 = -1; for (let yy = 0; yy < H; yy++) for (let xx = 0; xx < W; xx++) if (zone[yy * W + xx] > .004) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy }
+    if (x1 < 0) return false;
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, bx = base.getContext("2d", { willReadFrequently: true }), A = bx.getImageData(x0, y0, bw, bh), B = tx.getImageData(x0, y0, bw, bh).data, a = A.data;
+    for (let yy = 0; yy < bh; yy++) for (let xx = 0; xx < bw; xx++) { const k = (yy * bw + xx) * 4, z = zone[(y0 + yy) * W + x0 + xx] * B[k + 3] / 255; if (z > 0) for (let c = 0; c < 3; c++) a[k + c] = a[k + c] * (1 - z) + B[k + c] * z }
+    bx.putImageData(A, x0, y0); return true;
+  }
+  return { restaurerZone, analyser, composer, restaurer, resume, ouvrir, fermer, charger, liberer, similitude, inverse, R, ID };
 })();

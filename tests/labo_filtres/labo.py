@@ -5,7 +5,8 @@
 # La photo « cible » est filtrée par le labo ; l'autre sert de référence sans filtre, comme dans l'app.
 # Limite : ces filtres sont simulés (pas Snapchat/Instagram) ; une réussite ici ne vaut pas réussite sur un vrai filtre.
 import os, sys, json, time, cv2, numpy as np, torch, lpips
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import noyau as N
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); import noyau as N, ajouts as A
+VAL_NOMS = ['Maurer', 'Glover', 'Meir', 'Moghbeli', 'Chari', 'McClain', 'Rubio']   # personnes jamais vues par le détecteur appris
 ICI = os.path.dirname(os.path.abspath(__file__)); D = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ICI, 'paires')
 OUT = os.path.join(ICI, '../sorties/labo_filtres'); os.makedirs(OUT, exist_ok=True)
 PAIRES = json.load(open(os.path.join(D, 'paires.json')))
@@ -20,14 +21,17 @@ FILTRES = {
     'chat': lambda im, P: (*N.f_chat(im, P), {'nez': 'triangle rose', 'moustaches': 6}),
     'lissage': lambda im, P: (*N.f_lissage(im, P, 1, 8), {'bilatéral': 2, 'éclat': 8}),
     'maquillage': lambda im, P: (*N.f_maquillage(im, P), {'rouge_lèvres': .45, 'blush': .22}),
+    'chien_oreilles': lambda im, P: (*N.f_chien(im, P, oreilles=True), {'museau': 1, 'moustaches': 6, 'oreilles': 2}),
+    'ajouts_hasard': lambda im, P: (*A.poser(im, P, np.random.default_rng(int(P[1, 0] * 7) % 10007 + 500)), {'graine': int(P[1, 0] * 7) % 10007 + 500}),
 }
 def compose(*fs):
     def f(im, P):
         m = np.zeros(im.shape[:2], np.float32); p = {}
-        for g in fs: im, mm, pp = FILTRES[g](im, P); m = np.maximum(m, mm); p[g] = pp
+        for g in fs: im, mm, pp = TOUS[g](im, P); m = np.maximum(m, mm); p[g] = pp
         return im, m, p
     return f
 FILTRES['beauté'] = compose('lissage', 'maquillage'); FILTRES['beauté+chien'] = compose('lissage', 'maquillage', 'chien')
+TOUS = dict(FILTRES)
 if os.environ.get('SEULEMENT'): FILTRES = {k: v for k, v in FILTRES.items() if k in os.environ['SEULEMENT'].split(',')}
 res = []
 for pr in PAIRES:
@@ -37,17 +41,20 @@ for pr in PAIRES:
     crop = lambda z: z[y0:y1, x0:x1]
     for nom, f in FILTRES.items():
         Fi, mexact, params = f(T, P); t = time.time(); J = []
-        Out, carte, J = N.reconstruire(Fi, [Rf], journal=J); dt = time.time() - t
+        if os.environ.get('METHODE') == 'app':
+            Out, mdet, J = N.retirer_ajouts(Fi, journal=J); carte = {'ajouts': mdet}
+        else: Out, carte, J = N.reconstruire(Fi, [Rf], journal=J)
+        dt = time.time() - t
         e = os.path.join(OUT, f"{pr['id']}_{nom}"); os.makedirs(e, exist_ok=True)
         for n_, z in [('original.jpg', T), ('filtre.jpg', Fi), ('resultat.jpg', Out)]: cv2.imwrite(os.path.join(e, n_), z, [cv2.IMWRITE_JPEG_QUALITY, 92])
         cv2.imwrite(os.path.join(e, 'masque_exact.png'), (mexact * 255).astype(np.uint8)); cv2.imwrite(os.path.join(e, 'carte_ajouts.png'), (carte.get('ajouts', 0 * mexact) * 255).astype(np.uint8))
-        m = {'id': pr['id'], 'filtre': nom, 'secondes': round(dt, 1), 'journal': J,
+        m = {'id': pr['id'], 'filtre': nom, 'jamais_vu': any(v in pr.get('personne', '') for v in VAL_NOMS), 'secondes': round(dt, 1), 'journal': J,
              'lpips_filtre': lp(crop(T), crop(Fi)), 'lpips_resultat': lp(crop(T), crop(Out))}
         mo = ov > .5; m['dE_visage_filtre'] = float(np.sqrt(((lab(T) - lab(Fi)) ** 2).sum(2))[mo].mean()); m['dE_visage_resultat'] = float(np.sqrt(((lab(T) - lab(Out)) ** 2).sum(2))[mo].mean())
         mx = mexact > .5
         if mx.sum() > 50:
             m['dE_masque_filtre'] = float(np.sqrt(((lab(T) - lab(Fi)) ** 2).sum(2))[mx].mean()); m['dE_masque_resultat'] = float(np.sqrt(((lab(T) - lab(Out)) ** 2).sum(2))[mx].mean())
-        if nom in ('chien', 'chat', 'beauté+chien'):   # même chose SANS référence (remplissage classique + GFPGAN) : ce qu'apporte la photo sans filtre
+        if nom in ('chien', 'chat', 'beauté+chien') and os.environ.get('METHODE') != 'app':   # même chose SANS référence (remplissage classique + GFPGAN) : ce qu'apporte la photo sans filtre
             O2, _, _ = N.reconstruire(Fi, [Rf], sans_ref=True); cv2.imwrite(os.path.join(e, 'resultat_sans_ref.jpg'), O2, [cv2.IMWRITE_JPEG_QUALITY, 92])
             m['lpips_sans_ref'] = lp(crop(T), crop(O2))
             if mx.sum() > 50: m['dE_masque_sans_ref'] = float(np.sqrt(((lab(T) - lab(O2)) ** 2).sum(2))[mx].mean())
@@ -58,7 +65,7 @@ for pr in PAIRES:
 json.dump(res, open(os.path.join(OUT, 'resume.json'), 'w'), ensure_ascii=False, indent=1)
 print('\nMOYENNES')
 for nom in FILTRES:
-    R = [r for r in res if r['filtre'] == nom]
+    R = [r for r in res if r['filtre'] == nom and (r['jamais_vu'] or not os.environ.get('JAMAIS_VU'))]
     if not R: continue
     k = [x for x in R[0] if isinstance(R[0][x], float)]
     print(f"{nom:13s}", ' '.join(f"{x}={np.mean([r[x] for r in R if x in r]):.3f}" for x in k), f"n={len(R)}")
