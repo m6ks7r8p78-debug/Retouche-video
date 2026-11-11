@@ -1,5 +1,20 @@
 # Journal des versions
 
+## v6.5 (11 nov. 2026) — ouverture instantanée aux visites suivantes, téléphone moins sollicité
+- Hors-ligne repensé (`sw.js`) : l'app s'ouvre depuis le téléphone sans attendre le réseau (avant : chaque fichier était redemandé au
+  serveur à chaque ouverture). Chaque version est installée en entier avant d'être utilisée ; une nouvelle version s'installe en
+  arrière-plan et la page se recharge toute seule, sauf si une photo ou une vidéo est ouverte (elle arrive alors à l'ouverture suivante).
+  Les téléchargements venant d'autres sites (modèles IA, serveurs) ne passent plus par le service worker.
+- Garde-fou : `sw.js` porte l'empreinte `H` de tous les fichiers hors ligne ; `node tests/sw.test.mjs` échoue si elle n'est plus à jour.
+  **À chaque version : changer le numéro du cache `C`, puis `node tests/sw.test.mjs --maj`.**
+- Nouveau test `tests/sw_reel.test.mjs` (vrai service worker dans Chrome, 9 cas) : deuxième ouverture sans aucune demande au serveur,
+  ouverture sans connexion, mise à jour automatique, pas de rechargement pendant un travail.
+- La démonstration avant/après de l'accueil n'anime plus rien dès qu'elle n'est plus visible (avant : 60 réveils par seconde pendant
+  toute la séance, export compris). Les deux polices de l'accueil sont demandées dès le début du chargement.
+- Vérifié avant de choisir : pas de code mort dans le noyau (207 déclarations, 1 inutilisée de 5 octets) ; retirer les commentaires
+  ne gagnerait que 36 Ko compressés à la première visite, pour un dépôt illisible — non retenu.
+- Aucun calcul d'image, de son ou d'export modifié.
+
 ## v6.4 (6 nov. 2026) — app allégée : ouverture plus rapide, rendu identique
 - Le noyau (≈ 250 Ko de code) est sorti d'`index.html` vers `app.js` ; `index.html` passe de 313 Ko à 59 Ko.
 - Tous les scripts sont différés (`defer`) : l'écran s'affiche avant que le code soit lu, même ordre d'exécution qu'avant.

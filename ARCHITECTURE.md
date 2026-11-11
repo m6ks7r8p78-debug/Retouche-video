@@ -11,7 +11,7 @@ Application web installable (PWA), sans serveur de calcul : tout tourne dans Saf
 | `effacer.js` *(v3.3)* | « Effacer une zone » : éditeur plein écran, masque (pinceau, gomme, toucher), MI-GAN, EdgeTAM, carte des zones inventées, provenance, exports (`ERASE`) | `ERASE.open(fichier)`, `ERASE.close()` ; utilise `MODELS.bytes`, `MODELS.register`, `STUDIO.granted`, `shareBlob`, `uniqName` |
 | `modeles/` *(v3.3)* | structures ONNX d’EdgeTAM (0,2 Mo chacune, identiques à Hugging Face, vérifiées par empreinte au chargement) | chargées par `effacer.js` |
 | `studio.js` | autorisations, sauvegarde chiffrée, historique, assistant (`STUDIO`) | `consent(k)`, `granted(k)`, `grant(k)`, `revoke(k)`, `backup(pass)`, `restore(o, pass)`, `plan(texte)`, `esc(texte)` |
-| `sw.js` | hors ligne | cache des fichiers de l’app (`retouche-vN`) ; ne touche pas au cache des modèles (`retouche-modeles-v1`) |
+| `sw.js` | hors ligne | v6.5 : l'app est servie depuis le cache `retouche-vN` (réseau seulement pour ce qui n'y est pas), mise à jour en arrière-plan puis rechargement par `demarrage.js` ; empreinte `H` des fichiers ; ne touche ni au cache des modèles (`retouche-modeles-v1`), ni à /radar/, ni aux autres sites |
 | `polices/` | polices de l’interface (OFL) | `polices/polices.css` |
 | `serveur/worker.js` | récupération de vidéos par lien (Cloudflare Workers) | `/video`, `/proxy`, `/etat` |
 

@@ -6,7 +6,13 @@ if(!window.Mp4Muxer){const s=document.createElement("script");s.src="https://cdn
 try{if("serviceWorker" in navigator&&location.protocol==="https:"&&/(github\.io|retoucheproai\.com)$/.test(location.hostname)){
   /* v5.6 : offres allumées → l'app hors ligne est réservée à Premium (version gratuite : toujours la version en ligne) */
   if(window.ABO&&ABO.actif()&&!ABO.premium())navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister())).catch(()=>{});
-  else navigator.serviceWorker.register("sw.js").catch(()=>{})}}catch(e){}
+  else{const sw=navigator.serviceWorker,avait=!!sw.controller;let fait=false;
+    /* v6.5 : l'app s'ouvre depuis le téléphone ; quand une nouvelle version vient de s'installer, on recharge la page une seule fois,
+       et seulement si rien n'est en cours (ni photo ou vidéo ouverte, ni « Effacer une zone ») et si la page affichée est bien l'ancienne */
+    const occupe=()=>document.body.classList.contains("loaded")||!!(document.querySelector("#ez")&&!document.querySelector("#ez").hidden);
+    sw.addEventListener("controllerchange",()=>{if(!avait||fait||occupe())return;
+      fetch("app.js").then(r=>r.text()).then(t=>{const m=t.match(/const VER="([^"]+)"/);if(m&&m[1]!==VER&&!fait&&!occupe()){fait=true;location.reload()}}).catch(()=>{})});
+    sw.register("sw.js").then(reg=>{document.addEventListener("visibilitychange",()=>{if(!document.hidden)reg.update().catch(()=>{})})}).catch(()=>{})}}}catch(e){}
 /* modules lourds (« Effacer une zone », relief) : lus une fois la page prête et le téléphone libre, pour que le gestionnaire
    « Modèles IA » les connaisse comme avant, sans ralentir l'ouverture */
 (()=>{const go=()=>{try{chargerModule("effacer").catch(()=>{});chargerModule("relief").catch(()=>{})}catch(e){}};

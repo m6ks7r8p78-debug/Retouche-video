@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v6.4";/* seul endroit où changer le numéro de version */
+const VER="v6.5";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -2755,8 +2755,15 @@ $("#pvsolo").onclick=()=>{PV.solo=!PV.solo;$("#pvb").hidden=PV.solo;$("#pvs").hi
   const d=$("#demo");if(!d)return;const r=d.querySelector("input"),set=v=>d.style.setProperty("--p",v+"%");
   let auto=!(matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches),t0=performance.now(),vis=true;
   const stop=()=>{auto=false};r.addEventListener("input",()=>{stop();set(r.value)});["pointerdown","touchstart","keydown"].forEach(e=>r.addEventListener(e,stop,{passive:true}));
-  try{new IntersectionObserver(e=>{vis=e[0].isIntersecting}).observe(d)}catch(e){}
-  (function tick(now){if(!auto)return;if(vis&&!document.hidden&&!document.body.classList.contains("loaded")){const x=50+34*Math.sin((now-t0)/1400);set(x.toFixed(1));r.value=Math.round(x)}requestAnimationFrame(tick)})(t0);
+  /* v6.5 : la boucle d'animation s'arrête dès que la démo n'est plus à l'écran (vidéo chargée, export en cours, app en arrière-plan)
+     et repart quand elle revient ; avant, elle réveillait le téléphone à chaque image pendant toute la séance, même pendant un export */
+  let raf=0;const actif=()=>auto&&vis&&!document.hidden&&!document.body.classList.contains("loaded");
+  function tick(now){raf=0;if(!actif())return;const x=50+34*Math.sin((now-t0)/1400);set(x.toFixed(1));r.value=Math.round(x);raf=requestAnimationFrame(tick)}
+  const relance=()=>{if(!raf&&actif())raf=requestAnimationFrame(tick)};
+  try{new IntersectionObserver(e=>{vis=e[0].isIntersecting;relance()}).observe(d)}catch(e){}
+  document.addEventListener("visibilitychange",relance);
+  try{new MutationObserver(relance).observe(document.body,{attributes:true,attributeFilter:["class"]})}catch(e){}
+  relance();
 })();
 /* Raccourci écran d’accueil */
 (function(){

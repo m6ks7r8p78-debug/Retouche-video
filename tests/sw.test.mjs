@@ -7,8 +7,13 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SRC = fs.readFileSync(process.argv[2] || path.join(HERE, "..", "sw.js"), "utf8");
+const SRC = fs.readFileSync(path.join(HERE, "..", "sw.js"), "utf8");
 const C = SRC.match(/const C="([^"]+)"/)[1];
+import crypto from "crypto";
+/* empreinte des fichiers hors ligne : « --maj » l'écrit dans sw.js ; sans option, le test échoue si elle n'est plus à jour */
+const listes = n => JSON.parse(SRC.match(new RegExp(n + "=(\\[[^\\]]+\\])"))[1]);
+const empreinte = () => { const h = crypto.createHash("sha256"); for (const f of [...listes("F"), ...listes("LOURDS")]) if (f !== "./") { h.update(f); h.update(fs.readFileSync(path.join(HERE, "..", f))) } return h.digest("hex").slice(0, 16) };
+if (process.argv.includes("--maj")) { fs.writeFileSync(path.join(HERE, "..", "sw.js"), SRC.replace(/const H="[^"]*"/, 'const H="' + empreinte() + '"')); console.log("empreinte écrite : " + empreinte()); process.exit(0) }
 
 let ok = 0, ko = 0;
 const check = (cond, label) => { if (cond) { ok++; console.log("✓ " + label) } else { ko++; console.log("✗ " + label) } };
@@ -17,7 +22,7 @@ async function activate(names) {
   const store = new Set(names), handlers = {};
   const ctx = {
     self: { addEventListener: (t, f) => (handlers[t] = f), skipWaiting: () => {}, clients: { claim: async () => {} } },
-    caches: { keys: async () => [...store], delete: async n => store.delete(n), open: async () => ({ addAll: async () => {}, put: async () => {} }) },
+    caches: { keys: async () => [...store], delete: async n => store.delete(n), open: async () => ({ addAll: async () => {}, put: async () => {}, match: async () => ({}), add: async () => {} }) },
     location: { origin: "https://exemple.github.io" }, URL, Request: class { constructor(u) { this.url = u } }, fetch: async () => { throw new Error("hors ligne") }
   };
   ctx.self.clients = ctx.self.clients;
@@ -32,6 +37,7 @@ check(!kept.has("retouche-v20") && !kept.has("retouche-v1"), "les anciennes vers
 check(kept.has("retouche-modeles-v1"), "les modèles IA téléchargés (retouche-modeles-v1) sont gardés");
 check(kept.has("radar-cache"), "les caches de l'autre app du site (/radar/) sont gardés");
 
+check(SRC.includes('const H="' + empreinte() + '"'), "l'empreinte des fichiers est à jour (sinon : node tests/sw.test.mjs --maj, et changer le numéro du cache C)");
 const F = JSON.parse(SRC.match(/F=(\[[^\]]+\])/)[1]);
 const missing = F.filter(f => f !== "./" && !fs.existsSync(path.join(HERE, "..", f)));
 check(missing.length === 0, "tous les fichiers mis hors ligne existent" + (missing.length ? " (manquent : " + missing.join(", ") + ")" : ""));

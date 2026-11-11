@@ -4,6 +4,16 @@
 `sauvegarde-v2.49`, `sauvegarde-v2.50`, `sauvegarde-v3.0`, `sauvegarde-v3.1`, `sauvegarde-v3.2`, `sauvegarde-v3.3` (les tags cités avant n'avaient jamais été créés :
 l'envoi de tags est refusé par l'environnement de travail de Claude, d'où des branches). Serveur Cloudflare : **v5 en ligne**.
 
+## v6.4–v6.5 (6 et 11 nov. 2026) — allègement, sans toucher au rendu
+- v6.4 : noyau sorti d'`index.html` vers `app.js`, scripts différés, `effacer.js`/`marquage.js`/`depth.js` chargés à la demande
+  (`chargerModule` dans `app.js`, préchargés par `demarrage.js`). Sauvegarde : branche `sauvegarde-v6.3`.
+- v6.5 : service worker « cache d'abord » avec mise à jour automatique, boucle de la démo arrêtée hors écran. Sauvegarde : `sauvegarde-v6.4`.
+- **Règle à chaque version** : changer `VER` (app.js) et le numéro du cache `C` (sw.js), puis `node tests/sw.test.mjs --maj`.
+  Sans cela, les téléphones gardent l'ancienne version (le test `sw.test.mjs` le signale).
+- Piste écartée : minifier le code (36 Ko compressés gagnés à la première visite seulement). Le démarrage est au plancher
+  (une seule tâche longue de 160 ms sur processeur ralenti ×6) ; le temps qui reste à gagner est dans l'export, à mesurer sur iPhone.
+- Tests dans cet environnement : Playwright récent + navigateurs de /opt/pw-browsers ; pour `sw_reel.test.mjs`, le test retire lui-même le proxy.
+
 ## v6.0 (5 nov. 2026) — caméra virtuelle (essai) et diagnostic anonyme
 Feuille de route du propriétaire : document « Feuille de route — Caméra virtuelle RetoucheProAI » (ses artifacts Claude).
 - `camera.js` (objet `CAM`) : `lire(fichier)` → fiche (atomes moov/udta/meta keys-ilst, AVI RIFF, 3GP, MPEG-TS) ; `famille()` ;
