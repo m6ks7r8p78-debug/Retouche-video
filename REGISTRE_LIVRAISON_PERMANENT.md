@@ -331,3 +331,4 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
   confirmée** au 11/11 22 h 15 : la publication GitHub Pages a échoué (« job not acquired by Runner », panne côté GitHub, aucune
   machine attribuée en 15 min), la relance est en file d'attente. Le site sert encore la v6.9. Les échecs du flux « Apps des stores »
   depuis la v6.7 ont la même cause apparente (15 min puis échec). À vérifier à la reprise : `VER="v7.0"` sur retoucheproai.com.
+- 11/11 23 h 40 : site toujours en v6.9 ; relance bloquée en file 21 min annulée, nouvelle publication déclenchée (GitHub Actions/Pages de nouveau « operational »).
