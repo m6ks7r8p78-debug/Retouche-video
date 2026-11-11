@@ -13,3 +13,4 @@ prive/
 tests/prive/
 *.MOV
 *.mov
+tests/labo_filtres/migan_pipeline_v2.onnx
