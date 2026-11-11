@@ -86,7 +86,7 @@ médias de validation · appareils testés · défauts · limites · reste à fa
 - **Appareils** : ordinateur Linux (Python/ONNX Runtime) ; Chromium sans carte graphique (WebAssembly). **Pas d'iPhone.**
 - **Défauts constatés** : la ressemblance change un peu (≈ 8 % de la surface du visage inventée à 80 %) ; PSNR légèrement plus bas
   que l'entrée à force 100 %.
-- **Limites** : photo seulement ; profil très marqué, visage caché, visage très sombre non mesurés ; pas de mesure d'identité
+- **Limites** : photo seulement ; téléchargement coupé = recommence au début (GitHub Pages ne reprend pas) ; profil très marqué, visage caché, visage très sombre non mesurés ; pas de mesure d'identité
   (ArcFace et équivalents : poids non commerciaux, non utilisés) ; mémoire iPhone inconnue (risque de fermeture de l'onglet).
 - **Licence (bloquant pour l'usage commercial)** : code GFPGAN Apache-2.0 ; poids publiés par Tencent sous la même licence, mais le
   générateur repose sur StyleGAN2 (licence NVIDIA : recherche/évaluation uniquement) entraîné sur FFHQ (CC BY-NC-SA 4.0). Avant
@@ -208,7 +208,12 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 - **Tests exécutés** : voir la section « Résultats v6.9 » ci-dessous.
 - **Régressions** : voir « Non-régression v6.9 ».
 - **Non résolu** : licence commerciale de GFPGAN ; aucune mesure sur iPhone ; vidéo.
-- **Sauvegarde** : étiquette `sauvegarde-v6.8` posée avant publication.
+- **Sauvegarde / retour arrière** : branche `sauvegarde-v6.8` (= commit 509d2da ; les étiquettes ne peuvent pas être poussées
+  depuis cet environnement).
+- **Commit** : d810dbf sur `main`. **Déploiement vérifié** le 11/11/2026 : retoucheproai.com sert `VER="v6.9"`, le bouton
+  `pickv` et `restauration-visage.js` ; le modèle `modeles/lourds/gfpgan14_int8w.onnx` est servi en entier (85 566 839 octets) avec
+  la bonne empreinte SHA-256 (téléchargé et recalculé). Constat : GitHub Pages ignore la reprise par morceaux (réponse 200 à une
+  demande « Range ») : un téléchargement coupé recommence du début (le gestionnaire le gère, mais c'est plus long sur mobile).
 
 #### Résultats v6.9 (exécutés dans cette séance, ordinateur Linux, Chromium sans carte graphique)
 - `tests/rvis.test.mjs` : **20 réussis, 0 échoué** (après deux échecs corrigés pendant le développement : seuil « déjà net »
