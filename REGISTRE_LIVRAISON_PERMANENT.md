@@ -22,11 +22,13 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 | **Validées sur données synthétiques** | F06 diagnostic des filtres couleur/lumière · F08 zones de filtre AR proposées (photo) |
 | **Intégrées, non validées** | F02 reprise des exports 4K · F04 IA rapide Kaggle · F07 effacer une zone · F17 anti-scintillement/stabilisation · F18 vitesse / Time Repair · F20 caméra virtuelle · F21 export X · F22 hors-ligne · F26 pubs/Premium (éteints) · F28 thème Néon |
 | **Prototypes** | F09 suivi vidéo du visage + report de masque · F16 directeur de traitement (`ANALYSE.plan()`, non branché) |
-| **Non commencées** | F10 effacement AR en vidéo · F11 déformations du visage · F12 retrait maquillage/lissage beauté · F14 restauration des visages en vidéo · F15 laboratoire de simulation des filtres |
+| **Prototypes (labo, non intégrés à l'app)** | F29 retrait de filtre guidé par photos sans filtre · F11 · F12 (mesurés : pas encore meilleurs que l'entrée) |
+| **Non commencées** | F10 effacement AR en vidéo · F14 restauration des visages en vidéo |
+| **Laboratoire** | F15 : EN DÉVELOPPEMENT (12 paires réelles × 7 filtres simulés, mesures automatiques) |
 | **Bloquées (dépendance externe)** | F23 serveur de consentement (déploiement + juriste) · F24 collecte pour l'entraînement (juriste) · **F13 en usage commercial** (décision juridique sur la licence des poids) |
 | **Régressions détectées** | aucune introduite par la v6.9. **Échecs déjà présents en v6.8** (trouvés en relançant tout) : `tests/pub.test.mjs` 1 cas (pub indisponible → l’enregistrement ne part pas dans le test), `tests/v3.test.mjs` 3 cas (rendus « équilibre / nuit / jour » de photo sombre) — à expliquer et corriger |
 
-**Priorités restantes (dans l'ordre du mandat)** : F14 visages en vidéo (Kaggle + local) → F11/F12 filtres beauté et déformations
+**Priorité donnée par le propriétaire le 11/11 au soir** : uniquement le retrait des filtres beauté / visage / animaux (cagoule et flou qui cache un visage : exclus, voir F29). **Ancien ordre** : F14 visages en vidéo (Kaggle + local) → F11/F12 filtres beauté et déformations
 sur photo → F10 effacement AR en vidéo (suivi F09 déjà prêt) → F15 laboratoire de filtres → F16 directeur branché sur l'export →
 mesures iPhone de tout ce qui est « intégré non validé ».
 
@@ -240,3 +242,40 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 | moteur_graphique | arrêté au bout de 500 s | arrêté au bout de 500 s (identique) | carte graphique simulée trop lente ici ; non concluant |
 | noyau | — | s'arrête avant le résumé (déjà noté dans `AUDIT_INITIAL.md`) | non concluant ici |
 | effacer, app | non lancées (modèle MI-GAN absent des médias de test ; durée) | — | inchangé |
+
+
+### F29 — Retrait de filtre guidé par des photos sans filtre de la même personne · priorité 1 (idée du propriétaire, 11/11)
+- **Objectif** : la personne importe la photo filtrée, puis 1 à 3 photos d'elle sans filtre ; l'app s'en sert pour retrouver le vrai
+  visage (forme, peau, parties cachées par un museau ou des moustaches) au lieu de l'inventer. Usage limité à soi ou à une personne
+  consentante. **Exclu** : cagoule, floutage volontaire d'un visage (il n'y a plus rien à retrouver ; avec une référence, ce serait
+  coller le visage de quelqu'un sur une personne qui s'est cachée).
+- **Statut** : PROTOTYPE (labo Python, `tests/labo_filtres/`). Rien dans l'app.
+- **Mesures réelles (12 paires, filtres simulés, vérité connue)** — écart de couleur ΔE dans la zone du filtre (plus bas = mieux) :
+  | Filtre | Photo filtrée | Avec référence | Sans référence (remplissage + GFPGAN) |
+  |---|---|---|---|
+  | museau + moustaches de chien | 96,4 | 42,6 | **25,3** |
+  | nez + moustaches de chat | 31,6 | 34,8 | 25,2 |
+  Repérage automatique des éléments : chien rappel 95 %, précision 42 % ; chat rappel 20 % (moustaches blanches, petit nez rose
+  ratés). Photo SANS filtre passée dans l'outil : elle est encore modifiée (LPIPS 0,039, ΔE 5,3 en moyenne ; jusqu'à 0,14 sur une
+  paire) → faux repérages à éliminer avant toute mise en ligne.
+  Beauté (v1 du labo, avant désactivation) : lissage ΔE 12,9 → 17,3, maquillage LPIPS 0,011 → 0,059 : **pire que de ne rien faire**.
+- **Ce que le labo a appris** :
+  1. Les repères MediaPipe sont trop « réguliers » pour mesurer une déformation : des yeux agrandis de 27 % n'y grandissent que de
+     6–8 %, un nez affiné de 12 % de 3 %. La taille de l'iris mesurée sur l'image varie de ±14 % d'une vraie photo à l'autre, la
+     largeur du bas du visage de ±4 à ±18 % (pose, objectif) : autant que l'effet des filtres. **Défaire automatiquement une
+     déformation à partir d'une photo ordinaire n'est pas fiable** (risque de déformer un vrai visage).
+  2. Recopier la peau ou une partie du visage d'une AUTRE photo (autre lumière, autre expression) fait des taches et des rides qui
+     n'existent pas : c'est moins bon que de redessiner la zone sans référence.
+  3. Ce qui marche : repérer un museau ou des moustaches sombres (95 %) et redessiner la zone avec GFPGAN.
+- **Reste à faire / pistes** : (a) repérage : précision et moustaches claires ; zéro modification sur photo sans filtre ;
+  (b) référence utilisée seulement pour l'identité (comparer et choisir parmi plusieurs reconstructions celle qui ressemble le plus
+  à la personne) au lieu de recopier ses pixels ; (c) reconstruction générative conditionnée par l'identité sur serveur gratuit
+  (Kaggle, carte graphique) — licences à vérifier une par une ; (d) correction des déformations en mode guidé (curseurs, la
+  référence affichée à côté) puisque l'automatique n'est pas fiable.
+- **Critère de fin** : sur le labo, chaque filtre mieux que la photo filtrée ET mieux que sans référence ; photo sans filtre
+  inchangée ; puis 5 vraies photos Snapchat/Instagram du propriétaire avec ses photos sans filtre ; puis iPhone.
+- **Preuve** : `tests/sorties/labo_filtres/*/mesures.json` (non versionné), commande dans `tests/labo_filtres/LISEZMOI.md`.
+
+### Historique — 11/11/2026 (soir) : laboratoire des filtres, essai du retrait guidé par photos sans filtre
+- F15 : NON COMMENCÉ → EN DÉVELOPPEMENT. F29 créée : PROTOTYPE. F11, F12 : NON COMMENCÉ → PROTOTYPE (mesurés défavorables).
+- Aucune modification de l'app (rien n'a atteint « mieux que l'entrée »). Commit : voir ci-dessous.

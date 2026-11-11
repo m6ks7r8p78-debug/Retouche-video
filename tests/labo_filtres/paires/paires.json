@@ -1,0 +1,86 @@
+[
+ {
+  "id": "p01",
+  "cible": "p01_0.jpg",
+  "reference": "p01_2.jpg",
+  "personne": "Loral O'Hara",
+  "note": ""
+ },
+ {
+  "id": "p05",
+  "cible": "p05_2.jpg",
+  "reference": "p05_0.jpg",
+  "personne": "Josh Cassada",
+  "note": ""
+ },
+ {
+  "id": "p07",
+  "cible": "p07_1.jpg",
+  "reference": "p07_3.jpg",
+  "personne": "Victor Glover",
+  "note": ""
+ },
+ {
+  "id": "p08",
+  "cible": "p08_1.jpg",
+  "reference": "p08_0.jpg",
+  "personne": "Jessica Meir",
+  "note": ""
+ },
+ {
+  "id": "p09",
+  "cible": "p09_0.jpg",
+  "reference": "p09_2.jpg",
+  "personne": "Jasmin Moghbeli",
+  "note": ""
+ },
+ {
+  "id": "p10",
+  "cible": "p10_2.jpg",
+  "reference": "p10_3.jpg",
+  "personne": "Raja Chari",
+  "note": ""
+ },
+ {
+  "id": "p11",
+  "cible": "p11_0.jpg",
+  "reference": "p11_1.jpg",
+  "personne": "Anne McClain",
+  "note": ""
+ },
+ {
+  "id": "p12",
+  "cible": "p12_0.jpg",
+  "reference": "p12_3.jpg",
+  "personne": "Francisco Rubio",
+  "note": ""
+ },
+ {
+  "id": "p06",
+  "cible": "p06_0.jpg",
+  "reference": "p06_3.jpg",
+  "personne": "Matthias Maurer",
+  "note": "pose différente"
+ },
+ {
+  "id": "p00",
+  "cible": "p00_2.jpg",
+  "reference": "p00_1.jpg",
+  "personne": "Sunita Williams",
+  "note": "photos à 15 ans d’écart"
+ },
+ {
+  "id": "p03",
+  "cible": "p03_0.jpg",
+  "reference": "p03_1.jpg",
+  "personne": "Jeanette Epps",
+  "note": "même séance (presque identiques)"
+ },
+ {
+  "id": "p02",
+  "cible": "p02_3.jpg",
+  "reference": "p02_0.jpg",
+  "personne": "Kayla Barron",
+  "note": "référence de profil"
+ }
+]
