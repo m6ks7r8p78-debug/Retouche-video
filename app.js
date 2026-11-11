@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v6.7";/* seul endroit où changer le numéro de version */
+const VER="v6.8";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -1700,7 +1700,10 @@ $("#ex").onclick=async()=>{
     msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde");
     /* résolution et encodeur */
     let cfg=null,rdr0=false;window.__memDown=false;
-    for(const L of [+$("#q").value,1920,1280]){
+    /* v6.8 : « Préparer pour X » (case décochée par défaut) : H.264, taille et débit selon les limites publiées par X ; X recompresse quand même */
+    const XP=window.ANALYSE&&$("#o_x")&&$("#o_x").checked?ANALYSE.profilX(v.videoWidth,v.videoHeight,OUTF,dT,!!($("#o_xp")&&$("#o_xp").checked)):null;window.__xprof=XP;
+    if(XP&&XP.avertissements.length)msg("Pour X : "+XP.avertissements.join(" "));
+    for(const L of XP?[Math.max(XP.largeur,XP.hauteur),1280]:[+$("#q").value,1920,1280]){
       if(window.__plan&&L>1920&&window.__plan.length/FPS>60){msg("Version longue : export en Full HD pour ne pas saturer la mémoire de l’iPhone.");continue}
       size(L);
       /* fichier le plus léger possible sans perte visible : HEVC (H.265) quand l'iPhone sait l'encoder, sinon H.264.
@@ -1709,9 +1712,10 @@ $("#ex").onclick=async()=>{
       let hevcOK=false;try{hevcOK=localStorage.getItem("nohevc")!=="1"}catch(e){}
       const mk=hv=>{const px=cv.width*cv.height*OUTF,dd=window.__plan?window.__plan.length/OFPS:dT,bud=window.__safe?2e8:3e8;
         const bpp=(hv?.04:.055)*(up>=4&&!SRX.on()?.8:1)*(window.__safe?.85:1);
-        return vcfg(hv,cv.width,cv.height,OUTF,Math.round(px*Math.max(.03,Math.min(bpp,bud*8/(px*Math.max(1,dd))))))};
+        const br=Math.round(px*Math.max(.03,Math.min(bpp,bud*8/(px*Math.max(1,dd)))));
+        return vcfg(hv,cv.width,cv.height,OUTF,XP?Math.max(5e6,Math.min(25e6,br)):br)};
       let c=mk(false);
-      if(hevcOK&&!window.__plan){const ch=mk(true);try{if((await VideoEncoder.isConfigSupported(ch)).supported)c=ch}catch(e){}}
+      if(hevcOK&&!window.__plan&&!XP){const ch=mk(true);try{if((await VideoEncoder.isConfigSupported(ch)).supported)c=ch}catch(e){}}
       if(c.bitrate*(window.__plan?window.__plan.length/OFPS:dT)/8>(window.__safe?2e8:3.2e8)&&L!==1280){msg("Vidéo longue : export en "+(L>1920?"Full HD":"taille réduite")+" pour ne pas saturer la mémoire de l’iPhone.");window.__memDown=true;continue}
       if((await VideoEncoder.isConfigSupported(c)).supported){cfg=c;break}
     }

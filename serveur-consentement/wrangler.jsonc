@@ -1,0 +1,4 @@
+{ // NON DÉPLOYÉ. Avant tout déploiement : validation juridique (RGPD), audit de sécurité, base D1 créée et schema.sql appliqué.
+  "name": "retoucheproai-consentement", "main": "worker.js", "compatibility_date": "2026-10-01",
+  "vars": { "ORIGINE": "https://retoucheproai.com", "COLLECTE_ACTIVE": "0" },
+  "d1_databases": [{ "binding": "DB", "database_name": "consentement", "database_id": "A_CREER" }] }

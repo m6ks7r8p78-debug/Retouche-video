@@ -1,19 +1,17 @@
-# Rapport de tests final — v6.7 (11/11/2026)
+# Rapport de tests final — v6.8 (11/11/2026)
 
-Résultats des suites : voir le message de commit et `tests/lancer_tests.sh`.
+## Réalisé et testé (Chromium, sans carte graphique)
+- `tests/visage.test.mjs` 12/12 : visage trouvé avec ses 5 repères ; rien sur une image sans visage ; aucune proposition sur la photo sans filtre ni sur ses versions floue et sombre ; truffe, deux oreilles, langue et lunettes **dessinées par le test** proposées ; masque couvrant la truffe ; tête penchée ; suivi sur 24 images (trou comblé, tremblement divisé par 4) ; coupe de plan ; report de masque (98 % de recouvrement) ; bouton dans « Effacer une zone » et annulation.
+- `tests/consentement.test.mjs` 7/7 sur une vraie base SQLite avec le schéma livré : parcours à deux personnes, usage unique et expiration des invitations, refus des mineurs, révocation, suppression, purge, registre chaîné, aucun jeton en clair, téléversement toujours refusé.
+- `tests/v67.test.mjs` 18/18. Non-régression : voir le message de commit.
 
-## Réalisé et testé
-- `tests/v67.test.mjs` : **18/18**. Calculs réels sur images de synthèse : détection de filtre chaud, noir et blanc, effet rétro, écrêtage, vignettage ; aucun faux positif fort sur l’image neutre ; flou et compression mesurés ; mode Fidélité sans étape générative ; cibles 144p→4K (ratio, parité, étiquettes) ; tuiles (couverture complète, budget mémoire) ; scintillement et coupes ; profil X ; verrou de contribution (15 cas de blocage) ; cycle de vie ; invitations (usage unique, expiration, faux jeton) ; registre chaîné ; métadonnées.
-- Non-régression : `sw` 7/7, `gestionnaire` 24/24 (2 non testables ici), `studio` 11/11, `reassemblage` 5/5.
-- Navigateur (Chromium, écran 430×932) : modules chargés, version v6.7, diagnostic affiché dans « Retirer un filtre » sur une vidéo de test, aucune erreur JavaScript.
-
-## Non concluant / non exécuté
-- `v3`, `noyau` : plantage du navigateur de test, **identique sur l’archive v6.5 d’origine**.
-- `effacer` : modèle de test absent. `app` (suite longue) : non exécutée.
-- **Aucun test sur iPhone/Safari réel**, aucune mesure de mémoire ou de chauffe. Conversions 144p→4K : seule la planification est testée, pas le rendu.
+## Réalisé, non testé en conditions réelles
+- Export « Préparer pour X » : relié à l’export, mais l’encodage H.264 ne fonctionne pas dans le navigateur de test ; à essayer sur iPhone.
+- Rien n’a été essayé sur un vrai iPhone / Safari. La reconstruction (MI-GAN) après proposition n’a pas été relancée ici (modèle absent des tests).
+- Les seuils des zones sont réglés sur **un seul visage** et des accessoires dessinés : sur de vrais filtres, attendre des oublis et des fausses propositions (barbe, vraies lunettes, bonnet).
 
 ## Préparé mais désactivé
-Programme de contribution (règles prêtes, envoi verrouillé). Profil X (`ANALYSE.profilX`) : calculé et testé, **pas encore branché sur un bouton d’export**.
+Serveur de consentement (non déployé, aucune base créée). Collecte de médias : double verrou, aucun stockage.
 
 ## Non réalisé
-Détection et retrait automatiques des accessoires AR, déformations et maquillage ; suivi de masques vidéo ; restauration de visage ; nouveaux modèles ; backend ; annotation/benchmarks sur données réelles ; analyse RGPD validée. La v6.7 n’est **pas** « la version finale » décrite par le prompt maître : c’est une étape vérifiée.
+Effacement d’accessoires **en vidéo** (le suivi existe, pas la reconstruction image par image) ; détection des déformations du visage et du maquillage (pas de mesure fiable sans image d’origine) ; restauration de visage (voir `REGISTRE_MODELES_LICENCES.md`) ; validation juridique/RGPD (ne peut être faite que par un juriste).

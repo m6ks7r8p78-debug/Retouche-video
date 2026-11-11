@@ -1,6 +1,6 @@
 /* Pages d'information de RetoucheProAI (guide, offres, mentions légales, conditions, confidentialité, licences) */
-:root{--bg:#fff7f2;--panel:#ffffff;--ink:#1d1530;--mut:#6b6385;--line:#f0dfe6;--acc:#d6266f;--rose:#ff3d8b;--grad:linear-gradient(120deg,#ff7a59,#ff3d8b 45%,#7b5cff)}
-@media (prefers-color-scheme:dark){:root{--bg:#0d0a17;--panel:#171329;--ink:#f4f0ff;--mut:#a79fc4;--line:#2b2447;--acc:#ff6fa8;color-scheme:dark}}
+:root{--bg:#f3f5fc;--panel:#ffffff;--ink:#1d1530;--mut:#6b6385;--line:#dde3f6;--acc:#3552f5;--rose:#5b5bff;--grad:linear-gradient(120deg,#0f7bff,#5b5bff 45%,#a23bff)}
+@media (prefers-color-scheme:dark){:root{--bg:#05060d;--panel:#0d1122;--ink:#f4f0ff;--mut:#a79fc4;--line:#1e2748;--acc:#86a8ff;color-scheme:dark}}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "Instrument Sans",-apple-system,system-ui,sans-serif}
@@ -32,3 +32,8 @@ tr:last-child td{border-bottom:0}
 .pied-pages a{color:var(--mut)}
 .badge{display:inline-block;padding:2px 9px;border-radius:999px;background:var(--rose);color:#fff;font-size:12px;font-weight:700;vertical-align:2px}
 code{font:14px ui-monospace,"DM Mono",monospace;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1px 5px}
+
+/* v6.8 : thème « Néon », assorti à l'application */
+:root{--bg:#f3f5fc;--panel:#ffffff;--ink:#0c1130;--mut:#59638a;--line:#dde3f6;--acc:#3552f5;--rose:#5b5bff;--grad:linear-gradient(120deg,#0f7bff,#5b5bff 48%,#a23bff)}
+@media (prefers-color-scheme:dark){:root{--bg:#05060d;--panel:#0d1122;--ink:#eef2ff;--mut:#9aa6cc;--line:#1e2748;--acc:#86a8ff;color-scheme:dark}}
+body{background:radial-gradient(560px 340px at 92% -60px,rgba(80,120,255,.26),transparent 70%),radial-gradient(460px 360px at -12% 240px,rgba(162,59,255,.16),transparent 70%),var(--bg);background-repeat:no-repeat}

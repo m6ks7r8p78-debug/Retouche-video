@@ -24,3 +24,8 @@
 - [ ] Photo **24 Mpx** (réglage 24 Mpx de l’appareil photo) : le message « photo réduite » s’affiche, rien ne plante.
 - [ ] Enregistrer la photo, la carte, la fiche : la feuille de partage s’ouvre, l’image arrive dans Photos.
 - [ ] Passer à une autre app pendant une reconstruction puis revenir : l’original est intact, l’outil répond encore.
+
+
+## Nouveau en v6.8
+- **Effacer une zone** (photo) → « 🎭 Proposer les éléments de filtre (visage) » : l’app colore en rose ce qui ressemble à un ajout de filtre. Vérifie, corrige au doigt, puis « Reconstruire la zone ».
+- **Préparer pour X** : case dans les options avant d’exporter une vidéo (coche aussi « Compte X Premium » pour garder le 1080p).

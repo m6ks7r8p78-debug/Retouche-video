@@ -1,5 +1,20 @@
 # Journal des versions
 
+## v6.8 (11 nov. 2026) — éléments de filtre proposés automatiquement, export pour X, nouveau thème
+- **Effacer une zone** : nouveau bouton « 🎭 Proposer les éléments de filtre (visage) ». L'app repère le visage sur le téléphone
+  (modèle YuNet, 233 Ko, licence MIT, livré avec l'app, empreinte vérifiée) et pré-remplit le masque là où la couleur n'est ni la
+  peau, ni les cheveux, ni le fond : truffe/museau, oreilles, lunettes, langue, joues, couronne. Ce sont des hypothèses avec un
+  niveau de confiance : rien n'est effacé sans validation, et tout se corrige au pinceau. Ne reconnaît personne.
+- `visage.js` : suivi d'un visage dans une vidéo (trous courts comblés, coupes respectées, tremblement réduit) et report d'un
+  masque d'une image à l'autre. **Calculé et testé, pas encore utilisé pour effacer dans une vidéo** (voir limites).
+- **Préparer pour X** : deux cases dans les options d'export (720p, ou 1080p avec X Premium) ; H.264, débit entre 5 et 25 Mb/s.
+- Serveur de consentement écrit et testé (`serveur-consentement/`), **non déployé** ; aucun média n'est envoyé.
+- Nouveau thème « Néon » (clair et sombre) sur l'app et les pages ; aucune mise en page ni fonction modifiée.
+- Tarifs : la phrase « tes vidéos ne quittent jamais ton appareil » devient « par défaut ; tout envoi facultatif demande ton accord ».
+- Limites : zones réglées sur un seul visage de test avec des accessoires dessinés, pas sur de vrais filtres ; déformations du
+  visage et maquillage non détectés ; pas d'effacement en vidéo ; pas de restauration de visage (aucun modèle à la fois assez
+  léger pour l'iPhone et de licence vérifiée) ; export X non essayé sur un vrai iPhone. Détail : `RAPPORT_TESTS_FINAL.md`.
+
 ## v6.7 (11 nov. 2026) — diagnostic des filtres, tailles de sortie honnêtes, centre de contribution (sans envoi)
 - Nouveau `analyse.js` : mesures de l'image, détection prudente des filtres de couleur/lumière (confiance, réversible ou non), modes
   Fidélité / Reconstruction IA, cibles 720p/1080p/4K étiquetées, tuiles sous budget mémoire, contrôle du scintillement, profil

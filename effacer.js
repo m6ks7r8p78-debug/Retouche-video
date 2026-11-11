@@ -207,6 +207,7 @@ var ERASE = (() => {
   </div>
   <div class="ez-row" id="ez_draw2"><label class="ez-sz">Pinceau<input type="range" id="ez_sz" min="6" max="90" value="28" aria-label="Taille du pinceau"></label>
     <button class="ez-ib" id="ez_clear" aria-label="Recommencer le masque">Recommencer</button></div>
+  <div class="ez-row" id="ez_auto_r"><button class="ez-no" id="ez_auto" aria-label="Proposer automatiquement les éléments de filtre autour du visage">🎭 Proposer les éléments de filtre (visage)</button></div>
   <div class="ez-row" id="ez_view" hidden>
     <div class="ez-seg" role="group" aria-label="Affichage"><button data-v="orig" aria-pressed="false">Original</button><button data-v="res" aria-pressed="true">Résultat</button><button data-v="map" aria-pressed="false">Zones inventées</button></div>
   </div>
@@ -372,6 +373,23 @@ var ERASE = (() => {
     $("#ez_undo").onclick = undo;
     $("#ez_clear").onclick = () => { if (!S || S.busy || !S.strokes.length) return; S.hist.push({ t: "clear", strokes: S.strokes }); S.strokes = []; replay(); MSG("Masque effacé. Peins à nouveau la zone à effacer.") };
     $("#ez_go").onclick = reconstruct;
+    /* v6.8 : repère le visage (sur l'appareil) et pré-remplit le masque avec les zones qui ressemblent à un ajout de filtre ; rien n'est effacé sans validation */
+    $("#ez_auto").onclick = async () => {
+      if (!S || S.busy || S.prop) return; if (!window.VISAGE) { MSG("Détection du visage indisponible. Peins la zone au doigt."); return }
+      S.busy = true; sync(); MSG("Recherche du visage et des éléments de filtre…");
+      try {
+        const r = await VISAGE.proposer(S.cur, S.w, S.h), ok = [], doute = [];
+        if (!r.visages) { MSG("Aucun visage trouvé sur cette photo. Peins la zone au doigt ou touche l’élément."); return }
+        for (const pr of r.propositions) for (const z of pr.zones) {
+          if (z.confiance >= .5) { const m = z.masque; let n = 0; for (const v of m.sel) n += v; if (!n) continue;
+            const st = { m: "add", sel: m.sel, x: m.x, y: m.y, w: m.w, h: m.h, auto: z.nom }; S.strokes.push(st); drawStroke(S.mx, st); S.hist.push({ t: "stroke" }); ok.push(z.nom + " (" + Math.round(z.confiance * 100) + " %)") }
+          else if (z.confiance >= .2) doute.push(z.nom) }
+        S.autoProp = { visages: r.visages, proposes: ok, incertains: doute };
+        MSG(ok.length ? "Zones proposées : " + ok.join(", ") + ". Ce sont des hypothèses : vérifie, corrige au pinceau ou à la gomme (↶ pour retirer), puis « Reconstruire la zone »." + (doute.length ? " Peu sûr, non sélectionné : " + doute.join(", ") + "." : "")
+          : "Visage trouvé, mais aucun ajout de filtre évident" + (doute.length ? " (peu sûr : " + doute.join(", ") + ")" : "") + ". Les déformations et le maquillage ne sont pas détectés. Tu peux peindre la zone au doigt.");
+      } catch (e) { MSG("La détection a échoué : " + (e && e.message || e) + ". Tu peux peindre la zone au doigt.") }
+      finally { if (S) { S.busy = false; sync(); draw() } }
+    };
     $("#ez_yes").onclick = accept;
     $("#ez_no").onclick = refuse;
     $("#ez_opac").oninput = e => { if (S) { S.opac = e.target.value / 100; draw() } };
@@ -390,7 +408,7 @@ var ERASE = (() => {
   function setView(v) { if (!S) return; S.view = v; document.querySelectorAll("#ez [data-v]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v))); sync(); draw() }
   function sync() {
     if (!S) return;
-    const gen = S.ops.length > 0, prop = !!S.prop;
+    const gen = S.ops.length > 0, prop = !!S.prop; { const a = $("#ez_auto"); if (a) { a.disabled = S.busy || prop; $("#ez_auto_r").hidden = prop || S.view !== "res" } }
     $("#ez_go").disabled = S.busy || prop || !hasMask() || S.view !== "res";
     $("#ez_undo").disabled = S.busy || prop || !S.hist.length;
     $("#ez_clear").disabled = S.busy || prop || !S.strokes.length;

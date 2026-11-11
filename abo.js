@@ -189,7 +189,7 @@ window.ABO = (() => {
 
   const css = document.createElement("style");
   css.textContent =
-    ".abo-b{margin-left:auto;padding:7px 12px;border-radius:999px;border:0;font:700 13px/1 inherit;color:#fff;background:linear-gradient(120deg,#ff7a59,#ff3d8b 45%,#7b5cff);cursor:pointer}" +
+    ".abo-b{margin-left:auto;padding:7px 12px;border-radius:999px;border:0;font:700 13px/1 inherit;color:#fff;background:linear-gradient(120deg,#0f7bff,#5b5bff 45%,#a23bff);cursor:pointer}" +
     ".abo-verrou [data-q=\"3840\"] small::after{content:\" 🔒\"}" +
     ".abo-verrou #fltb::after,.abo-verrou #erb::after,.abo-verrou #tr_go::after,.abo-verrou #mggo::after,.abo-verrou #exall::after,.abo-verrou #pickm .lbl::after,.abo-verrou #picke .lbl::after{content:\" 🔒\"}" +
     ".abo-verrou #sai b::after{content:\" 🔒\"}" +
@@ -199,11 +199,11 @@ window.ABO = (() => {
     ".abo-av{margin:0 0 14px;padding:0;list-style:none;display:grid;gap:4px;font-size:14px}.abo-av li::before{content:\"✓ \";color:var(--acc);font-weight:700}" +
     ".abo-plans{display:grid;gap:8px}.abo-plan{position:relative;display:grid;grid-template-columns:1fr auto;align-items:center;gap:2px 10px;text-align:left;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}" +
     ".abo-plan b{font-size:16px}.abo-plan .abo-prix{font-weight:800;font-size:17px}.abo-plan small{grid-column:1/-1;color:var(--mut);font-size:12.5px}" +
-    ".abo-plan.top{border-color:#ff3d8b;box-shadow:0 0 0 1px #ff3d8b inset}.abo-badge{position:absolute;top:-9px;right:12px;padding:2px 8px;border-radius:999px;background:#ff3d8b;color:#fff;font-size:11px;font-weight:700}" +
+    ".abo-plan.top{border-color:#5b5bff;box-shadow:0 0 0 1px #5b5bff inset}.abo-badge{position:absolute;top:-9px;right:12px;padding:2px 8px;border-radius:999px;background:#5b5bff;color:#fff;font-size:11px;font-weight:700}" +
     ".abo-msg{min-height:1.2em;margin:10px 0 6px;font-size:14px;color:var(--acc)}.abo-code summary{cursor:pointer;font-size:14px;color:var(--mut);margin:4px 0 8px}" +
     ".abo-code .row{display:flex;gap:8px}.abo-code input{flex:1;min-width:0;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:15px/1.2 ui-monospace,monospace}" +
-    ".abo-retract{display:flex;gap:8px;align-items:flex-start;margin:12px 0 0;font-size:12.5px;line-height:1.4;color:var(--mut)}.abo-retract input{margin-top:2px;width:18px;height:18px;flex:none;accent-color:#ff3d8b}.abo-retract a{color:var(--mut)}" +
-    ".abo-alerte{color:var(--acc)}.abo-alerte input{outline:2px solid #ff3d8b;outline-offset:2px}" +
+    ".abo-retract{display:flex;gap:8px;align-items:flex-start;margin:12px 0 0;font-size:12.5px;line-height:1.4;color:var(--mut)}.abo-retract input{margin-top:2px;width:18px;height:18px;flex:none;accent-color:#5b5bff}.abo-retract a{color:var(--mut)}" +
+    ".abo-alerte{color:var(--acc)}.abo-alerte input{outline:2px solid #5b5bff;outline-offset:2px}" +
     ".abo-code .btn{width:auto;flex:none}.abo-pied{margin:12px 0 0;font-size:12px;color:var(--mut)}.abo-pied a{color:var(--mut)}";
   document.head.appendChild(css);
 

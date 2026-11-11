@@ -11,3 +11,6 @@
 
 ## Règle
 Aucune collecte tant que : backend audité, textes validés par un juriste/DPO, parcours « personne représentée » testé, tests iPhone réels passés.
+
+## Ajouts v6.8
+`visage.js` (YuNet : repérage, zones proposées, suivi, report de masque) branché sur `effacer.js` pour la photo. `serveur-consentement/` (Workers + D1, `schema.sql`, purge planifiée) : écrit et testé, non déployé. Reste : reconstruction image par image en vidéo à partir du suivi.

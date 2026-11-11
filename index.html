@@ -99,7 +99,7 @@ input[type=range]{width:100%;accent-color:var(--acc);margin:10px 0 0}
 .panel{padding-top:14px}
 .panel h2{font:700 17px/1.2 var(--fd);margin:0 0 6px}
 .rec ul label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}.rec ul label input{margin-top:3px;flex:none;width:18px;height:18px}.rec ul:has(label){list-style:none;padding-left:0}.rec ul{margin:8px 0 0;padding-left:18px;font-size:14px;line-height:1.5}#adv>summary{cursor:pointer;font-weight:700;padding:12px 2px}
-.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.fgrid button{padding:0;border:2px solid transparent;border-radius:10px;background:none;overflow:hidden;position:relative;cursor:pointer}.fgrid button.on{border-color:var(--acc,#7b5cff)}.fgrid canvas{width:100%;display:block}.fgrid span{position:absolute;left:4px;bottom:3px;font:600 11px/1 system-ui;color:#fff;text-shadow:0 1px 2px #000}
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.fgrid button{padding:0;border:2px solid transparent;border-radius:10px;background:none;overflow:hidden;position:relative;cursor:pointer}.fgrid button.on{border-color:var(--acc,#a23bff)}.fgrid canvas{width:100%;display:block}.fgrid span{position:absolute;left:4px;bottom:3px;font:600 11px/1 system-ui;color:#fff;text-shadow:0 1px 2px #000}
 .help{margin:0 0 12px;font-size:14px;color:var(--mut)}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .seg button{padding:11px 6px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font:600 14px/1.15 var(--fd);cursor:pointer;text-align:center}
@@ -142,10 +142,10 @@ progress::-moz-progress-bar{background:var(--acc)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 /* === Plus de peps === */
-:root{--g1:#ff7a59;--g2:#ff3d8b;--g3:#7b5cff;--g4:#17c3b2;--grad:linear-gradient(120deg,var(--g1),var(--g2) 45%,var(--g3));--grad2:linear-gradient(120deg,var(--g4),#2b8cff);--glow:rgba(255,61,139,.35)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--acc:#a58bff;--accink:#fff;--tc:#ff9a5c;--glow:rgba(255,61,139,.45);--bg:#0d0a17;--panel:#171329;--line:#2b2447;--acc-soft:#241c44;--mut:#a79fc4;--ink:#f4f0ff;--stage:#07050f}}
-:root[data-theme="dark"]{--acc:#a58bff;--accink:#fff;--tc:#ff9a5c;--glow:rgba(255,61,139,.45);--bg:#0d0a17;--panel:#171329;--line:#2b2447;--acc-soft:#241c44;--mut:#a79fc4;--ink:#f4f0ff;--stage:#07050f}
-:root{--bg:#fff7f2;--panel:#ffffff;--line:#f0dcd2;--mut:#7a6670;--ink:#241524;--acc:#7b5cff;--accink:#fff;--acc-soft:#efe9ff;--tc:#e8590c}
+:root{--g1:#0f7bff;--g2:#5b5bff;--g3:#a23bff;--g4:#17c3b2;--grad:linear-gradient(120deg,var(--g1),var(--g2) 45%,var(--g3));--grad2:linear-gradient(120deg,var(--g4),#2b8cff);--glow:rgba(255,61,139,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--acc:#a58bff;--accink:#fff;--tc:#ff9a5c;--glow:rgba(255,61,139,.45);--bg:#05060d;--panel:#0d1122;--line:#1e2748;--acc-soft:#241c44;--mut:#a79fc4;--ink:#f4f0ff;--stage:#07050f}}
+:root[data-theme="dark"]{--acc:#a58bff;--accink:#fff;--tc:#ff9a5c;--glow:rgba(255,61,139,.45);--bg:#05060d;--panel:#0d1122;--line:#1e2748;--acc-soft:#241c44;--mut:#a79fc4;--ink:#f4f0ff;--stage:#07050f}
+:root{--bg:#f3f5fc;--panel:#ffffff;--line:#dde3f6;--mut:#7a6670;--ink:#241524;--acc:#a23bff;--accink:#fff;--acc-soft:#efe9ff;--tc:#e8590c}
 body{background:radial-gradient(520px 320px at 90% -40px,rgba(255,61,139,.22),transparent 70%),radial-gradient(480px 360px at -10% 220px,rgba(23,195,178,.2),transparent 70%),radial-gradient(500px 400px at 100% 640px,rgba(123,92,255,.16),transparent 70%),var(--bg);background-attachment:fixed}
 body::before{background:transparent}
 .brand span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -209,7 +209,7 @@ input[type=range]{accent-color:var(--g2)}
 /* v2.29 : éléments ajoutés depuis la v2.27, dans le même style */
 .picks{grid-template-columns:repeat(3,1fr);gap:8px}
 .pickbtn{padding:14px 12px;min-height:104px;font-size:15px;line-height:1.2}
-#pickm{background:linear-gradient(120deg,#ffb53d,#ff7a59);color:#fff;box-shadow:0 14px 30px -12px rgba(255,140,60,.5)}
+#pickm{background:linear-gradient(120deg,#ffb53d,#0f7bff);color:#fff;box-shadow:0 14px 30px -12px rgba(255,140,60,.5)}
 .lnk input{border:0;box-shadow:0 10px 24px -14px rgba(123,92,255,.55)}
 body.loaded .picks{gap:6px}
 body.loaded .pickbtn{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;padding:8px 4px;font-size:13px}
@@ -308,7 +308,7 @@ header.top #stb{width:40px;height:40px;padding:0;display:grid;place-items:center
 .demo .demo-ligne{position:absolute;top:0;bottom:0;left:var(--p,50%);width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 12px rgba(0,0,0,.35)}
 .demo .demo-poignee{position:absolute;top:50%;left:50%;width:42px;height:42px;margin:-21px 0 0 -21px;border-radius:50%;background:#fff;color:#1d1530;display:grid;place-items:center;font:700 17px/1 var(--fd);box-shadow:0 6px 18px rgba(0,0,0,.3)}
 .demo .demo-l{position:absolute;top:12px;padding:5px 10px;border-radius:999px;font:700 12px/1 var(--fd);letter-spacing:.04em;text-transform:uppercase;color:#fff;background:rgba(20,14,32,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-.demo .demo-l.avant{left:12px}.demo .demo-l.apres{right:12px;background:linear-gradient(120deg,#ff7a59,#ff3d8b 55%,#7b5cff)}
+.demo .demo-l.avant{left:12px}.demo .demo-l.apres{right:12px;background:linear-gradient(120deg,#0f7bff,#5b5bff 55%,#a23bff)}
 .demo input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize;-webkit-appearance:none;appearance:none}
 .demo figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 9px;font:500 12px/1.35 "Instrument Sans",-apple-system,system-ui,sans-serif;letter-spacing:0;color:#fff;background:linear-gradient(transparent,rgba(10,6,20,.6));pointer-events:none}
 .demo input:focus-visible+figcaption{outline:3px solid #fff;outline-offset:-6px}
@@ -322,12 +322,48 @@ body:not(.loaded) #pick svg{width:34px;height:34px}
 body:not(.loaded) #pick .lbl small{display:block;font:500 13px/1.3 var(--fb,inherit);opacity:.9;margin-top:3px}
 body:not(.loaded) #picke{grid-column:1/-1}
 @media (prefers-reduced-motion:reduce){.demo{--p:50%}}
+/* ===== v6.8 : thème « Néon » — plus net, plus futuriste. Couche finale : ne change que les couleurs et les finitions, aucune mise en page ===== */
+:root{--g1:#0f7bff;--g2:#5b5bff;--g3:#a23bff;--g4:#00a3a3;--grad:linear-gradient(120deg,var(--g1),var(--g2) 48%,var(--g3));--grad2:linear-gradient(120deg,#009e9e,#0b7fe0);--gradt:linear-gradient(100deg,#0f7bff,#7a3bff 60%,#c026d3);--glow:rgba(70,100,255,.42);
+  --bg:#f3f5fc;--panel:#ffffff;--line:#dde3f6;--mut:#59638a;--ink:#0c1130;--acc:#3552f5;--accink:#fff;--acc-soft:#e7ecff;--tc:#0b7285;--stage:#05060d;--halo:rgba(70,100,255,.16);--verre:rgba(255,255,255,.72)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#05060d;--panel:#0d1122;--line:#1e2748;--mut:#9aa6cc;--ink:#eef2ff;--acc:#86a8ff;--accink:#fff;--acc-soft:#131b3a;--tc:#5eead4;--stage:#02030a;--glow:rgba(80,120,255,.55);--gradt:linear-gradient(100deg,#5ee7ff,#86a8ff 50%,#c99bff);--halo:rgba(90,130,255,.13);--verre:rgba(9,12,26,.7)}}
+:root[data-theme="dark"]{--bg:#05060d;--panel:#0d1122;--line:#1e2748;--mut:#9aa6cc;--ink:#eef2ff;--acc:#86a8ff;--accink:#fff;--acc-soft:#131b3a;--tc:#5eead4;--stage:#02030a;--glow:rgba(80,120,255,.55);--gradt:linear-gradient(100deg,#5ee7ff,#86a8ff 50%,#c99bff);--halo:rgba(90,130,255,.13);--verre:rgba(9,12,26,.7)}
+body{background:
+  radial-gradient(560px 340px at 92% -60px,rgba(80,120,255,.30),transparent 70%),
+  radial-gradient(460px 360px at -12% 240px,rgba(162,59,255,.20),transparent 70%),
+  radial-gradient(520px 420px at 100% 760px,rgba(0,194,255,.14),transparent 70%),
+  linear-gradient(var(--halo) 1px,transparent 1px) 0 0/100% 44px,linear-gradient(90deg,var(--halo) 1px,transparent 1px) 0 0/44px 100%,var(--bg);background-repeat:no-repeat,no-repeat,no-repeat,repeat,repeat,repeat}
+.top{position:sticky;top:0;z-index:20;background:var(--verre);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
+.brand span,h1 em{background:var(--gradt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sprock{height:2px;border:0;margin:0;background:linear-gradient(90deg,transparent,#22d3ff 25%,#6d6bff 55%,#b04dff 80%,transparent);background-size:200% 100%;box-shadow:0 0 18px rgba(80,140,255,.7);animation:balaie 6s linear infinite;opacity:.9}
+@keyframes balaie{to{background-position:-200% 0}}
+h1{letter-spacing:-.035em}
+.eyebrow{background:transparent;color:var(--acc);font-family:var(--fm,ui-monospace,monospace);font-size:12px;letter-spacing:.14em;text-transform:uppercase;box-shadow:inset 0 0 0 1px var(--line);background-image:linear-gradient(var(--acc-soft),var(--acc-soft))}
+.eyebrow::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:8px;background:#22d3ff;box-shadow:0 0 10px #22d3ff;vertical-align:1px}
+.confiance li,.meta span,.mdlb,.tag{background:var(--verre);box-shadow:inset 0 0 0 1px var(--line);border:0;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.card,.chk,.trim,.steps li,.tabs{background:var(--panel);background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 90%,#6d8cff 10%),var(--panel) 60%);border:0;box-shadow:inset 0 0 0 1px var(--line),0 20px 44px -28px var(--glow)}
+.card{border-radius:20px}
+.card h2{letter-spacing:-.015em}
+.steps li:nth-child(1){border-left:3px solid #22d3ff}.steps li:nth-child(2){border-left:3px solid #6d6bff}.steps li:nth-child(3){border-left:3px solid #b04dff}
+.btn{border-radius:14px;box-shadow:inset 0 0 0 1px var(--line),0 8px 18px -12px rgba(20,30,90,.5)}
+.btn.main,.pickbtn.main,.tab[aria-selected="true"],#spl[aria-pressed="true"],.bdg{background:var(--grad);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 14px 32px -12px var(--glow)}
+.btn.big{border-radius:20px;letter-spacing:-.01em}
+.pickbtn{border-radius:22px}
+#pickp,#cmp{background:var(--grad2);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 14px 32px -12px rgba(0,150,200,.5)}
+#pickm{background:linear-gradient(120deg,#b21fc9,#6d3bf0);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 14px 32px -12px rgba(160,60,255,.5)}
+.bdg.orig{background:var(--verre);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.stage{box-shadow:0 26px 60px -24px var(--glow)}
+.lnk input{box-shadow:inset 0 0 0 1px var(--line),0 12px 26px -18px var(--glow)}
+.lnk input:focus,.btn:focus-visible,.pickbtn:focus-visible{outline:2px solid #22d3ff;outline-offset:2px}
+.chk input,input[type=range]{accent-color:#5b5bff}
+progress::-webkit-progress-value{box-shadow:0 0 14px var(--glow)}
+.seg button[aria-pressed="true"]{box-shadow:0 12px 24px -14px var(--glow)}
+@media (prefers-reduced-motion:reduce){.sprock{animation:none!important}}
 </style>
 </head>
 <body>
 <header class="wrap wide top">
   <div class="brand">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a59"/><stop offset=".5" stop-color="#ff3d8b"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22b8ff"/><stop offset=".5" stop-color="#5b5bff"/><stop offset="1" stop-color="#a23bff"/></linearGradient></defs><rect x="2" y="6" width="28" height="20" rx="4" fill="url(#lg)"/><rect x="6" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="3" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="6" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="12" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="18" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><rect x="24" y="26" width="3" height="3" rx="1" fill="var(--acc)"/><path d="M13 12l8 4-8 4z" fill="var(--accink)"/></svg>
     <span>RetoucheProAI</span>
   </div>
   <button class="mdlb" id="modeb" type="button">Mode expert</button>
@@ -521,6 +557,8 @@ body:not(.loaded) #picke{grid-column:1/-1}
           <label class="chk"><input type="checkbox" id="o_dust"><span><b>Poussières et points noirs</b>Efface les petites taches des films numérisés.</span></label>
           <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Retire le souffle et les bruits de fond.</span></label>
           <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe les vidéos saccadées à 30 images par seconde.</span></label>
+          <label class="chk"><input type="checkbox" id="o_x"><span><b>Préparer pour X</b>Fichier H.264 en 720p, au format que X accepte. X recompresse quand même la vidéo.</span></label>
+          <label class="chk"><input type="checkbox" id="o_xp"><span><b>Compte X Premium</b>Avec « Préparer pour X » : garde le 1080p.</span></label>
           <div class="trim"><b>Partie à traiter</b><span class="mono" id="t_txt">tout</span>
             <input type="range" id="t_in" min="0" max="1000" value="0" aria-label="Début"><input type="range" id="t_out" min="0" max="1000" value="1000" aria-label="Fin"></div>
           <label class="s"><span>Autre taille de résultat (côté le plus long)</span><select id="qc"><option value="">— garder le choix de l’onglet Améliorer —</option><option value="1280">1280 px (720p)</option><option value="1920">1920 px (1080p, Full HD)</option><option value="2560">2560 px (1440p)</option><option value="3840">3840 px (4K UHD)</option></select></label>
@@ -584,6 +622,7 @@ body:not(.loaded) #picke{grid-column:1/-1}
 <script defer src="camera.js"></script>
 <script defer src="analyse.js"></script>
 <script defer src="contribution.js"></script>
+<script defer src="visage.js"></script>
 <script defer src="app.js"></script>
 <script defer src="studio.js"></script>
 <script defer src="abo.js"></script>
