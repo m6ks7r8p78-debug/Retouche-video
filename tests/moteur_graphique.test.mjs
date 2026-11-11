@@ -23,10 +23,8 @@ const video = async (o) => { const buf = Buffer.from(await p.evaluate(async () =
   const ys = X("ffmpeg", ["-v", "error", "-i", o, "-vf", "scale=16:9,format=gray", "-f", "rawvideo", "-"], { maxBuffer: 1 << 28 }); const moy = []; for (let i = 0; i + 144 <= ys.length; i += 144) { let s = 0; for (let k = 0; k < 144; k++)s += ys[i + k]; moy.push(s / 144) }
   return { n, min: Math.min(...moy), moy } };
 console.log("· page prête");
-await p.setInputFiles("#f", SRC); await p.waitForFunction(() => v.videoWidth > 0, null, { timeout: 30000 });
-await p.waitForFunction(() => !REC.pr && /repéré|bon état/.test(document.querySelector("#rec_t").textContent), null, { timeout: 120000 }).catch(() => {});
-console.log("· vidéo chargée");
-await p.evaluate(() => { v.pause(); v.currentTime = 1 }); await p.waitForTimeout(800); console.log("· prêt à mesurer");
+/* aperçu : sur une photo (le Chrome de test plante quand on renvoie une <video> à un moteur rendu — limite du moteur logiciel, pas de l'app) */
+await p.setInputFiles("#fp", path.join(HERE, "medias", "cafe_flou.jpg")); await attendre(() => mode === "photo" && !document.querySelector("#rec").hidden, 60000, "photo chargée");
 let avant, ref;
 await test("Aperçu : après retrait puis retour du moteur graphique, l'image est exactement la même", async () => {
   avant = await mesure();
@@ -34,20 +32,25 @@ await test("Aperçu : après retrait puis retour du moteur graphique, l'image es
   const perdu = await p.evaluate(() => glPerdu()); await p.evaluate(() => window.__ext.restoreContext()); await attendre(() => !glPerdu(), 10000, "retour du moteur"); await p.waitForTimeout(300);
   const apres = await mesure();
   return { ok: perdu && avant.e > 3 && apres.sig === avant.sig, info: "avant : moyenne " + avant.m + ", écart " + avant.e + " ; après : moyenne " + apres.m + ", écart " + apres.e + (apres.sig === avant.sig ? " ; pixels identiques" : " ; PIXELS DIFFÉRENTS") } });
-await test("Export de référence (sans incident)", async () => { await p.selectOption("#q", "1080").catch(() => {}); await p.click("#ex"); await fini(); const t = await p.textContent("#st1"); ref = await video(path.join(D, "ref.mp4")); return { ok: /Terminé/.test(t) && ref.n >= 115 && ref.min > 8, info: ref.n + " images, image la plus sombre : " + ref.min.toFixed(1) } });
+/* exports : la vidéo est lue image par image (WebCodecs), comme sur iPhone */
+await p.setInputFiles("#f", SRC); await attendre(() => mode === "video" && v.videoWidth > 0, 30000, "vidéo chargée");
+await attendre(() => !REC.pr && /repéré|bon état/.test(document.querySelector("#rec_t").textContent), 120000, "analyse").catch(() => {});
+/* comme tests/app.test.mjs : IA décochée (trop lente sur le moteur logiciel de test), sortie Full HD */
+await p.evaluate(() => { const e = document.querySelector("#o_max"); e.checked = false; e.dispatchEvent(new Event("change")); document.querySelector('[data-q="1920"]').click() });
+await test("Export de référence (sans incident)", async () => { await p.evaluate(() => $("#ex").click()); await fini(); const t = await p.textContent("#st1"); ref = await video(path.join(D, "ref.mp4")); return { ok: /Terminé/.test(t) && ref.n >= 115 && ref.min > 8, info: ref.n + " images, image la plus sombre : " + ref.min.toFixed(1) } });
 await test("Export : moteur retiré en plein milieu → l'export reprend à la même image et se termine, aucune image noire ni perdue", async () => {
   await p.evaluate(() => { window.__coup = 0; const t = setInterval(() => { const m = /(\d+) ?%/.exec(document.querySelector("#st1").textContent); if (exporting && m && +m[1] >= 35 && !window.__coup) { window.__coup = 1; clearInterval(t); const e = gl.getExtension("WEBGL_lose_context"); e.loseContext(); setTimeout(() => e.restoreContext(), 700) } }, 20) });
-  await p.click("#ex"); await fini(); const t = await p.textContent("#st1"), coup = await p.evaluate(() => window.__coup), rep = await p.evaluate(() => window.__glN);
+  await p.evaluate(() => $("#ex").click()); await fini(); const t = await p.textContent("#st1"), coup = await p.evaluate(() => window.__coup), rep = await p.evaluate(() => window.__glN);
   const o = await video(path.join(D, "coupe.mp4")); let ecart = 0; for (let i = 0; i < Math.min(o.moy.length, ref.moy.length); i++)ecart = Math.max(ecart, Math.abs(o.moy[i] - ref.moy[i]));
   return { ok: /Terminé/.test(t) && coup === 1 && rep >= 1 && o.n === ref.n && ecart < 1.5, info: (coup ? "moteur retiré pendant l'export, " + rep + " reprise(s)" : "LE MOTEUR N'A PAS ÉTÉ RETIRÉ") + " ; " + o.n + " images (référence " + ref.n + ") ; écart maximal de luminosité avec la référence : " + ecart.toFixed(2) + " ; « " + t.slice(0, 60) + " »" } });
 await test("Moteur absent au lancement d'un export → l'app attend son retour au lieu d'échouer", async () => {
   await p.evaluate(() => { const e = gl.getExtension("WEBGL_lose_context"); e.loseContext(); setTimeout(() => e.restoreContext(), 1500) }); await attendre(() => glPerdu(), 10000, "retrait du moteur");
-  await p.click("#ex"); await fini(); const t = await p.textContent("#st1"); const o = await video(path.join(D, "attente.mp4"));
+  await p.evaluate(() => $("#ex").click()); await fini(); const t = await p.textContent("#st1"); const o = await video(path.join(D, "attente.mp4"));
   return { ok: /Terminé/.test(t) && o.n === ref.n && o.min > 8, info: o.n + " images ; « " + t.slice(0, 60) + " »" } });
 await test("Moteur qui ne revient pas → message clair, et l'export suivant fonctionne une fois le moteur revenu", async () => {
   await p.evaluate(() => { window.__e2 = gl.getExtension("WEBGL_lose_context"); window.__e2.loseContext(); window.glPret0 = glPret }); await attendre(() => glPerdu(), 10000, "retrait du moteur");
-  await p.click("#ex"); await fini(); const t = await p.textContent("#st1");
-  await p.evaluate(() => window.__e2.restoreContext()); await attendre(() => !glPerdu(), 10000, "retour du moteur"); await p.click("#ex"); await fini(); const t2 = await p.textContent("#st1");
+  await p.evaluate(() => $("#ex").click()); await fini(); const t = await p.textContent("#st1");
+  await p.evaluate(() => window.__e2.restoreContext()); await attendre(() => !glPerdu(), 10000, "retour du moteur"); await p.evaluate(() => $("#ex").click()); await fini(); const t2 = await p.textContent("#st1");
   return { ok: /mémoire graphique/.test(t) && /Terminé/.test(t2), info: "« " + t.slice(0, 90) + "… » puis « " + t2.slice(0, 40) + " »" } });
 console.log("Erreurs JavaScript : " + (errs.length ? errs.join(" | ") : "aucune"));
 console.log(`Résultat : ${res.filter(Boolean).length} réussis, ${res.filter(x => !x).length} échoués.`); await b.close(); srv.kill(); fs.rmSync(D, { recursive: true, force: true }); process.exit(res.every(Boolean) && !errs.length ? 0 : 1);
