@@ -226,3 +226,11 @@ Barre de vitesse 0,75–1,30× (objet SPD dans index.html ; export via TR.go(vit
 ## v4.8 (5 nov. 2026)
 Vitesse changée (barre ou Time Repair) : l'export lit la vidéo avec SeqReader (makeSeq) au lieu de la réserve de 3 lecteurs qui cherchent chaque image. Condition : plan qui avance (moins d'un retour en arrière pour 45 images) ; un retour en arrière relance makeSeq à cet endroit (prolongation). Lecture à l'envers : ancienne méthode. Image intermédiaire du ralenti : objet MFG (WebGL, une passe, déplacement interpolé entre les points de grille, bords répétés) ; repli automatique sur mfDrawWarped (2D) en cas d'échec, window.__mfg2d=true force l'ancienne méthode. mfFlow : copies bordées, résultat identique au bit près. « Voix plus claire » appliquée avant l'adaptation de durée (TR.audio).
 Mesure faite par le propriétaire avant correctif (diagnostic du 5 nov., v4.7) : export à 0,85× d'une vidéo 624×1232 de 58 s non terminé.
+
+## v6.9 (11 nov. 2026)
+Restauration des visages (photo) : `restauration-visage.js` (objet RVIS, module « visages » chargé à la demande). analyser() =
+VISAGE.detecter → similitude 5 points vers le gabarit FFHQ 512 → netteté × échelle (seuil 8 : visage net laissé intact) → GFPGAN
+(MODELS id « gfpgan », `modeles/lourds/gfpgan14_int8w.onnx`, exclu du cache de l'app par sw.js) → recalage des moyennes de couleur.
+composer(S, force) = mélange + carte des zones inventées + recollage par la similitude inverse. Reproduire le modèle :
+`tests/visage_ia/exporter.py` puis `quantifier.py`. Mesures : `tests/visage_ia/banc_visages.py`, `tests/rvis.test.mjs`.
+État de chaque fonction : `REGISTRE_LIVRAISON_PERMANENT.md` (à relire à chaque reprise).

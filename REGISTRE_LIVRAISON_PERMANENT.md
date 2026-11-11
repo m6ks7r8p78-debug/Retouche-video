@@ -1,0 +1,237 @@
+# Registre permanent de livraison — RetoucheProAI
+
+Document central et permanent. **On n'y efface jamais rien** : un statut qui change est réécrit dans la fiche, et l'ancien statut
+reste dans l'historique en bas. Une fonction ne change de statut qu'avec une preuve (test exécuté, mesure, diagnostic reçu).
+Le tableau de bord décrit **le code réel**, pas les ambitions.
+
+Statuts : NON COMMENCÉ · RECHERCHE EFFECTUÉE · PROTOTYPE · EN DÉVELOPPEMENT · INTÉGRÉ NON VALIDÉ · VALIDÉ SUR DONNÉES SYNTHÉTIQUES ·
+VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LES CRITÈRES DÉFINIS · BLOQUÉ PAR UNE DÉPENDANCE EXTERNE
+
+À chaque reprise : relire ce registre → vérifier les statuts contre le code et les tests → choisir la prochaine tâche → la faire.
+À chaque livraison : fiche(s) + preuves + historique + tableau de bord + prochaine tâche.
+
+---
+
+## Tableau de bord (à jour : v6.9, 11/11/2026)
+
+| | Fonctions |
+|---|---|
+| **Terminées selon les critères** | aucune |
+| **Validées sur iPhone** (usage réel du propriétaire / diagnostics reçus) | F01 amélioration vidéo classique · F03 IA locale (photo) · F19 voix plus claire · F05 retrait de filtre couleur (vidéo) |
+| **Validées sur médias réels autorisés** (pas sur iPhone) | **F13 restauration des visages (photo)** — nouvelle en v6.9 |
+| **Validées sur données synthétiques** | F06 diagnostic des filtres couleur/lumière · F08 zones de filtre AR proposées (photo) |
+| **Intégrées, non validées** | F02 reprise des exports 4K · F04 IA rapide Kaggle · F07 effacer une zone · F17 anti-scintillement/stabilisation · F18 vitesse / Time Repair · F20 caméra virtuelle · F21 export X · F22 hors-ligne · F26 pubs/Premium (éteints) · F28 thème Néon |
+| **Prototypes** | F09 suivi vidéo du visage + report de masque · F16 directeur de traitement (`ANALYSE.plan()`, non branché) |
+| **Non commencées** | F10 effacement AR en vidéo · F11 déformations du visage · F12 retrait maquillage/lissage beauté · F14 restauration des visages en vidéo · F15 laboratoire de simulation des filtres |
+| **Bloquées (dépendance externe)** | F23 serveur de consentement (déploiement + juriste) · F24 collecte pour l'entraînement (juriste) · **F13 en usage commercial** (décision juridique sur la licence des poids) |
+| **Régressions détectées** | aucune introduite par la v6.9. **Échecs déjà présents en v6.8** (trouvés en relançant tout) : `tests/pub.test.mjs` 1 cas (pub indisponible → l’enregistrement ne part pas dans le test), `tests/v3.test.mjs` 3 cas (rendus « équilibre / nuit / jour » de photo sombre) — à expliquer et corriger |
+
+**Priorités restantes (dans l'ordre du mandat)** : F14 visages en vidéo (Kaggle + local) → F11/F12 filtres beauté et déformations
+sur photo → F10 effacement AR en vidéo (suivi F09 déjà prêt) → F15 laboratoire de filtres → F16 directeur branché sur l'export →
+mesures iPhone de tout ce qui est « intégré non validé ».
+
+**Prochaine tâche concrète** : F14 — restauration des visages image par image en vidéo avec le suivi de F09 (positions lissées,
+même transformation d'une image à l'autre pour éviter le scintillement), d'abord sur le serveur Kaggle (carte graphique), mesure de
+scintillement sur `tests/medias/video_portrait.mp4`.
+
+---
+
+## Fiches des fonctions
+
+Format de chaque fiche : objectif · priorité · statut · implémenté · fichiers · modèles/algorithmes · tests exécutés · résultats ·
+médias de validation · appareils testés · défauts · limites · reste à faire · critère de fin · preuve de la dernière livraison.
+
+### F13 — Restauration des visages (photo) · priorité 1
+- **Objectif** : rendre lisibles les visages flous, petits ou compressés (yeux, peau, cheveux) sans toucher au reste de la photo, en
+  distinguant ce qui est **retrouvé** de ce qui est **inventé**.
+- **Statut** : VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS (v6.9). Non validé sur iPhone. Usage commercial : BLOQUÉ PAR UNE DÉPENDANCE EXTERNE (licence).
+- **Implémenté** : bouton d'accueil « Restaurer les visages d'une photo (IA, essai) » et bouton après traitement d'une photo ;
+  repérage YuNet → alignement par similitude sur le gabarit FFHQ 512 → GFPGAN v1.4 → recalage des couleurs → dosage « force »
+  (80 % par défaut, réglable sans relancer le calcul) → recollage à bord fondu ; visage déjà net laissé tel quel (mesuré) ;
+  visage < 12 px entre les yeux non traité ; carte rose des zones inventées et part inventée chiffrée ; avant/après à glissière ;
+  enregistrement JPEG ; téléchargement du modèle avec accord, reprise, empreinte SHA-256, déchargement mémoire par le gestionnaire.
+- **Fichiers** : `restauration-visage.js` (nouveau), `modeles/lourds/gfpgan14_int8w.onnx` (nouveau, 85,6 Mo), `models.js` (fiche
+  `gfpgan`), `app.js` (module `visages`, boutons), `index.html` (2 boutons), `sw.js` (le modèle ne passe pas par le cache de l'app),
+  `studio.js` (texte d'autorisation), `tests/rvis.test.mjs`, `tests/visage_ia/` (export, quantification, banc d'essai).
+- **Modèles** : YuNet (MIT, déjà livré) ; GFPGAN v1.4 « clean » (Tencent ARC), export ONNX opset 17 avec bruit fixe (reproductible),
+  poids quantifiés int8 par canal (117 tenseurs), calcul en float32, optimisations du graphe coupées (pic mémoire plus bas).
+- **Tests réellement exécutés** :
+  1. Export : sortie ONNX float32 = PyTorch (écart moyen 2,2·10⁻⁷, max 4,4·10⁻⁶).
+  2. Banc Python (`tests/visage_ia/banc_visages.py`) : 25 portraits officiels NASA (domaine public), 4 dégradations contrôlées
+     → 100 essais par variante ; vérité terrain connue.
+  3. Balayage de la force et du seuil de netteté (12 portraits × 3 dégradations).
+  4. De bout en bout dans Chromium (vrai moteur WebAssembly, vrai modèle) : `tests/rvis.test.mjs` — résultats ci-dessous.
+- **Résultats mesurés (banc, moyenne de 25 portraits)** — LPIPS : plus bas = plus proche de la vraie photo ; repères : erreur des 5
+  repères du visage / distance entre les yeux (proxy de la forme du visage, PAS une mesure d'identité) :
+
+  | Dégradation | Entrée LPIPS | Restauré LPIPS (force 100 %) | Entrée PSNR | Restauré PSNR | Repères entrée → restauré | Surface inventée (force 100 %) |
+  |---|---|---|---|---|---|---|
+  | visage 64 px | 0,451 | **0,194** | 28,15 | 27,24 | 0,043 → 0,030 | 12,5 % |
+  | 96 px + JPEG 35 | 0,593 | **0,213** | 26,55 | 26,38 | 0,062 → 0,031 | 12,5 % |
+  | 128 px + flou + bruit + JPEG 50 | 0,531 | **0,191** | 27,82 | 27,56 | 0,048 → 0,030 | 11,4 % |
+  | « vieux téléphone » 160 px + JPEG 25 | 0,514 | **0,193** | 27,82 | 27,38 | 0,047 → 0,033 | 11,9 % |
+
+  **Sortie réelle de l'app** (Chromium, WebAssembly, 9 portraits réduits ×0,16 + JPEG 40, notés par `banc_visages.py --js`) :
+  LPIPS 0,538 → **0,271** (force 80 %) / 0,259 (100 %) ; repères 0,124 → **0,051** ; PSNR 24,6 → 25,5 ; SSIM 0,724 → 0,739 ;
+  surface inventée 7 à 17 % à 80 % (12 à 25 % à 100 %) ; **21,5 s par visage** (médiane, 1 fil, processeur d'ordinateur).
+  Décision « déjà net » (netteté × échelle d'alignement) : 9 portraits d'origine 9,5–15,8, les mêmes dégradés 1,6–2,9 → seuil 6,
+  aucune erreur sur les 27 cas ; photo identique au pixel près quand rien n'est restauré ; hors des visages, aucun pixel modifié.
+  Int8 contre float32 : LPIPS identique à 0,0003 près sur les 100 essais. Force (LPIPS / surface inventée) : 60 % 0,226 / 4 % ·
+  70 % 0,205 / 6 % · **80 % 0,191 / 8 % (défaut)** · 90 % 0,181 / 10 % · 100 % 0,176 / 12 %. Visage déjà net restauré quand même :
+  LPIPS 0,132 contre l'original (il est changé pour rien) → justifie de le laisser intact. Mémoire (ordinateur, ONNX Runtime 1 fil) : pic ≈ 0,73 Go ; 6,5 s par visage.
+  Lecture honnête : le PSNR/SSIM ne monte pas (normal : les détails inventés ne sont pas ceux de la vraie photo) ; c'est la
+  ressemblance perçue (LPIPS) qui progresse nettement, et la forme du visage (repères) qui devient plus nette.
+- **Médias** : réels autorisés (portraits officiels NASA, domaine public, sources et URL dans `tests/medias/visages_dp/sources.json`),
+  dégradés artificiellement. Aucune vraie vieille photo de famille, aucune photo d'iPhone.
+- **Appareils** : ordinateur Linux (Python/ONNX Runtime) ; Chromium sans carte graphique (WebAssembly). **Pas d'iPhone.**
+- **Défauts constatés** : la ressemblance change un peu (≈ 8 % de la surface du visage inventée à 80 %) ; PSNR légèrement plus bas
+  que l'entrée à force 100 %.
+- **Limites** : photo seulement ; profil très marqué, visage caché, visage très sombre non mesurés ; pas de mesure d'identité
+  (ArcFace et équivalents : poids non commerciaux, non utilisés) ; mémoire iPhone inconnue (risque de fermeture de l'onglet).
+- **Licence (bloquant pour l'usage commercial)** : code GFPGAN Apache-2.0 ; poids publiés par Tencent sous la même licence, mais le
+  générateur repose sur StyleGAN2 (licence NVIDIA : recherche/évaluation uniquement) entraîné sur FFHQ (CC BY-NC-SA 4.0). Avant
+  publicité, abonnement ou boutique : **décision juridique requise** (personne d'autre que le propriétaire ne peut la prendre).
+  Alternatives examinées : CodeFormer (licence S-Lab non commerciale, exclu) ; RestoreFormer++, GPEN, VQFR (même question FFHQ).
+- **Reste à faire** : protocole iPhone ci-dessous ; vidéo (F14) ; mesure sur vraies vieilles photos autorisées par le propriétaire.
+- **Critère de fin** : (1) LPIPS ≥ 40 % plus bas que l'entrée sur le banc ✔ ; (2) visage net laissé intact ✔ ; (3) carte des zones
+  inventées ✔ ; (4) sur iPhone 15 Pro Max : 3 visages restaurés sans fermeture de l'onglet, < 60 s par visage ; (5) avis du
+  propriétaire sur 5 vraies photos de famille ; (6) décision de licence écrite.
+- **Protocole iPhone (5 min)** : retoucheproai.com → « Restaurer les visages d'une photo » → choisir une vieille photo floue avec
+  un visage → accepter le téléchargement (86 Mo, une fois) → noter le temps affiché à la fin, si l'onglet se ferme, et si le visage
+  ressemble à la personne (glisser la barre ; tester « Carte » et la force à 50 %). Le diagnostic anonyme (s'il est autorisé)
+  remonte le temps et la netteté de chaque visage (`rvis`).
+- **Preuve de la dernière livraison** : v6.9, `node tests/rvis.test.mjs` (voir historique), empreinte du modèle
+  `40407c8037bd34a7718b9ea60257354c87eafecd6845aa98951dd760a5b33ff9`.
+
+### F01 — Amélioration vidéo classique (WebGL, réglage auto par vidéo) · priorité 1
+Statut : VALIDÉ SUR IPHONE (usage réel du propriétaire ; 42 exports reçus en diagnostic du 5 au 10/11, 30 réussis, 12 échecs tous
+en 4K → F02). Fichiers : `app.js`, `analyse.js`. Avis propriétaire v3.6–3.7 : « presque parfait », netteté encore à améliorer.
+Reste : netteté (« il manque quelque chose »), réglages encore trop proches d'une vidéo à l'autre selon le propriétaire.
+Critère de fin : avis favorable du propriétaire sur 5 vidéos de vieux téléphones + aucun échec d'export hors 4K.
+
+### F02 — Reprise des exports 4K après perte du moteur graphique (v6.6) · priorité 1
+Statut : INTÉGRÉ NON VALIDÉ. Test simulé `tests/moteur_graphique.test.mjs` (moteur retiré exprès). Aucun diagnostic iPhone 4K reçu
+depuis. Critère de fin : 5 exports 4K réussis sur iPhone (diagnostics).
+
+### F03 — Super-résolution IA locale (Real-ESRGAN general v3, WebGPU) · priorité 2
+Statut : VALIDÉ SUR IPHONE pour la photo (≈ 30 s) ; vidéo impraticable sur iPhone (26–42 s par mégapixel, mesuré par diagnostics).
+Fichiers : `sr.js`, `sr-gpu.js`, `sr.bin`. Licence BSD-3. Reste : la vidéo passe par F04.
+
+### F04 — IA rapide sur serveur gratuit (Kaggle) · priorité 2
+Statut : INTÉGRÉ NON VALIDÉ (jamais essayé par le propriétaire sur une vraie vidéo longue). Fichiers : `kaggle.js`, `serveur-ia/`.
+Dépend du jeton Kaggle du propriétaire (⚙️ Paramètres). Critère : une vidéo de 4 min 40 traitée de bout en bout depuis l'iPhone.
+
+### F05 — Retrait de filtre de couleur (25 tables apprises) · priorité 1
+Statut : VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS (paires avec/sans filtre fournies par le propriétaire) et utilisé sur iPhone en vidéo.
+Limite : couleur/lumière seulement ; pas en mode photo. Fichiers : `app.js` (`FLT`), `filtres.png`.
+
+### F06 — Diagnostic des filtres couleur/lumière, tailles de sortie honnêtes · priorité 2
+Statut : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (`tests/v67.test.mjs`, 18 cas). Fichier : `analyse.js`.
+
+### F07 — Effacer une zone d'une photo (MI-GAN + sélection EdgeTAM) · priorité 1
+Statut : INTÉGRÉ NON VALIDÉ (vérifications v3.3 de `GUIDE_IPHONE.md` jamais faites ; `tests/effacer.test.mjs` demande `migan.onnx`
+dans les médias de test). Licences MIT / Apache-2.0. Limite : visages mal reconstruits (modèle appris sur des scènes).
+
+### F08 — Zones de filtre AR proposées sur un visage (photo) · priorité 1
+Statut : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (`tests/visage.test.mjs` 12/12, accessoires **dessinés** par le test). Non mesuré sur de
+vrais filtres. Fichiers : `visage.js`, `effacer.js`.
+
+### F09 — Suivi vidéo du visage et report de masque · priorité 1
+Statut : PROTOTYPE (calculé et testé, relié à rien). Fichier : `visage.js`. Sert de base à F10 et F14.
+
+### F10 — Effacement des accessoires AR en vidéo · priorité 1
+Statut : NON COMMENCÉ (la reconstruction image par image n'existe pas). Prérequis : F09 ✔, MI-GAN ✔.
+
+### F11 — Déformations du visage (yeux agrandis, nez, bouche, joues) · priorité 1
+Statut : NON COMMENCÉ. Difficulté : aucune image de référence ; piste : repères denses + modèle de proportions moyennes, mesuré sur
+le laboratoire F15 avant toute promesse.
+
+### F12 — Retrait du maquillage numérique et du lissage « beauté » · priorité 1
+Statut : NON COMMENCÉ (le lissage est seulement **mesuré** dans `analyse.js`). Piste : F13 restaure la texture de la peau d'un visage
+lissé — à mesurer sur le laboratoire F15.
+
+### F14 — Restauration des visages en vidéo (cohérente dans le temps) · priorité 1
+Statut : NON COMMENCÉ. Prérequis prêts : F13 (modèle, alignement), F09 (suivi lissé).
+
+### F15 — Laboratoire de simulation et d'évaluation des filtres · priorité 1
+Statut : NON COMMENCÉ pour les filtres. Existant réutilisable : banc de dégradations contrôlées des visages
+(`tests/visage_ia/banc_visages.py`, v6.9) et simulateur de caméra (`tests/camera_simuler.py`).
+
+### F16 — Directeur de traitement (analyse → choix et ordre des modules) · priorité 2
+Statut : PROTOTYPE (`ANALYSE.plan()` produit un plan ; l'export ne le suit pas).
+
+### F17 — Anti-scintillement et stabilisation (vidéo) · priorité 2
+Statut : INTÉGRÉ NON VALIDÉ (aucune mesure de scintillement sur médias réels). Fichier : `app.js` (`o_defl`, `o_stab`).
+
+### F18 — Vitesse 0,75×–1,30×, Time Repair, images intermédiaires · priorité 3
+Statut : INTÉGRÉ NON VALIDÉ (v4.8 : « reste à mesurer sur l'iPhone »).
+
+### F19 — Voix plus claire (RNNoise) · priorité 3
+Statut : VALIDÉ SUR IPHONE (dans les exports depuis la v2.3x).
+
+### F20 — Caméra virtuelle (essai) · priorité 3
+Statut : INTÉGRÉ NON VALIDÉ. Fichier : `camera.js`.
+
+### F21 — Export « Préparer pour X » · priorité 3
+Statut : INTÉGRÉ NON VALIDÉ (l'encodage H.264 ne marche pas dans le navigateur de test).
+
+### F22 — Hors-ligne (PWA) · priorité 3
+Statut : INTÉGRÉ NON VALIDÉ sur iPhone ; testé dans Chromium (`tests/sw_reel.test.mjs`, `tests/sw.test.mjs`).
+
+### F23 — Serveur de consentement · priorité 3
+Statut : BLOQUÉ PAR UNE DÉPENDANCE EXTERNE (déploiement sur le compte Cloudflare du propriétaire + validation par un juriste).
+Code et tests : `serveur-consentement/`, `tests/consentement.test.mjs` (7/7 sur SQLite réel).
+
+### F24 — Collecte de médias pour l'entraînement · priorité 3
+Statut : BLOQUÉ PAR UNE DÉPENDANCE EXTERNE (F23 + juriste/DPO). Double verrou d'envoi en place (`contribution.js`).
+
+### F26 — Publicités et Premium · priorité 3
+Statut : INTÉGRÉ NON VALIDÉ, **éteints volontairement** (décision du propriétaire).
+
+### F28 — Thème « Néon » (nouveau design) · priorité 3
+Statut : INTÉGRÉ NON VALIDÉ (avis du propriétaire attendu).
+
+---
+
+## Historique des livraisons (ne jamais effacer)
+
+### État initial vérifié — v6.8 (11/11/2026, commit 509d2da)
+Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/retouche-video`, branche `main`, site
+`retoucheproai.com`. Statuts ci-dessus F01–F28 (hors F13) établis à partir du code, des rapports `AUDIT_INITIAL.md`,
+`RAPPORT_TESTS_FINAL.md`, `CHANGELOG.md` et des tests relancés ici (voir v6.9 « non-régression »). Restauration de visage :
+« évaluée, non intégrée » (`REGISTRE_MODELES_LICENCES.md`).
+
+### v6.9 (11/11/2026) — restauration des visages sur photo
+- **Nouveau** : F13 (voir fiche). Statut F13 : NON COMMENCÉ → VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS (preuves : banc + `tests/rvis.test.mjs`).
+- **Modifié** : `models.js` (fiche du modèle), `app.js` (version, module, boutons), `index.html`, `sw.js` (cache v63, modèle exclu du
+  cache de l'app), `studio.js` (texte d'autorisation : le modèle peut venir du site de l'app).
+- **Tests exécutés** : voir la section « Résultats v6.9 » ci-dessous.
+- **Régressions** : voir « Non-régression v6.9 ».
+- **Non résolu** : licence commerciale de GFPGAN ; aucune mesure sur iPhone ; vidéo.
+- **Sauvegarde** : étiquette `sauvegarde-v6.8` posée avant publication.
+
+#### Résultats v6.9 (exécutés dans cette séance, ordinateur Linux, Chromium sans carte graphique)
+- `tests/rvis.test.mjs` : **20 réussis, 0 échoué** (après deux échecs corrigés pendant le développement : seuil « déjà net »
+  mesuré à la mauvaise échelle — un portrait net était restauré pour rien —, et une erreur du test sur la part inventée).
+- Banc Python (`tests/visage_ia/banc_visages.py`) : 25 portraits × 4 dégradations × 2 variantes ; `--js` : 9 sorties de l'app.
+
+#### Non-régression v6.9 (même machine ; chaque échec comparé à la v6.8 d'origine relancée à côté)
+| Suite | v6.8 d'origine | v6.9 | Conclusion |
+|---|---|---|---|
+| sw | 8/8 | 8/8 | ok |
+| sw_reel | — | 9/9 | ok |
+| v67 | — | 18/18 | ok |
+| consentement | — | 7/7 | ok |
+| visage | — | 12/12 | ok |
+| gestionnaire (modèles) | — | 24/24 (2 non testables) | ok, fiche `gfpgan` ajoutée sans casse |
+| studio | — | 11/11 | ok |
+| pages | — | 5/5 | ok |
+| abo | — | 14/14 | ok |
+| natif | — | 10/10 | ok |
+| camera / camera_app | — | 24/24 · 12/12 | ok |
+| reassemblage | 5/5 | 5/5 | ok (2 échecs vus une fois quand un autre test chargeait la machine : minutage, pas le code) |
+| pub | 8/9 | 8/9 | **échec déjà présent en v6.8** (« pub indisponible → téléchargement false ») : à corriger, non lié |
+| v3 | 4/7 | 4/7 | **échecs déjà présents en v6.8** (sélecteur de rendu introuvable en 30 s) : à corriger, non lié |
+| moteur_graphique | arrêté au bout de 500 s | arrêté au bout de 500 s (identique) | carte graphique simulée trop lente ici ; non concluant |
+| noyau | — | s'arrête avant le résumé (déjà noté dans `AUDIT_INITIAL.md`) | non concluant ici |
+| effacer, app | non lancées (modèle MI-GAN absent des médias de test ; durée) | — | inchangé |

@@ -29,3 +29,10 @@
 ## Nouveau en v6.8
 - **Effacer une zone** (photo) → « 🎭 Proposer les éléments de filtre (visage) » : l’app colore en rose ce qui ressemble à un ajout de filtre. Vérifie, corrige au doigt, puis « Reconstruire la zone ».
 - **Préparer pour X** : case dans les options avant d’exporter une vidéo (coche aussi « Compte X Premium » pour garder le 1080p).
+
+## Vérification v6.9 — Restaurer les visages (5 minutes)
+1. Ouvre retoucheproai.com, touche « Restaurer les visages d’une photo (IA, essai) » et choisis une vieille photo floue avec un visage.
+2. Accepte le téléchargement (86 Mo, une seule fois ; de préférence en Wi-Fi).
+3. Note : le temps total, si l’onglet se ferme ou se recharge (= mémoire insuffisante), et si la personne est toujours reconnaissable.
+4. Glisse la barre avant/après, touche « Carte » (rose = détails inventés), baisse la force à 50 % et regarde la différence.
+5. Recommence avec une photo nette récente : le message doit dire « déjà net, laissé tel quel ».

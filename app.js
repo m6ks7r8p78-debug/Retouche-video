@@ -1,7 +1,7 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v6.8";/* seul endroit où changer le numéro de version */
+const VER="v6.9";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
-const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"]},__charges={};
+const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
   s.onload=ok;s.onerror=()=>{delete __charges[src];ko(new Error("Impossible de charger "+src+" (connexion ?)"))};document.head.appendChild(s)}))}
 function chargerModule(n){return Promise.all(MODULES[n].map(chargerScript))}
@@ -760,7 +760,7 @@ function loadFile(f){
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
   curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
-  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres","pv","erb"].forEach(i=>$("#"+i).hidden=true);
+  msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres","pv","erb","rvb"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
   });
 }
@@ -1224,6 +1224,9 @@ const KB={blob:null,url:null,busy:false,
   }
 };
 function ouvrirEffacer(f){chargerModule("effacer").then(()=>ERASE.open(f),e=>msg(e.message))}
+/* v6.9 : restauration des visages d'une photo (restauration-visage.js, chargé à la demande) */
+function ouvrirVisages(f){chargerModule("visages").then(()=>RVIS.ouvrir(f),e=>msg(e.message))}
+$("#rvb").onclick=()=>{if(window.__photoFile)ouvrirVisages(window.__photoFile)};$("#pickv").onclick=()=>$("#fv").click();$("#fv").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)ouvrirVisages(f)};
 $("#kbb").onclick=()=>KB.make();$("#erb").onclick=()=>{if(window.__photoFile)ouvrirEffacer(window.__photoFile)};$("#picke").onclick=()=>$("#fe").click();$("#fe").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)ouvrirEffacer(f)};$("#kbs").onclick=()=>{if(KB.blob)shareBlob(KB.blob,uniqName((window.__photoName||"photo").replace(/\.[^.]+$/,"")+"-anime","mp4"))};
 
 /* ===== Regrouper plusieurs vidéos en une (bout à bout, sans perte de qualité quand elles ont le même format) ===== */
@@ -1919,7 +1922,7 @@ $("#ex").onclick=async()=>{
       vch.length=0;ach.length=0;
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
-      $("#rv").hidden=false;$("#pv").hidden=true;{const pk=window.__planK;baShow(!isPlan||!!(pk&&!pk.rev),pk?pk.a:tS,null,null,pk&&!pk.rev?pk.s:1)}if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#erb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
+      $("#rv").hidden=false;$("#pv").hidden=true;{const pk=window.__planK;baShow(!isPlan||!!(pk&&!pk.rev),pk?pk.a:tS,null,null,pk&&!pk.rev?pk.s:1)}if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#erb").hidden=true;$("#rvb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
       /* images identiques à la suivante : signe d'une recherche d'image ratée SEULEMENT en lecture par recherche (repli) ;
          en lecture séquentielle, ce sont les images de la source elle-même (plan fixe, mouvement très lent) : pas une erreur */
       const frozen=!plan&&poolUp&&maxRun>=3;
@@ -2745,7 +2748,7 @@ async function exportPhoto(){
     if(!ok){msg("La photo produite n’a pas pu être relue : réessaie.");return}
     outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
     $("#ri").src=outUrl;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
-    $("#out").hidden=false;$("#sv").hidden=false;$("#kbb").hidden=false;$("#erb").hidden=false;$("#kbo").hidden=false;$("#kbres").hidden=true;$("#bab").hidden=true;$("#bares").hidden=true;
+    $("#out").hidden=false;$("#sv").hidden=false;$("#kbb").hidden=false;$("#erb").hidden=false;$("#rvb").hidden=false;$("#kbo").hidden=false;$("#kbres").hidden=true;$("#bab").hidden=true;$("#bares").hidden=true;
     PV.show(photoURL,outUrl,W,H);
     const r=recipe({sortie:W+"×"+H,format:png?"PNG":"JPEG 95 %",ia_utilisee:ia,duree_s:+((performance.now()-t0)/1000).toFixed(1)});showRecipe(r);
     const ro=[["ok","Photo créée : "+W+"×"+H+" ("+(s>1?"agrandie ×"+(Math.round(s*10)/10).toString().replace(".",","):"taille d’origine")+"), "+(png?"PNG sans perte":"JPEG qualité 95 %")+", "+(blob.size/1048576).toFixed(1).replace(".",",")+" Mo. Fichier relu et vérifié ✓"],

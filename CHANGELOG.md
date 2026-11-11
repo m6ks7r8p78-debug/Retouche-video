@@ -1,5 +1,16 @@
 # Journal des versions
 
+## v6.9 (11 nov. 2026) — restauration des visages sur photo (essai)
+- Nouveau « Restaurer les visages d'une photo (IA, essai) » (accueil, et après le traitement d'une photo) : chaque visage est
+  repéré, redressé, restauré par GFPGAN 1.4 sur le téléphone (86 Mo téléchargés une fois, avec accord), recalé en couleur puis
+  recollé avec un bord fondu. Force réglable (80 % par défaut) sans relancer le calcul ; avant/après à glissière ; carte rose des
+  détails inventés et pourcentage affiché. Un visage déjà net n'est pas touché (mesuré : le restaurer quand même le changerait).
+- Mesuré sur 25 portraits du domaine public dégradés (vérité terrain connue) : ressemblance perçue (LPIPS) 0,45–0,59 → 0,19–0,21 ;
+  forme du visage (5 repères) plus juste ; ≈ 8 % de la surface du visage inventée à 80 %. Chromium : ≈ 20 s par visage (1 fil).
+- Nouveau `REGISTRE_LIVRAISON_PERMANENT.md` : état réel de chaque fonction, preuves, historique, prochaine tâche.
+- Limites : photo seulement ; pas encore essayé sur iPhone (mémoire ≈ 0,75 Go mesurée sur ordinateur) ; licence des poids à
+  trancher avant tout usage commercial (StyleGAN2 NVIDIA / FFHQ non commerciaux) — voir le registre, fiche F13.
+
 ## v6.8 (11 nov. 2026) — éléments de filtre proposés automatiquement, export pour X, nouveau thème
 - **Effacer une zone** : nouveau bouton « 🎭 Proposer les éléments de filtre (visage) ». L'app repère le visage sur le téléphone
   (modèle YuNet, 233 Ko, licence MIT, livré avec l'app, empreinte vérifiée) et pré-remplit le masque là où la couleur n'est ni la

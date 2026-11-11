@@ -32,7 +32,7 @@ var STUDIO = (() => {
   /* ---------- autorisations : chaque usage réseau a sa finalité, sa portée et se révoque ---------- */
   const PERM = {
     lien: { nom: "Charger une vidéo par lien", envoi: "le lien collé est envoyé au serveur de l’app (Cloudflare Workers) qui récupère la vidéo ; aucune vidéo n’y est conservée", compte: "aucun compte" },
-    modele: { nom: "Télécharger un modèle IA", envoi: "rien de personnel : seul le fichier du modèle est téléchargé depuis sa source officielle (Hugging Face), puis vérifié", compte: "aucun compte" },
+    modele: { nom: "Télécharger un modèle IA", envoi: "rien de personnel : seul le fichier du modèle est téléchargé depuis sa source officielle (Hugging Face) ou depuis le site de l’app, puis vérifié", compte: "aucun compte" },
     analyse_ia: { nom: "Analyse IA (version Claude)", envoi: "une image réduite de ta vidéo est envoyée à Claude pour proposer des réglages", compte: "ton compte Claude" },
     cloud: { nom: "IA rapide sur serveur (Kaggle)", envoi: "ta vidéo est envoyée dans un espace privé de ton compte Kaggle (Google) pour y calculer l’IA, puis supprimée avec le résultat ; un accord est aussi redemandé avant chaque envoi", compte: "ton compte Kaggle (jeton gardé sur ce téléphone seulement)" },
     diagnostic: { nom: "Aider à améliorer RetoucheProAI (diagnostic anonyme)", envoi: "des nombres seulement (mesures de la vidéo, réglages appliqués, appareil qui l’a filmée, modèle de téléphone, durées) sont envoyés au serveur de l’app pour régler les corrections de chaque type d’appareil ; aucune image, aucun son, aucun nom de fichier, aucune adresse IP gardée ; effacés après 13 mois", compte: "aucun compte" }
