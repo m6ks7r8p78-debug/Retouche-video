@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v6.6";/* seul endroit où changer le numéro de version */
+const VER="v6.7";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -1024,6 +1024,13 @@ const FLT={sel:-1,sel2:-1,mx:.5,f:1,n:0,tex:null,data:null,
     const lum=a=>{const y=new Float32Array(np);for(let i=0,j=0;j<np;i+=4,j++)y[j]=(.299*a[i]+.587*a[i+1]+.114*a[i+2])/255;return y};
     const grad=y=>{const o=new Float32Array(np);for(let j=0;j<TH-1;j++)for(let i=0;i<TW-1;i++){const k=j*TW+i;o[k]=Math.abs(y[k+1]-y[k])+Math.abs(y[k+TW]-y[k])}return o};
     const gb=grad(lum(d)),C=[];
+    /* v6.7 : diagnostic mesuré de l'image (filtres de couleur/lumière probables, avec confiance) + tailles de sortie honnêtes */
+    try{if(window.ANALYSE){let dg=$("#flt_d");if(!dg){dg=document.createElement("div");dg.id="flt_d";dg.className="help";dg.style.margin="0 0 10px";g.parentNode.insertBefore(dg,g)}
+      const pl=ANALYSE.plan(ANALYSE.mesurer(d,TW,TH),"fidelite"),L=ANALYSE.resume(pl),add=(t,b)=>{const p=document.createElement(b?"b":"div");p.textContent=t;if(b)p.style.display="block";dg.appendChild(p)};
+      dg.textContent="";add("Ce que l’app mesure sur cette image",1);L.forEach(t=>add(t));
+      if(pl.aConfirmer.length)add("○ = peu sûr : à vérifier à l’œil sur les miniatures avant d’appliquer.");
+      if(mode==="video"&&v.videoWidth){const ci=ANALYSE.cibleAuto(v.videoWidth,v.videoHeight,{video:true});if(ci)add("Taille de sortie conseillée : "+ci.nom+" ("+ci.largeur+"×"+ci.hauteur+") — "+ci.etiquette+"."+(ci.avertissement?" "+ci.avertissement:""))}
+      add("Non détecté automatiquement : accessoires AR, autocollants, déformations du visage (outil « Effacer une zone » pour les retirer à la main).")}}catch(e){}
     /* chaque filtre connu : aperçu + plausibilité (le filtre a-t-il pu produire ces couleurs ? crée-t-il des contours absents ?) */
     for(let k=0;k<FLT.n;k++){
       const o=new Uint8ClampedArray(d.length);let rt=0;

@@ -3,6 +3,32 @@
    (PROF, P, sync, $, msg, shareBlob, MODELS) et ne touche jamais aux photos ni aux vidéos. */
 var STUDIO = (() => {
   const AK = "autorisations";
+  const CK = "community_consent_v1";
+  const COMMUNITY_PURPOSES = [
+    ["filter_recovery", "Amélioration du retrait de filtres et transformations AR"],
+    ["upscaling", "Upscaling et restauration Full HD / 4K"],
+    ["faces", "Restauration des visages et détails"],
+    ["temporal", "Cohérence des mouvements entre images"],
+    ["datasets", "Création de jeux de données annotés"],
+    ["training", "Entraînement et amélioration des modèles IA"],
+    ["research", "Recherche et expérimentation"]
+  ];
+  const communityAll = () => { try { const x=JSON.parse(localStorage.getItem(CK)||"[]"); return Array.isArray(x)?x:[] } catch(e) { return [] } };
+  const communityPut = x => { try { localStorage.setItem(CK, JSON.stringify(x)); return true } catch(e) { return false } };
+  const communityEsc = s => String(s||"").replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  function communityCard() {
+    const rows=communityAll();
+    return `<div class="mdl-sto" id="community_box"><b>🤝 Contribution volontaire à l’amélioration des IA</b><span>Les personnes peuvent choisir séparément les usages de leurs médias. À ce stade, cette version enregistre uniquement les autorisations sur cet appareil : aucun média n’est envoyé, collecté ou utilisé pour entraîner un modèle. Un transfert et un entraînement ne seront activés qu’après mise en place d’un serveur sécurisé et d’un contrôle des droits.<br><b>Envoi de médias : ${window.CONTRIBUTION&&CONTRIBUTION.DISTANT_ACTIF?"activé":"désactivé (verrou logiciel v6.7 : accord de chaque personne, droits sur le fichier et serveur validé exigés avant tout envoi)"}.</b></span>
+      <div class="mdl-card"><b>Enregistrer l’accord d’une personne</b><p class="mdl-m">La personne concernée doit lire et valider elle-même cette demande. L’accord de la personne qui importe le fichier ne remplace pas celui des personnes reconnaissables. Pour les mineurs, ne pas utiliser ce formulaire : une procédure dédiée avec représentant légal est nécessaire.</p>
+      <label class="s"><span>Nom ou pseudonyme de la personne qui donne son accord</span><input id="cc_person" maxlength="80" autocomplete="off" placeholder="Nom / pseudonyme" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)"></label>
+      <label class="s"><span>Référence du média (facultatif, sans importer le fichier)</span><input id="cc_media" maxlength="100" autocomplete="off" placeholder="Ex. vidéo vacances 2026" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink)"></label>
+      <p class="mdl-m"><b>Usages acceptés (aucun n’est présélectionné)</b></p>
+      ${COMMUNITY_PURPOSES.map(([k,n])=>`<label class="chk"><input type="checkbox" data-cc-purpose="${k}"><span>${n}</span></label>`).join("")}
+      <label class="chk"><input type="checkbox" id="cc_adult"><span><b>Je confirme être la personne concernée, avoir au moins 18 ans et donner moi-même cet accord.</b></span></label>
+      <label class="chk"><input type="checkbox" id="cc_read"><span>J’ai compris que cet accord est facultatif, distinct par usage, révocable pour les usages futurs, et qu’aucun fichier ne sera envoyé ni entraîné dans cette version.</span></label>
+      <div class="mdl-acts"><button class="btn main" data-s="ccsave">Enregistrer cet accord local</button><button class="btn" data-s="ccrequest">Préparer une demande à partager</button></div></div>
+      <div class="mdl-card"><b>Accords enregistrés sur cet appareil (${rows.length})</b>${rows.length?rows.slice().reverse().map(r=>`<div class="mdl-h"><span><b>${communityEsc(r.person)}</b><br><small>${new Date(r.at).toLocaleString("fr-FR")} · ${r.purposes.length} usage(s) · ${r.revoked?"révoqué":"actif"}</small></span>${r.revoked?'<span class="mdl-st">révoqué</span>':`<button class="btn" data-s="ccrevoke" data-id="${communityEsc(r.id)}">Révoquer</button>`}</div>`).join(""):`<p class="mdl-m">Aucun accord enregistré.</p>`}<div class="mdl-acts"><button class="btn" data-s="ccexport">Exporter le registre d’accords</button></div></div></div>`;
+  }
   /* ---------- autorisations : chaque usage réseau a sa finalité, sa portée et se révoque ---------- */
   const PERM = {
     lien: { nom: "Charger une vidéo par lien", envoi: "le lien collé est envoyé au serveur de l’app (Cloudflare Workers) qui récupère la vidéo ; aucune vidéo n’y est conservée", compte: "aucun compte" },
@@ -25,7 +51,7 @@ var STUDIO = (() => {
   function grant(k) { if (!PERM[k]) return; const a = all(); a[k] = { ok: true, at: Date.now() }; put(a) }
 
   /* ---------- sauvegarde des réglages (jamais les médias), chiffrée si une phrase secrète est donnée ---------- */
-  const KEEP = /^(q|profil|o_[a-z]+|learn|recettes|modeles_etat|autorisations|sr_moteur|sr_noyau|srspd|spd|fileno|inst)$/;
+  const KEEP = /^(q|profil|o_[a-z]+|learn|recettes|modeles_etat|autorisations|community_consent_v1|sr_moteur|sr_noyau|srspd|spd|fileno|inst)$/;
   const b64 = u => { let s = ""; for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode(...u.subarray(i, i + 32768)); return btoa(s) };
   const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
   async function key(pass, salt) {
@@ -90,6 +116,7 @@ var STUDIO = (() => {
       <div class="mdl-sto"><b>Autorisations</b><span>Rien ne quitte ton iPhone sans ton accord. Chaque usage est demandé la première fois et peut être retiré.</span>
       ${Object.entries(PERM).map(([k, p]) => `<div class="mdl-card"><div class="mdl-h"><b>${p.nom}</b><span class="mdl-st ${a[k] && a[k].ok ? "ok" : ""}">${a[k] ? (a[k].ok ? "autorisé" : "refusé") : "pas encore demandé"}</span></div>
         <p class="mdl-m">${p.envoi}. Compte : ${p.compte}.</p><div class="mdl-acts">${a[k] && a[k].ok ? `<button class="btn" data-s="revoke" data-k="${k}">Retirer</button>` : `<button class="btn" data-s="grant" data-k="${k}">Autoriser</button>${a[k] ? `<button class="btn" data-s="revoke" data-k="${k}">Redemander plus tard</button>` : ""}`}</div></div>`).join("")}</div>
+      ${communityCard()}
       <div class="mdl-sto"><b>IA rapide sur serveur (Kaggle)</b><span>${window.KG && KG.actif() ? "Jeton enregistré sur ce téléphone." : "Aucun jeton. Sur kaggle.com : ton profil → Settings → API → Create New Token, puis colle-le ici."} Il reste sur ce téléphone : il n’est jamais mis dans les sauvegardes ni envoyé ailleurs qu’à Kaggle (et au relais de l’app, sans y être gardé).</span>
         <input id="kgj" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Jeton Kaggle (KGAT_…)" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);margin:6px 0">
         <div class="mdl-acts"><button class="btn" data-s="kgsave">Enregistrer le jeton</button>${window.KG && KG.actif() ? `<button class="btn" data-s="kgdel">Retirer le jeton</button>` : ""}</div><p class="mdl-note" id="kg_note" ${window.KG && KG.actif() ? "" : "hidden"} style="font-weight:600">${window.KG && KG.actif() ? "✅ Un jeton Kaggle est enregistré sur ce téléphone." : ""}</p></div>
@@ -115,6 +142,20 @@ var STUDIO = (() => {
         if (s === "close") dlg.close();
         else if (s === "revoke") { revoke(x.dataset.k); render(); note("Autorisation retirée : elle sera redemandée au prochain usage.") }
         else if (s === "grant") { grant(x.dataset.k); render(); note("Autorisation donnée. Tu peux la retirer ici à tout moment."); if (x.dataset.k === "diagnostic") try { DIAG.flush() } catch (e) {} }
+        else if (s === "ccsave") {
+          const person=(dlg.querySelector("#cc_person").value||"").trim();
+          const purposes=[...dlg.querySelectorAll("[data-cc-purpose]:checked")].map(x=>x.dataset.ccPurpose);
+          if(!person || !purposes.length || !dlg.querySelector("#cc_adult").checked || !dlg.querySelector("#cc_read").checked){note("Accord non enregistré : renseigne la personne, sélectionne au moins un usage et fais confirmer les deux déclarations par la personne elle-même.");return}
+          const rows=communityAll(); rows.push({id:crypto.randomUUID?crypto.randomUUID():"cc-"+Date.now()+"-"+Math.random().toString(36).slice(2),person,media:(dlg.querySelector("#cc_media").value||"").trim(),purposes,at:Date.now(),version:1,source:"confirmation locale sur appareil",revoked:false,notice:"Aucun média transféré ou utilisé pour entraînement par cette fonction."});
+          if(!communityPut(rows)){note("Enregistrement impossible : stockage local indisponible.");return} render();note("Accord enregistré localement. Cela ne déclenche aucun transfert ni entraînement.");
+        }
+        else if (s === "ccrequest") {
+          const selected=[...dlg.querySelectorAll("[data-cc-purpose]:checked")].map(x=>COMMUNITY_PURPOSES.find(p=>p[0]===x.dataset.ccPurpose)?.[1]).filter(Boolean);
+          const message="Demande de consentement RetoucheProAI\n\nJe te propose de donner toi-même ton accord pour contribuer à l’amélioration de l’application. Aucun accord n’est présumé.\nUsages proposés : "+(selected.length?selected.join(" ; "):"à choisir par toi dans l’application")+".\nTu peux refuser sans perdre l’accès aux retouches. Aucun média ne sera envoyé ni utilisé pour entraîner un modèle dans la version actuelle. Lis les informations et donne ton accord toi-même, si tu le souhaites.";
+          if(navigator.share){try{await navigator.share({title:"Demande de consentement RetoucheProAI",text:message});note("Demande de consentement préparée. La personne devra donner elle-même son accord.")}catch(e){if(e.name!=="AbortError")note("Partage indisponible : "+e.message)}}else{try{await navigator.clipboard.writeText(message);note("Texte de demande copié. Envoie-le à la personne concernée.")}catch(e){note(message)}}
+        }
+        else if (s === "ccrevoke") { const rows=communityAll().map(r=>r.id===x.dataset.id?{...r,revoked:true,revokedAt:Date.now()}:r);communityPut(rows);render();note("Accord marqué comme révoqué sur cet appareil. Cela bloque les usages futurs dans cette version ; cela ne peut pas retirer des données déjà transmises à un tiers.") }
+        else if (s === "ccexport") { const blob=new Blob([JSON.stringify({format:"retoucheproai-community-consent",version:1,exportedAt:new Date().toISOString(),records:communityAll()},null,2)],{type:"application/json"});await shareBlob(blob,"retoucheproai-registre-consentements.json");note("Registre exporté. Conserve-le de manière sécurisée.") }
         else if (s === "kgsave") { const t = (dlg.querySelector("#kgj") || {}).value || ""; if (!/^\S{20,200}$/.test(t.trim())) { const n = dlg.querySelector("#kg_note"); const m = t.trim() ? "❌ Jeton incomplet : copie-le en entier (il commence par KGAT_)." : "❌ La case est vide : colle d’abord ton jeton Kaggle."; if (n) { n.textContent = m; n.hidden = false } else note(m); return }
           /* v3.13 : le message s'affiche juste sous le bouton (avant : tout en bas de la fenêtre, invisible → « rien ne se passe ») ;
              le jeton n'est retiré que si Kaggle le refuse vraiment (401/403), pas pour un simple souci de réseau */

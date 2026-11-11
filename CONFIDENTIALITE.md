@@ -5,3 +5,7 @@
 - Stockage local : réglages, historique (30 derniers traitements, sans image), état des modèles. Effaçable dans ⚙️ et Modèles IA.
 - Sauvegarde : fichier que tu gardes ; chiffré si tu donnes une phrase secrète. Sans elle, il ne peut pas être relu (pas de récupération possible).
 - La révocation empêche les usages futurs ; elle ne peut pas effacer ce qu’un service tiers aurait déjà reçu.
+
+
+## Contribution volontaire (v6.7)
+Le centre de contribution enregistre uniquement des accords sur l’appareil. Aucune photo ni vidéo n’est envoyée, collectée ou utilisée pour entraîner un modèle. Voir `GUIDE_CONTRIBUTION.md`.

@@ -1,5 +1,16 @@
 # Journal des versions
 
+## v6.7 (11 nov. 2026) — diagnostic des filtres, tailles de sortie honnêtes, centre de contribution (sans envoi)
+- Nouveau `analyse.js` : mesures de l'image, détection prudente des filtres de couleur/lumière (confiance, réversible ou non), modes
+  Fidélité / Reconstruction IA, cibles 720p/1080p/4K étiquetées, tuiles sous budget mémoire, contrôle du scintillement, profil
+  « Préparer pour X » (calculé et testé, pas encore relié à un bouton d'export).
+- « Retirer un filtre » affiche ce diagnostic et la taille de sortie conseillée. Aucun calcul d'image ou d'export modifié.
+- Centre « Contribution volontaire » dans ⚙️ Paramètres (accords par personne et par usage, enregistrés sur l'appareil) et
+  `contribution.js` (cycle de vie, verrou d'envoi, invitations, registre chaîné). **Aucun média n'est envoyé.**
+- Accueil : « 100 % privé » remplacé par « Local par défaut » (l'IA sur serveur, facultative, envoie la vidéo).
+- Nouveau test `tests/v67.test.mjs` (18 cas, calculs réels). Non fait : retrait automatique des accessoires AR et déformations,
+  restauration de visage, serveur de consentement. Détail : `RAPPORT_TESTS_FINAL.md`.
+
 ## v6.6 (11 nov. 2026) — exports 4K qui ne plantent plus quand l'iPhone manque de mémoire graphique
 - Constat dans les diagnostics reçus (42 exports sur iPhone, 5–10 nov.) : 30 réussis, **12 échoués, tous sur des vidéos 4K**
   (2160×3840 et 2016×3840) : « Encoding task failed » puis « Canvas has no frame » sur chaque nouvel essai. L'iPhone retirait le
