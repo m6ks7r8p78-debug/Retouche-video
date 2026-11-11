@@ -7,3 +7,9 @@ tests/medias/migan.onnx
 tests/medias/edgetam_enc.onnx_data
 tests/medias/edgetam_dec.onnx_data
 __pycache__/
+
+# Médias PRIVÉS du propriétaire : jamais sur le dépôt public
+prive/
+tests/prive/
+*.MOV
+*.mov
