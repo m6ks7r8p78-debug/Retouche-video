@@ -327,3 +327,7 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 - Ce qui n'a PAS marché (gardé pour mémoire) : repérage « à la main » (couleur / contours / comparaison avec la référence) : précision
   2 à 43 % ; recopie de la peau ou du nez depuis la photo sans filtre : moins bon que sans référence.
 - Non-régression : sw 8/8, v67 18/18, visage 12/12, gestionnaire 24/24, studio 11/11, pages 5/5.
+- **Publication v7.0** : code sur `main` (ff141e4, puis relance dec2208). Sauvegarde : branche `sauvegarde-v6.9`. **Mise en ligne NON
+  confirmée** au 11/11 22 h 15 : la publication GitHub Pages a échoué (« job not acquired by Runner », panne côté GitHub, aucune
+  machine attribuée en 15 min), la relance est en file d'attente. Le site sert encore la v6.9. Les échecs du flux « Apps des stores »
+  depuis la v6.7 ont la même cause apparente (15 min puis échec). À vérifier à la reprise : `VER="v7.0"` sur retoucheproai.com.
