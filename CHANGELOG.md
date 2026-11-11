@@ -1,5 +1,16 @@
 # Journal des versions
 
+## v6.6 (11 nov. 2026) — exports 4K qui ne plantent plus quand l'iPhone manque de mémoire graphique
+- Constat dans les diagnostics reçus (42 exports sur iPhone, 5–10 nov.) : 30 réussis, **12 échoués, tous sur des vidéos 4K**
+  (2160×3840 et 2016×3840) : « Encoding task failed » puis « Canvas has no frame » sur chaque nouvel essai. L'iPhone retirait le
+  moteur graphique (mémoire saturée) et l'app ne le récupérait jamais : il fallait la fermer.
+- Le moteur est maintenant récupéré : l'export attend son retour et reprend **à la même image**, sans perte ni image noire
+  (jusqu'à 4 reprises) ; s'il ne revient pas, message clair. L'aperçu se redessine tout seul.
+- Moins de mémoire graphique : les textures de travail ne sont créées que pour les étapes qui tournent vraiment
+  (avant : 5 × 33 Mo d'office pour une vidéo 4K) ; 4 images décodées gardées au lieu de 6 pour les grandes vidéos.
+- Nouveau test `tests/moteur_graphique.test.mjs` : retire le moteur exprès (aperçu, milieu d'export, avant export, sans retour).
+- Rendu inchangé (même calcul, pixels identiques vérifiés par le test).
+
 ## v6.5 (11 nov. 2026) — ouverture instantanée aux visites suivantes, téléphone moins sollicité
 - Hors-ligne repensé (`sw.js`) : l'app s'ouvre depuis le téléphone sans attendre le réseau (avant : chaque fichier était redemandé au
   serveur à chaque ouverture). Chaque version est installée en entier avant d'être utilisée ; une nouvelle version s'installe en

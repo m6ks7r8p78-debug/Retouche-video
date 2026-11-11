@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v6.5";/* seul endroit où changer le numéro de version */
+const VER="v6.6";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -204,7 +204,12 @@ vec3 m0=med3(c0,texture2D(tp,uv).rgb,texture2D(tn,uv).rgb);float d0=mx(abs(c0-m0
 float k=(mov<.5&&near>.5&&cnt<=40.)?smoothstep(thr*.35,thr*.7,d0):0.;
 gl_FragColor=vec4(mix(c0,m0,k),1.);}`;
 const U={},UB={},UD={},UK={},UL={};let progL=null,texL=null,texL2=null;let progK=null,texK=null,progKM=null,texKM=null;const UKM={};let kmW=0,kmH=0;let DUST={on:false,p:null,n:null};let srIn=false,srOrig=null,texO,dustOnly=false;let tex,tex3,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progB;
-if(gl){
+/* v6.6 : la mise en place du moteur graphique est une fonction, rejouée quand l'iPhone rend le moteur après l'avoir retiré
+   (mémoire saturée). Avant, un moteur retiré ne revenait jamais : tous les exports suivants échouaient (« Canvas has no frame »)
+   jusqu'à la fermeture de l'app — mesuré dans les diagnostics : 12 exports sur 42, tous sur des vidéos 4K. */
+const TS=new Map();/* taille actuelle de chaque texture de travail */
+function glInit(){
+  if(!gl)return;TS.clear();fw=fh=0;kmW=kmH=0;
   const mk=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
   const pg=(vs,fs)=>{const g=gl.createProgram();gl.attachShader(g,mk(gl.VERTEX_SHADER,vs));gl.attachShader(g,mk(gl.FRAGMENT_SHADER,fs));gl.bindAttribLocation(g,0,"p");gl.linkProgram(g);return g};
   prog=pg(VS,FS);progB=pg(VSA,FSB);progL=pg(VSA,FSL);progD=pg(VSA,FSD);progK=pg(VSA,FSK);progKM=pg(VSA,FSKM);
@@ -217,7 +222,19 @@ if(gl){
   const loc=(g,o,n)=>n.forEach(k=>{o[k]=gl.getUniformLocation(g,k)});
   loc(progK,UK,["t","tm","px","ph","bs","db"]);loc(progL,UL,["t","px","sc","ca","vg","sig","dk"]);loc(progKM,UKM,["t","px","ph"]);loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex","lf","lrow","lrow2","lmx","lnb","tl","hp","gm"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progD,UD,["t","tp","tn","px","thr"]);
 }
+glInit();
+let glLost=false;
+if(gl){
+  cv.addEventListener("webglcontextlost",e=>{e.preventDefault();/* sans cela, le navigateur ne rend jamais le moteur */glLost=true;try{DIAG.send("gl_perdu",{export:!!exporting})}catch(x){}});
+  cv.addEventListener("webglcontextrestored",()=>{glInit();try{FLT.regl()}catch(e){}glLost=false;if(!exporting)try{draw()}catch(e){}});
+}
+const glPerdu=()=>!!gl&&(glLost||gl.isContextLost());
+/* attend le retour du moteur graphique (au plus ms millisecondes) ; vrai s'il est revenu */
+async function glPret(ms){const t0=performance.now();while(glPerdu()&&performance.now()-t0<ms)await new Promise(r=>setTimeout(r,100));return !glPerdu()}
 function pass(pg,src,dst,w,h,set){
+  /* v6.6 : une texture de travail n'est créée (à la taille de la source) que si l'étape qui l'utilise tourne vraiment ; avant, les cinq
+     l'étaient d'office (5 × 33 Mo de mémoire graphique pour une vidéo 4K, même sans anti-poussière ni caméra virtuelle) */
+  {const z=TS.get(dst);if(!z||z[0]!==w||z[1]!==h){gl.bindTexture(gl.TEXTURE_2D,dst);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);TS.set(dst,[w,h])}}
   gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
   gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,dst,0);
   gl.viewport(0,0,w,h);gl.useProgram(pg);gl.bindTexture(gl.TEXTURE_2D,src);
@@ -233,11 +250,10 @@ function draw(el){
   const [w,h]=dims(s0);
   gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,s0);
-  if(fw!==w||fh!==h){fw=w;fh=h;[[tex3,w,h],[texD,w,h],[texK,w,h],[texL,w,h],[texL2,w,h]].forEach(([x,a,b])=>{gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,a,b,0,gl.RGBA,gl.UNSIGNED_BYTE,null)})}
+  if(fw!==w||fh!==h){fw=w;fh=h;for(const [x,z] of TS)if(x===tex)TS.delete(x);else if(x!==texKM&&(z[0]!==w||z[1]!==h)){gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,null);TS.delete(x)}gl.bindTexture(gl.TEXTURE_2D,tex)}
   let dustSwap=false,dbSwap=false;const tex0=tex;
   if(show&&!srIn&&!dustOnly&&P.db>0&&(exporting||mode!=="video"||v.paused)/* v3.11 : anti-blocs sauté pendant la lecture de l'aperçu (fluidité) ; à l'arrêt et à l'export il est appliqué */&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
     const bw=Math.ceil(w/8)+2,bh=Math.ceil(h/8)+2;
-    if(kmW!==bw||kmH!==bh){kmW=bw;kmH=bh;gl.bindTexture(gl.TEXTURE_2D,texKM);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,bw,bh,0,gl.RGBA,gl.UNSIGNED_BYTE,null)}
     pass(progKM,tex,texKM,bw,bh,()=>{gl.uniform1i(UKM.t,0);gl.uniform2f(UKM.px,1/w,1/h);gl.uniform2f(UKM.ph,DB.ph[0],DB.ph[1])});
     gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,texKM);gl.activeTexture(gl.TEXTURE0);
     pass(progK,tex,texK,w,h,()=>{gl.uniform1i(UK.t,0);gl.uniform1i(UK.tm,5);gl.uniform2f(UK.px,1/w,1/h);gl.uniform2f(UK.bs,bw,bh);gl.uniform2f(UK.ph,DB.ph[0],DB.ph[1]);gl.uniform1f(UK.db,P.db)});const k=tex;tex=texK;texK=k;dbSwap=true}
@@ -988,10 +1004,12 @@ const FLT={sel:-1,sel2:-1,mx:.5,f:1,n:0,tex:null,data:null,
     const img=new Image();img.src=fu;try{await img.decode()}finally{URL.revokeObjectURL(fu)}
     const c=document.createElement("canvas");c.width=img.width;c.height=img.height;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(img,0,0);
     FLT.data=x.getImageData(0,0,c.width,c.height).data;FLT.nb=img.height/17;FLT.n=FLT.nb/2;
-    if(gl){FLT.tex=gl.createTexture();gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,FLT.tex);
-      [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,b])=>gl.texParameteri(gl.TEXTURE_2D,a,b));
-      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,img);gl.activeTexture(gl.TEXTURE0)}
+    FLT.img=img;FLT.regl();
     return true},
+  /* (re)crée la texture des filtres : au chargement, et quand l'iPhone rend le moteur graphique (v6.6) */
+  regl(){if(!gl||!FLT.img||!FLT.data)return;FLT.tex=gl.createTexture();gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,FLT.tex);
+      [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,b])=>gl.texParameteri(gl.TEXTURE_2D,a,b));
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,FLT.img);gl.activeTexture(gl.TEXTURE0)},
   /* même calcul que le shader, sur le processeur (miniatures) */
   px(k,r,g,b){const D=FLT.data,W=289,R=r*16,G=g*16,B=b*16,r0=Math.min(15,Math.floor(R)),g0=Math.min(15,Math.floor(G)),b0=Math.min(15,Math.floor(B)),fr=R-r0,fg=G-g0,fb=B-b0,o=[0,0,0];
     for(let db=0;db<2;db++)for(let dg=0;dg<2;dg++)for(let dr=0;dr<2;dr++){const w=(dr?fr:1-fr)*(dg?fg:1-fg)*(db?fb:1-fb);if(!w)continue;const i=((k*17+g0+dg)*W+(b0+db)*17+r0+dr)*4;o[0]+=w*D[i];o[1]+=w*D[i+1];o[2]+=w*D[i+2]}
@@ -1643,6 +1661,7 @@ async function audioCfg(sr,ch,br){for(const codec of ["mp4a.40.2","opus"]){const
 function friendly(m){
   if(/^IA rapide|Kaggle|rien n’a été envoyé/.test(m))return "Échec : "+m+(/quota/i.test(m)?" (quota gratuit de cartes graphiques Kaggle épuisé pour la semaine : décoche « IA rapide » ou réessaie plus tard)":"");
   if(/encod/i.test(m))return "Échec : l’encodeur de ton iPhone a refusé ce format. Choisis Full HD et réessaie.";
+  if(/moteur graphique/i.test(m))return "Échec : l’iPhone a manqué de mémoire graphique. Ferme les autres apps, ferme puis rouvre RetoucheProAI, et réessaie (Full HD conseillé pour une vidéo 4K).";
   if(/canvas has no frame/i.test(m))return "Échec : une image n’a pas pu être lue. Réessaie, ou choisis Full HD.";
   if(/memory|quota|alloc|mémoire/i.test(m))return "Échec : la mémoire de l’iPhone est saturée. Choisis Full HD, ou traite une partie plus courte.";
   if(/muxer|mp4/i.test(m))return "Échec : le fichier final n’a pas pu être assemblé. Réessaie en Full HD.";
@@ -1663,7 +1682,9 @@ $("#ex").onclick=async()=>{
   let wl=null,err=null;
   try{
     try{wl=await navigator.wakeLock.request("screen")}catch(e){}
-    msg("Préparation… ("+VER+")");OFPS=window.__plan?(window.__planFps||FPS):await measureFps();
+    msg("Préparation… ("+VER+")");
+    if(glPerdu()){msg("Le moteur graphique de l’iPhone redémarre…");if(!(await glPret(8000)))throw new Error("moteur graphique indisponible")}
+    OFPS=window.__plan?(window.__planFps||FPS):await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
@@ -1787,7 +1808,7 @@ $("#ex").onclick=async()=>{
       const L=plan?plan.map(pp=>pp.a):Array.from({length:total},(_,k)=>k+off),ns=[.08,.2,.32,.44,.56,.68,.8,.92].map(f=>L[Math.min(L.length-1,Math.floor(f*L.length))]);
       try{await SRX.caler(ns,OFPS)}catch(e){if(cancel)throw e;throw new Error("IA rapide : "+((e&&e.message)||e)+". Rien n’est perdu : décoche « Qualité IA » pour l’améliorer sans IA.")}}
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
-    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();
+    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();let glN=0;window.__glN=0;
     for(let i=0;i<total;i++){
       if(cancel||err)break;
       const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
@@ -1829,8 +1850,12 @@ $("#ex").onclick=async()=>{
       let f=null,p1=performance.now();
       try{
         const p0=performance.now();{const M=!SRX.remote?null:rdr?z=>rdr.map(z):SRX.mapr?z=>SRX.rang(z):null;SRX.idx=!M?-1:pl.b==null?M(pl.a):{a:M(pl.a),b:M(pl.b),w:pl.w,fl:fcache&&fcache.j===pl.j?fcache.fl:null}}if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
-        if(rdr)f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
+        if(glPerdu())throw new Error("Canvas has no frame (moteur graphique retiré)");
+        f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       }catch(e){
+        /* v6.6 : l'iPhone a retiré le moteur graphique (mémoire) : on attend qu'il le rende et on refait CETTE image, sans rien perdre */
+        if(glPerdu()&&!cancel){glN++;if(glN>4||!(await glPret(12000)))throw new Error("moteur graphique indisponible");
+          msg("Mémoire graphique de l’iPhone saturée : reprise à l’image "+(i+1)+"…");q-=pl.b!=null?2:1;i--;continue}
         if(!rdr||SRX.remote)throw e;
         window.__seqInfo="seq abandon image "+((e&&e.message)||e);rdr.close();rdr=null;
         q=0;for(let z=0;z<i;z++){q+=plan&&plan[z].b!=null?2:1}
@@ -1838,12 +1863,11 @@ $("#ex").onclick=async()=>{
         i--;continue;
       }
       if(SRX.remoteErr){err=new Error("IA rapide : "+((SRX.remoteErr&&SRX.remoteErr.message)||"image du serveur illisible")+". Rien n’est perdu : relance l’export.");break}
-      const d0=performance.now();tVF+=d0-p1;
+      window.__glN=glN;const d0=performance.now();tVF+=d0-p1;
       if(!plan&&i<150){tx.drawImage(src,0,0,24,18);const td=tx.getImageData(0,0,24,18).data;
         if(prevT){let sm=true;for(let z=0;z<td.length;z++){if(td[z]!==prevT[z]){sm=false;break}}if(sm){dup++;run++;if(run>maxRun)maxRun=run}else run=0}
         prevT=td}
       tDu+=performance.now()-d0;
-      if(!f)f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
       const e0=performance.now();enc.encode(f,{keyFrame:i%60===0});f.close();tEn+=performance.now()-e0;if(!rdr&&qa>=0){go(qa+POOL);if(qb>=0)go(qb+POOL)}
       const t2=performance.now();tD+=t2-t1;
       while(enc.encodeQueueSize>6)await wait(8);
@@ -1896,7 +1920,7 @@ $("#ex").onclick=async()=>{
         $("#orep_s").textContent=nb?"Compte rendu de l’export : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu de l’export : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro;window.__retried4k=false}catch(e){}
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
       try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)]}))}catch(e){}
-      try{DIAG.send("export",{ok:true,codec:cfg.codec,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,msg:$("#st1").textContent.slice(0,400)})}catch(e){}
+      try{DIAG.send("export",{ok:true,codec:cfg.codec,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,...(window.__glN?{gl_reprises:window.__glN}:{}),msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
   }catch(e){
@@ -2571,7 +2595,8 @@ class SeqReader{
       if(performance.now()-t0>20000)throw new Error("décodage trop lent");
     }
     const fr=this.frames.get(idx),i=this.i;
-    let c,ent;if(this.cache.length<6){c=document.createElement("canvas");c.width=i.dw;c.height=i.dh;c.__x=c.getContext("2d")}else{ent=this.cache.shift();c=ent.c}
+    /* v6.6 : 4 images gardées (au lieu de 6) pour les grandes vidéos : l'export n'en regarde jamais plus de 3 à la fois (précédente, courante, suivante) */
+    let c,ent;if(this.cache.length<(i.dw*i.dh>4e6?4:6)){c=document.createElement("canvas");c.width=i.dw;c.height=i.dh;c.__x=c.getContext("2d")}else{ent=this.cache.shift();c=ent.c}
     const x=c.__x;x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);x.setTransform(...i.mat);x.drawImage(fr,0,0,i.W,i.H);x.setTransform(1,0,0,1,0,0);
     this.cache.push({r:idx,c});return c;
   }
@@ -2805,7 +2830,7 @@ function syncModels(){
 MODELS.subscribe(syncModels);syncModels();
 /* son (RNNoise) et filtres : déclarés au gestionnaire pour l'état et la libération de mémoire */
 MODELS.register("voix",{loaded:()=>!!rnnMod,busy:()=>exporting,unload:()=>{rnnMod=null}});
-MODELS.register("filtres",{loaded:()=>!!FLT.data,busy:()=>FLT.sel>=0,unload:()=>{if(FLT.sel>=0)return;try{if(FLT.tex&&gl)gl.deleteTexture(FLT.tex)}catch(e){}FLT.tex=null;FLT.data=null}});
+MODELS.register("filtres",{loaded:()=>!!FLT.data,busy:()=>FLT.sel>=0,unload:()=>{if(FLT.sel>=0)return;try{if(FLT.tex&&gl)gl.deleteTexture(FLT.tex)}catch(e){}FLT.tex=null;FLT.data=null;FLT.img=null}});
 /* ===== Lot de vidéos ===== */
 $("#exall").onclick=async()=>{
   if(!batch||batch.running||exporting)return;
