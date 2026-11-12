@@ -66,7 +66,7 @@ var MODELS = (() => {
       moteur: "ONNX Runtime Web 1.22.0 (WebAssembly)",
       url: "modeles/lourds/detecteur_ajouts_v3.onnx",
       integre: false, taille: 1550382,
-      sha256: "287b8a18fb9de1cce158927a99639475716d21899a7af00a340d4a1ce7fe92bd",
+      sha256: "364067c133109879e2d13148a99e5e80c872fcaf428b5c67f1a24bc8458af018",
       licence: "RetoucheProAI (entraîné par nous : portraits du domaine public, éléments simulés, et clips filtrés du propriétaire fournis avec son accord — les clips ne sont pas distribués)",
       source: "tests/labo_filtres/", lourd: false,
       memoire: "≈ 30 Mo pendant le calcul",
