@@ -8,9 +8,10 @@ ICI = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, ICI)
 sys.argv_sauf = sys.argv[:]; ap = argparse.ArgumentParser()
 ap.add_argument('--prive', action='append', default=[]); ap.add_argument('--val', default=''); ap.add_argument('--pas', type=int, default=3000)
 ap.add_argument('--publics', type=int, default=1600); ap.add_argument('--sortie', default='detecteur_ajouts_v3'); ap.add_argument('--sans', default='')
-ap.add_argument('--init', default=os.path.join(ICI, 'detecteur_ajouts_v2.pt')); ap.add_argument('--cache', default=''); ap.add_argument('--pos', type=float, default=1.5); args = ap.parse_args()
+ap.add_argument('--init', default=os.path.join(ICI, 'detecteur_ajouts_v2.pt')); ap.add_argument('--cache', default=''); ap.add_argument('--pos', type=float, default=1.5); ap.add_argument('--nasa', default=''); args = ap.parse_args()
 sys.argv = [sys.argv[0], '--donnees', str(args.publics)]
 import entrainer_ajouts as E   # réutilise cadrage, générateur v2, architecture
+if args.nasa: E.args.extra = args.nasa   # visages NASA (domaine public) ajoutés aux visages du labo
 S = 192; torch.set_num_threads(os.cpu_count() or 2); r = np.random.default_rng(11)
 
 def charger(fs):
@@ -43,7 +44,7 @@ if __name__ == '__main__':
     Xr, Yr, Gr = charger(args.prive)
     if args.sans:   # élément tenu à l'écart (test « type jamais vu »)
         k = np.array([args.sans not in g for g in Gr]); Xr, Yr, Gr = Xr[k], Yr[k], Gr[k]
-    neg = np.where(Gr == 'aucun')[0]; pos = np.where(Gr != 'aucun')[0]
+    neg = np.where(Gr == 'aucun')[0]; pos = np.where(Gr != 'aucun')[0]; vides_p = np.where(Yp.reshape(len(Yp), -1).max(1) == 0)[0]
     print('réels :', len(neg), 'sans élément,', len(pos), 'avec élément', sorted(set(Gr[pos].tolist())), flush=True)
     Xv, Yv, Gv = charger([args.val]) if args.val else (None, None, None)
     net = E.Detecteur(); net.load_state_dict(torch.load(args.init)); net.train()
@@ -61,7 +62,7 @@ if __name__ == '__main__':
             elif u < .7: j = neg[r.integers(len(neg))]; X[i], Y[i] = bruiter(Xr[j]), 0
             elif u < .83 and len(pos): j = pos[r.integers(len(pos))]; X[i], Y[i] = bruiter(Xr[j]), Yr[j]
             elif len(pos):
-                j = pos[r.integers(len(pos))]; fond = Xr[neg[r.integers(len(neg))]] if r.random() < .6 else Xp[r.integers(len(Xp))]
+                j = pos[r.integers(len(pos))]; fond = Xr[neg[r.integers(len(neg))]] if r.random() < .4 else Xp[vides_p[r.integers(len(vides_p))]]
                 x, y = recoller(fond, Xr[j], Yr[j]); X[i], Y[i] = bruiter(x), y
             if r.random() < .5: X[i] = X[i][:, ::-1]; Y[i] = Y[i][:, ::-1]
         return torch.from_numpy(X).permute(0, 3, 1, 2).float(), torch.from_numpy(Y).float()[:, None]
