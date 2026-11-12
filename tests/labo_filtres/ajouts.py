@@ -14,7 +14,7 @@ def _ell(shape, c, ax, ang):
 def _trait(shape, pts, ep):
     m = np.zeros(shape, np.float32); cv2.polylines(m, [np.round(pts * 8).astype(np.int32)], False, 1, max(1, int(ep)), cv2.LINE_AA, shift=3); return m
 
-def poser(img, P, r, n=None):
+def poser(img, P, r, n=None, exclus=()):
     """Pose 1 à 4 éléments au hasard sur le visage (repères P, 478 points). Renvoie image, masque (0..1)."""
     import noyau as N
     o, ux, uy, io = N.repere_visage(P); h, w = img.shape[:2]; sh = (h, w); ang = float(np.degrees(np.arctan2(ux[1], ux[0])))
@@ -31,7 +31,8 @@ def poser(img, P, r, n=None):
             col = col * (1 + r.uniform(-.25, .25) * np.clip(t - t[m > .5].mean() if (m > .5).any() else t, -1.5, 1.5))[..., None]
         out = out * (1 - m[..., None]) + np.clip(col, 0, 255) * m[..., None]; masq = np.maximum(masq, m)
     nez = P[4]; types = ['museau', 'moustaches', 'oreilles', 'lunettes', 'autocollant', 'langue', 'nez_clown', 'couronne', 'paillettes', 'masque_yeux']
-    for t in r.choice(types, size=n or r.integers(1, 5), replace=False, p=[.18, .16, .14, .1, .1, .06, .06, .08, .05, .07]):
+    pr = np.array([.18, .16, .14, .1, .1, .06, .06, .08, .05, .07]) * np.array([t not in exclus for t in types]); pr /= pr.sum()
+    for t in r.choice(types, size=n or r.integers(1, 5), replace=False, p=pr):
         if t == 'museau':
             c = nez + uy * io * r.uniform(-.05, .08); ax = (io * r.uniform(.2, .45), io * r.uniform(.14, .3)); mettre(_ell(sh, c, ax, ang), _coul(r))
             if r.random() < .6: mettre(_ell(sh, c - uy * ax[1] * .4 - ux * ax[0] * .3, (ax[0] * .2, ax[1] * .18), ang), np.array([230, 235, 240.]), grad=False, ombre=False)
