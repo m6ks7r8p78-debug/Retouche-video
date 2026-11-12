@@ -15,7 +15,7 @@ if args.nasa: E.args.extra = args.nasa   # visages NASA (domaine public) ajouté
 if args.nouveaux:   # v7.2 : nouveaux filtres (60 %) + anciens sans monture fine (40 %)
     import ajouts as A_, filtres_nouveaux as FN
     _ancien = A_.poser
-    def _mix(x, P, r_):
+    def _mix(x, P, r_, **kw):
         return FN.poser_nouveaux(x, P, r_) if r_.random() < .6 else _ancien(x, P, r_, exclus=('lunettes',))
     E.A.poser = _mix
 S = 192; torch.set_num_threads(os.cpu_count() or 2); r = np.random.default_rng(11)

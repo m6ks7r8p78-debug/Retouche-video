@@ -8,6 +8,7 @@
 # Le « crâne chauve » n'est PAS généré (il apprend à signaler les vrais crânes chauves). Chaque élément garde son masque exact.
 import os, glob, cv2, numpy as np
 import ajouts as A
+_POSER_V2 = A.poser   # référence figée : l'entraînement peut remplacer A.poser par un mélange
 from ajouts import _aa, _coul, _poly, _ell, _trait
 
 MOTS = ['cute', 'love', 'mood:', 'baby', 'xoxo', 'angel', 'sad', 'cool', 'vibes', 'slay', 'queen', 'ok', 'lol', '<3', 'hey', 'sweet',
@@ -133,7 +134,7 @@ def poser_nouveaux(img, P, r, n=None):
             mettre(_poly(sh, pts), c, grad=.3, ombre=True)
             if r.random() < .5: fleur(a + ux * io * r.choice([-1, 1]) * .8, io * .25)
         elif t == 'anciens':   # un élément du générateur v2, sauf les lunettes à monture fine
-            o2, m2 = A.poser(out.clip(0, 255).astype(np.uint8), P, r, n=1, exclus=('lunettes',))
+            o2, m2 = _POSER_V2(out.clip(0, 255).astype(np.uint8), P, r, n=1, exclus=('lunettes',))
             out = o2.astype(np.float32); masq = np.maximum(masq, m2)
     return np.clip(out, 0, 255).astype(np.uint8), np.clip(masq, 0, 1)
 
