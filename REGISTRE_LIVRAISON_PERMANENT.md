@@ -411,3 +411,8 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 - Tests exécutés (Chrome sans écran, 390–1440 px) : `app` **12/12** (v7.1 : 11/12) dont exports 4K paysage/portrait, 1080p, 720p, origine vérifiés avec ffprobe ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Aucun test sur iPhone.
 - Sauvegarde : branche `sauvegarde-v7.1` (les tags sont refusés par le relais).
 - 12/11 : **v7.2 confirmée en ligne** sur retoucheproai.com (`VER="v7.2"`, `atelier.js` servi, nouvelle composition présente). Sauvegarde : branche `sauvegarde-v7.1`.
+
+### Historique — v7.3 (12/11/2026)
+- F31 : les 3 outils plein écran (effacer, filtre, visages) reprennent le système du studio. Aucun changement de calcul.
+- Tests : `rvis` 20/20 ; `dfv` 23/11 (identique à v7.0/v7.1 : les 11 échecs sont des seuils de qualité du détecteur sur le banc simulé, pas l'écran) ;
+  `visage` 12/12 ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Sauvegarde : branche `sauvegarde-v7.2`.
