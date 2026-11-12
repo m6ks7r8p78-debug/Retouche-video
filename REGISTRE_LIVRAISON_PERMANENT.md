@@ -379,3 +379,4 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 - Ce qui n'a pas marché (gardé pour mémoire) : apprendre le « crâne chauve » (signale les vrais crânes) ; filtre par photo de
   référence ; seuil/taille seuls (ne suppriment pas les faux « sûrs d'eux » : ongles, cigarette).
 
+- 12/11 : **v7.1 confirmée en ligne** sur retoucheproai.com (`VER="v7.1"`, détecteur v3 et fichiers « mains » servis).
