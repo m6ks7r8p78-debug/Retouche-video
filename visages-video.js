@@ -1,4 +1,4 @@
-/* RetoucheProAI v7.4 — RVV : restauration des visages EN VIDÉO, cohérente d'une image à l'autre (F14, essai).
+/* RetoucheProAI v7.4–v7.5 — RVV : restauration des visages EN VIDÉO, cohérente d'une image à l'autre (F14, essai).
    Méthode choisie sur mesures (tests/visage_ia/banc_video.py, 4 portraits × 24 images, vérité connue) :
      « H3 » — le visage est suivi image par image (YuNet), ses repères sont lissés dans le temps (régression locale d'ordre 2 sur
      7 images : suit le mouvement, retire la tremblote) ; une image sur K est restaurée par GFPGAN après fusion avec ses voisines
@@ -74,7 +74,21 @@ var RVV = (() => {
     if (!cles.size) { S = { n, W, H, K, M, seg, cles: new Map(), visages: 0 }; return resume(t0) }
     const sess = await RVIS.charger(f => P("Téléchargement du modèle de visage (86 Mo, une seule fois)…", .1 + .05 * f));
     /* c. deuxième lecture : visages alignés gardés sur une fenêtre de 5 images ; fusion puis GFPGAN pour chaque clé */
-    const fen = new Map(), mins = new Map(), out = new Map(), net = []; let fait = 0; r = await ouvrir();
+    const fen = new Map(), mins = new Map(), out = new Map(), net = [], bas = new Array(n).fill(null); let fait = 0; r = await ouvrir();
+    /* v7.5 : correction des basses fréquences par la fusion des voisines (mesuré : scintillement 5,11 → 4,89 sur la vidéo de test).
+       Δ = flou(moyenne pondérée des voisines − image), en 64×64, gardé pour chaque image et ajouté à l'export. */
+    const delta = t => {
+      const m0 = mins.get(t), acc = new Float32Array(m0.length); let ws = 0;
+      for (let s = t - 2; s <= t + 2; s++) { if (!mins.has(s) || seg[s] !== seg[t]) continue; const w = poids(m0, mins.get(s), s === t), ms = mins.get(s); ws += w; for (let j = 0; j < acc.length; j++) acc[j] += w * ms[j] }
+      const o = new Int8Array(m0.length), a = new Float32Array(4096), b = new Float32Array(4096);
+      for (let c = 0; c < 3; c++) { for (let j = 0; j < 4096; j++) a[j] = acc[3 * j + c] / ws - m0[3 * j + c];
+        for (let pss = 0; pss < 3; pss++) {   /* flou boîte rayon 3 ×3 en 64×64 ≈ σ 24 en 512 */
+          for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) { let q = 0; for (let u = -3; u <= 3; u++) q += a[y * 64 + Math.min(63, Math.max(0, x + u))]; b[y * 64 + x] = q / 7 }
+          for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) { let q = 0; for (let u = -3; u <= 3; u++) q += b[Math.min(63, Math.max(0, y + u)) * 64 + x]; a[y * 64 + x] = q / 7 } }
+        for (let j = 0; j < 4096; j++) o[3 * j + c] = Math.max(-127, Math.min(127, Math.round(4 * a[j]))) }
+      bas[t] = o;
+    };
+    const finir = async t => { if (t < 0 || t >= n || !M[t] || !mins.has(t)) return; delta(t); if (cles.has(t)) await traiter(t) };
     const traiter = async k => {
       const d = fen.get(k); let fu = new Float32Array(Q * 3), ws = 0;
       for (let s = k - 2; s <= k + 2; s++) { if (!fen.has(s) || seg[s] !== seg[k]) continue; const w = poids(mins.get(k), mins.get(s), s === k), ds = fen.get(s); ws += w; for (let j = 0, i = 0; j < Q; j++, i += 4) { fu[3 * j] += w * ds[i]; fu[3 * j + 1] += w * ds[i + 1]; fu[3 * j + 2] += w * ds[i + 2] } }
@@ -96,14 +110,13 @@ var RVV = (() => {
     };
     try {
       for (let i = 0; i < n; i++) {
-        stop(); const besoin = [...cles].some(k => Math.abs(k - i) <= 2 && seg[k] === seg[i]);
-        if (M[i] && besoin) { const im = await r.need(i); const d = aligner(im, M[i]); fen.set(i, d); mins.set(i, mini(d)) }
-        const k = i - 2; if (k >= 0 && cles.has(k)) await traiter(k);
+        stop(); if (M[i]) { const im = await r.need(i); const d = aligner(im, M[i]); fen.set(i, d); mins.set(i, mini(d)) }
+        await finir(i - 2);
         for (const z of [...fen.keys()]) if (z < i - 4) { fen.delete(z); mins.delete(z) }
       }
-      for (let k = Math.max(0, n - 2); k < n; k++) if (cles.has(k) && !out.has(k) && fen.has(k)) await traiter(k);
+      await finir(n - 2); await finir(n - 1);
     } finally { try { r.close() } catch (e) {} }
-    S = { n, W, H, K, M, seg, cles: out, nettetes: net, visages: M.filter(Boolean).length };
+    S = { n, W, H, K, M, seg, cles: out, bas, nettetes: net, visages: M.filter(Boolean).length };
     return resume(t0);
   }
   function resume(t0) {
@@ -124,7 +137,12 @@ var RVV = (() => {
     if (!oc || oc.width !== w || oc.height !== h) { oc = toile(w, h); fc = toile(N, N) }
     const ox = oc.getContext("2d", { willReadFrequently: true }); ox.setTransform(1, 0, 0, 1, 0, 0); ox.drawImage(sortie, 0, 0);
     const m = S.M[i], Mo = [m[0] / sx, m[1] / sx, m[2], m[3]], d = aligner(oc, Mo), P = plans(d), img = new ImageData(N, N), q = img.data;
-    for (let c = 0; c < 3; c++) { const lp = flou(P[c], SIGMA_R); for (let j = 0; j < Q; j++) q[4 * j + c] = lp[j] + 2 * ((1 - u) * A[c * Q + j] + u * B[c * Q + j]) }
+    const D = S.bas && S.bas[i];
+    for (let c = 0; c < 3; c++) { const lp = flou(P[c], SIGMA_R);
+      if (D) for (let y = 0; y < N; y++) { const v = Math.min(63, Math.max(0, (y + .5) / 8 - .5)), y0 = Math.floor(v), y1 = Math.min(63, y0 + 1), fy = v - y0;
+        for (let x = 0; x < N; x++) { const w0 = Math.min(63, Math.max(0, (x + .5) / 8 - .5)), x0 = Math.floor(w0), x1 = Math.min(63, x0 + 1), fx = w0 - x0;
+          lp[y * N + x] += .25 * ((1 - fy) * ((1 - fx) * D[(y0 * 64 + x0) * 3 + c] + fx * D[(y0 * 64 + x1) * 3 + c]) + fy * ((1 - fx) * D[(y1 * 64 + x0) * 3 + c] + fx * D[(y1 * 64 + x1) * 3 + c])) } }
+      for (let j = 0; j < Q; j++) q[4 * j + c] = lp[j] + 2 * ((1 - u) * A[c * Q + j] + u * B[c * Q + j]) }
     for (let j = 0; j < Q; j++) q[4 * j + 3] = Math.round(255 * ALPHA[j]);
     fc.getContext("2d").putImageData(img, 0, 0);
     const d0 = m[0] / sx, d1 = m[1] / sx, dd = d0 * d0 + d1 * d1, ia = d0 / dd, ib = -d1 / dd;

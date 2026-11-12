@@ -1,5 +1,14 @@
 # Journal des versions
 
+## v7.5 (12 nov. 2026) — retirer un filtre du visage en vidéo (essai)
+- Nouvelle case « Retirer le filtre du visage (IA, essai) » à l'export vidéo (mode expert) : museau, oreilles, autocollants… sont
+  retirés sur toute la vidéo avec UNE seule reconstruction qui suit la tête, au lieu d'une reconstruction différente à chaque image.
+  Mesuré sur vidéos de test à vérité connue (filtres simulés) : zone 2,5 fois plus proche de la vraie vidéo, et scintillement
+  divisé par 2,6 par rapport à l'outil photo appliqué image par image (qui, lui, scintille plus que la vidéo d'origine).
+- Suivi du visage plus précis : chaque image est recalée finement sur la première (le repérage seul se trompait de plusieurs degrés).
+- Les deux options vidéo se combinent : le filtre est retiré, puis les visages sont restaurés sur l'image nettoyée.
+- Visages en vidéo : image encore plus stable (correction de lumière par les images voisines).
+
 ## v7.4 (12 nov. 2026) — visages restaurés en vidéo (essai)
 - Nouvelle case « Restaurer les visages (IA, essai) » à l'export vidéo (mode expert) : le visage est suivi, une image sur 3 est
   restaurée par l'IA après fusion avec ses voisines, et les détails sont reportés sur toutes les images en suivant le visage.

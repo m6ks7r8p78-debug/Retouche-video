@@ -12,7 +12,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 
 ---
 
-## Tableau de bord (à jour : v7.2, 12/11/2026)
+## Tableau de bord (à jour : v7.5, 12/11/2026)
 
 | | Fonctions |
 |---|---|
@@ -25,7 +25,8 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 | **Nouveau v7.2** | **F31 studio (refonte de la composition)** : INTÉGRÉ, testé dans Chrome (10 tests `tests/atelier.test.mjs` + suites existantes) ; non validé sur iPhone ; remplace F28 |
 | **Nouveau v7.1** | **F30 retirer les éléments d'un filtre AR (photo)** : VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS (74 vrais clips Snapchat du propriétaire, validation croisée par vidéo ; une seule personne) + veto « mains » · **F11 proportions (réglage guidé)** : INTÉGRÉ ; correction automatique mesurée inutile sur vrais filtres |
 | **Prototypes (labo, non intégrés à l'app)** | F29 recopie / référence (référence sans effet mesurable sur les faux repérages réels) · F12 lissage / maquillage : mesurés sur vraies paires, **pas mieux que ne rien faire** |
-| **Non commencées** | F10 effacement AR en vidéo |
+| **Non commencées** | aucune des fonctions F01–F31 |
+| **Nouveau v7.5** | **F10 retrait de filtre AR en vidéo** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (banc 6 séquences + export de bout en bout dans l'app) ; non validé sur vrais filtres ni sur iPhone · F09 suivi : INTÉGRÉ (utilisé par F10 et F14, complété par un recalage fin) |
 | **Nouveau v7.4** | **F14 visages en vidéo** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (banc 4 portraits + export de bout en bout dans l'app) ; non validé sur iPhone |
 | **Laboratoire** | F15 : EN DÉVELOPPEMENT (+ v7.1 : 74 vrais clips Snapchat privés avec vérité terrain, 359 visages NASA, validation croisée par vidéo) |
 | **Bloquées (dépendance externe)** | F23 serveur de consentement (déploiement + juriste) · F24 collecte pour l'entraînement (juriste) · **F13 en usage commercial** (décision juridique sur la licence des poids) |
@@ -142,10 +143,42 @@ Statut : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (`tests/visage.test.mjs` 12/12, acce
 vrais filtres. Fichiers : `visage.js`, `effacer.js`.
 
 ### F09 — Suivi vidéo du visage et report de masque · priorité 1
-Statut : PROTOTYPE (calculé et testé, relié à rien). Fichier : `visage.js`. Sert de base à F10 et F14.
+Statut : INTÉGRÉ (v7.5 ; ancien : PROTOTYPE). Utilisé par F10 et F14. **Constat mesuré en v7.5** : les 5 repères YuNet, même lissés,
+se trompent de plusieurs degrés et de quelques % d'échelle d'une image à l'autre (ex. rotation −5,5° pour −2,4° réels) ; un recalage
+fin image contre image (similitude, Gauss-Newton, 3 échelles, `filtre-video.js` → `recaler`) corrige cette erreur (test : rotation 3°,
+zoom 4 %, décalage 6/−4 px retrouvés à 0,05 px près). Reste : l'appliquer aussi à F14.
 
-### F10 — Effacement des accessoires AR en vidéo · priorité 1
-Statut : NON COMMENCÉ (la reconstruction image par image n'existe pas). Prérequis : F09 ✔, MI-GAN ✔.
+### F10 — Retrait des éléments de filtre AR en vidéo (reconstruction stable dans le temps) · priorité 1
+- **Statut** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (v7.5). Non validé sur de vrais filtres Snapchat/Instagram en vidéo (les 74 clips privés
+  du propriétaire ne sont pas dans cet environnement), ni sur iPhone. Usage commercial : même réserve de licence que F13 (GFPGAN).
+- **Implémenté** : case « Retirer le filtre du visage (IA, essai) » à l'export vidéo (mode expert). `filtre-video.js` : suivi du visage
+  (YuNet, repères lissés) ; tout se passe dans le repère de la tête (384×384, cadrage du détecteur) ; recalage fin de chaque image sur
+  la première image de la section ; carte du détecteur v3 moyennée sur 5 images → zone stable ; UNE reconstruction par section
+  (MI-GAN puis GFPGAN sur l'union des zones), reportée sur chaque image, lumière raccordée sur le pourtour (convolution normalisée,
+  3 échelles) ; veto « mains » une fois par section ; nouvelle section si la tête sort des bornes du recalage (±12 %, ±8,6°, 8 %).
+  Avec « Restaurer les visages » : le filtre est retiré d'abord, les visages sont restaurés sur l'image nettoyée.
+- **Choix de la méthode — mesures** (`tests/labo_filtres/banc_video.py`, 3 personnes NASA jamais vues par le détecteur × 2 filtres
+  simulés (chien, hasard) × 24 images à 30 i/s, mouvement connu, bruit et compression par image ; moyennes) :
+
+  | Méthode | Rappel / précision de la zone | Instabilité de la zone | Écart à la vraie vidéo dans la zone | Scintillement | LPIPS tête | MI-GAN + GFPGAN |
+  |---|---|---|---|---|---|---|
+  | sans rien | — | — | 46,8 | 4,67 | 0,084 | 0 |
+  | A outil photo sur chaque image | 98,6 % / 71 % | 0,077 | 21,2 | **7,80** (pire que sans rien) | 0,031 | 24 + 24 |
+  | V sans recalage fin | 98 % / 70 % | 0,064 | 19,8 | 5,00 | 0,028 | 1 + 1 |
+  | **V retenue** (recalage fin) | 98,7 % / 72 % | **0,038** | **18,2** | **2,98** | **0,025** | **1 + 1** |
+  | VU (zone identique sur toute la section) | 98,5 % / 66 % | 0,041 | 18,6 | 3,34 | 0,027 | 1 + 1 (écartée : efface plus, sans gain) |
+  | borne : suivi parfait (repères vrais), 1 cas | — | 0,041 | 25,2 (cas p08 chien : 24,7 pour V) | 3,07 (3,03 pour V) | — | — |
+- **De bout en bout dans l'app** (`tests/rfv.test.mjs` 6/6, Chromium, vrais modèles ; vidéo de test 36 images) : export sans l'option
+  écart 46,6 / scintillement 4,38 / LPIPS 0,111 → **avec** 22,9 / 3,11 / 0,067 ; 1 section, 147 s de pré-calcul (36 images, ordinateur).
+  Moteur seul sur les images brutes : 21,7 / 2,85 / 0,032. Vidéo sans filtre : rien n'est modifié.
+- **Limites** : le détecteur manque les traits fins (moustaches) → restes visibles (défaut de F30, pas de la vidéo) ; ce qui bouge
+  SOUS le filtre (bouche sous un museau) est remplacé par une reconstruction fixe ; tête qui tourne beaucoup → nouvelle section
+  (changement brusque de reconstruction, pas de fondu) ; reconstruction en 384 px (floue si la tête est très grande ou en 4K) ;
+  visage le plus grand seulement ; déformations, lissage, maquillage : non traités.
+- **Critère de fin** : mesure sur ≥ 10 vrais clips filtrés autorisés (vérité : clip sans filtre du propriétaire) ; iPhone : 10 s de
+  vidéo sans fermeture d'onglet, temps noté ; fondu entre sections ; avis du propriétaire.
+- **Protocole iPhone (5 min)** : Mode expert → importer une courte vidéo avec filtre → Réglages → cocher « Retirer le filtre du visage »
+  → Améliorer → noter le temps et si le visage reconstruit reste stable quand la tête bouge.
 
 ### F11 — Déformations du visage (yeux agrandis, nez, bouche, joues) · priorité 1
 Statut : NON COMMENCÉ. Difficulté : aucune image de référence ; piste : repères denses + modèle de proportions moyennes, mesuré sur
@@ -183,6 +216,10 @@ lissé — à mesurer sur le laboratoire F15.
   Même moteur sur les images brutes (sans l'amélioration classique) : 0,167 / 27,78 / 5,11 ; référence Python H3 sur la même
   entrée : 0,148 / 27,69 / 4,89 — écart restant attribué au repérage (YuNet en 640 avec bandes) et à l'arrondi du rééchantillonnage
   du navigateur ; à réduire. L'export « taille d'origine » de l'app perd une partie du gain (amélioration classique + compression).
+- **v7.5** : correction des basses fréquences par la fusion des voisines ajoutée (scintillement du moteur 5,09 → 4,88 = référence
+  Python 4,89). Écart LPIPS restant moteur 0,164 / référence 0,148 **expliqué** : le navigateur filtre correctement quand il recolle
+  un visage minuscule (≈ 75 px ici), la référence Python replie les détails (bilinéaire sans filtre) ; avec un recollage filtré, la
+  référence tombe à 0,180. Ni les repères (0,147 avec ceux de l'app) ni l'alignement ne sont en cause. Critère « < 0,01 » retiré.
 - **Limites** : visage le plus grand seulement ; pas de changement d'expression dans le banc ; très long sur iPhone (≈ 20–40 s par
   image clé estimés, non mesurés : ≈ 4 à 8 min pour 10 s de vidéo) ; mémoire ≈ 0,8 Mo par clé.
 - **Critère de fin** : mesure iPhone (temps par clé, pas de fermeture d'onglet) sur 10 s ; avis du propriétaire sur 3 vraies vidéos ;
@@ -459,3 +496,11 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 - Non-régression : `app` (Full HD, taille d'origine, compte rendu) 3/3 ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8.
 - Tests Chromium : les drapeaux `--enable-unsafe-swiftshader` font planter l'export vidéo (onglet fermé) ; utiliser ceux d'`app.test.mjs`.
 - 12/11 : **v7.4 confirmée en ligne** (`VER="v7.4"`, `visages-video.js` servi). Sauvegarde : branche `sauvegarde-v7.3`.
+
+### Historique — v7.5 (12/11/2026)
+- F10 : NON COMMENCÉ → VALIDÉ SUR DONNÉES SYNTHÉTIQUES (`filtre-video.js`, case d'export, `tests/labo_filtres/banc_video.py`,
+  `tests/labo_filtres/video_filtre.py`, `tests/rfv.test.mjs` 6/6). F09 : PROTOTYPE → INTÉGRÉ. F14 : scintillement aligné sur la référence.
+- Ce qui n'a pas marché (gardé pour mémoire) : l'outil photo appliqué à chaque image scintille plus que la vidéo d'origine (7,8 contre
+  4,7) ; le suivi YuNet seul (5,0) ; zone fixe par section (VU) ; bornes de recalage serrées (±5 %) : 4 sections pour 36 images.
+- Non-régression v7.5 : `rvv` 5/5 (visage 0,249 → 0,195 LPIPS dans l'app) ; `dfv` 23/11 (identique à v7.0–v7.3) ; `app` (Full HD, origine,
+  compte rendu) 3/3 ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Aucun test sur iPhone.

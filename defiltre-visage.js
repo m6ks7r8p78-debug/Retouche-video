@@ -238,5 +238,10 @@ var DFV = (() => {
     if (typeof shareBlob === "function") return shareBlob(b, typeof uniqName === "function" ? uniqName(n, "jpg") : n + ".jpg");
     const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = n + ".jpg"; a.click();
   }
-  return { retirer, deformer, ouvrir, fermer, charger, liberer, cadrage, repere, R, ID };
+  /* v7.5 : carte brute du détecteur pour un cadrage 192×192 déjà fait (RGBA) — sert au retrait de filtre en vidéo (filtre-video.js) */
+  async function logits(d) {
+    const n = S * S, t = new Float32Array(3 * n); for (let j = 0, i = 0; j < n; j++, i += 4) { t[j] = d[i + 2]; t[n + j] = d[i + 1]; t[2 * n + j] = d[i] }
+    const s = await charger(); enCours++; try { return Float32Array.from((await s.run({ image: new ort.Tensor("float32", t, [1, 3, S, S]) })).logit.data) } finally { enCours-- }
+  }
+  return { retirer, deformer, ouvrir, fermer, charger, liberer, cadrage, repere, logits, R, ID, _t: { nettoyer, dilater, flouZone } };
 })();

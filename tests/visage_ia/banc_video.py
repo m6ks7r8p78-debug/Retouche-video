@@ -10,6 +10,7 @@
 #   C  images clés + report des détails : GFPGAN 1 image sur K, les détails restaurés (restauré − entrée, dans le repère du visage)
 #      sont reportés sur les images intermédiaires en suivant le visage, avec fondu entre deux clés
 #   R  comme D mais au fil de l'export (rien de l'avenir) : fondu de la clé précédente vers la clé courante (« R3 » = clé toutes les 3 images)
+#   G  comme H, avec recalage fin de chaque image sur la première (tests/labo_filtres/recalage.py) avant la fusion et le report
 #   H  comme D (clés + fusion), mais l'image finale = basses fréquences de l'image courante + hautes fréquences des clés (méthode de l'app)
 #   E  chaque image restaurée (entrée fusionnée comme D), puis détails lissés sur les voisines alignées
 #   D  comme C, mais l'entrée de chaque image est d'abord fusionnée avec ses voisines alignées (débruitage multi-images) ; « D3 » = une clé toutes les 3 images
@@ -26,7 +27,12 @@ def detecter(img):
     h, w = img.shape[:2]; d = cv2.FaceDetectorYN.create(YU, '', (w, h), 0.5, 0.3, 5000); _, f = d.detect(img)
     if f is None: return None
     f = f[np.argmax(f[:, 2] * f[:, 3])]; return f[4:14].reshape(5, 2).astype(np.float32)
-def sim(p): return cv2.estimateAffinePartial2D(p, T, method=cv2.LMEDS)[0]
+def sim(p):
+    if os.environ.get('SIM') == 'mc':   # moindres carrés sur les 5 repères, comme l'app (RVIS.similitude)
+        m, n = p.mean(0), T.mean(0); x, u = p - m, T - n; sxx = (x ** 2).sum(); a = (x * u).sum() / sxx; b = (x[:, 0] * u[:, 1] - x[:, 1] * u[:, 0]).sum() / sxx
+        return np.array([[a, -b, n[0] - a * m[0] + b * m[1]], [b, a, n[1] - b * m[0] - a * m[1]]], np.float64)
+    return cv2.estimateAffinePartial2D(p, T, method=cv2.LMEDS)[0]
+BORD = cv2.BORDER_CONSTANT if os.environ.get('BORD') == 'noir' else cv2.BORDER_REFLECT
 def gfpgan(bgr):
     APPELS[0] += 1; x = (cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB).astype(np.float32) / 127.5 - 1).transpose(2, 0, 1)[None]
     y = sess.run(None, {'entree': x})[0][0].transpose(1, 2, 0); g = cv2.cvtColor(((np.clip(y, -1, 1) + 1) * 127.5).astype(np.float32), cv2.COLOR_RGB2BGR)
@@ -38,6 +44,8 @@ def recaler(g, d):
     c = ALPHA > .9; return g + (d[c].mean(0) - g[c].mean(0))
 def coller(frame, face512, M):
     Mi = cv2.invertAffineTransform(M); h, w = frame.shape[:2]
+    if os.environ.get('COLLE') == 'filtre':   # réduction filtrée (comme le canvas du navigateur) au lieu d'un bilinéaire qui replie les détails
+        k = np.hypot(M[0, 0], M[1, 0]); face512 = cv2.GaussianBlur(face512, (0, 0), max(.01, .5 * k)) if k > 1.2 else face512
     f = cv2.warpAffine(face512, Mi, (w, h), flags=cv2.INTER_LINEAR); a = cv2.warpAffine(ALPHA, Mi, (w, h), flags=cv2.INTER_LINEAR)[..., None]
     return np.clip(frame.astype(np.float32) * (1 - a) + f * a, 0, 255).astype(np.uint8)
 def lisser(P):   # repères lissés dans le temps : régression locale d'ordre 2 sur 7 images (suit le mouvement, retire la tremblote)
@@ -68,11 +76,19 @@ def poids(al, t, s):
     e = np.abs(cv2.GaussianBlur(al[s], (0, 0), 3) - cv2.GaussianBlur(al[t], (0, 0), 3)).mean(); return np.exp(-(e / 6.) ** 2) * (1. if s == t else .8)
 def methode(lq, nom, K=K):
     P = [detecter(f) for f in lq]
+    if os.environ.get('PTS'): P = [np.array(q, np.float32).reshape(5, 2) for q in json.load(open(os.environ['PTS']))]   # repères fournis (ceux de l'app)
     for t in range(len(P)):   # image sans repérage : on garde la position précédente
         if P[t] is None: P[t] = P[t - 1] if t else next(x for x in P if x is not None)
     if nom != 'A': P = lisser(P)
-    Ms = [sim(p) for p in P]; al = [cv2.warpAffine(f, M, (512, 512), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT).astype(np.float32) for f, M in zip(lq, Ms)]
-    if nom in ('D', 'E', 'R', 'H'):   # fusion multi-images dans le repère du visage : moyenne pondérée des voisines bien alignées
+    Ms = [sim(p) for p in P]; al = [cv2.warpAffine(f, M, (512, 512), flags=cv2.INTER_LINEAR, borderMode=BORD).astype(np.float32) for f, M in zip(lq, Ms)]; brut = al
+    if nom == 'G':
+        sys.path.insert(0, os.path.join(ICI, '../labo_filtres')); from recalage import recaler, composer
+        g = lambda z: cv2.cvtColor(z.astype(np.uint8), cv2.COLOR_BGR2GRAY).astype(np.float32); Rg = g(al[0]); poids_v = (ALPHA > .5).astype(np.float32)
+        for t in range(1, len(al)):
+            D = recaler(Rg, g(al[t]), poids_v)
+            if D is not None: Ms[t] = composer(D, Ms[t]); al[t] = cv2.warpAffine(lq[t], Ms[t], (512, 512), flags=cv2.INTER_LINEAR, borderMode=BORD).astype(np.float32)
+        brut = al; nom = 'H'
+    if nom in ('D', 'E', 'R', 'H'):   # fusion (G est devenu H après le recalage) multi-images dans le repère du visage : moyenne pondérée des voisines bien alignées
         fu = []
         for t in range(len(al)):
             acc, ws = np.zeros_like(al[t]), 0.
@@ -107,7 +123,7 @@ def methode(lq, nom, K=K):
         LP = lambda z: cv2.GaussianBlur(z, (0, 0), float(os.environ.get("SIGMA", 12))); hp = {k: (al[k] + FORCE * det[k]) - LP(al[k] + FORCE * det[k]) for k in cles}
         for t, (f, a, M) in enumerate(zip(lq, al, Ms)):
             k0 = max(k for k in cles if k <= t); k1 = min(k for k in cles if k >= t); u = 0 if k1 == k0 else (t - k0) / (k1 - k0)
-            out.append(coller(f, np.clip(LP(a) + (1 - u) * hp[k0] + u * hp[k1], 0, 255), M))
+            out.append(coller(f, np.clip(LP(brut[t] if os.environ.get('LPSRC') == 'brut' else a) + (1 - u) * hp[k0] + u * hp[k1], 0, 255), M))
         return out
     for t, (f, a, M) in enumerate(zip(lq, al, Ms)):
         k0 = max(k for k in cles if k <= t); k1 = min(k for k in cles if k >= t); u = 0 if k1 == k0 else (t - k0) / (k1 - k0)
