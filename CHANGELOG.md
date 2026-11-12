@@ -1,5 +1,12 @@
 # Journal des versions
 
+## v7.2 (12 nov. 2026) — nouveau studio
+- Accueil entièrement recomposé : la page de présentation devient un espace de travail. Zone d'import centrale (glisser-déposer
+  sur ordinateur, boutons Vidéo / Photo) qui se replie quand un média est ouvert ; déroulé en 4 étapes qui suit l'état réel.
+- Outils rangés par besoin (Restaurer / Reconstruire) avec badge IA ou essai ; colonne Activité = vrai historique de l'appareil.
+- iPhone : une colonne, barre d'onglets en bas (Importer, Outils, Activité, Modèles), en-tête compact.
+- Une seule feuille de styles (gris neutres pour juger l'image, accent ambre, sarcelle pour l'analyse IA) à la place de 6 couches.
+
 ## v7.1 (12 nov. 2026) — retrait de filtre appris sur de vrais filtres Snapchat
 - « Retirer un filtre du visage » : nouveau détecteur (v3), entraîné aussi sur 74 vrais clips filtrés du propriétaire (avec son accord,
   jamais publiés) et sur 359 visages NASA du domaine public. Sur une vidéo jamais vue : précision 39 % → 93 %, éléments retrouvés

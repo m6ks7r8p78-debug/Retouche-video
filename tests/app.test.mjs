@@ -53,8 +53,10 @@ await test("Comparateur photo : curseur, zoom 4× (pixels réels), déplacement"
   return { ok: /inset\(0px 0px 0px 30%\)|inset\(0 0 0 30%\)/.test(r.clip) && /scale\(4\)/.test(r.tr) && r.px, info: r.clip + " ; " + r.tr };
 });
 await test("Photo au format PNG (sans perte)", async () => {
+  /* le format PNG est un réglage du mode expert (masqué en mode simple depuis la v4.0) : on y passe, puis on revient */
+  const simple = await p.evaluate(() => document.body.classList.contains("simple")); if (simple) await p.click("#modeb");
   await p.selectOption("#pfmt", "png"); await p.click("#ex"); await done("#st1"); const f = await save("photo.png");
-  const sig = fs.readFileSync(f).subarray(0, 8).toString("hex"); await p.selectOption("#pfmt", "jpeg");
+  const sig = fs.readFileSync(f).subarray(0, 8).toString("hex"); await p.selectOption("#pfmt", "jpeg"); if (simple) await p.click("#modeb");
   return { ok: sig === "89504e470d0a1a0a", info: "signature PNG " + (sig === "89504e470d0a1a0a" ? "correcte" : sig) };
 });
 await test("Grande photo (12 Mpx, type iPhone) : pas d’IA (inutile), taille d’origine, profil Naturel conseillé", async () => {

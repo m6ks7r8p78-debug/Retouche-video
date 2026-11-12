@@ -12,7 +12,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 
 ---
 
-## Tableau de bord (à jour : v7.1, 12/11/2026)
+## Tableau de bord (à jour : v7.2, 12/11/2026)
 
 | | Fonctions |
 |---|---|
@@ -22,6 +22,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 | **Validées sur données synthétiques** | F06 diagnostic des filtres couleur/lumière · F08 zones de filtre AR proposées (photo) |
 | **Intégrées, non validées** | F02 reprise des exports 4K · F04 IA rapide Kaggle · F07 effacer une zone · F17 anti-scintillement/stabilisation · F18 vitesse / Time Repair · F20 caméra virtuelle · F21 export X · F22 hors-ligne · F26 pubs/Premium (éteints) · F28 thème Néon |
 | **Prototypes** | F09 suivi vidéo du visage + report de masque · F16 directeur de traitement (`ANALYSE.plan()`, non branché) |
+| **Nouveau v7.2** | **F31 studio (refonte de la composition)** : INTÉGRÉ, testé dans Chrome (10 tests `tests/atelier.test.mjs` + suites existantes) ; non validé sur iPhone ; remplace F28 |
 | **Nouveau v7.1** | **F30 retirer les éléments d'un filtre AR (photo)** : VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS (74 vrais clips Snapchat du propriétaire, validation croisée par vidéo ; une seule personne) + veto « mains » · **F11 proportions (réglage guidé)** : INTÉGRÉ ; correction automatique mesurée inutile sur vrais filtres |
 | **Prototypes (labo, non intégrés à l'app)** | F29 recopie / référence (référence sans effet mesurable sur les faux repérages réels) · F12 lissage / maquillage : mesurés sur vraies paires, **pas mieux que ne rien faire** |
 | **Non commencées** | F10 effacement AR en vidéo · F14 restauration des visages en vidéo |
@@ -191,8 +192,29 @@ Statut : BLOQUÉ PAR UNE DÉPENDANCE EXTERNE (F23 + juriste/DPO). Double verrou 
 ### F26 — Publicités et Premium · priorité 3
 Statut : INTÉGRÉ NON VALIDÉ, **éteints volontairement** (décision du propriétaire).
 
+### F31 — Studio : refonte complète de la composition (v7.2) · priorité 1 (demande du 12/11)
+- **Objectif** : ne plus recolorier l'accueil V2.31/V6.9 ; en faire un espace de travail : import au centre, outils par besoin,
+  activité réelle, barre d'onglets iPhone, un seul système graphique.
+- **Statut** : INTÉGRÉ (Chrome sans écran). Non validé sur iPhone. Remplace F28 (thème Néon, supprimé).
+- **Implémenté** : 6 couches de styles successives (v2 → v6.8) remplacées par une seule feuille (jetons clair/sombre neutres,
+  accent ambre pour l'action, sarcelle réservée à l'analyse IA) ; composition : barre d'app compacte → zone d'import « table
+  lumineuse » (glisser-déposer, Vidéo/Photo) qui se replie en barre quand un média est ouvert → déroulé en 4 étapes qui lit l'état
+  réel de l'app → atelier inchangé fonctionnellement ; colonne « Outils » par besoin (Restaurer : photo, vidéo, regrouper ;
+  Reconstruire : visages, filtre, effacer, avec badge IA/essai) ; colonne « Activité » = historique réel `recettes` (état vide sinon),
+  exemple avant/après réel, confidentialité ; iPhone : une colonne + barre d'onglets fixe (Importer, Outils, Activité, Modèles),
+  zones sûres iOS. Supprimés : grand titre promotionnel, texte marketing, 3 gros boutons colorés, bande pellicule, étapes.
+- **Fichiers** : `index.html` (styles + composition), `atelier.js` (nouveau : dépôt, outils, déroulé, activité, onglets), `app.js`
+  (version), `sw.js` (fichier ajouté, cache v67), `tests/atelier.test.mjs` (nouveau), `tests/pages.test.mjs`, `tests/app.test.mjs`
+  (le cas PNG passe en mode expert : il échouait déjà en v7.1 car le choix du format est masqué en mode simple).
+- **Tests exécutés** : `atelier` 10/10 ; `pages` 5/5 (dont 14 vues 390 px clair/sombre sans défilement horizontal, contraste) ;
+  `studio` 11/11 ; `sw` 8/8 ; `app` (parcours photo + vidéo, voir historique v7.2).
+- **Limites** : rendu Safari iOS, toucher et zones sûres non vérifiés sur l'appareil ; glisser-déposer inutile sur iPhone (bouton).
+- **Critère de fin** : avis du propriétaire sur iPhone 15 Pro Max (accueil, photo ouverte, export) + aucune régression d'export.
+- **Protocole iPhone (2 min)** : ouvrir retoucheproai.com → vérifier que l'en-tête ne déborde pas et que la barre du bas ne cache
+  rien → « Photo » → choisir une photo → « Améliorer la photo » → comparer → onglet « Activité » : le traitement apparaît.
+
 ### F28 — Thème « Néon » (nouveau design) · priorité 3
-Statut : INTÉGRÉ NON VALIDÉ (avis du propriétaire attendu).
+Statut : REMPLACÉ par F31 en v7.2 (ancien : INTÉGRÉ NON VALIDÉ).
 
 ---
 
@@ -380,3 +402,7 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
   référence ; seuil/taille seuls (ne suppriment pas les faux « sûrs d'eux » : ongles, cigarette).
 
 - 12/11 : **v7.1 confirmée en ligne** sur retoucheproai.com (`VER="v7.1"`, détecteur v3 et fichiers « mains » servis).
+
+### Historique — v7.2 (12/11/2026)
+- F31 (nouveau) : studio — composition refaite, une seule feuille de styles, `atelier.js`. F28 → remplacé.
+- Échec déjà présent en v7.1 corrigé dans le test : « Photo au format PNG » (le format est un réglage du mode expert).

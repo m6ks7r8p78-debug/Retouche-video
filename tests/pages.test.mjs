@@ -54,9 +54,10 @@ await test("Marquage IA : une photo JPEG et PNG reçoit les métadonnées IPTC �
   await p.close(); const ok = r["image/jpeg"].xmp && r["image/jpeg"].lisible && r["image/png"].xmp && r["image/png"].lisible && r.erreur;
   return { ok, info: JSON.stringify(r) } });
 
-await test("Premier écran : avant / après qui glisse seul, s’arrête au toucher, carte « écran d’accueil » seulement sur iPhone", async () => {
+await test("Studio (v7.2) : exemple avant / après qui glisse seul une fois à l’écran, s’arrête au toucher, carte « écran d’accueil » seulement sur iPhone", async () => {
   const ios = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
-  const p = await b.newPage({ viewport: { width: 390, height: 844 } }); await p.goto(BASE + "index.html"); await p.waitForTimeout(300);
+  /* v7.2 : sur iPhone, l'exemple est dans « Activité », sous l'espace de travail ; l'animation ne tourne que lorsqu'il est visible (économie d'énergie) */
+  const p = await b.newPage({ viewport: { width: 390, height: 844 } }); await p.goto(BASE + "index.html"); await p.evaluate(() => document.getElementById("demo").scrollIntoView({ block: "center" })); await p.waitForTimeout(300);
   const a = await p.evaluate(() => getComputedStyle(document.getElementById("demo")).getPropertyValue("--p")); await p.waitForTimeout(500);
   const a2 = await p.evaluate(() => getComputedStyle(document.getElementById("demo")).getPropertyValue("--p"));
   await p.evaluate(() => { const r = document.querySelector("#demo input"); r.dispatchEvent(new Event("pointerdown")); r.value = 20; r.dispatchEvent(new Event("input")) });
