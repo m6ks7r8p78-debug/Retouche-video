@@ -416,3 +416,4 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 - F31 : les 3 outils plein écran (effacer, filtre, visages) reprennent le système du studio. Aucun changement de calcul.
 - Tests : `rvis` 20/20 ; `dfv` 23/11 (identique à v7.0/v7.1 : les 11 échecs sont des seuils de qualité du détecteur sur le banc simulé, pas l'écran) ;
   `visage` 12/12 ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Sauvegarde : branche `sauvegarde-v7.2`.
+- 12/11 : **v7.3 confirmée en ligne** (`VER="v7.3"`, couche « outils plein écran » servie).
