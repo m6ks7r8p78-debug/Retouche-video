@@ -1,4 +1,4 @@
-/* RetoucheProAI v7.4–v7.5 — RVV : restauration des visages EN VIDÉO, cohérente d'une image à l'autre (F14, essai).
+/* RetoucheProAI v7.4–v7.6 — RVV : restauration des visages EN VIDÉO, cohérente d'une image à l'autre (F14, essai).
    Méthode choisie sur mesures (tests/visage_ia/banc_video.py, 4 portraits × 24 images, vérité connue) :
      « H3 » — le visage est suivi image par image (YuNet), ses repères sont lissés dans le temps (régression locale d'ordre 2 sur
      7 images : suit le mouvement, retire la tremblote) ; une image sur K est restaurée par GFPGAN après fusion avec ses voisines
@@ -26,6 +26,10 @@ var RVV = (() => {
     }
     return a;
   }
+  const POIDSV = Float32Array.from(ALPHA, v => v > .5 ? 1 : 0);
+  const grisA = d => { const g = new Float32Array(Q); for (let j = 0, i = 0; j < Q; j++, i += 4) g[j] = .299 * d[i] + .587 * d[i + 1] + .114 * d[i + 2]; return g };
+  /* composition de deux similitudes [a, b, tx, ty] : (A ∘ B)(x) = A(B(x)) */
+  const composer = (A, B) => [A[0] * B[0] - A[1] * B[1], A[0] * B[1] + A[1] * B[0], A[0] * B[2] - A[1] * B[3] + A[2], A[1] * B[2] + A[0] * B[3] + A[3]];
   const plans = d => { const P = [new Float32Array(Q), new Float32Array(Q), new Float32Array(Q)]; for (let j = 0, i = 0; j < Q; j++, i += 4) { P[0][j] = d[i]; P[1][j] = d[i + 1]; P[2][j] = d[i + 2] } return P };
   function aligner(src, M) {   /* visage aligné 512×512 (RGBA) d'une image, M : similitude image → gabarit */
     const c = toile(N, N), x = c.getContext("2d", { willReadFrequently: true }); x.imageSmoothingQuality = "high";
@@ -75,6 +79,7 @@ var RVV = (() => {
     const sess = await RVIS.charger(f => P("Téléchargement du modèle de visage (86 Mo, une seule fois)…", .1 + .05 * f));
     /* c. deuxième lecture : visages alignés gardés sur une fenêtre de 5 images ; fusion puis GFPGAN pour chaque clé */
     const fen = new Map(), mins = new Map(), out = new Map(), net = [], bas = new Array(n).fill(null); let fait = 0; r = await ouvrir();
+    const RC = window.RECALAGE ? RECALAGE.creer(N, POIDSV) : null; let segRef = -1, pyrRef = null, recales = 0;
     /* v7.5 : correction des basses fréquences par la fusion des voisines (mesuré : scintillement 5,11 → 4,89 sur la vidéo de test).
        Δ = flou(moyenne pondérée des voisines − image), en 64×64, gardé pour chaque image et ajouté à l'export. */
     const delta = t => {
@@ -110,17 +115,22 @@ var RVV = (() => {
     };
     try {
       for (let i = 0; i < n; i++) {
-        stop(); if (M[i]) { const im = await r.need(i); const d = aligner(im, M[i]); fen.set(i, d); mins.set(i, mini(d)) }
+        stop(); if (M[i]) { const im = await r.need(i); let d = aligner(im, M[i]);
+          /* v7.6 : recalage fin sur la première image du segment (YuNet seul se trompe de plusieurs degrés) : fusion, clés et report
+             partagent alors exactement le même repère. Mesuré (banc, 4 portraits) : LPIPS 0,134 → 0,127, scintillement 8,0 → 6,6. */
+          if (RC) { const g = RC.pyramide(grisA(d)); if (seg[i] !== segRef) { segRef = seg[i]; pyrRef = g }
+            else { const D = RC.recaler(pyrRef, g); if (D) { M[i] = composer(RVIS.inverse([D[0], D[3], D[2], D[5]]), M[i]); d = aligner(im, M[i]); recales++ } } }
+          fen.set(i, d); mins.set(i, mini(d)) }
         await finir(i - 2);
         for (const z of [...fen.keys()]) if (z < i - 4) { fen.delete(z); mins.delete(z) }
       }
       await finir(n - 2); await finir(n - 1);
     } finally { try { r.close() } catch (e) {} }
-    S = { n, W, H, K, M, seg, cles: out, bas, nettetes: net, visages: M.filter(Boolean).length };
+    S = { n, W, H, K, M, seg, cles: out, bas, nettetes: net, recales, visages: M.filter(Boolean).length };
     return resume(t0);
   }
   function resume(t0) {
-    const r = { images: S.n, avec_visage: S.visages || 0, cles: S.cles.size, K: S.K, ms: Math.round(performance.now() - t0) };
+    const r = { images: S.n, avec_visage: S.visages || 0, cles: S.cles.size, K: S.K, recales: S.recales || 0, ms: Math.round(performance.now() - t0) };
     r.texte = !r.avec_visage ? "Aucun visage suivi dans la vidéo : rien n’est modifié."
       : !r.cles ? "Visages déjà nets (ou trop petits) : laissés tels quels."
       : "Visages restaurés : " + r.cles + " images clés, reportées sur " + r.avec_visage + " images (détails reconstruits par l’IA, plausibles et non retrouvés).";

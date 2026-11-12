@@ -82,10 +82,10 @@ def methode(lq, nom, K=K):
     if nom != 'A': P = lisser(P)
     Ms = [sim(p) for p in P]; al = [cv2.warpAffine(f, M, (512, 512), flags=cv2.INTER_LINEAR, borderMode=BORD).astype(np.float32) for f, M in zip(lq, Ms)]; brut = al
     if nom == 'G':
-        sys.path.insert(0, os.path.join(ICI, '../labo_filtres')); from recalage import recaler, composer
+        sys.path.insert(0, os.path.join(ICI, '../labo_filtres')); from recalage import recaler as recaler_fin, composer
         g = lambda z: cv2.cvtColor(z.astype(np.uint8), cv2.COLOR_BGR2GRAY).astype(np.float32); Rg = g(al[0]); poids_v = (ALPHA > .5).astype(np.float32)
         for t in range(1, len(al)):
-            D = recaler(Rg, g(al[t]), poids_v)
+            D = recaler_fin(Rg, g(al[t]), poids_v)
             if D is not None: Ms[t] = composer(D, Ms[t]); al[t] = cv2.warpAffine(lq[t], Ms[t], (512, 512), flags=cv2.INTER_LINEAR, borderMode=BORD).astype(np.float32)
         brut = al; nom = 'H'
     if nom in ('D', 'E', 'R', 'H'):   # fusion (G est devenu H après le recalage) multi-images dans le repère du visage : moyenne pondérée des voisines bien alignées

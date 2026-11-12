@@ -1,5 +1,10 @@
 # Journal des versions
 
+## v7.6 (12 nov. 2026) — visages en vidéo : plus nets et plus stables
+- « Restaurer les visages » en vidéo recale maintenant chaque image sur la première avant de reporter les détails (même recalage
+  que le retrait de filtre). Mesuré sur 4 portraits à vérité connue : visage plus proche de la vraie image et scintillement en
+  baisse de 18 % ; le résultat dépasse désormais la restauration image par image, pour 2,7 fois moins de calcul.
+
 ## v7.5 (12 nov. 2026) — retirer un filtre du visage en vidéo (essai)
 - Nouvelle case « Retirer le filtre du visage (IA, essai) » à l'export vidéo (mode expert) : museau, oreilles, autocollants… sont
   retirés sur toute la vidéo avec UNE seule reconstruction qui suit la tête, au lieu d'une reconstruction différente à chaque image.

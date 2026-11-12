@@ -12,7 +12,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 
 ---
 
-## Tableau de bord (à jour : v7.5, 12/11/2026)
+## Tableau de bord (à jour : v7.6, 12/11/2026)
 
 | | Fonctions |
 |---|---|
@@ -146,7 +146,7 @@ vrais filtres. Fichiers : `visage.js`, `effacer.js`.
 Statut : INTÉGRÉ (v7.5 ; ancien : PROTOTYPE). Utilisé par F10 et F14. **Constat mesuré en v7.5** : les 5 repères YuNet, même lissés,
 se trompent de plusieurs degrés et de quelques % d'échelle d'une image à l'autre (ex. rotation −5,5° pour −2,4° réels) ; un recalage
 fin image contre image (similitude, Gauss-Newton, 3 échelles, `filtre-video.js` → `recaler`) corrige cette erreur (test : rotation 3°,
-zoom 4 %, décalage 6/−4 px retrouvés à 0,05 px près). Reste : l'appliquer aussi à F14.
+zoom 4 %, décalage 6/−4 px retrouvés à 0,05 px près). Appliqué aussi à F14 en v7.6 (`recalage.js`).
 
 ### F10 — Retrait des éléments de filtre AR en vidéo (reconstruction stable dans le temps) · priorité 1
 - **Statut** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (v7.5). Non validé sur de vrais filtres Snapchat/Instagram en vidéo (les 74 clips privés
@@ -220,6 +220,10 @@ lissé — à mesurer sur le laboratoire F15.
   Python 4,89). Écart LPIPS restant moteur 0,164 / référence 0,148 **expliqué** : le navigateur filtre correctement quand il recolle
   un visage minuscule (≈ 75 px ici), la référence Python replie les détails (bilinéaire sans filtre) ; avec un recollage filtré, la
   référence tombe à 0,180. Ni les repères (0,147 avec ceux de l'app) ni l'alignement ne sont en cause. Critère « < 0,01 » retiré.
+- **v7.6 — recalage fin** (`recalage.js`, partagé avec F10) : chaque image alignée est recalée sur la première du segment avant la
+  fusion et le report. Banc 4 portraits (LPIPS / PSNR / scintillement) : H3 0,134 / 25,61 / 8,00 → **G3 0,127 / 26,36 / 6,57** —
+  désormais meilleur que la restauration image par image (0,127 / 25,72 / 8,85) sur les trois mesures, avec 2,7 fois moins de calcul.
+  Vidéo de test de l'app : référence 0,148 / 27,69 / 4,89 → 0,135 / 28,74 / 4,09 ; moteur de l'app 0,164 / 27,74 / 4,88 → **0,156 / 28,92 / 4,00**.
 - **Limites** : visage le plus grand seulement ; pas de changement d'expression dans le banc ; très long sur iPhone (≈ 20–40 s par
   image clé estimés, non mesurés : ≈ 4 à 8 min pour 10 s de vidéo) ; mémoire ≈ 0,8 Mo par clé.
 - **Critère de fin** : mesure iPhone (temps par clé, pas de fermeture d'onglet) sur 10 s ; avis du propriétaire sur 3 vraies vidéos ;
@@ -504,3 +508,9 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
   4,7) ; le suivi YuNet seul (5,0) ; zone fixe par section (VU) ; bornes de recalage serrées (±5 %) : 4 sections pour 36 images.
 - Non-régression v7.5 : `rvv` 5/5 (visage 0,249 → 0,195 LPIPS dans l'app) ; `dfv` 23/11 (identique à v7.0–v7.3) ; `app` (Full HD, origine,
   compte rendu) 3/3 ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Aucun test sur iPhone.
+- 12/11 : **v7.5 confirmée en ligne** (`VER="v7.5"`, `filtre-video.js` servi, case « Retirer le filtre du visage » présente). Sauvegarde : branche `sauvegarde-v7.4`.
+
+### Historique — v7.6 (12/11/2026)
+- F14 : recalage fin ajouté (`recalage.js`, extrait de `filtre-video.js` et partagé) ; mesures dans la fiche. F10 : inchangé (même code, déplacé).
+- Tests v7.6 : `rvv` 5/5 (dans l'app : visage 0,249 → 0,190 LPIPS, scintillement 5,75 → 5,35) ; `rfv` 6/6 (22,9 / 3,08 / 0,067) ;
+  `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Aucun test sur iPhone.

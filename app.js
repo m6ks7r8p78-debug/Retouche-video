@@ -1,7 +1,7 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v7.5";/* seul endroit où changer le numéro de version */
+const VER="v7.6";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
-const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","visages-video.js"],filtrevideo:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js","visages-video.js","filtre-video.js"],defiltre:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js"]},__charges={};
+const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","recalage.js","visages-video.js"],filtrevideo:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js","recalage.js","visages-video.js","filtre-video.js"],defiltre:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
   s.onload=ok;s.onerror=()=>{delete __charges[src];ko(new Error("Impossible de charger "+src+" (connexion ?)"))};document.head.appendChild(s)}))}
 function chargerModule(n){return Promise.all(MODULES[n].map(chargerScript))}
