@@ -408,4 +408,5 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 - Échec déjà présent en v7.1 corrigé dans le test : « Photo au format PNG » (le format est un réglage du mode expert).
 - Défaut trouvé par le test et corrigé : sur iPhone, la barre d'onglets pouvait couvrir le bouton visé après un défilement automatique (`scroll-padding-bottom`).
 - Tests exécutés (Chrome sans écran, 390–1440 px) : `app` **12/12** (v7.1 : 11/12) dont exports 4K paysage/portrait, 1080p, 720p, origine vérifiés avec ffprobe ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Aucun test sur iPhone.
-- Sauvegarde : tag `sauvegarde-v7.1`.
+- Sauvegarde : branche `sauvegarde-v7.1` (les tags sont refusés par le relais).
+- 12/11 : **v7.2 confirmée en ligne** sur retoucheproai.com (`VER="v7.2"`, `atelier.js` servi, nouvelle composition présente). Sauvegarde : branche `sauvegarde-v7.1`.
