@@ -12,7 +12,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 
 ---
 
-## Tableau de bord (à jour : v6.9, 11/11/2026)
+## Tableau de bord (à jour : v7.1, 12/11/2026)
 
 | | Fonctions |
 |---|---|
@@ -22,10 +22,10 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 | **Validées sur données synthétiques** | F06 diagnostic des filtres couleur/lumière · F08 zones de filtre AR proposées (photo) |
 | **Intégrées, non validées** | F02 reprise des exports 4K · F04 IA rapide Kaggle · F07 effacer une zone · F17 anti-scintillement/stabilisation · F18 vitesse / Time Repair · F20 caméra virtuelle · F21 export X · F22 hors-ligne · F26 pubs/Premium (éteints) · F28 thème Néon |
 | **Prototypes** | F09 suivi vidéo du visage + report de masque · F16 directeur de traitement (`ANALYSE.plan()`, non branché) |
-| **Nouveau v7.0** | **F30 retirer les éléments d'un filtre AR (photo)** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (vrais visages jamais vus, éléments simulés) · **F11 proportions (réglage guidé)** : INTÉGRÉ, mesuré sur données synthétiques |
-| **Prototypes (labo, non intégrés à l'app)** | F29 recopie depuis une photo sans filtre (mesurée moins bonne que sans référence) · F12 lissage / maquillage (pas encore mieux que l'entrée) |
+| **Nouveau v7.1** | **F30 retirer les éléments d'un filtre AR (photo)** : VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS (74 vrais clips Snapchat du propriétaire, validation croisée par vidéo ; une seule personne) + veto « mains » · **F11 proportions (réglage guidé)** : INTÉGRÉ ; correction automatique mesurée inutile sur vrais filtres |
+| **Prototypes (labo, non intégrés à l'app)** | F29 recopie / référence (référence sans effet mesurable sur les faux repérages réels) · F12 lissage / maquillage : mesurés sur vraies paires, **pas mieux que ne rien faire** |
 | **Non commencées** | F10 effacement AR en vidéo · F14 restauration des visages en vidéo |
-| **Laboratoire** | F15 : EN DÉVELOPPEMENT (12 paires réelles × 9 filtres simulés + générateur d'éléments AR et de décor, mesures automatiques ; a servi à entraîner le détecteur de F30) |
+| **Laboratoire** | F15 : EN DÉVELOPPEMENT (+ v7.1 : 74 vrais clips Snapchat privés avec vérité terrain, 359 visages NASA, validation croisée par vidéo) |
 | **Bloquées (dépendance externe)** | F23 serveur de consentement (déploiement + juriste) · F24 collecte pour l'entraînement (juriste) · **F13 en usage commercial** (décision juridique sur la licence des poids) |
 | **Régressions détectées** | aucune introduite par la v6.9. **Échecs déjà présents en v6.8** (trouvés en relançant tout) : `tests/pub.test.mjs` 1 cas (pub indisponible → l’enregistrement ne part pas dans le test), `tests/v3.test.mjs` 3 cas (rendus « équilibre / nuit / jour » de photo sombre) — à expliquer et corriger |
 
@@ -33,7 +33,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 sur photo → F10 effacement AR en vidéo (suivi F09 déjà prêt) → F15 laboratoire de filtres → F16 directeur branché sur l'export →
 mesures iPhone de tout ce qui est « intégré non validé ».
 
-**Prochaine tâche concrète** : F14 — restauration des visages image par image en vidéo avec le suivi de F09 (positions lissées,
+**Prochaine tâche concrète (v7.1)** : F30 sur iPhone (protocole ci-dessous) avec d'autres visages que le propriétaire ; puis F14. **Ancienne** : F14 — restauration des visages image par image en vidéo avec le suivi de F09 (positions lissées,
 même transformation d'une image à l'autre pour éviter le scintillement), d'abord sur le serveur Kaggle (carte graphique), mesure de
 scintillement sur `tests/medias/video_portrait.mp4`.
 
@@ -333,3 +333,49 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
   depuis la v6.7 ont la même cause apparente (15 min puis échec). À vérifier à la reprise : `VER="v7.0"` sur retoucheproai.com.
 - 11/11 23 h 40 : site toujours en v6.9 ; relance bloquée en file 21 min annulée, nouvelle publication déclenchée (GitHub Actions/Pages de nouveau « operational »).
 - 11/11 23 h 50 : **v7.0 confirmée en ligne** sur retoucheproai.com (`VER="v7.0"`).
+
+### F30 — mise à jour v7.1 (12/11/2026) : appris et mesuré sur de VRAIS filtres Snapchat
+- **Statut** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES → **VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS** (une seule personne, 2 vidéos). Pas validé sur iPhone.
+- **Médias** (privés, jamais sur le dépôt, accord du propriétaire) : 2 vidéos × ≈ 37 filtres Snapchat. Vidéo « lilas » : l'original sans
+  filtre est connu (calage affine + temporel automatique) ; vidéo « noire » : pas d'original, comparaison avec un clip sans élément.
+  Éléments réels trouvés : fleurs (2 modèles), cornes + cœur, textes « cute » sur le visage, « mood: », crâne chauve + moustache.
+  Masques exacts obtenus par différence avec la référence. Cagoules exclues (visage volontairement caché).
+- **Constat v7.0 sur vrais filtres** : rappel 27 % / 12 %, précision 39 % / 13 % ; signalait les vraies lunettes, les lèvres, la fumée,
+  les ongles et le piercing ; **100 % des images sans élément de la vidéo « noire » modifiées** (≈ 1 % de la photo).
+- **v7.1** : détecteur v3 (`entrainer_ajouts_v3.py` : v2 + 359 visages NASA + vrais clips + éléments réels recollés ; le « crâne chauve »
+  est EXCLU de l'apprentissage : il apprenait à signaler les vrais crânes chauves, vu sur le banc) + **veto mains** (`mains.js`,
+  MediaPipe Hand Landmarker, Apache-2.0 : une composante posée à plus de moitié sur une main n'est pas effacée).
+- **Mesures (validation croisée : entraîné sur une vidéo, mesuré sur l'autre ; réglages de l'app seuil 0,6, taille 0,04 ; veto)** :
+  | | v7.0 lilas | v7.1 lilas | v7.0 noire | v7.1 noire |
+  |---|---|---|---|---|
+  | précision | 39 % | **93 %** | 13 % | **87 %** |
+  | éléments retrouvés (rappel) | 27 % | **66 %** | 12 % | **75 %** |
+  | pixels effacés à tort (images sans élément) | 0,129 % | **0,012 %** | 1,04 % | **0,155 %** |
+  | images sans élément touchées | 88 % | 45 % | 100 % | 85 % (vraies lunettes : absentes de la vidéo d'entraînement) |
+  Veto mains seul (détecteur v3, vidéo lilas) : pixels faux 0,050 % → 0,012 %, précision 87 % → 93 %, rappel 67 % → 66 %.
+- **Dans l'app (Chromium, YuNet, vrais modèles)** : modèle final, 23 images de tes clips : 12/12 images sans élément intactes (v7.0 :
+  0/12, 0,35–1,9 % de la photo modifiée) ; éléments retrouvés 46–84 % (v7.0 ≈ 20 %). (Images vues à l'entraînement : contrôle de la
+  chaîne, pas une validation ; la validation est le tableau ci-dessus.)
+- **Banc simulé** (`tests/dfv.test.mjs`) : 23 réussis / 11 échoués, comme v7.0 (moyennes : chien rappel 98 → 94 %, chat 77 → 71 %,
+  hasard 85 → 84 % ; écarts dans la zone quasi identiques). Photo sans filtre et crâne chauve : intacts.
+- **Non-régression** : sw 8/8, v67 18/18, visage 12/12, gestionnaire 24/24, studio 11/11, pages 5/5.
+- **Limites** : une seule personne (à confirmer sur d'autres visages) ; vraies lunettes encore parfois signalées si jamais vues ;
+  éléments jamais vus (crâne chauve) non retirés ; « mood: » (texte minuscule) raté ; veto : +22 Mo à télécharger une fois.
+- **Reste à faire** : protocole iPhone ; photos filtrées d'autres personnes (avec accord) ; lunettes ; vidéo (F10).
+
+### F11, F12, F29 — mesures v7.1 sur vraies paires (vidéo lilas, original connu)
+- **F11 proportions** : déformations réelles mesurées (flux optique, repère du visage) : ≈ 1 % du visage (2–4 px sur 256), 2 filtres
+  forts (≈ 14 px). Correction automatique par le champ moyen (validation « un filtre écarté ») : écart 1,29 → 1,31 px (**pas mieux**),
+  et elle abîme les filtres qui ne déforment pas. Automatique toujours exclu ; réglage guidé gardé.
+- **F12 lissage / maquillage** : 35 paires, LPIPS visage : rien 0,176 ; GFPGAN 100 % 0,238 ; GFPGAN 50 % 0,180 ; grain 0,260.
+  La vidéo d'origine (publiée, compressée) n'a pas plus de texture que les versions filtrées : **aucune méthode ne fait mieux que
+  l'entrée**. Lèvres : l'original porte déjà du rouge à lèvres → pas de vérité « sans maquillage » ; rien n'est intégré.
+- **F29 référence** : une photo de référence (autre vidéo, autre jour) n'aide pas à écarter les faux repérages réels (aspect médian
+  ΔE 20,8 pour les vrais éléments, 22,5 pour les faux) ; les faux venaient surtout des mains → veto mains.
+
+### Historique — v7.1 (12/11/2026)
+- F30 : VALIDÉ SUR DONNÉES SYNTHÉTIQUES → VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS (détecteur v3 + veto mains). F15 : vrais clips, NASA.
+- F11 : correction automatique mesurée inutile sur vrais filtres. F12 : mesuré, pas mieux que l'entrée. F29 : référence sans effet mesurable.
+- Ce qui n'a pas marché (gardé pour mémoire) : apprendre le « crâne chauve » (signale les vrais crânes) ; filtre par photo de
+  référence ; seuil/taille seuls (ne suppriment pas les faux « sûrs d'eux » : ongles, cigarette).
+

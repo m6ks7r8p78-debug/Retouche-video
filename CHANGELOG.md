@@ -2,8 +2,8 @@
 
 ## v7.1 (12 nov. 2026) — retrait de filtre appris sur de vrais filtres Snapchat
 - « Retirer un filtre du visage » : nouveau détecteur (v3), entraîné aussi sur 74 vrais clips filtrés du propriétaire (avec son accord,
-  jamais publiés) et sur 359 visages NASA du domaine public. Sur une vidéo jamais vue : précision 39 % → 91 %, éléments retrouvés
-  27 % → 67 % ; sur l'autre : 12 % → 86 % et 6 % → 33 %.
+  jamais publiés) et sur 359 visages NASA du domaine public. Sur une vidéo jamais vue : précision 39 % → 93 %, éléments retrouvés
+  27 % → 66 % ; sur l'autre : 13 % → 87 % et 12 % → 75 % ; pixels effacés à tort divisés par 6 à 10.
 - Nouveau « veto mains » (MediaPipe, Apache-2.0) : ongles, doigts, cigarette, bague posés sur une main ne sont plus effacés.
 - Mesuré et NON intégré (pas mieux que de ne rien faire sur les vraies paires) : retour de la texture de peau après lissage, retrait
   du maquillage des lèvres, correction automatique des proportions (le réglage guidé « Proportions » reste).

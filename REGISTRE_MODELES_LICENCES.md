@@ -11,6 +11,8 @@ Empreintes calculées sur les fichiers de l’archive. Licences : celles des fic
 | `modeles/lourds/gfpgan14_int8w.onnx` (v6.9, téléchargé à la demande) | restauration des visages | GFPGAN v1.4 (Apache-2.0 déclarée ; voir ci-dessous) | `40407c8037bd34a7718b9ea60257354c87eafecd6845aa98951dd760a5b33ff9` |
 | `mp4-muxer.js` | conteneur MP4 | mp4-muxer (MIT) | `bba88082053511b898c921e71a865478821a674d779ba0c7028c78c921fecaf6` |
 | `modeles/yunet.onnx` | repérage du visage (boîte + 5 repères), v6.8 | MIT — `LICENSE-YuNet.txt`, source : OpenCV Zoo `face_detection_yunet_2023mar.onnx` (fichier identique sur le dépôt GitHub et sur Hugging Face `opencv/face_detection_yunet`) | `8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4` |
+| `modeles/lourds/detecteur_ajouts_v3.onnx` (v7.1, téléchargé à la demande) | repérage des éléments d'un filtre AR | RetoucheProAI (entraîné par nous ; données : labo, NASA domaine public, clips du propriétaire avec accord, non distribués) | `364067c133109879e2d13148a99e5e80c872fcaf428b5c67f1a24bc8458af018` |
+| `modeles/lourds/mains/` (v7.1 : `hand_landmarker.task`, `vision_bundle.mjs`, `vision_wasm_internal.js/.wasm`) | repérage des mains (veto du retrait de filtre) | MediaPipe Hand Landmarker + @mediapipe/tasks-vision 1.2.3 — Apache-2.0, `LICENSE-MediaPipe.txt` | `fbc2a300…7cde1` (modèle) ; `225bc06c…aabf` (wasm) |
 
 MI-GAN (effacement) : téléchargé à la demande, voir `MODELES.md` / `LICENSE-MI-GAN.txt`.
 
