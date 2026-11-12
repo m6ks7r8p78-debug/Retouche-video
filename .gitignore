@@ -14,3 +14,4 @@ tests/prive/
 *.MOV
 *.mov
 tests/labo_filtres/migan_pipeline_v2.onnx
+tests/labo_filtres/hand_landmarker.task

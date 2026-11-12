@@ -1,4 +1,4 @@
-/* RetoucheProAI v7.0 — DFV : retirer les éléments d'un filtre AR (museau, moustaches, oreilles, nez de clown, autocollants,
+/* RetoucheProAI v7.1 — DFV : retirer les éléments d'un filtre AR (museau, moustaches, oreilles, nez de clown, autocollants,
    lunettes dessinées, couronnes…) d'une photo, automatiquement, sur le téléphone.
    Chaîne (identique au laboratoire tests/labo_filtres/noyau.py → retirer_ajouts) :
      1. repérage du visage (YuNet, déjà dans l'app) ;
@@ -60,13 +60,16 @@ var DFV = (() => {
     }
     return C.r;
   }
-  /* composantes : on retire les points isolés (moins de aireMin² écarts des yeux) */
-  function nettoyer(m, W, H, aire) {
+  /* composantes : on retire les points isolés (moins de aireMin² écarts des yeux) et, v7.1, celles posées à plus de moitié sur
+     une main (veto : ongles, doigts, cigarette, bague — de vrais objets) */
+  function nettoyer(m, W, H, aire, veto) {
     const lab = new Int32Array(W * H), st = []; let n = 0;
     for (let i = 0; i < W * H; i++) if (m[i] && !lab[i]) { n++; let c = 0; const q = [i]; lab[i] = n; while (q.length) { const k = q.pop(); c++; const x = k % W, y = (k - x) / W;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue; const kk = yy * W + xx; if (m[kk] && !lab[kk]) { lab[kk] = n; q.push(kk) } } } st[n] = c }
-    for (let i = 0; i < W * H; i++) if (lab[i] && st[lab[i]] < aire) m[i] = 0;
-    return m;
+    const surMain = new Int32Array(n + 1); if (veto) for (let i = 0; i < W * H; i++) if (lab[i] && veto[i]) surMain[lab[i]]++;
+    let enleves = 0; for (let k = 1; k <= n; k++) if (veto && st[k] >= aire && surMain[k] > .5 * st[k]) enleves++;
+    for (let i = 0; i < W * H; i++) if (lab[i] && (st[lab[i]] < aire || (veto && surMain[lab[i]] > .5 * st[lab[i]]))) m[i] = 0;
+    m.enleves = enleves; return m;
   }
   function dilater(m, W, H, r) {   /* disque de rayon r (séparable approché : carré puis coins) */
     if (r < 1) return m; const t = new Uint8Array(W * H), o = new Uint8Array(W * H);
@@ -124,8 +127,15 @@ var DFV = (() => {
     await charger(f => P("Téléchargement du détecteur (1,5 Mo, une seule fois)…", f));
     const prob = new Float32Array(W * H), reps = [];
     for (const f of F) reps.push(await carte(base, f, prob));
-    const io = Math.max(...reps.map(r => r.io)); let m = new Uint8Array(W * H); for (let i = 0; i < m.length; i++) m[i] = prob[i] > R.seuil ? 1 : 0;
-    m = nettoyer(m, W, H, (R.aireMin * io) ** 2);
+    const io = Math.max(...reps.map(r => r.io)); let m = new Uint8Array(W * H), vu = 0; for (let i = 0; i < m.length; i++) { m[i] = prob[i] > R.seuil ? 1 : 0; vu += m[i] }
+    let veto = null;
+    if (vu && opt.mains !== false && window.MAINS) {   /* v7.1 : seulement s'il y a quelque chose à vérifier (évite le téléchargement sinon) */
+      P("Vérification des mains…", .1);
+      try { const z = await MAINS.zone(base, W, H); veto = z.zone; if (z.n) J.push(z.n + (z.n > 1 ? " mains repérées" : " main repérée") + " : ce qui est posé dessus n’est pas effacé.") }
+      catch (e) { J.push("Repérage des mains indisponible (" + ((e && e.message) || e) + ") : retrait sans cette vérification.") }
+    }
+    m = nettoyer(m, W, H, (R.aireMin * io) ** 2, veto);
+    if (m.enleves) J.push(m.enleves + (m.enleves > 1 ? " éléments laissés car posés" : " élément laissé car posé") + " sur une main.");
     let n = 0; for (let i = 0; i < m.length; i++) n += m[i];
     if (!n) return { canvas: base, carte: toile(W, H), trou: m, part: 0, visages: F, journal: ["Aucun élément de filtre trouvé : la photo n’a pas été modifiée."], ms: Math.round(performance.now() - t0) };
     const trou = dilater(m, W, H, Math.max(1, Math.round(R.dilat * io / 2)));
