@@ -1,7 +1,7 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v7.3";/* seul endroit où changer le numéro de version */
+const VER="v7.4";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
-const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],defiltre:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js"]},__charges={};
+const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","visages-video.js"],defiltre:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
   s.onload=ok;s.onerror=()=>{delete __charges[src];ko(new Error("Impossible de charger "+src+" (connexion ?)"))};document.head.appendChild(s)}))}
 function chargerModule(n){return Promise.all(MODULES[n].map(chargerScript))}
@@ -1815,6 +1815,19 @@ $("#ex").onclick=async()=>{
        v4.8 : aussi pour les vidéos ralenties / accélérées (le plan avance dans le temps : images sautées ou répétées)
        et pour la prolongation (quelques sauts en arrière : la lecture repart de l'image clé voisine).
        Seule la lecture à l'envers (un retour en arrière à chaque image) garde l'ancienne méthode. */
+    /* v7.4 : visages restaurés en vidéo (F14, essai) — pré-calcul en deux lectures, puis composition à chaque image exportée */
+    let rvvOn=false;window.__rvv=null;
+    if($("#o_rvv")&&$("#o_rvv").checked&&(plan||$("#o_stab").checked))msg("Visages : étape sautée (pas encore compatible avec la stabilisation, la vitesse ou la fluidité).");
+    else if(!plan&&$("#o_rvv")&&$("#o_rvv").checked){
+      try{await chargerModule("visvideo");if(!window.RVV||!window.VideoDecoder)throw new Error("module indisponible");
+        const r=await RVV.preparer(async()=>{const q=await makeSeq(off,OFPS);if(!q)throw new Error("lecture image par image indisponible");return{need:k=>q.need(k+off),close:()=>q.close()}},
+          total,v.videoWidth,v.videoHeight,{onProgress:(t,f)=>{msg(t);try{$("#pg").value=Math.min(.99,f)}catch(e){}},signal:{get aborted(){return cancel}}});
+        window.__rvv=r;rvvOn=r.cles>0;msg(r.texte);
+        try{DIAG.send("visages_video",{images:r.images,avec_visage:r.avec_visage,cles:r.cles,K:r.K,ms:r.ms})}catch(e){}
+      }catch(e){if(cancel)throw e;window.__rvv={erreur:(e&&e.message)||String(e)};
+        const m=window.MODELS&&MODELS.explain?MODELS.explain(e):null;
+        msg("Visages non restaurés ("+(m?m.texte:(e&&e.message)||e)+") : la vidéo est améliorée sans cette étape.")}
+    }
     let pBack=0;if(isPlan){let mx=-1;for(const pp of plan){if(pp.a<mx-1)pBack++;mx=Math.max(mx,pp.b!=null?pp.b:pp.a)}}
     const seqPlanOK=!isPlan||pBack<=Math.max(2,plan.length/45)||!!SRX.remote;/* v6.1 : avec l'IA rapide, même à l'envers (l'image du serveur doit être exactement la même image) */
     if(seqPlanOK&&window.VideoDecoder&&!window.__noseq&&(cv.width*cv.height<=2073600*1.2||SRX.remote||isPlan)){/* v4.5 : avec Kaggle, toujours (4K compris) */
@@ -1868,7 +1881,7 @@ $("#ex").onclick=async()=>{
       try{
         const p0=performance.now();{const M=!SRX.remote?null:rdr?z=>rdr.map(z):SRX.mapr?z=>SRX.rang(z):null;SRX.idx=!M?-1:pl.b==null?M(pl.a):{a:M(pl.a),b:M(pl.b),w:pl.w,fl:fcache&&fcache.j===pl.j?fcache.fl:null}}if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
         if(glPerdu())throw new Error("Canvas has no frame (moteur graphique retiré)");
-        f=new VideoFrame(BA.src(i,total),{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)});
+        {let fs=BA.src(i,total);if(rvvOn)fs=RVV.appliquer(fs,i);f=new VideoFrame(fs,{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)})}
       }catch(e){
         /* v6.6 : l'iPhone a retiré le moteur graphique (mémoire) : on attend qu'il le rende et on refait CETTE image, sans rien perdre */
         if(glPerdu()&&!cancel){glN++;if(glN>4||!(await glPret(12000)))throw new Error("moteur graphique indisponible");

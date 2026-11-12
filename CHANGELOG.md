@@ -1,5 +1,12 @@
 # Journal des versions
 
+## v7.4 (12 nov. 2026) — visages restaurés en vidéo (essai)
+- Nouvelle case « Restaurer les visages (IA, essai) » à l'export vidéo (mode expert) : le visage est suivi, une image sur 3 est
+  restaurée par l'IA après fusion avec ses voisines, et les détails sont reportés sur toutes les images en suivant le visage.
+  Mesuré sur une vidéo de test à vérité connue : visage 21 % plus proche de la vraie image, sans scintillement ajouté.
+- Méthode choisie sur banc d'essai (5 méthodes comparées) : 2,7 fois moins de calcul qu'une restauration image par image, pour une
+  qualité proche et une image plus stable. Calcul long sur téléphone : réservé aux vidéos courtes.
+
 ## v7.3 (12 nov. 2026) — outils plein écran au style du studio
 - « Effacer une zone », « Retirer un filtre du visage » et « Restaurer les visages » reprennent le système du studio (toujours
   sombres pour juger l'image, accent ambre, boutons et curseurs identiques, commandes centrées sur ordinateur). Aucun changement de calcul.

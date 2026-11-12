@@ -25,7 +25,8 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 | **Nouveau v7.2** | **F31 studio (refonte de la composition)** : INTÉGRÉ, testé dans Chrome (10 tests `tests/atelier.test.mjs` + suites existantes) ; non validé sur iPhone ; remplace F28 |
 | **Nouveau v7.1** | **F30 retirer les éléments d'un filtre AR (photo)** : VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS (74 vrais clips Snapchat du propriétaire, validation croisée par vidéo ; une seule personne) + veto « mains » · **F11 proportions (réglage guidé)** : INTÉGRÉ ; correction automatique mesurée inutile sur vrais filtres |
 | **Prototypes (labo, non intégrés à l'app)** | F29 recopie / référence (référence sans effet mesurable sur les faux repérages réels) · F12 lissage / maquillage : mesurés sur vraies paires, **pas mieux que ne rien faire** |
-| **Non commencées** | F10 effacement AR en vidéo · F14 restauration des visages en vidéo |
+| **Non commencées** | F10 effacement AR en vidéo |
+| **Nouveau v7.4** | **F14 visages en vidéo** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (banc 4 portraits + export de bout en bout dans l'app) ; non validé sur iPhone |
 | **Laboratoire** | F15 : EN DÉVELOPPEMENT (+ v7.1 : 74 vrais clips Snapchat privés avec vérité terrain, 359 visages NASA, validation croisée par vidéo) |
 | **Bloquées (dépendance externe)** | F23 serveur de consentement (déploiement + juriste) · F24 collecte pour l'entraînement (juriste) · **F13 en usage commercial** (décision juridique sur la licence des poids) |
 | **Régressions détectées** | aucune introduite par la v6.9. **Échecs déjà présents en v6.8** (trouvés en relançant tout) : `tests/pub.test.mjs` 1 cas (pub indisponible → l’enregistrement ne part pas dans le test), `tests/v3.test.mjs` 3 cas (rendus « équilibre / nuit / jour » de photo sombre) — à expliquer et corriger |
@@ -155,7 +156,39 @@ Statut : NON COMMENCÉ (le lissage est seulement **mesuré** dans `analyse.js`).
 lissé — à mesurer sur le laboratoire F15.
 
 ### F14 — Restauration des visages en vidéo (cohérente dans le temps) · priorité 1
-Statut : NON COMMENCÉ. Prérequis prêts : F13 (modèle, alignement), F09 (suivi lissé).
+- **Statut** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES (v7.4). Non validé sur iPhone ni sur vraies vidéos de famille. Usage commercial :
+  même blocage de licence que F13 (poids GFPGAN / StyleGAN2 / FFHQ).
+- **Implémenté** : case « Restaurer les visages (IA, essai) » (onglet Réglages, mode expert) ; à l'export, pré-calcul en deux
+  lectures de la vidéo (`visages-video.js`) : visage le plus grand repéré sur chaque image (YuNet), repères lissés dans le temps
+  (régression locale d'ordre 2 sur 7 images), une image clé sur 3 (sur 6 au-delà de 11 s) fusionnée avec ses 4 voisines alignées
+  puis restaurée par GFPGAN ; chaque image exportée garde ses basses fréquences (couleurs et réglages de l'export) et reçoit les
+  hautes fréquences des deux clés qui l'encadrent. Visage déjà net laissé tel quel. Étape sautée (message) avec stabilisation,
+  vitesse, prolongation ou fluidité. Diagnostic anonyme `visages_video` (si autorisé).
+- **Choix de la méthode — mesures** (`tests/visage_ia/banc_video.py`, 4 portraits NASA × 24 images à 30 i/s, mouvement connu,
+  dégradation « vieux téléphone » différente à chaque image ; LPIPS ↓ / PSNR ↑ / scintillement ↓ du visage, contre la vérité) :
+
+  | Méthode | LPIPS | PSNR | Scintillement | Calculs GFPGAN |
+  |---|---|---|---|---|
+  | entrée | 0,319 | 24,30 | 9,51 | 0 |
+  | A image par image (outil photo appliqué à chaque image) | **0,127** | 25,72 | 8,85 | 24 |
+  | E image par image + fusion + détails lissés | 0,139 | **25,94** | **7,75** | 24 |
+  | D clés 1/6 + fusion | 0,145 | 25,36 | 8,49 | 5 |
+  | D3 clés 1/3 + fusion | 0,135 | 25,74 | 8,15 | 9 |
+  | R3 clés 1/3 au fil de l'export (sans l'avenir) | 0,153 | 24,84 | 9,27 | 8 — **écartée** |
+  | **H3 retenue** (D3 + basses fréquences de l'image courante, σ 24) | 0,134 | 25,61 | 8,00 | 9 |
+  | H3 σ 4 / σ 12 | 0,174 / — | 24,87 / 25,45 | 8,07 / 7,93 | 9 |
+- **De bout en bout dans l'app** (`tests/rvv.test.mjs`, Chromium, WebAssembly, vrais modèles ; vidéo de test 36 images, vérité
+  connue) : export « taille d'origine » sans l'option LPIPS 0,249 / PSNR 24,57 / scintillement 5,75 → **avec** 0,197 / 24,20 / 5,79
+  (−21 % LPIPS, scintillement inchangé) ; 13 images clés, 393 s de pré-calcul (≈ 25 s par clé, ordinateur, 1 fil).
+  Même moteur sur les images brutes (sans l'amélioration classique) : 0,167 / 27,78 / 5,11 ; référence Python H3 sur la même
+  entrée : 0,148 / 27,69 / 4,89 — écart restant attribué au repérage (YuNet en 640 avec bandes) et à l'arrondi du rééchantillonnage
+  du navigateur ; à réduire. L'export « taille d'origine » de l'app perd une partie du gain (amélioration classique + compression).
+- **Limites** : visage le plus grand seulement ; pas de changement d'expression dans le banc ; très long sur iPhone (≈ 20–40 s par
+  image clé estimés, non mesurés : ≈ 4 à 8 min pour 10 s de vidéo) ; mémoire ≈ 0,8 Mo par clé.
+- **Critère de fin** : mesure iPhone (temps par clé, pas de fermeture d'onglet) sur 10 s ; avis du propriétaire sur 3 vraies vidéos ;
+  écart JS / Python réduit sous 0,01 LPIPS ; décision de licence (F13).
+- **Protocole iPhone (10 min)** : Mode expert → importer une vidéo courte avec un visage → Réglages → cocher « Restaurer les visages »
+  → Améliorer → noter le temps du pré-calcul affiché et comparer le visage avec et sans.
 
 ### F15 — Laboratoire de simulation et d'évaluation des filtres · priorité 1
 Statut : NON COMMENCÉ pour les filtres. Existant réutilisable : banc de dégradations contrôlées des visages
@@ -417,3 +450,11 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 - Tests : `rvis` 20/20 ; `dfv` 23/11 (identique à v7.0/v7.1 : les 11 échecs sont des seuils de qualité du détecteur sur le banc simulé, pas l'écran) ;
   `visage` 12/12 ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Sauvegarde : branche `sauvegarde-v7.2`.
 - 12/11 : **v7.3 confirmée en ligne** (`VER="v7.3"`, couche « outils plein écran » servie).
+
+### Historique — v7.4 (12/11/2026)
+- F14 : NON COMMENCÉ → VALIDÉ SUR DONNÉES SYNTHÉTIQUES (`visages-video.js`, case d'export, banc `tests/visage_ia/banc_video.py`,
+  vidéo de test `tests/visage_ia/video_visage.py`, test `tests/rvv.test.mjs` 5/5).
+- Ce qui n'a pas marché (gardé pour mémoire) : lisser les repères par moyenne glissante (retard sur le mouvement, pire qu'image par image) ;
+  clés « au fil de l'export » sans regarder les images suivantes (R3 : pire que l'entrée en scintillement) ; basses fréquences σ 4 (perd la structure).
+- Non-régression : `app` (Full HD, taille d'origine, compte rendu) 3/3 ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8.
+- Tests Chromium : les drapeaux `--enable-unsafe-swiftshader` font planter l'export vidéo (onglet fermé) ; utiliser ceux d'`app.test.mjs`.

@@ -9,6 +9,8 @@
 #   B  image par image, repères lissés dans le temps
 #   C  images clés + report des détails : GFPGAN 1 image sur K, les détails restaurés (restauré − entrée, dans le repère du visage)
 #      sont reportés sur les images intermédiaires en suivant le visage, avec fondu entre deux clés
+#   R  comme D mais au fil de l'export (rien de l'avenir) : fondu de la clé précédente vers la clé courante (« R3 » = clé toutes les 3 images)
+#   H  comme D (clés + fusion), mais l'image finale = basses fréquences de l'image courante + hautes fréquences des clés (méthode de l'app)
 #   E  chaque image restaurée (entrée fusionnée comme D), puis détails lissés sur les voisines alignées
 #   D  comme C, mais l'entrée de chaque image est d'abord fusionnée avec ses voisines alignées (débruitage multi-images) ; « D3 » = une clé toutes les 3 images
 # Mesures (zone du visage, dans le repère du visage) : LPIPS et PSNR contre la vérité ; scintillement = écart entre la variation
@@ -70,11 +72,11 @@ def methode(lq, nom, K=K):
         if P[t] is None: P[t] = P[t - 1] if t else next(x for x in P if x is not None)
     if nom != 'A': P = lisser(P)
     Ms = [sim(p) for p in P]; al = [cv2.warpAffine(f, M, (512, 512), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT).astype(np.float32) for f, M in zip(lq, Ms)]
-    if nom in ('D', 'E'):   # fusion multi-images dans le repère du visage : moyenne pondérée des voisines bien alignées
+    if nom in ('D', 'E', 'R', 'H'):   # fusion multi-images dans le repère du visage : moyenne pondérée des voisines bien alignées
         fu = []
         for t in range(len(al)):
             acc, ws = np.zeros_like(al[t]), 0.
-            for s in range(max(0, t - 2), min(len(al), t + 3)):
+            for s in range(max(0, t - 2), min(len(al), t + 1 if nom == 'R' else t + 3)):   # R : seulement le passé (calcul au fil de l'export)
                 w = poids(al, t, s)
                 acc += w * al[s]; ws += w
             fu.append(acc / ws)
@@ -91,9 +93,22 @@ def methode(lq, nom, K=K):
         for f, a, M in zip(lq, al, Ms):
             g = recaler(gfpgan(a.astype(np.uint8)), a); out.append(coller(f, FORCE * g + (1 - FORCE) * a, M))
         return out
+    if nom == 'R':   # au fil de l'export, sans attendre l'avenir : une clé toutes les K images, fondu de la clé précédente vers la nouvelle
+        det, prev, out = {}, None, []
+        for t, (f, a, M) in enumerate(zip(lq, al, Ms)):
+            if t % K == 0: prev = det.get(t - K); det[t] = recaler(gfpgan(a.astype(np.uint8)), a) - a
+            k = t - t % K; u = (t - k + 1) / K; d = det[k] if prev is None else (1 - u) * prev + u * det[k]
+            out.append(coller(f, np.clip(a + FORCE * d, 0, 255), M))
+        return out
     cles = list(range(0, len(lq), K));
     if cles[-1] != len(lq) - 1: cles.append(len(lq) - 1)
     det = {k: recaler(gfpgan(al[k].astype(np.uint8)), al[k]) - al[k] for k in cles}   # détails restaurés, dans le repère du visage
+    if nom == 'H':   # ce que fait l'app : basses fréquences de l'image courante (couleurs, lumière de l'export) + hautes fréquences des clés restaurées
+        LP = lambda z: cv2.GaussianBlur(z, (0, 0), float(os.environ.get("SIGMA", 12))); hp = {k: (al[k] + FORCE * det[k]) - LP(al[k] + FORCE * det[k]) for k in cles}
+        for t, (f, a, M) in enumerate(zip(lq, al, Ms)):
+            k0 = max(k for k in cles if k <= t); k1 = min(k for k in cles if k >= t); u = 0 if k1 == k0 else (t - k0) / (k1 - k0)
+            out.append(coller(f, np.clip(LP(a) + (1 - u) * hp[k0] + u * hp[k1], 0, 255), M))
+        return out
     for t, (f, a, M) in enumerate(zip(lq, al, Ms)):
         k0 = max(k for k in cles if k <= t); k1 = min(k for k in cles if k >= t); u = 0 if k1 == k0 else (t - k0) / (k1 - k0)
         d = (1 - u) * det[k0] + u * det[k1]
