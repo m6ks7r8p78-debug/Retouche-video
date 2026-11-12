@@ -8,7 +8,7 @@ ICI = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, ICI)
 sys.argv_sauf = sys.argv[:]; ap = argparse.ArgumentParser()
 ap.add_argument('--prive', action='append', default=[]); ap.add_argument('--val', default=''); ap.add_argument('--pas', type=int, default=3000)
 ap.add_argument('--publics', type=int, default=1600); ap.add_argument('--sortie', default='detecteur_ajouts_v3'); ap.add_argument('--sans', default='')
-ap.add_argument('--init', default=os.path.join(ICI, 'detecteur_ajouts_v2.pt')); ap.add_argument('--cache', default=''); ap.add_argument('--pos', type=float, default=1.5); ap.add_argument('--nasa', default=''); ap.add_argument('--gen', action='append', default=[], help='nouveaux filtres générés posés sur des images réelles (npz X,Y)'); ap.add_argument('--nouveaux', action='store_true', help='générateur filtres_nouveaux.py pour les visages publics'); ap.add_argument('--part_gen', type=float, default=.15, help='part des lots tirée de --gen'); ap.add_argument('--part_nouveaux', type=float, default=.6, help='part des nouveaux filtres sur les visages publics'); ap.add_argument('--exclure', default='', help="types d'éléments écartés (ex. N60 : crâne chauve, qui apprend à signaler les vrais crânes chauves)"); args = ap.parse_args()
+ap.add_argument('--init', default=os.path.join(ICI, 'detecteur_ajouts_v2.pt')); ap.add_argument('--cache', default=''); ap.add_argument('--pos', type=float, default=1.5); ap.add_argument('--nasa', default=''); ap.add_argument('--gen', action='append', default=[], help='nouveaux filtres générés posés sur des images réelles (npz X,Y)'); ap.add_argument('--nouveaux', action='store_true', help='générateur filtres_nouveaux.py pour les visages publics'); ap.add_argument('--lr', type=float, default=1.5e-3, help='pic du taux d\'apprentissage (plus bas pour affiner un modèle déjà bon)'); ap.add_argument('--part_gen', type=float, default=.15, help='part des lots tirée de --gen'); ap.add_argument('--part_nouveaux', type=float, default=.6, help='part des nouveaux filtres sur les visages publics'); ap.add_argument('--exclure', default='', help="types d'éléments écartés (ex. N60 : crâne chauve, qui apprend à signaler les vrais crânes chauves)"); args = ap.parse_args()
 sys.argv = [sys.argv[0], '--donnees', str(args.publics)]
 import entrainer_ajouts as E   # réutilise cadrage, générateur v2, architecture
 if args.nasa: E.args.extra = args.nasa   # visages NASA (domaine public) ajoutés aux visages du labo
@@ -59,7 +59,7 @@ if __name__ == '__main__':
         Xg = np.concatenate([np.load(f)['X'] for f in args.gen]); Yg = np.concatenate([np.load(f)['Y'] for f in args.gen]); print('générés sur images réelles :', len(Xg), flush=True)
     else: Xg = Yg = None
     net = E.Detecteur(); net.load_state_dict(torch.load(args.init)); net.train()
-    opt = torch.optim.AdamW(net.parameters(), 1e-3, weight_decay=1e-4); sch = torch.optim.lr_scheduler.OneCycleLR(opt, 1.5e-3, total_steps=args.pas)
+    opt = torch.optim.AdamW(net.parameters(), 1e-3, weight_decay=1e-4); sch = torch.optim.lr_scheduler.OneCycleLR(opt, args.lr, total_steps=args.pas)
     pt = args.sortie + '_reprise.pt'; k0 = 0
     if os.path.exists(pt):   # reprise après coupure
         st = torch.load(pt, weights_only=False); net.load_state_dict(st['net']); opt.load_state_dict(st['opt']); sch.load_state_dict(st['sch']); k0 = st['k'] + 1
