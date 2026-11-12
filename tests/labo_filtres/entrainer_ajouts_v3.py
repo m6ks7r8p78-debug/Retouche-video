@@ -8,15 +8,15 @@ ICI = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, ICI)
 sys.argv_sauf = sys.argv[:]; ap = argparse.ArgumentParser()
 ap.add_argument('--prive', action='append', default=[]); ap.add_argument('--val', default=''); ap.add_argument('--pas', type=int, default=3000)
 ap.add_argument('--publics', type=int, default=1600); ap.add_argument('--sortie', default='detecteur_ajouts_v3'); ap.add_argument('--sans', default='')
-ap.add_argument('--init', default=os.path.join(ICI, 'detecteur_ajouts_v2.pt')); ap.add_argument('--cache', default=''); ap.add_argument('--pos', type=float, default=1.5); ap.add_argument('--nasa', default=''); ap.add_argument('--gen', action='append', default=[], help='nouveaux filtres générés posés sur des images réelles (npz X,Y)'); ap.add_argument('--nouveaux', action='store_true', help='générateur filtres_nouveaux.py pour les visages publics'); ap.add_argument('--exclure', default='', help="types d'éléments écartés (ex. N60 : crâne chauve, qui apprend à signaler les vrais crânes chauves)"); args = ap.parse_args()
+ap.add_argument('--init', default=os.path.join(ICI, 'detecteur_ajouts_v2.pt')); ap.add_argument('--cache', default=''); ap.add_argument('--pos', type=float, default=1.5); ap.add_argument('--nasa', default=''); ap.add_argument('--gen', action='append', default=[], help='nouveaux filtres générés posés sur des images réelles (npz X,Y)'); ap.add_argument('--nouveaux', action='store_true', help='générateur filtres_nouveaux.py pour les visages publics'); ap.add_argument('--part_gen', type=float, default=.15, help='part des lots tirée de --gen'); ap.add_argument('--part_nouveaux', type=float, default=.6, help='part des nouveaux filtres sur les visages publics'); ap.add_argument('--exclure', default='', help="types d'éléments écartés (ex. N60 : crâne chauve, qui apprend à signaler les vrais crânes chauves)"); args = ap.parse_args()
 sys.argv = [sys.argv[0], '--donnees', str(args.publics)]
 import entrainer_ajouts as E   # réutilise cadrage, générateur v2, architecture
 if args.nasa: E.args.extra = args.nasa   # visages NASA (domaine public) ajoutés aux visages du labo
-if args.nouveaux:   # v7.2 : nouveaux filtres (60 %) + anciens sans monture fine (40 %)
+if args.nouveaux:   # v7.2 : nouveaux filtres (--part_nouveaux) + anciens sans monture fine (40 %)
     import ajouts as A_, filtres_nouveaux as FN
     _ancien = A_.poser
     def _mix(x, P, r_, **kw):
-        return FN.poser_nouveaux(x, P, r_) if r_.random() < .6 else _ancien(x, P, r_, exclus=('lunettes',))
+        return FN.poser_nouveaux(x, P, r_) if r_.random() < args.part_nouveaux else _ancien(x, P, r_, exclus=('lunettes',))
     E.A.poser = _mix
 S = 192; torch.set_num_threads(os.cpu_count() or 2); r = np.random.default_rng(11)
 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         X = np.zeros((n, S, S, 3), np.uint8); Y = np.zeros((n, S, S), np.uint8)
         for i in range(n):
             u = r.random()
-            if Xg is not None and .25 <= u < .4: j = r.integers(len(Xg)); X[i], Y[i] = bruiter(Xg[j]), Yg[j]
+            if Xg is not None and .25 <= u < .25 + args.part_gen: j = r.integers(len(Xg)); X[i], Y[i] = bruiter(Xg[j]), Yg[j]
             elif u < .3: j = r.integers(len(Xp)); X[i], Y[i] = Xp[j], Yp[j]
             elif u < .7: j = neg[r.integers(len(neg))]; X[i], Y[i] = bruiter(Xr[j]), 0
             elif u < .83 and len(pos): j = pos[r.integers(len(pos))]; X[i], Y[i] = bruiter(Xr[j]), Yr[j]
