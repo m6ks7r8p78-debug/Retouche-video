@@ -458,3 +458,4 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
   clés « au fil de l'export » sans regarder les images suivantes (R3 : pire que l'entrée en scintillement) ; basses fréquences σ 4 (perd la structure).
 - Non-régression : `app` (Full HD, taille d'origine, compte rendu) 3/3 ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8.
 - Tests Chromium : les drapeaux `--enable-unsafe-swiftshader` font planter l'export vidéo (onglet fermé) ; utiliser ceux d'`app.test.mjs`.
+- 12/11 : **v7.4 confirmée en ligne** (`VER="v7.4"`, `visages-video.js` servi). Sauvegarde : branche `sauvegarde-v7.3`.
