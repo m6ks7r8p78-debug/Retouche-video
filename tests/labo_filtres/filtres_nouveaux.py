@@ -124,8 +124,8 @@ def poser_nouveaux(img, P, r, n=None):
                 if forme == 0: tt = np.linspace(0, 2 * np.pi, 50); pts = np.stack([16 * np.sin(tt) ** 3, -(13 * np.cos(tt) - 5 * np.cos(2 * tt) - 2 * np.cos(3 * tt) - np.cos(4 * tt))], 1) / 16 * s + q
                 elif forme == 1: tt = np.linspace(0, 2 * np.pi, 11)[:-1]; rr = np.where(np.arange(10) % 2 == 0, 1, .5) * s; pts = np.stack([np.sin(tt) * rr, -np.cos(tt) * rr], 1) + q
                 else: tt = np.linspace(0, 2 * np.pi, 40); pts = np.stack([np.cos(tt), np.sin(tt) * .8], 1) * s + q
-                m = _poly(sh, pts); mettre(m * r.uniform(.35, .7), c, op=1)   # verre teinté coloré
-                mettre(np.clip(m - cv2.erode((m > .5).astype(np.uint8), np.ones((int(.06 * io) | 1,) * 2)).astype(np.float32), 0, 1), c, halo=.04 if r.random() < .5 else 0, coeur_blanc=r.random() < .5)
+                m = _poly(sh, pts)   # v7.2b : plus de verre teinté (il apprenait à effacer les verres de vraies lunettes) : monture opaque seule
+                mettre(np.clip(m - cv2.erode((m > .5).astype(np.uint8), np.ones((int(.09 * io) | 1,) * 2)).astype(np.float32), 0, 1), c, halo=.04 if r.random() < .5 else 0, coeur_blanc=r.random() < .5)
         elif t == 'aureole':
             c = np.array([80, 220, 255.]) if r.random() < .6 else neon(); q = P[10] - uy * io * r.uniform(.6, 1.0)
             m = _ell(sh, q, (io * r.uniform(.6, .9), io * r.uniform(.12, .2)), ang); mettre(np.clip(m - _ell(sh, q, (io * .5, io * .08), ang), 0, 1), c, halo=.05, coeur_blanc=True)
