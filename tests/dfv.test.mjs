@@ -60,7 +60,7 @@ await test("écran : ouverture, avant/après, carte, enregistrement prêt, ferme
   return { ok: r.ok && r.carte && r.ferme && r.bouton, info: r.m.slice(0, 150) };
 });
 await test("détecteur injoignable : message clair, photo intacte", async () => {
-  const q = await b.newPage(); q.on("dialog", d => d.accept()); await q.route("**/detecteur_ajouts_v2.onnx", r => r.abort());
+  const q = await b.newPage(); q.on("dialog", d => d.accept()); await q.route(/detecteur_ajouts_v\d+\.onnx/, r => r.abort());
   await q.goto("http://localhost:" + PORT + "/index.html"); await q.waitForFunction(() => window.chargerModule);
   const m = await q.evaluate(async u => { await chargerModule("defiltre"); const i = new Image(); i.src = u; await i.decode(); const c = document.createElement("canvas"); c.width = i.width; c.height = i.height; c.getContext("2d").drawImage(i, 0, 0);
     const bl = await new Promise(r => c.toBlob(r, "image/jpeg", .9)); await DFV.ouvrir(new File([bl], "x.jpg", { type: "image/jpeg" })); return document.querySelector("#dfv_msg").textContent + "|" + document.querySelector("#dfv_ok").disabled }, "tests/medias/filtres_labo/" + CAS[0].image);

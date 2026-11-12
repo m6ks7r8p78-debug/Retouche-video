@@ -8,7 +8,7 @@ ICI = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, ICI)
 sys.argv_sauf = sys.argv[:]; ap = argparse.ArgumentParser()
 ap.add_argument('--prive', action='append', default=[]); ap.add_argument('--val', default=''); ap.add_argument('--pas', type=int, default=3000)
 ap.add_argument('--publics', type=int, default=1600); ap.add_argument('--sortie', default='detecteur_ajouts_v3'); ap.add_argument('--sans', default='')
-ap.add_argument('--init', default=os.path.join(ICI, 'detecteur_ajouts_v2.pt')); ap.add_argument('--cache', default=''); ap.add_argument('--pos', type=float, default=1.5); ap.add_argument('--nasa', default=''); args = ap.parse_args()
+ap.add_argument('--init', default=os.path.join(ICI, 'detecteur_ajouts_v2.pt')); ap.add_argument('--cache', default=''); ap.add_argument('--pos', type=float, default=1.5); ap.add_argument('--nasa', default=''); ap.add_argument('--exclure', default='', help="types d'éléments écartés (ex. N60 : crâne chauve, qui apprend à signaler les vrais crânes chauves)"); args = ap.parse_args()
 sys.argv = [sys.argv[0], '--donnees', str(args.publics)]
 import entrainer_ajouts as E   # réutilise cadrage, générateur v2, architecture
 if args.nasa: E.args.extra = args.nasa   # visages NASA (domaine public) ajoutés aux visages du labo
@@ -42,6 +42,8 @@ if __name__ == '__main__':
         t = time.time(); Xp, Yp = E.generer(pub, args.publics, 1, False); print('publics simulés', len(Xp), round(time.time() - t), 's', flush=True)
         if args.cache: np.savez(args.cache, X=Xp, Y=Yp)
     Xr, Yr, Gr = charger(args.prive)
+    if args.exclure:
+        k = np.array([g not in args.exclure.split(',') for g in Gr]); Xr, Yr, Gr = Xr[k], Yr[k], Gr[k]
     if args.sans:   # élément tenu à l'écart (test « type jamais vu »)
         k = np.array([args.sans not in g for g in Gr]); Xr, Yr, Gr = Xr[k], Yr[k], Gr[k]
     neg = np.where(Gr == 'aucun')[0]; pos = np.where(Gr != 'aucun')[0]; vides_p = np.where(Yp.reshape(len(Yp), -1).max(1) == 0)[0]
