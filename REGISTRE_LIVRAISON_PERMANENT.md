@@ -208,6 +208,7 @@ Statut : INTÉGRÉ NON VALIDÉ, **éteints volontairement** (décision du propri
   (le cas PNG passe en mode expert : il échouait déjà en v7.1 car le choix du format est masqué en mode simple).
 - **Tests exécutés** : `atelier` 10/10 ; `pages` 5/5 (dont 14 vues 390 px clair/sombre sans défilement horizontal, contraste) ;
   `studio` 11/11 ; `sw` 8/8 ; `app` (parcours photo + vidéo, voir historique v7.2).
+- **v7.3** : les 3 outils plein écran (effacer, filtre, visages) reprennent le système (couche `body #ez/#dfv/#rvis` dans `index.html`, aucun changement de calcul).
 - **Limites** : rendu Safari iOS, toucher et zones sûres non vérifiés sur l'appareil ; glisser-déposer inutile sur iPhone (bouton).
 - **Critère de fin** : avis du propriétaire sur iPhone 15 Pro Max (accueil, photo ouverte, export) + aucune régression d'export.
 - **Protocole iPhone (2 min)** : ouvrir retoucheproai.com → vérifier que l'en-tête ne déborde pas et que la barre du bas ne cache

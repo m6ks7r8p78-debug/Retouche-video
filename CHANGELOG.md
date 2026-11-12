@@ -1,5 +1,9 @@
 # Journal des versions
 
+## v7.3 (12 nov. 2026) — outils plein écran au style du studio
+- « Effacer une zone », « Retirer un filtre du visage » et « Restaurer les visages » reprennent le système du studio (toujours
+  sombres pour juger l'image, accent ambre, boutons et curseurs identiques, commandes centrées sur ordinateur). Aucun changement de calcul.
+
 ## v7.2 (12 nov. 2026) — nouveau studio
 - Accueil entièrement recomposé : la page de présentation devient un espace de travail. Zone d'import centrale (glisser-déposer
   sur ordinateur, boutons Vidéo / Photo) qui se replie quand un média est ouvert ; déroulé en 4 étapes qui suit l'état réel.
