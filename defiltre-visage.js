@@ -9,7 +9,7 @@
    filtre n'est pas touchée. Ne traite pas : déformations (gros yeux, visage affiné), lissage, maquillage, cagoule, floutage.
    Mesures et limites : REGISTRE_LIVRAISON_PERMANENT.md, fiche F30. */
 var DFV = (() => {
-  const ID = "ajouts", S = 192, R = { seuil: .6, aireMin: .04, dilat: .06, gfpgan: .08 };
+  const ID = "ajouts", S = 192, R = { seuil: .8, aireMin: .04, dilat: .06, gfpgan: .08 };
   let sess = null, chargement = null, enCours = 0;
   const $ = s => document.querySelector(s), toile = (w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c };
   function script(src) { return new Promise((ok, ko) => { if (window.ort) return ok(); const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => ko(new Error("moteur introuvable")); document.head.appendChild(s) }) }
