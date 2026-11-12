@@ -514,3 +514,4 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 - F14 : recalage fin ajouté (`recalage.js`, extrait de `filtre-video.js` et partagé) ; mesures dans la fiche. F10 : inchangé (même code, déplacé).
 - Tests v7.6 : `rvv` 5/5 (dans l'app : visage 0,249 → 0,190 LPIPS, scintillement 5,75 → 5,35) ; `rfv` 6/6 (22,9 / 3,08 / 0,067) ;
   `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Aucun test sur iPhone.
+- 12/11 : **v7.6 confirmée en ligne** (`VER="v7.6"`, `recalage.js` servi). Sauvegarde : branche `sauvegarde-v7.5`.
