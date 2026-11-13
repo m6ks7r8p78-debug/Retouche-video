@@ -31,6 +31,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 | **Laboratoire** | F15 : EN DÉVELOPPEMENT (+ v7.1 : 74 vrais clips Snapchat privés avec vérité terrain, 359 visages NASA, validation croisée par vidéo) |
 | **Bloquées (dépendance externe)** | F23 serveur de consentement (déploiement + juriste) · F24 collecte pour l'entraînement (juriste) · **F13 en usage commercial** (décision juridique sur la licence des poids) |
 | **Régressions détectées** | aucune introduite par la v6.9. **Échecs déjà présents en v6.8** (trouvés en relançant tout) : `tests/pub.test.mjs` 1 cas (pub indisponible → l’enregistrement ne part pas dans le test), `tests/v3.test.mjs` 3 cas (rendus « équilibre / nuit / jour » de photo sombre) — à expliquer et corriger |
+| **Nouveau v8.0** | **F32 Changer de format (AI Adaptive Video Reframing)** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES ET VIDÉOS DE TEST LIBRES (32 tests, Chromium) ; non validé sur iPhone (WebKit indisponible dans l'environnement de test) |
 
 **Priorité donnée par le propriétaire le 11/11 au soir** : uniquement le retrait des filtres beauté / visage / animaux (cagoule et flou qui cache un visage : exclus, voir F29). **Ancien ordre** : F14 visages en vidéo (Kaggle + local) → F11/F12 filtres beauté et déformations
 sur photo → F10 effacement AR en vidéo (suivi F09 déjà prêt) → F15 laboratoire de filtres → F16 directeur branché sur l'export →
@@ -292,6 +293,30 @@ Statut : INTÉGRÉ NON VALIDÉ, **éteints volontairement** (décision du propri
 Statut : REMPLACÉ par F31 en v7.2 (ancien : INTÉGRÉ NON VALIDÉ).
 
 ---
+
+### F32 — Changer de format (AI Adaptive Video Reframing) (v8.0) · demande du 13/11 (« prompt maître final »)
+- **Objectif** : convertir une vidéo d'un format à un autre (9:16, 16:9, 1:1, 4:3, 4:5, 21:9, sur mesure) en gardant le plus
+  possible de l'image, avec une méthode choisie scène par scène.
+- **Statut** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES ET VIDÉOS DE TEST LIBRES · non validé sur iPhone.
+- **Implémenté** : analyse (bandes noires, plans, mouvement de caméra, suivi des sujets, zone d'intérêt) ; directeur (coût par
+  méthode et par zoom, 3 modes) ; moteur (mosaïque du décor réel, reconstruction MI-GAN bornée, fondu flou, hybride, recadrage suivi) ;
+  contrôle qualité mesuré avec nouvelle tentative ; interface (5 étapes, panneau avancé, curseur avant/après, scènes, choix manuel,
+  « Relancer la reconstruction », carte des pixels inventés) ; export WebCodecs (son d'origine recopié, résolution et cadence
+  réglables, lecture de secours pour les fichiers non MP4) ; reprise de l'analyse ; lien avec l'atelier d'amélioration.
+- **Fichiers** : `format.js`, `format-analyse.js`, `format-directeur.js`, `format-moteur.js`, `format-qualite.js` ; branchements
+  dans `app.js`, `index.html`, `models.js`, `sw.js`. Chargé à la demande (rien de plus au démarrage).
+- **Modèles** : YuNet (MIT, déjà présent), MI-GAN (MIT, déjà présent), EfficientDet-Lite0 (Apache-2.0, nouveau, 4,6 Mo). 0 €.
+- **Tests exécutés le 14/11/2026** : `tests/format.test.mjs` 16/16 ; `tests/format_app.test.mjs` 16/16 (4:3→16:9, 16:9→9:16, →1:1,
+  panoramique, plusieurs plans, bandes noires incrustées, WebM, modèle refusé, reprise, atelier).
+- **Mesures (Chromium sans carte graphique, machine de test)** : 4:3→16:9 plan fixe 10 s : analyse + décor 17 s, export 640×360
+  6 s, image d'origine PSNR 30,1 dB, variation des côtés 0,01 (image : 0,55) ; vertical 3,2 s → 1920×1080 : analyse 6 s, export 3 s.
+  Générateurs (16 images à vérité connue) : LPIPS MI-GAN 0,31–0,33 ; LaMa 0,15–0,27 ; flou 0,38–0,44.
+- **Limites** : (1) vertical caméra à la main → 16:9 : 68 % à inventer, l'app retombe sur le prolongement flou (pas une « vraie »
+  vidéo horizontale) ; (2) décor reconstruit crédible seulement sur ~20 % de profondeur et pour un plan fixe ou un mouvement simple ;
+  (3) pas de profondeur ni de parallaxe ; (4) le contrôle qualité ne juge pas la vraisemblance du contenu inventé ; (5) HDR non
+  conservé (sortie SDR) ; (6) jamais essayé sur iPhone / Safari.
+- **À améliorer ensuite** : intégrer LaMa pour les côtés (mesuré meilleur) ; génération lourde sur le serveur Kaggle gratuit pour
+  vertical → horizontal ; essai sur iPhone ; conservation HDR.
 
 ## Historique des livraisons (ne jamais effacer)
 

@@ -9,6 +9,7 @@
 | mp4-muxer | MIT | — | oui |
 | Tables de filtres | propres à l’app | propres à l’app | oui |
 | MI-GAN 512 Places2 (pipeline ONNX v2) *(v3.3)* | MIT | MIT (`LICENSE-WEIGHTS` officiel) — `LICENSE-MI-GAN.txt` | oui, avec mention |
+| EfficientDet-Lite0 (Google, COCO) + MediaPipe tasks-vision 1.2.3 *(v8.0, « Changer de format »)* | Apache-2.0 | Apache-2.0 — `LICENSE-MediaPipe.txt` | oui, avec mention |
 | EdgeTAM (Meta) — export ONNX onnx-community *(v3.3)* | Apache-2.0 | Apache-2.0 — `LICENSE-EdgeTAM.txt` | oui, avec mention |
 | Médias de test | scikit-image : NASA (domaine public), CC0 | — | oui |
 | Polices Bricolage Grotesque, DM Mono, Instrument Sans *(v3.2, hébergées dans `polices/`)* | — | SIL Open Font License 1.1 (`polices/OFL.txt`) | oui |

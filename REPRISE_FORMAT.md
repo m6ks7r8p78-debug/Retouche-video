@@ -17,11 +17,15 @@
 - Tests : `tests/format.test.mjs`, `tests/format_app.test.mjs`, banc `tests/format/`
   (vidéos de test générées par `tests/format/creer_videos.sh`, non versionnées)
 
-## Reste à faire (à vérifier dans l'ordre)
-1. Lancer les tests (`node --test tests/format*.test.mjs`) et corriger ce qui échoue.
-2. Vérifier l'interface dans un navigateur (Playwright, y compris gabarit iPhone/WebKit).
-3. Tests de non-régression de l'app existante.
-4. Documentation (NOTES.md, CHANGELOG.md, REGISTRE_LIVRAISON_PERMANENT.md, licences).
-5. Publier sur `main` seulement quand tout est validé (créer d'abord `sauvegarde-v7.6`).
+## État au 14 nov. 2026, 01 h (v8.0 prête sur la branche)
+- FAIT : tests du module 16/16 + 16/16 (`PW=<chemin playwright>/index.mjs node tests/format_app.test.mjs`).
+- FAIT : documentation (CHANGELOG v8.0, fiche F32 du registre, NOTES, licences, guide).
+- FAIT : empreinte du service worker (`node tests/sw.test.mjs --maj`).
+- EN COURS : suite de non-régression (`tests/lancer_tests.sh`) puis publication sur `main`.
+
+## Ensuite (par ordre d'intérêt mesuré)
+1. Intégrer LaMa (Apache-2.0) pour les côtés : mesuré nettement meilleur que MI-GAN (voir REGISTRE_MODELES_LICENCES.md).
+2. Vertical → horizontal « vrai » : génération lourde sur le serveur Kaggle gratuit.
+3. Essai sur iPhone (WebKit absent de l'environnement de test) ; HDR.
 
 Mettre à jour ce fichier et pousser après chaque étape terminée.

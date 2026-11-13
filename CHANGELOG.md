@@ -1,5 +1,24 @@
 # Journal des versions
 
+## v8.0 (14 nov. 2026) — Changer de format (vertical ↔ horizontal, carré, 4:3, 21:9, sur mesure)
+- Nouvel outil **« Changer de format »** (studio → outils, et bouton « 📐 Changer le format de cette vidéo » dans l'atelier) :
+  importer → choisir le format (ou « Auto ») → analyser → prévisualiser (curseur avant/après, scène par scène) → exporter.
+- **Directeur par scène** : la vidéo est découpée en plans ; pour chacun, l'app compare recadrage suivi, décor retrouvé,
+  décor reconstruit, hybride et prolongement flou, et garde le moins coûteux (sujets perdus, image perdue, part inventée).
+  Trois façons de faire : **Auto**, **Fidélité** (rien d'inventé), **Reconstruction max**.
+- **Décor retrouvé** : quand la caméra bouge, les côtés manquants sont repris des autres images de la scène (vrais pixels).
+  **Décor reconstruit** (MI-GAN, déjà utilisé par « Effacer une zone ») seulement jusqu'à la profondeur où il reste crédible ;
+  au-delà, fondu vers un prolongement flou. Le décor est calculé une fois par scène et suit la caméra : pas de scintillement.
+- **Suivi des sujets** : visages (YuNet) + personnes, animaux, objets (nouveau modèle EfficientDet-Lite0, 4,6 Mo, Apache-2.0,
+  téléchargé à la demande) ; cadre lissé, pas de visage coupé.
+- **Contrôle qualité mesuré** (raccord, lumière, scintillement, netteté, répétition, sujets, fluidité) : si un seuil est dépassé,
+  une autre méthode est essayée. Les chiffres affichés sont des mesures ; la carte rose montre les pixels inventés.
+- Bandes noires d'origine retirées avant conversion ; son d'origine recopié tel quel ; résolution et cadence réglables ;
+  reprise de l'analyse si la même vidéo est rouverte ; passage direct vers « Améliorer cette vidéo ».
+- Limite connue : une vidéo verticale filmée caméra à la main vers 16:9 demande d'inventer ~68 % de l'image ; aucun modèle
+  gratuit tournant sur téléphone ne le fait de façon crédible → l'app choisit alors le prolongement flou ou l'hybride et le dit.
+- Tests : `tests/format.test.mjs` (16, calcul pur) et `tests/format_app.test.mjs` (16, de bout en bout dans Chromium). Fiche F32.
+
 ## v7.6 (12 nov. 2026) — visages en vidéo : plus nets et plus stables
 - « Restaurer les visages » en vidéo recale maintenant chaque image sur la première avant de reporter les détails (même recalage
   que le retrait de filtre). Mesuré sur 4 portraits à vérité connue : visage plus proche de la vraie image et scintillement en

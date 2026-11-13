@@ -124,6 +124,7 @@ Ils dosent ce que l'analyse automatique a réglé (`P` reste la base) : `PROF.T`
 ## Historique récent
 | Version | Changement |
 |---|---|
+| v8.0 | « Changer de format » (F32) : `format.js` (écran, WebCodecs) + 4 modules de calcul pur `format-analyse/-directeur/-moteur/-qualite.js` ; décision par scène (recadrage suivi, décor retrouvé par mosaïque, décor reconstruit MI-GAN borné, hybride, prolongement flou) ; EfficientDet-Lite0 pour les sujets ; contrôle qualité mesuré ; tests `tests/format.test.mjs`, `tests/format_app.test.mjs`, banc `tests/format/` ; reprise : `REPRISE_FORMAT.md` |
 | v3.3 | outil « Effacer une zone » (MI-GAN, MIT) + sélection au toucher (EdgeTAM, Apache-2.0) ; carte des zones inventées, provenance, exports ; `tests/effacer.test.mjs` (19 cas) ; études de licences ProPainter/CodeFormer/CompleteMe |
 | v3.2 | audit : service worker qui effaçait les modèles téléchargés (corrigé, `tests/sw.test.mjs`), faille d'injection par sauvegarde (corrigée, `esc()` dans `studio.js`), polices locales (`polices/`), SRI sur le secours mp4-muxer, autorisation `diagnostic` + bouton « Autoriser », branches de sauvegarde, AUTORISATIONS.md, RESTAURATION_IA.md |
 | v3.1 | remise en ordre automatique des morceaux de vidéo (continuité d'image, date, doublons, confiance) |

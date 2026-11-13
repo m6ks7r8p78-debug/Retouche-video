@@ -13,10 +13,16 @@ Empreintes calculées sur les fichiers de l’archive. Licences : celles des fic
 | `modeles/yunet.onnx` | repérage du visage (boîte + 5 repères), v6.8 | MIT — `LICENSE-YuNet.txt`, source : OpenCV Zoo `face_detection_yunet_2023mar.onnx` (fichier identique sur le dépôt GitHub et sur Hugging Face `opencv/face_detection_yunet`) | `8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4` |
 | `modeles/lourds/detecteur_ajouts_v3.onnx` (v7.1, téléchargé à la demande) | repérage des éléments d'un filtre AR | RetoucheProAI (entraîné par nous ; données : labo, NASA domaine public, clips du propriétaire avec accord, non distribués) | `364067c133109879e2d13148a99e5e80c872fcaf428b5c67f1a24bc8458af018` |
 | `modeles/lourds/mains/` (v7.1 : `hand_landmarker.task`, `vision_bundle.mjs`, `vision_wasm_internal.js/.wasm`) | repérage des mains (veto du retrait de filtre) | MediaPipe Hand Landmarker + @mediapipe/tasks-vision 1.2.3 — Apache-2.0, `LICENSE-MediaPipe.txt` | `fbc2a300…7cde1` (modèle) ; `225bc06c…aabf` (wasm) |
+| `modeles/lourds/objets/efficientdet_lite0.tflite` (v8.0, téléchargé à la demande) | repérage des personnes, animaux, objets pour « Changer de format » | EfficientDet-Lite0 int8 (Google, COCO) — Apache-2.0, `LICENSE-MediaPipe.txt` ; moteur : tasks-vision 1.2.3 déjà présent (`modeles/lourds/mains/`) | `0720bf247bd76e6594ea28fa9c6f7c5242be774818997dbbeffc4da460c723bb` |
 
 MI-GAN (effacement) : téléchargé à la demande, voir `MODELES.md` / `LICENSE-MI-GAN.txt`.
 
 ## Évalués, non intégrés
+**LaMa (Apache-2.0, ONNX ≈ 200 Mo) — v8.0, pour l'extension des côtés** : mesuré sur 16 images à vérité connue
+(`tests/format/banc_generateurs.py`) : LPIPS 0,15 → 0,27 selon la profondeur, contre 0,31 → 0,33 pour MI-GAN et 0,38 → 0,44 pour le
+prolongement flou ; mais 4 à 5 fois plus lent et 7 fois plus lourd. Non intégré en v8.0 (poids et mémoire sur iPhone à valider) ;
+c'est la première amélioration prévue (le Directeur connaît déjà sa portée : `PORTEE.lama`).
+Modèles de diffusion vidéo (outpainting vidéo génératif) : écartés — plusieurs Go, carte graphique dédiée, impossibles à 0 € sur téléphone.
 SwinIR, HAT, BasicVSR++, RVRT, restauration de visage (GFPGAN/CodeFormer) : non intégrés. Raisons : poids de plusieurs dizaines à centaines de Mo, pas d’export web validé sur Safari iOS, et licences de certains poids non commerciales (CodeFormer notamment) ou à vérifier. Aucun poids n’a été téléchargé.
 
 ## Restauration de visage (v6.8) : évaluée, non intégrée

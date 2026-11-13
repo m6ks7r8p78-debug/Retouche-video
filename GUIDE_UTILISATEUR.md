@@ -9,4 +9,7 @@
    « 🧩 Remettre dans l’ordre automatiquement ». Lis le compte rendu : doublons retirés, raccords douteux, confiance.
    Si la confiance est faible, corrige avec les flèches. Puis « Regrouper en une seule vidéo » (sans perte de qualité).
 7. **⚙️** : autorisations, sauvegarde chiffrée, historique. **🧠 Modèles IA** : modèles, place, vitesse.
+8. **Changer de format** (vertical ↔ horizontal, carré, 4:3, 21:9, sur mesure) : choisis la vidéo, le format (ou « Auto »), puis
+   « Analyser la vidéo ». Regarde l’aperçu (curseur avant/après, carte rose = pixels inventés), puis « Créer la vidéo ».
+   Auto décide seul ; Fidélité n’invente rien ; Reconstruction max recrée plus de décor.
 Ce que l’app ne fait pas : inventer de vrais détails disparus, refaire un visage, générer des vidéos ou des voix.
