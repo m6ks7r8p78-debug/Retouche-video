@@ -1,7 +1,7 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v7.6";/* seul endroit où changer le numéro de version */
+const VER="v8.0";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
-const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","recalage.js","visages-video.js"],filtrevideo:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js","recalage.js","visages-video.js","filtre-video.js"],defiltre:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js"]},__charges={};
+const MODULES={format:["format-analyse.js","format-directeur.js","format-moteur.js","format-qualite.js","format.js"],effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","recalage.js","visages-video.js"],filtrevideo:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js","recalage.js","visages-video.js","filtre-video.js"],defiltre:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
   s.onload=ok;s.onerror=()=>{delete __charges[src];ko(new Error("Impossible de charger "+src+" (connexion ?)"))};document.head.appendChild(s)}))}
 function chargerModule(n){return Promise.all(MODULES[n].map(chargerScript))}
@@ -1228,6 +1228,9 @@ function ouvrirEffacer(f){chargerModule("effacer").then(()=>ERASE.open(f),e=>msg
 /* v7.0 : retirer les éléments d'un filtre AR d'une photo (defiltre-visage.js) */
 function ouvrirDefiltre(f){chargerModule("defiltre").then(()=>DFV.ouvrir(f),e=>msg(e.message))}
 $("#pickd").onclick=()=>$("#fd").click();$("#fd").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)ouvrirDefiltre(f)};$("#dfb").onclick=()=>{if(window.__photoFile)ouvrirDefiltre(window.__photoFile)};
+/* v8.0 : changer le format d'une vidéo (format.js et ses 4 modules, chargés à la demande) */
+function ouvrirFormat(f){chargerModule("format").then(()=>FMT.ouvrir(f),e=>msg(e.message))}
+$("#pickf").onclick=()=>$("#ff").click();$("#ff").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)ouvrirFormat(f)};$("#fmb").onclick=()=>{if(curFile&&mode==="video")ouvrirFormat(curFile)};
 function ouvrirVisages(f){chargerModule("visages").then(()=>RVIS.ouvrir(f),e=>msg(e.message))}
 $("#rvb").onclick=()=>{if(window.__photoFile)ouvrirVisages(window.__photoFile)};$("#pickv").onclick=()=>$("#fv").click();$("#fv").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)ouvrirVisages(f)};
 $("#kbb").onclick=()=>KB.make();$("#erb").onclick=()=>{if(window.__photoFile)ouvrirEffacer(window.__photoFile)};$("#picke").onclick=()=>$("#fe").click();$("#fe").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)ouvrirEffacer(f)};$("#kbs").onclick=()=>{if(KB.blob)shareBlob(KB.blob,uniqName((window.__photoName||"photo").replace(/\.[^.]+$/,"")+"-anime","mp4"))};
