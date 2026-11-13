@@ -25,7 +25,7 @@ var RECALAGE = (() => {
         for (let r = i + 1; r < 4; r++) { const f = A[r][i] / A[i][i]; for (let c = i; c < 5; c++) A[r][c] -= f * A[i][c] } }
       const d = [0, 0, 0, 0]; for (let i = 3; i >= 0; i--) { let s = A[i][4]; for (let c = i + 1; c < 4; c++) s -= A[i][c] * d[c]; d[i] = s / A[i][i] } return d;
     }
-    function recaler(Rp, Ip) {
+    function recaler(Rp, Ip, libre) {   /* libre : renvoie D même hors bornes (fondu entre deux sections) */
       let a00 = 1, a01 = 0, a10 = 0, a11 = 1, tx = 0, ty = 0;
       for (let l = 0; l < PYR.length; l++) {
         const ech = PYR[l], n = HS / ech, R = Rp[l], I = Ip[l], w = POIDS[l], h = (n - 1) / 2, Iw = new Float32Array(n * n);
@@ -51,7 +51,7 @@ var RECALAGE = (() => {
       }
       /* YuNet seul se trompe de plusieurs degrés et de quelques % d'échelle (mesuré) : le recalage corrige largement.
          Hors bornes (la tête a trop tourné ou changé) : null → une nouvelle section commence */
-      if (Math.abs(Math.hypot(a00, a10) - 1) > .12 || Math.abs(Math.atan2(a10, a00)) > .15 || Math.max(Math.abs(tx), Math.abs(ty)) > .08 * HS) return null;
+      if (!libre && (Math.abs(Math.hypot(a00, a10) - 1) > .12 || Math.abs(Math.atan2(a10, a00)) > .15 || Math.max(Math.abs(tx), Math.abs(ty)) > .08 * HS)) return null;
       const c = HS / 2; return [a00, a01, tx + c - (a00 * c + a01 * c), a10, a11, ty + c - (a10 * c + a11 * c)];
     }
     return { pyramide, recaler };

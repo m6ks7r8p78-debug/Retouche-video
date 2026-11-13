@@ -1,4 +1,4 @@
-/* RetoucheProAI v7.5 — RFV : retirer les éléments d'un filtre AR EN VIDÉO, de façon stable d'une image à l'autre (F10, essai).
+/* RetoucheProAI v7.5–v7.7 — RFV : retirer les éléments d'un filtre AR EN VIDÉO, de façon stable d'une image à l'autre (F10, essai).
    Même spécification que le banc d'essai tests/labo_filtres/banc_video.py (méthode « V ») :
      1. le visage est suivi (YuNet), ses repères lissés dans le temps ; tout le reste se passe dans le « repère de la tête »
         (carré HS×HS, même cadrage que le détecteur de l'outil photo), où un élément de filtre ne bouge presque pas ;
@@ -46,6 +46,25 @@ var RFV = (() => {
     const c = DFV._t.nettoyer(m, HS, HS, (DFV.R.aireMin * IOH) ** 2, veto); let r = 0; for (let j = 0; j < Q; j++) r += c[j];
     return r ? DFV._t.dilater(c, HS, HS, Math.max(1, Math.round(DFV.R.dilat * IOH / 2))) : null;
   }
+  /* v7.7 — contours forts de l'image (carte binaire) : sert à faire avancer la zone le long du liseré ou de l'ombre d'un élément.
+     Mesuré sur le banc (6 séquences) : écart à la vraie vidéo 18,3 → 16,5, LPIPS 0,026 → 0,022 ; un simple élargissement fait moins bien. */
+  function contours(d) {
+    const g = gris(d), a = new Float32Array(Q), b = new Float32Array(Q), k = [1 / 16, 4 / 16, 6 / 16, 4 / 16, 1 / 16], gm = new Float32Array(Q), hist = new Uint32Array(400); let np = 0;
+    for (let y = 0; y < HS; y++) for (let x = 0; x < HS; x++) { let s = 0; for (let u = -2; u <= 2; u++) s += k[u + 2] * g[y * HS + Math.min(HS - 1, Math.max(0, x + u))]; a[y * HS + x] = s }
+    for (let y = 0; y < HS; y++) for (let x = 0; x < HS; x++) { let s = 0; for (let u = -2; u <= 2; u++) s += k[u + 2] * a[Math.min(HS - 1, Math.max(0, y + u)) * HS + x]; b[y * HS + x] = s }
+    for (let y = 1; y < HS - 1; y++) for (let x = 1; x < HS - 1; x++) { const j = y * HS + x; if (!PORTE[j]) continue;
+      const gx = ((b[j - HS + 1] - b[j - HS - 1]) + 2 * (b[j + 1] - b[j - 1]) + (b[j + HS + 1] - b[j + HS - 1])) / 8, gy = ((b[j + HS - 1] - b[j - HS - 1]) + 2 * (b[j + HS] - b[j - HS]) + (b[j + HS + 1] - b[j - HS + 1])) / 8;
+      gm[j] = Math.hypot(gx, gy); hist[Math.min(399, Math.floor(gm[j] * 8))]++; np++ }
+    let c = 0, med = 0; for (let i = 0; i < 400; i++) { c += hist[i]; if (c >= np / 2) { med = (i + .5) / 8; break } }
+    const seuil = Math.max(2.5, 3 * med), f = new Uint8Array(Q >> 3); for (let j = 0; j < Q; j++) if (gm[j] > seuil) f[j >> 3] |= 1 << (j & 7); return f;
+  }
+  function croitre(m, fort) {   /* à chaque tour, seuls les voisins (8) de la zone qui sont sur un contour fort sont ajoutés ; 0,10 écart des yeux au plus */
+    for (let t = Math.round(.10 * IOH); t > 0; t--) { const add = [];
+      for (let y = 1; y < HS - 1; y++) for (let x = 1; x < HS - 1; x++) { const j = y * HS + x; if (m[j] || !((fort[j >> 3] >> (j & 7)) & 1)) continue;
+        if (m[j - 1] || m[j + 1] || m[j - HS] || m[j + HS] || m[j - HS - 1] || m[j - HS + 1] || m[j + HS - 1] || m[j + HS + 1]) add.push(j) }
+      if (!add.length) break; for (const j of add) m[j] = 1 }
+    return m;
+  }
   const tasser = m => { const b = new Uint8Array(Q >> 3); for (let j = 0; j < Q; j++) if (m[j]) b[j >> 3] |= 1 << (j & 7); return b };
   const detasser = b => { const m = new Uint8Array(Q); for (let j = 0; j < Q; j++) m[j] = (b[j >> 3] >> (j & 7)) & 1; return m };
   function flouBoite(a, r, passes) {   /* plan HS×HS, flou boîte de rayon r, `passes` fois (sommes glissantes) */
@@ -67,14 +86,16 @@ var RFV = (() => {
         if (i % 10 === 0) { P("Filtre : suivi du visage " + (i + 1) + " / " + n + "…", .15 * i / n); await new Promise(z => setTimeout(z, 0)) } } }
     finally { try { r.close() } catch (e) {} }
     for (let i = 1; i < n - 1; i++) if (!brut[i] && brut[i - 1]) { const j = brut[i + 1] ? i + 1 : (i + 2 < n && brut[i + 2] ? i + 2 : -1); if (j > 0) brut[i] = brut[i - 1].map((v, c) => v + (brut[j][c] - v) / (j - i + 1)) }
-    const pts = RVV._lisser(brut), M = new Array(n).fill(null), masques = new Array(n).fill(null), sec = new Array(n).fill(-1), fills = new Map();
-    if (!pts.some(Boolean)) { S = { n, W, H, M, masques, sec, fills }; return resume(t0, J) }
+    const pts = RVV._lisser(brut), M = new Array(n).fill(null), masques = new Array(n).fill(null), sec = new Array(n).fill(-1), fills = new Map(), fondu = new Array(n).fill(null);
+    if (!pts.some(Boolean)) { S = { n, W, H, M, masques, sec, fills, fondu }; return resume(t0, J) }
     await DFV.charger(f => P("Téléchargement du détecteur (1,5 Mo, une seule fois)…", .15));
-    const hc = toile(HS, HS), dc = toile(192, 192); let C = null, nsec = -1;   /* C : section en cours */
+    const hc = toile(HS, HS), dc = toile(192, 192); let C = null, nsec = -1, avant = null;   /* C : section en cours ; avant : section précédente (fondu) */
+    const FONDU = opt.fondu === false ? 0 : 8, couper = new Set(opt.couper || []);
     const finMasque = t => {   /* zone de l'image t = seuil sur la moyenne des cartes t−2 … t+2 de la section */
       const L = []; for (let s = t - 2; s <= t + 2; s++) if (C.lg.has(s)) L.push(C.lg.get(s)); const moy = new Float32Array(192 * 192);
       for (const l of L) for (let j = 0; j < moy.length; j++) moy[j] += l[j] / L.length;
-      const m = masque(moy, C.veto); if (m) { masques[t] = tasser(m); for (let j = 0; j < Q; j++) if (m[j]) C.U[j] = 1; C.vu++ }
+      let m = masque(moy, C.veto); if (m && C.fort.has(t)) m = croitre(m, C.fort.get(t)); C.fort.delete(t);
+      if (m) { masques[t] = tasser(m); for (let j = 0; j < Q; j++) if (m[j]) C.U[j] = 1; C.vu++ }
       C.lg.delete(t - 2);
     };
     const fermer = async dernier => {   /* fin de section : dernières zones, puis UNE reconstruction sur l'union */
@@ -95,13 +116,17 @@ var RFV = (() => {
     r = await ouvrir();
     try {
       for (let i = 0; i < n; i++) {
-        stop(); if (!pts[i]) { await fermer(i - 1); continue }
-        const im = await r.need(i); let Mi = cadre(pts[i]), g = pyramide(gris(tete(im, Mi, HS, hc).getContext("2d").getImageData(0, 0, HS, HS).data)), D = C ? recaler(C.Rp, g) : null;
-        if (C && !D) await fermer(i - 1);
+        stop(); if (!pts[i]) { await fermer(i - 1); avant = null; continue }
+        const im = await r.need(i); let Mi = cadre(pts[i]), g = pyramide(gris(tete(im, Mi, HS, hc).getContext("2d").getImageData(0, 0, HS, HS).data)), D = C && !couper.has(i) ? recaler(C.Rp, g) : null;
+        /* la tête a trop tourné pour la reconstruction en cours : nouvelle section, avec un fondu de 8 images depuis l'ancienne (v7.7) */
+        if (C && !D) { const anc = { Rp: C.Rp, sec: nsec, deb: i }; await fermer(i - 1); avant = fills.has(anc.sec) ? anc : null } else if (!C) avant = null;
+        if (avant && i - avant.deb < FONDU) { const Da = recaler(avant.Rp, g, true), k = Da && Math.hypot(Da[0], Da[3]);
+          if (Da && k > .7 && k < 1.4) fondu[i] = { sec: avant.sec, M: mul(inv(Da), Mi), w: (i - avant.deb + 1) / (FONDU + 1) } }
         if (!C) { nsec++; const ref = toile(HS, HS); ref.getContext("2d").drawImage(hc, 0, 0);
-          C = { deb: i, fait: i - 1, Rp: g, ref, ptsH: pts[i].map((v, k) => k % 2 === 0 ? Mi[0] * v + Mi[1] * pts[i][k + 1] + Mi[2] : Mi[3] * pts[i][k - 1] + Mi[4] * v + Mi[5]), lg: new Map(), U: new Uint8Array(Q), vu: 0, veto: null, mainsVues: false } }
+          C = { deb: i, fait: i - 1, Rp: g, ref, ptsH: pts[i].map((v, k) => k % 2 === 0 ? Mi[0] * v + Mi[1] * pts[i][k + 1] + Mi[2] : Mi[3] * pts[i][k - 1] + Mi[4] * v + Mi[5]), lg: new Map(), fort: new Map(), U: new Uint8Array(Q), vu: 0, veto: null, mainsVues: false } }
         else Mi = mul(inv(D), Mi);
         M[i] = Mi; sec[i] = nsec;
+        C.fort.set(i, contours((D ? tete(im, Mi, HS, hc) : hc).getContext("2d").getImageData(0, 0, HS, HS).data));
         const lg = await DFV.logits(tete(im, Mi, 192, dc).getContext("2d").getImageData(0, 0, 192, 192).data); C.lg.set(i, lg);
         /* veto « mains » : cherché une fois par section, dès que le détecteur voit quelque chose (comme l'outil photo) */
         if (!C.mainsVues && opt.mains !== false && window.MAINS) { let vu = false; const s0 = Math.log(DFV.R.seuil / (1 - DFV.R.seuil)); for (let j = 0; j < lg.length; j += 7) if (lg[j] > s0) { vu = true; break }
@@ -113,7 +138,7 @@ var RFV = (() => {
       }
       await fermer(n - 1);
     } finally { try { r.close() } catch (e) {} }
-    S = { n, W, H, M, masques, sec, fills };
+    S = { n, W, H, M, masques, sec, fills, fondu };
     return resume(t0, J);
   }
   function resume(t0, J) {
@@ -124,11 +149,19 @@ var RFV = (() => {
   }
 
   /* ---------- 2) à l'export : compose la reconstruction sur l'image exportée i (canvas, n'importe quelle taille) ---------- */
-  let oc = null, hc2 = null, fc = null;
+  let oc = null, hc2 = null, fc = null, fa = null, fb = null;
   function appliquer(sortie, i) {
     if (!S || !S.masques[i] || !S.fills.has(S.sec[i])) return sortie;
-    const w = sortie.width, h = sortie.height, sx = w / S.W, m = detasser(S.masques[i]), F = S.fills.get(S.sec[i]), M0 = S.M[i], M = [M0[0] / sx, M0[1] / sx, M0[2], M0[3] / sx, M0[4] / sx, M0[5]];
-    if (!oc || oc.width !== w || oc.height !== h) { oc = toile(w, h); hc2 = toile(HS, HS); fc = toile(HS, HS) }
+    const w = sortie.width, h = sortie.height, sx = w / S.W, m = detasser(S.masques[i]), M0 = S.M[i]; let F = S.fills.get(S.sec[i]); const M = [M0[0] / sx, M0[1] / sx, M0[2], M0[3] / sx, M0[4] / sx, M0[5]];
+    if (!oc || oc.width !== w || oc.height !== h) { oc = toile(w, h); hc2 = toile(HS, HS); fc = toile(HS, HS); fa = toile(HS, HS); fb = toile(HS, HS) }
+    /* fondu depuis la reconstruction précédente : elle est ramenée dans le repère de la tête actuel, puis mélangée */
+    const fd = S.fondu && S.fondu[i]; if (fd && S.fills.has(fd.sec)) {
+      fa.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(S.fills.get(fd.sec)), HS, HS), 0, 0);
+      const T = mul(M0, inv(fd.M)), bx = fb.getContext("2d", { willReadFrequently: true }); bx.setTransform(1, 0, 0, 1, 0, 0); bx.clearRect(0, 0, HS, HS); bx.imageSmoothingQuality = "high";
+      bx.setTransform(T[0], T[3], T[1], T[4], T[2], T[5]); bx.drawImage(fa, 0, 0); bx.setTransform(1, 0, 0, 1, 0, 0);
+      const Fo = bx.getImageData(0, 0, HS, HS).data, Fn = F, mix = new Uint8ClampedArray(4 * Q), wn = fd.w;
+      for (let j = 0; j < 4 * Q; j += 4) { const wo = Fo[j + 3] > 250 ? 1 - wn : 0; mix[j] = Fo[j] * wo + Fn[j] * (1 - wo); mix[j + 1] = Fo[j + 1] * wo + Fn[j + 1] * (1 - wo); mix[j + 2] = Fo[j + 2] * wo + Fn[j + 2] * (1 - wo); mix[j + 3] = 255 }
+      F = mix }
     const ox = oc.getContext("2d"); ox.setTransform(1, 0, 0, 1, 0, 0); ox.globalAlpha = 1; ox.drawImage(sortie, 0, 0);
     const Ht = tete(oc, M, HS, hc2).getContext("2d").getImageData(0, 0, HS, HS).data;
     /* lumière : écart (image − reconstruction) mesuré hors de la zone, prolongé dedans (convolution normalisée, 3 échelles) */
@@ -147,6 +180,6 @@ var RFV = (() => {
     const I = inv(M); ox.save(); ox.imageSmoothingQuality = "high"; ox.setTransform(I[0], I[3], I[1], I[4], I[2], I[5]); ox.drawImage(fc, 0, 0); ox.restore();
     return oc;
   }
-  function vider() { S = null; oc = hc2 = fc = null }
+  function vider() { S = null; oc = hc2 = fc = fa = fb = null }
   return { preparer, appliquer, vider, etat: () => S && { images: S.n, avec_filtre: S.masques.filter(Boolean).length, sections: S.fills.size }, _t: { cadre, recaler, pyramide, gris, inv, mul, HS } };
 })();

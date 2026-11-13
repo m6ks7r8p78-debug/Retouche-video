@@ -17,7 +17,9 @@ import noyau as N, ajouts as AJ
 MED = os.path.join(ICI, '../medias/filtres_labo'); YU = os.path.join(ICI, '../../modeles/yunet.onnx')
 NF = int(sys.argv[1]) if len(sys.argv) > 1 else 24
 PERS = (sys.argv[2] if len(sys.argv) > 2 else 'p06,p08,p10').split(','); FILT = (sys.argv[3] if len(sys.argv) > 3 else 'chien,hasard').split(',')
-W, H, HS, SEUIL, CH = 480, 640, 384, .6, 10 ** 6   # CH : longueur maximale d'une section (l'app n'en impose pas)
+W, H, HS, SEUIL, CH = int(os.environ.get('LARG', 480)), int(os.environ.get('HAUT', 640)), int(os.environ.get('HS', 384)), .6, 10 ** 6
+DILAT = float(os.environ.get('DILAT', .06))   # élargissement de la zone (diamètre, en écarts des yeux) ; l'app : DFV.R.dilat
+IO_CIBLE = float(os.environ.get('IO', 75))   # écart des yeux dans la vidéo de test (px) ; HS : côté du repère de la tête (l'app : 384 à 768 selon la taille de la tête)   # CH : longueur maximale d'une section (l'app n'en impose pas)
 METH = (os.environ.get('METHODES') or 'A,V,VU').split(',')
 det = ort.InferenceSession(os.path.join(ICI, '../../modeles/lourds/detecteur_ajouts_v3.onnx'), providers=['CPUExecutionProvider'])
 mig = ort.InferenceSession(os.environ.get('MIGAN', os.path.join(ICI, '../medias/migan.onnx')), providers=['CPUExecutionProvider'])
@@ -51,7 +53,7 @@ PORTE = ((UU / 1.7) ** 2 + ((VV - .2) / 2.4) ** 2 < 1); OVALE = ((UU / 1.15) ** 
 def masque_tete(lg):   # carte du détecteur (192) → zone à retirer dans le repère de la tête (HS), mêmes règles que l'outil photo
     p = 1 / (1 + np.exp(-cv2.resize(lg, (HS, HS), interpolation=cv2.INTER_LINEAR))); m = ((p > SEUIL) & PORTE).astype(np.uint8)
     n, l, st, _ = cv2.connectedComponentsWithStats(m, 8); m = np.isin(l, [i for i in range(1, n) if st[i, cv2.CC_STAT_AREA] >= (.04 * IOH) ** 2]).astype(np.uint8)
-    return cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (int(.06 * IOH) | 1,) * 2)) if m.any() else m
+    return cv2.dilate(m, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (int(DILAT * IOH) | 1,) * 2)) if m.any() else m
 def migan(img, m):
     ys, xs = np.nonzero(m)
     if not len(xs): return img
@@ -75,6 +77,19 @@ def ovale_image(p, shape):
     o, ux, uy, io = rep5(p); y, x = np.mgrid[:shape[0], :shape[1]].astype(np.float32); u = ((x - o[0]) * ux[0] + (y - o[1]) * ux[1]) / io; v = ((x - o[0]) * uy[0] + (y - o[1]) * uy[1]) / io
     return (u / 1.15) ** 2 + ((v - .55) / 1.45) ** 2 < 1
 
+CROIT = float(os.environ.get('CROIT', .10))   # comme l'app depuis la v7.7 (0 = sans); CROIT_K = float(os.environ.get('CROIT_K', 3))
+def croitre(m, tete_bgr):
+    """La zone avance le long des contours forts qui la touchent (liseré sombre, ombre portée d'un élément), sans s'étendre sur la peau unie :
+    à chaque tour, seuls les voisins dont le gradient dépasse le seuil sont ajoutés ; CROIT·écart-des-yeux tours au plus."""
+    if not CROIT or not m.any(): return m
+    g = cv2.GaussianBlur(cv2.cvtColor(tete_bgr, cv2.COLOR_BGR2GRAY).astype(np.float32), (0, 0), max(.6, .012 * IOH))
+    gm = np.hypot(cv2.Sobel(g, cv2.CV_32F, 1, 0, ksize=3) / 8, cv2.Sobel(g, cv2.CV_32F, 0, 1, ksize=3) / 8); fort = (gm > max(2.5, CROIT_K * np.median(gm[PORTE]))) & PORTE
+    m = m.copy(); k = np.ones((3, 3), np.uint8)
+    for _ in range(int(round(CROIT * IOH))):
+        c = (cv2.dilate(m, k) > 0) & (m == 0) & fort
+        if not c.any(): break
+        m[c] = 1
+    return m
 def methode_A(F, P):
     out, ms = [], []
     for f, p in zip(F, P):
@@ -99,6 +114,7 @@ def methode_V(F, P, union=False):
                 if D is not None: Ms[t] = composer(D, Ms[t])   # (l'app ouvre une nouvelle section quand le recalage est refusé)
     L = [logits_M(f, M) for f, M in zip(F, Ms)]
     Mk = [masque_tete(np.mean(L[max(0, t - 2):t + 3], 0)) for t in range(n)]; out, ms = [], []
+    if CROIT: Mk = [croitre(Mk[t], cv2.warpAffine(F[t], Ms[t], (HS, HS), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)) for t in range(n)]
     for c0 in range(0, n, CH):
         ts = list(range(c0, min(n, c0 + CH))); U = np.max([Mk[t] for t in ts], 0); r = ts[0]; Fl = None
         if U.any():
@@ -114,10 +130,10 @@ def methode_V(F, P, union=False):
     return out, ms
 
 def sequence(pid, filtre):
-    img = cv2.imread(os.path.join(MED, pid + '_vrai.jpg')); P0 = N.reperes(img); io0 = N.repere_visage(P0)[3]; c = P0[[468, 473]].mean(0); sc0 = 75 / io0
+    img = cv2.imread(os.path.join(MED, pid + '_vrai.jpg')); P0 = N.reperes(img); io0 = N.repere_visage(P0)[3]; c = P0[[468, 473]].mean(0); sc0 = IO_CIBLE / io0
     rng = np.random.default_rng(5); G, F, TM, A = [], [], [], []
     for t in range(NF):
-        u = t / 120.; ang = 6 * np.sin(2 * np.pi * u); sc = sc0 * (1 + .08 * np.sin(np.pi * u)); dx = 30 * np.sin(2 * np.pi * u * .7); dy = 12 * np.cos(2 * np.pi * u)
+        u = t / 120.; ang = 6 * np.sin(2 * np.pi * u); sc = sc0 * (1 + .08 * np.sin(np.pi * u)); dx = 30 * np.sin(2 * np.pi * u * .7) * W / 480; dy = 12 * np.cos(2 * np.pi * u) * W / 480
         M = cv2.getRotationMatrix2D((float(c[0]), float(c[1])), ang, sc); M[:, 2] += [W / 2 - c[0] + dx, H * .45 - c[1] + dy]; A.append(M)
         net = cv2.warpAffine(img, M, (W, H), flags=cv2.INTER_AREA, borderMode=cv2.BORDER_REFLECT); Pt = P0 @ M[:, :2].T + M[:, 2]
         fi, mq = N.f_chien(net, Pt) if filtre == 'chien' else N.f_chat(net, Pt) if filtre == 'chat' else AJ.poser(net, Pt, np.random.default_rng(int(pid[1:])))

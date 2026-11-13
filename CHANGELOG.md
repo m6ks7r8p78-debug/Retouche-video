@@ -1,5 +1,10 @@
 # Journal des versions
 
+## v7.7 (13 nov. 2026) — retrait de filtre en vidéo : moins de restes, transitions douces
+- La zone retirée suit maintenant le liseré et l'ombre de l'élément : moins de traces sombres autour du nez ou des oreilles
+  reconstruits (mesuré : zone 10 % plus proche de la vraie vidéo).
+- Quand la tête tourne beaucoup et qu'une nouvelle reconstruction prend le relais, le passage se fait en fondu au lieu d'un saut.
+
 ## v7.6 (12 nov. 2026) — visages en vidéo : plus nets et plus stables
 - « Restaurer les visages » en vidéo recale maintenant chaque image sur la première avant de reporter les détails (même recalage
   que le retrait de filtre). Mesuré sur 4 portraits à vérité connue : visage plus proche de la vraie image et scintillement en
