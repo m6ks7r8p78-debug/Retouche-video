@@ -27,7 +27,7 @@ jobs:
           node --check app.js
           node --check sw.js
       - name: Tests du Directeur IA
-        run: node --test tests/directeur-ia.test.mjs tests/directeur-qualite.test.mjs tests/directeur-scenes.test.mjs tests/directeur-capacites.test.mjs
+        run: node --test tests/directeur-ia.test.mjs tests/directeur-qualite.test.mjs tests/directeur-scenes.test.mjs tests/directeur-capacites.test.mjs tests/directeur-rendu.test.mjs
       - name: Contrôle de non-régression du reformatage v8.0
         run: node --test tests/format.test.mjs
       - name: Afficher l empreinte PWA attendue et verifier le cache
