@@ -17,6 +17,10 @@ function planDirecteur(type,m,fl){
       autoriserGeneration:!!($("#o_max")&&$("#o_max").checked)};
     const disponibles={voix:!(window.MODELS&&MODELS.isOff("voix"))};
     const p=DIRECTEUR_IA.planifier({type,w,h,mesures:m,scintillement:fl,appareil:{mobile},choix,disponibles});
+    if(type==="video"&&window.DIRECTEUR_SCENES&&Array.isArray(m.echantillons)){
+      /* Diagnostic de variations observées dans le film ; aucune adaptation non validée injectée dans l'export. */
+      p.zonage=DIRECTEUR_SCENES.analyser({duree:v.duration,echantillons:m.echantillons});
+    }
     window.__dirplan=p;return p;
   }catch(e){console.warn("Directeur IA : plan non calculé",e);return null}
 }
@@ -29,6 +33,14 @@ function afficherDirecteur(p){
   sum.textContent="Directeur IA · "+(actifs.length?actifs.length+" traitements évalués":"source peu dégradée");
   for(const a of p.operations){const li=document.createElement("li");li.textContent=a.nom+" — "+a.raison+(a.genere?" (reconstruction, à vérifier)":"");liste.appendChild(li)}
   for(const a of p.avertissements){const li=document.createElement("li");li.textContent="Limite : "+a;liste.appendChild(li)}
+  if(p.zonage&&p.zonage.zones.length){
+    const li=document.createElement("li");li.textContent="Variations observées : "+p.zonage.zones.length+" zone(s) estimée(s) sur "+p.zonage.echantillons+" images de contrôle. Les frontières sont approximatives, sans réglage par scène à l'export.";liste.appendChild(li);
+    if(p.zonage.zones.length>1)for(const z of p.zonage.zones){
+      const note=document.createElement("li");
+      note.textContent=Math.round(z.debut)+"–"+Math.round(z.fin)+" s · "+z.priorites.join(", ")+" ("+(z.confiance==="faible"?"faible confiance":"échantillonnage limité")+")";
+      liste.appendChild(note);
+    }
+  }
 }
 /* Le choix de résolution ou du moteur IA peut changer après l'analyse.
    Recalculer le plan sans refaire le décodage lourd ; ne jamais réutiliser un autre fichier. */
@@ -875,13 +887,16 @@ const AZ={
     const pc=q=>{let a=0;for(let i=0;i<256;i++){a+=h[i];if(a>=q*n)return i/255}return 1};
     return{p2:pc(.02),p50:pc(.5),p98:pc(.98),sat:sat/(n*255)}},
   async run(el,o){
-    o=o||{};const dur=el.duration||1,fps=o.fps||30,dt=1/fps,P={n:0,blk:[],dust:[],noise:[],sharp:[],p2:[],p50:[],p98:[],sat:[],gains:[],acc:[]};
+    o=o||{};const dur=el.duration||1,fps=o.fps||30,dt=1/fps,P={n:0,blk:[],dust:[],noise:[],sharp:[],p2:[],p50:[],p98:[],sat:[],gains:[],acc:[],echantillons:[]};
     const pos=[.1,.22,.34,.46,.58,.7,.82,.92],tri=new Set([1,3,5]);
     for(let s=0;s<pos.length;s++){
       if(o.cancel&&o.cancel())return null;
       const t=Math.min(dur-.3,Math.max(.05,dur*pos[s]));await AZ.seek(el,t);
       const f=AZ.grab(el,480),st=AZ.stats(f);P.p2.push(st.p2);P.p50.push(st.p50);P.p98.push(st.p98);P.sat.push(st.sat);
-      P.noise.push(AZ.noise(f));P.sharp.push(AZ.sharp(f));const g=AZ.gains(f);if(g)P.gains.push(g);P.n++;
+      const noise=AZ.noise(f),sharp=AZ.sharp(f);
+      P.noise.push(noise);P.sharp.push(sharp);
+      P.echantillons.push({t:+Math.max(0,t).toFixed(3),p2:st.p2,p50:st.p50,p98:st.p98,noise,sharp});
+      const g=AZ.gains(f);if(g)P.gains.push(g);P.n++;
       if(tri.has(s)&&dur>1){
         const a=AZ.grab(el,640);await AZ.seek(el,t+dt);const b=AZ.grab(el,640);await AZ.seek(el,t+2*dt);const c=AZ.grab(el,640);
         P.dust.push(AZ.dust(a,b,c));try{const bk=AZ.block(el);if(bk)P.blk.push(bk)}catch(e){}
@@ -893,7 +908,7 @@ const AZ={
     }
     const M=AZ.med,mg=k=>P.gains.length?M(P.gains.map(g=>g[k])):1;
     return{n:P.n,noise:M(P.noise),sharp:M(P.sharp),p2:M(P.p2),p50:M(P.p50),p98:M(P.p98),sat:M(P.sat),
-      blk:P.blk.length?{r:M(P.blk.map(b=>b.r)),px:M(P.blk.map(b=>b.px)),py:M(P.blk.map(b=>b.py))}:null,dust:P.dust.length?M(P.dust):0,shake:P.acc.length?M(P.acc):0,gains:P.gains.length>=3?[mg(0),mg(1),mg(2)]:null};
+      blk:P.blk.length?{r:M(P.blk.map(b=>b.r)),px:M(P.blk.map(b=>b.px)),py:M(P.blk.map(b=>b.py))}:null,dust:P.dust.length?M(P.dust):0,shake:P.acc.length?M(P.acc):0,gains:P.gains.length>=3?[mg(0),mg(1),mg(2)]:null,echantillons:P.echantillons};
   },
   small(f,W){const k=f.W/W,H=Math.round(f.H/k),y=new Float32Array(W*H);for(let j=0;j<H;j++)for(let i=0;i<W;i++){let s=0,c=0;for(let dj=0;dj<k;dj++)for(let di=0;di<k;di++){s+=f.y[Math.min(f.H-1,Math.floor(j*k)+dj)*f.W+Math.min(f.W-1,Math.floor(i*k)+di)];c++}y[j*W+i]=s/c}return{W,H,y}}
 };
@@ -2811,7 +2826,8 @@ function recipe(extra){
       mode==="video"&&o("o_dust")&&"poussières",mode==="video"&&o("o_defl")&&"anti-scintillement",mode==="video"&&o("o_stab")&&"stabilisation",mode==="video"&&o("o_voice")&&"voix",mode==="video"&&o("o_fluid")&&"fluidité"].filter(Boolean),
     reglages_appliques:Object.fromEntries(["br","co","sa","wa","sh","dn","cs","db"].map(k=>[k,+(+PROF.v(k)).toFixed(3)])),protection_hautes_lumieres:PROF.k().hp,
     directeur:window.__dirplan?{version:window.__dirplan.version,operations:window.__dirplan.operations.map(x=>({id:x.id,intensite:x.intensite,genere:x.genere})),
-      sortie_proposee:window.__dirplan.sortie.propose,exportConfigure:window.__dirplan.sortie.exportConfigure}:undefined,...(extra||{})};
+      sortie_proposee:window.__dirplan.sortie.propose,exportConfigure:window.__dirplan.sortie.exportConfigure,
+      zones:window.__dirplan.zonage?window.__dirplan.zonage.zones.map(z=>({debut:z.debut,fin:z.fin,priorites:z.priorites,confiance:z.confiance})):undefined}:undefined,...(extra||{})};
   try{const h=JSON.parse(localStorage.getItem("recettes")||"[]");h.push(r);localStorage.setItem("recettes",JSON.stringify(h.slice(-30)))}catch(e){}
   return r}
 function showRecipe(r){const e=$("#recipe");if(!e)return;e.textContent="Recette : "+JSON.stringify(r);$("#tech").hidden=false}
