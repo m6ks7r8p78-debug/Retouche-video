@@ -17,19 +17,32 @@
     "GitHub Actions: derniers tests globaux constates reussis au run 43558397824.",
     "Catalogueur prive outils/catalogue_medias.py (SHA-256, metadonnees, mesures, doublons exacts, rapprochements hypothetiques, groupes de scene, partition sans fuite, 9 autorisations separees, import du catalogue ChatGPT) teste sur medias synthetiques.",
     "Priorisation des modules faibles outils/directeur-priorites.cjs + suivi/etat-modules.json (aucune qualite inventee : action mesurer, filtres AR en tete).",
-    "Documents MEDIA_CATALOG_SCHEMA.md, BENCHMARK_PROTOCOL.md, BENCHMARK_RESULTS.md, CHATGPT_CLAUDE_HANDOFF.md."
+    "Documents MEDIA_CATALOG_SCHEMA.md, BENCHMARK_PROTOCOL.md, BENCHMARK_RESULTS.md, CHATGPT_CLAUDE_HANDOFF.md.",
+    "Banc synthetique independant de segmentation sur masques verifies declaratifs; 12 tests locaux et garde-fous anti-fuite entre scenes (CI distante a verifier)."
   ],
   "prochaines_etapes": [
-    "Verifier le SHA actuel de la branche et le resultat global des deux jobs GitHub Actions; ne pas confondre avec le dernier succes archive.",
-    "Obtenir le catalogue ChatGPT (CSV/JSON, sans medias) et lancer catalogue_medias.py sur la bibliotheque la ou elle se trouve; partager seulement le resume non nominatif.",
-    "Faire enregistrer par le proprietaire les autorisations evaluation_benchmark (consentements.json prive), puis generer le plan de banc.",
-    "Construire le banc retrait de filtres AR/beaute (couples verifies + degradations synthetiques) et remplir qualite_mesuree/taux_echec dans suivi/etat-modules.json.",
-    "Valider sur un vrai iPhone Safari; ne pas annoncer une qualite 8K ou un detail retrouve non demontres; garder la PR #1 en brouillon sans fusion."
+    "Confirmer les deux jobs du workflow Directeur IA pour le commit de jalon; ne pas confondre CI non verifiee et echec ni reussite.",
+    "Produire en prive des masques temporels AR revus par un humain; ne jamais traiter les pseudo-masques comme verite terrain.",
+    "Comparer le segmentateur et la methode classique sur groupes independants via le banc de comptes anonymises; ne publier aucun detail identifiant.",
+    "Valider Safari sur iPhone reel, puis discuter une eventualite d'integration apres revue du proprietaire; aucune fusion, aucun deploiement automatique."
   ],
   "garde_fous": {
     "main_intouchable": true,
     "pas_de_fusion": true,
     "pas_de_deploiement": true,
     "pas_de_medias_personnels": true
+  },
+  "jalon_en_attente_ci": {
+    "sha": "e006702f0705e724ee69619f713085aaf611e1d9",
+    "date": "2026-11-14",
+    "objets": [
+      "outils/directeur-banc-masques-verifies.cjs",
+      "tests/directeur-banc-masques-verifies.test.mjs",
+      "BENCHMARK_MASQUES_VERIFIES.md",
+      ".github/workflows/directeur-ia.yml"
+    ],
+    "preuve_locale": "12/12 tests Node synthetiques reussis dans un environnement local; aucun media reel traite dans ce jalon",
+    "statut_ci": "a_verifier_2_jobs",
+    "observations": "mesures VP FP FN VN vs masques humains verifies declaratifs; aucun masque reel certifie, aucun deploiement"
   }
 }
