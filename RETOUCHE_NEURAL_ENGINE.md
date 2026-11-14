@@ -60,3 +60,7 @@ python outils/rne/train.py --manifest /DOSSIER_PRIVE/manifest.json --out /DOSSIE
 **Ne jamais appeler RNE « DLSS 5 » dans l'interface utilisateur** ni prétendre atteindre ses performances. Une technologie indépendante ne peut pas garantir une véritable inversion d'un filtre ou récupérer des détails définitivement occultés.
 
 Sources officielles du cadrage comparatif : https://research.nvidia.com/labs/adlr/DLSS5/ ; https://developer.nvidia.com/blog/whats-new-for-game-developers-dlss-5-with-3d-guided-neural-rendering-nvidia-ace-updates-and-new-rtx-kit-capabilities/
+
+## RNE 0.2 — progression expérimentale du 14 novembre 2026
+
+Un **vrai modèle temporel causal à deux frames** a été entraîné et testé ; voir [RETOUCHE_NEURAL_ENGINE_02.md](RETOUCHE_NEURAL_ENGINE_02.md). Sur quatre vidéos de contrôle non utilisées dans la sélection du modèle, RNE 0.2 améliore RNE 0.1 de +0,27784 dB mais reste **0,20973 dB sous le bicubique**. RNE 0.2 est donc conservé comme **prototype non déployable**. Les poids demeurent dans une archive privée ChatGPT, et la version publiée de l'application reste inchangée.
