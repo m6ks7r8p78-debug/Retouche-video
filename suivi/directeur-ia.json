@@ -23,15 +23,16 @@
     "Ajustement multibruit privé sur 8 vidéos + validation 4 + confirmation 4 scènes distinctes, 220 étapes ; modèle spécialisé fort bruit, non déployé. Module laboratoire de spécialistes de bruit et 13 tests locaux.",
     "Pilote AR v4 privé : 180 étapes sur 12 vidéos, 4 validations et 3 confirmations; masque synthétique chat/chien/lunettes mieux détecté, mais candidat refusé pour faux positifs de 1,4594 % > 1 % sur confirmation.",
     "Recherche inspirée DLSS 5 documentée (NVIDIA SDK non public, non disponible Safari iPhone); garde-fou de décision vidéo 2D et AR en laboratoire seulement, 18 tests locaux.",
-    "Fusion causale temporelle expérimentale AR sur cartes de probabilites ; 17 tests locaux; réduction de variation temporelle de 49,67 % sur 360 frames synthetiques, petite perte d'IoU; non déployé."
+    "Fusion causale temporelle expérimentale AR sur cartes de probabilites ; 17 tests locaux; réduction de variation temporelle de 49,67 % sur 360 frames synthetiques, petite perte d'IoU; non déployé.",
+    "RNE 0.1 maison : moteur neuronal 2x trainable avec 13 692 paramètres, causal video et sortie MP4 audio tentative, 17 tests synthetiques CPU; 900 steps privés sur 12 clips, 4 validation, 5 test; gain moyen +0,0958 dB (modeste) vs bicubique, hors application et non deployable."
   ],
   "prochaines_etapes": [
-    "Verifier les deux jobs de la CI pour le dernier HEAD (aucun resultat suppose tant que non observe).",
-    "Constituer des annotations verifiees des vrais filtres AR et un jeu sans filtre certifie ; eviter de pretendre que absence d'incrustation synthetique signifie absence de filtre.",
-    "Evaluer mouvement naturel, zoom, rotations, occlusions, coupes, erreur de flux; comparer le banc temporel a un traitement image par image sur des sequences reelles.",
-    "Reduire les faux positifs du detecteur AR v4 sans sacrifier la precision des contours, en séparant le preentrainement historique et les nouvelles donnees vierges.",
-    "Poursuivre la recherche video 2D inspiree des principes DLSS 5 sans utiliser le SDK NVIDIA indisponible et sans promettre d'equivalence.",
-    "Tester sur Safari iPhone physique, revue humaine, aucune fusion de la PR ou deploiement."
+    "Valider le job CI RNE CPU (installation Python torch+OpenCV) ainsi que les deux jobs Directeur IA sur le dernier HEAD ; ne pas affirmer CI passée sans preuve.",
+    "Retouche Neural Engine RNE 0.2 : vrai reseau de fusion temporelle entrainé avec séquences vidéo mobiles naturelles, occlusions, bruit et compression ; tests anti-ghosting et reference independante.",
+    "Mesurer RNE 0.1 sur nouveaux groupes d'images sources non consultés pendant calibration, real user video qualitatively and PSNR, SSIM, LPIPS ; aucun déploiement si gains minimes ou regressions.",
+    "Preparer exécution sur iPhone Safari par backend WebGPU/WASM ou traitement distant prive opt-in ; aucun transfert des medias sans consentement séparé.",
+    "Ajouter controles structure, apparence, tonalite et masques en mode fidelite/creativite, sans inventer une vraie identité ; priorite parallele filtres AR encore non verifies.",
+    "Jamais appeler le moteur produit DLSS5 ou utiliser le SDK non public ; respect de licence/marque NVIDIA, sauvegarde privee des poids, PR non fusionnee."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -40,18 +41,19 @@
     "pas_de_medias_personnels": true
   },
   "jalon_en_attente_ci": {
-    "sha": "31066b0e26620fd4fec314bb96705f3296718c77",
+    "sha": "650d239925c16c9aaddec562ac6fcc9b299d3143",
     "date": "2026-11-14",
     "objets": [
-      "outils/directeur-fusion-temporelle-ar.cjs",
-      "tests/directeur-fusion-temporelle-ar.test.mjs",
-      "LABO_AR_V4_FUSION_TEMPORELLE.md",
-      ".github/workflows/directeur-ia.yml",
-      "BENCHMARK_RESULTS.md"
+      "outils/rne/engine.py",
+      "outils/rne/train.py",
+      "tests/test_rne_engine.py",
+      ".github/workflows/rne-cpu.yml",
+      "RETOUCHE_NEURAL_ENGINE.md",
+      ".gitignore"
     ],
-    "preuve_locale": "17/17 tests Node executes localement; benchmarks prives sur frames procedurales",
-    "statut_ci": "a_verifier_2_jobs",
-    "observations": "pas de poids ou medias dans GitHub, pas de SDK DLSS5; aucuns essais sur vrais filtres AR humainement verifies"
+    "preuve_locale": "17/17 tests Python CPU reussis, 24 frames synthetiques encodees et relues, nouveau poids privé entraîné 900 steps",
+    "statut_ci": "attendre_workflow_RNE_et_deux_jobs_directeur",
+    "observations": "pas de videos privées, hashes, poids ou manifest GitHub"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -135,5 +137,47 @@
     "tests_unitaires_locaux": "17/17 reussis",
     "ci_git": "a_confirmer_2_jobs",
     "archive_privee": "RetoucheProAI_AR_v4_calibrage_temporel_prive_2026-11-14.zip"
+  },
+  "jalon_neural_engine_propre": {
+    "date": "2026-11-14",
+    "nom": "Retouche Neural Engine (RNE) v0.1",
+    "orientation": "notre propre moteur 2D de superresolution neurale et stabilite causale, inspire des problemes du neural rendering sans SDK/poids NVIDIA",
+    "code": [
+      "outils/rne/engine.py",
+      "outils/rne/train.py"
+    ],
+    "tests": "tests/test_rne_engine.py",
+    "documentation": "RETOUCHE_NEURAL_ENGINE.md",
+    "ci_specifique": ".github/workflows/rne-cpu.yml",
+    "parametrage": {
+      "facteur": 2,
+      "poids_parametres": 13692,
+      "modele_init_nouveau": true,
+      "steps_meilleur_entrainement": 900,
+      "batch": 12,
+      "clips_entrainement": 12,
+      "clips_validation": 4,
+      "clips_test": 5,
+      "frames_sources_total": 42
+    },
+    "mesures": {
+      "validation_cases": 32,
+      "psnr_validation_bicubic_db": 35.0616,
+      "psnr_validation_rne_db": 35.6231,
+      "test_cases": 40,
+      "psnr_test_bicubic_db": 37.4311,
+      "psnr_test_rne_db": 37.5269,
+      "gain_test_db": 0.0958
+    },
+    "notes_preuves": "Test de 40 patches apres premiere exploration des hyperparametres, pas un test final scelle ; references bruitees et compressees synthetiquement. Un petit MP4 synthetique 24 frames a ete rendu en x2.",
+    "qualite_niveau": "prototype_de_recherche_gains_faibles",
+    "tests_locaux": "17/17 testes en Python CPU sur medias synthetiques",
+    "ci_distante": "a_verifier_RNE_et_les_deux_jobs_directeur",
+    "audio": "tentative de remux local ffmpeg avec repli video silencieuse; aucune preuve de conservation sur toutes sources",
+    "donnees_privees": "poids, notes detaillees, manifest et clips d entrainement non publies; archive privee ChatGPT",
+    "aucune_compatibilite_iPhone_confirmee": true,
+    "aucun_modele_nvidia_ou_dlss5_integre": true,
+    "activation_application": false,
+    "aucune_fusion_ou_deploiement": true
   }
 }
