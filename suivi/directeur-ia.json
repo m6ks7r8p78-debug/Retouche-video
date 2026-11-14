@@ -33,15 +33,15 @@
     "Audit fidélité spatiale RNE 0.4 : 74 images de 37 groupes, régions de contours, textures et ROI visage proposées ; 32 nouveaux tests locaux. Essai textures 220 steps x2 bras sur 919 triplets, gain +0,00219 dB trop faible, pas d'activation.",
     "Banc photo externe indépendante du corpus : 6 photos naturelles, 108 essais RNE04, +0,29936 dB et 97/108 cas gagnants face au bicubique pour version temporelle, MAIS instabilité 13,076>12,643; 32 tests locaux, aucun déploiement.",
     "RNE 0.4 nouvelles vidéos: 41 uploads audités; exclusion 3 copies exactes et 9 mêmes scènes malgré SHA différents; 29 candidats provisoires (580 reconstructions), +0,341 dB PSNR vs bicubique, 3 regressions sur un seul clip, textures encore difficiles, 232 vraies transitions, pas de déploiement.",
-    "RNE cohérence LR post-hoc : 29 clips candidats, 580 reconstructions; gain propre +0,480→+0,723 dB et 3 regressions éliminées, mais JPEG +0,203→+0,090 dB, flicker 1,702→1,858 et textures pires. Blocage de déploiement maintenu, 14 tests synthétiques."
+    "RNE cohérence LR post-hoc : 29 clips candidats, 580 reconstructions; gain propre +0,480→+0,723 dB et 3 regressions éliminées, mais JPEG +0,203→+0,090 dB, flicker 1,702→1,858 et textures pires. Blocage de déploiement maintenu, 14 tests synthétiques.",
+    "RNE 0.5 texture/temporel : 157 historiques verifiees, 154 uniques, 308 triplets, A/B 260 steps x 2; gain PSNR +0.00162 dB trop faible, perte temporelle aggravée, pas de promotion, 14 tests synthétiques réussis."
   ],
   "prochaines_etapes": [
-    "NE PAS appliquer la projection sur une video importée dont la chaîne de reduction/codec est inconnue; blocage de la fonction par défaut.",
-    "Conserver les 41 videos en test, jamais entraîner dessus sans nouvelle autorisation du propriétaire. Leur indépendance visuelle reste à confirmer.",
-    "Réduire la MAE de texture et de flicker en modifiant le modèle ou la perte sur le corpus d'apprentissage autorisé des 157 anciennes videos, sans choisir les seuils sur les 29 candidats.",
-    "Pour le prochain contrôle externe, préparer de nouvelles vidéos ou des vraies paires originales/filtrées ; ne pas prétendre qu'un PSNR synthétique valide un défiltrage AR.",
-    "Vérifier CI Github du dernier HEAD, et ne jamais annoncer iPhone Safari opérationnel sans test réel.",
-    "Ne pas déployer RNE 0.4, ni fusionner PR #1, tant que fidelite visages/texture/mouvements et mémoire iPhone non validées."
+    "Conserver le checkpoint RNE04 temporel; rejeter candidat RNE05 car PSNR +0.00162 dB in-sample et erreur temporelle +0.000044.",
+    "Ne pas apprendre sur les 41 uploads récents; ils ont servi a des audits préalables et ne doivent pas être réutilisés pour tuner les hyperparametres.",
+    "Obtenir de nouvelles videos et des paires d'origine réellement inédites pour évaluer restauration AR et fidélité des visages; sans preuve ne pas activer RNE.",
+    "Mesurer mouvement naturel, textures, details du visage, lignes fines et stabilité avec annotations et témoins fiables.",
+    "Verifier le job CI GitHub du HEAD et la compatibilité Safari iPhone réelle avant de déployer quoi que ce soit."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -52,14 +52,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
     "objets": [
-      "outils/rne/data_consistency.py",
-      "tests/test_rne_data_consistency.py",
-      "RETOUCHE_NEURAL_ENGINE_DIAGNOSTIC_PROJECTION.md",
+      "outils/rne/texture_temporal_v05.py",
+      "tests/test_rne_v05_texture_temporal.py",
+      "RETOUCHE_NEURAL_ENGINE_05_TEXTURE_TEMPORAL.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "14/14 nouveaux tests synthétiques, 252 diagnostics post-hoc + 580 ablations sur 29 videos, 29 sources SHA re-verifiees; erreur temporelle/luma chiffrées",
-    "statut_ci": "a_verifier",
-    "observations": "aucun original, chemin media, video, frame, ni poids personnalisés sur GitHub; post-hoc non indépendant"
+    "preuve_locale": "157 fichiers historiques SHA-valides, 308 triplets sur 154 uniques, 2x260 steps CPU, 14 tests unitaires locaux réussis",
+    "statut_ci": "a_verifier_nouveau_HEAD",
+    "observations": "pas de media, frame, hash individuel ni poids sur GitHub ; 41 nouveaux videos exclues d'entraînement"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -812,5 +812,63 @@
       "documentation": "RETOUCHE_NEURAL_ENGINE_DIAGNOSTIC_PROJECTION.md",
       "archive_privee": "RetoucheProAI_RNE04_diagnostic_projection_posthoc_prive.zip"
     }
+  },
+  "jalon_rne_05_texture_temporelle": {
+    "date": "2026-11-14",
+    "version": "RNE 0.5 texture-temporal A/B, private research only",
+    "etat": "experience achevee, candidat refuse, pas de deploiement",
+    "donnees": {
+      "catalogue_original": 157,
+      "empreintes_sha256_verifiees": 157,
+      "contenus_uniques": 154,
+      "copies_exactes_ecartees": 3,
+      "groupes_anti_fuite_catalogue": 43,
+      "triplets_entrainement": 308,
+      "sources_avec_triplets": 154,
+      "extraction_erreurs": 0,
+      "triplets_presentes_optimiseur": 308,
+      "nouveaux_41_uploads_utilises_entrainement": false
+    },
+    "entrainement": {
+      "depart": "poids RNE 0.4 temporel identiques pour témoin et candidat",
+      "steps_par_branche": 260,
+      "batch": 8,
+      "lambda_temporal": 0.025,
+      "lambda_laplacian_candidat": 0.018
+    },
+    "mesures_sur_entrainement": {
+      "psnr_temoin_db": 30.95481,
+      "psnr_candidat_db": 30.95643,
+      "psnr_gain_candidat_vs_temoin_db": 0.00162,
+      "mae_texture_laplacien_temoin": 0.055932,
+      "mae_texture_laplacien_candidat": 0.055861,
+      "mae_residu_temporel_temoin": 0.002218,
+      "mae_residu_temporel_candidat": 0.002262,
+      "temporal_regression_candidate": 0.000044,
+      "triplets_gagnants_candidat": 203,
+      "triplets": 308,
+      "aucune_validation_independante": false,
+      "precision": "métriques internes au corpus pre-entraine; gain pas suffisant pour adopter"
+    },
+    "decision": {
+      "candidat_promu": false,
+      "checkpoint_reference": "RNE 0.4 temporel",
+      "auto_deploiement": false,
+      "site_public_modifie": false,
+      "publication_videos_privees": false,
+      "tests_locaux_nouveaux": "14/14",
+      "ci_distante": "non_verifiee",
+      "iPhone_safari_reel": false,
+      "NVIDIA_DLSS5_utilise": false
+    },
+    "fichiers_publics": [
+      "outils/rne/texture_temporal_v05.py",
+      "tests/test_rne_v05_texture_temporal.py",
+      "RETOUCHE_NEURAL_ENGINE_05_TEXTURE_TEMPORAL.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "archive_privee": "RetoucheProAI_RNE05_texture_temporel_prive.zip (3 checkpoints + scripts + rapports, aucune vidéo/frame)",
+    "progres_recherche": "nouvelle perte gradients Laplacien reentrainee et comparee à témoin avec un veto de promotion des poids",
+    "prochaine_priorite": "garder les 41 vidéos réservées; mesurer textures et stabilité sur des références authentiques externes; améliorer continuité et fidélité des visages sans optimiser post-hoc sur le test"
   }
 }
