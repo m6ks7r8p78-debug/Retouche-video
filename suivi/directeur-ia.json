@@ -29,16 +29,16 @@
     "RNE 0.3 : 157/157 vidéos privées retrouvées et vérifiées par SHA, 284 triplets sur 37 groupes, apprentissage 127 vidéos / validation 12 / test 18; 600 étapes ; PSNR test +0,432 dB vs bicubique et +0,428 dB vs RNE 0.2; 66 tests locaux réussis, 5 régressions importantes donc non activé.",
     "RNE 0.3+ maison : corpus 157 SHA valides, 154 contenus uniques, 919 triplets non redondants / 37 groupes, 420 étapes supplémentaires équilibrées, 80 tests locaux RNE; gain in-sample +0,0579 dB seulement, 3 regressions > 0,5 dB; non déployable.",
     "QA temporelle sur mouvements naturels : 37 groupes et 333 images filmées, 296 transitions; RNE03+ légèrement moins stable que bicubique; prototype de lissage résiduel et garde-fou, 26 nouveaux tests locaux, aucun déploiement.",
-    "RNE 0.4 — entraînement réel apparié MSE seule vs MSE+perte temporelle sur 919 triplets privés, 180 étapes x2 ; 2 fenêtres de mouvements naturels ×37 groupes ×333 images : stabilisation mesurée, bicubique encore meilleur. 12 tests locaux, poids privés, non deployable."
+    "RNE 0.4 — entraînement réel apparié MSE seule vs MSE+perte temporelle sur 919 triplets privés, 180 étapes x2 ; 2 fenêtres de mouvements naturels ×37 groupes ×333 images : stabilisation mesurée, bicubique encore meilleur. 12 tests locaux, poids privés, non deployable.",
+    "Audit fidélité spatiale RNE 0.4 : 74 images de 37 groupes, régions de contours, textures et ROI visage proposées ; 32 nouveaux tests locaux. Essai textures 220 steps x2 bras sur 919 triplets, gain +0,00219 dB trop faible, pas d'activation."
   ],
   "prochaines_etapes": [
-    "Vérifier GitHub Actions workflow RNE CPU et les jobs Directeur IA sur le dernier HEAD, sans présumer la réussite distante.",
-    "Obtenir de nouveaux médias réellement indépendants des 157 sources utilisées à l'apprentissage et des anciens jeux d'essais avant d'affirmer un gain généralisé.",
-    "Améliorer RNE 0.4 par robustesse d'occlusion, suivi de mouvement et supervision qualité spatiale pour conserver les détails, sans forcer la simple baisse du scintillement.",
-    "Préparer un banc perceptuel pour visages, bords et géométrie avec référents légitimes, sans présumer la reconstitution de détails invisibles.",
-    "Garder une architecture de repli bicubique ou méthode traditionnelle lorsque la confiance du Directeur IA est insuffisante, préserver le choix manuel.",
-    "Essais physiques Safari iPhone 15 Pro Max, mémoire/latence/énergie avant tout branchement de RNE au produit.",
-    "Reprendre en parallèle la reconnaissance AR sur vrais masques vérifiés, jamais entraîner un segmentateur comme si des pseudo-masques étaient des vérités humaines."
+    "Vérifier les résultats CI GitHub Actions RNE et Directeur IA après le dernier commit, ne pas annoncer succès distant sans preuve.",
+    "Préparer un nouveau jeu de vidéos totalement indépendant des 157 vidéos déjà apprises, avec références fidèles et autorisations distinctes; toutes métriques actuelles RNE04 sont internes.",
+    "Mesurer stabilité entre images + fidélité des traits et contours sur vrais mouvements; ajouter masques visage vérifiés, ne pas assimiler proposition Haar à annotation authentique.",
+    "Ne pas promouvoir le candidat gradients et ne pas activer le limiteur strict universellement; rechercher une stratégie adaptative évaluée sur données nouvelles.",
+    "Valider une variante WebGPU / WASM ou calcul distant privé après accord, mémoire réelle, batterie, latence et qualité Safari iPhone.",
+    "Poursuivre la détection/restauration des vrais filtres AR par validation sur masques humains vérifiés et consentis; aucun SDK ni modèles NVIDIA DLSS 5."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -49,16 +49,18 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
     "objets": [
-      "outils/rne/train_temporal_residual.py",
-      "tests/test_rne04_temporal_train.py",
-      "RETOUCHE_NEURAL_ENGINE_04.md",
-      "BENCHMARK_RESULTS.md",
-      ".github/workflows/rne-cpu.yml",
-      "suivi/directeur-ia.json"
+      "outils/rne/fidelity_guard.py",
+      "outils/rne/audit_spatial_fidelity.py",
+      "outils/rne/train_texture_detail.py",
+      "tests/test_rne_fidelity_guard.py",
+      "tests/test_rne_spatial_audit.py",
+      "tests/test_rne_texture_training.py",
+      "RETOUCHE_NEURAL_ENGINE_FIDELITE_TEXTURES.md",
+      ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "Deux vrais entrainements 180 steps, source 157 SHA vérifiés, 919 triplets, 12/12 tests Python synthétiques, 2 audits naturels 37 groupes chacun, MP4 synthétique décodable",
-    "statut_ci": "a_verifier_sur_le_nouveau_SHA",
-    "limites": "Pas de scène réellement inédite, aucune mesure visage ou Safari iPhone, aucun déploiement des modèles spécialisés"
+    "preuve_locale": "32/32 nouveaux tests Python locaux reussis, 74 echantillons reels avec degrades synthetiques et 2 bras de 220 etapes chacun",
+    "statut_ci": "a_verifier_sur_nouveau_HEAD",
+    "observations": "aucun média privé ou poids entraîné sur GitHub; promotion bloquée"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -560,5 +562,78 @@
     "publication_poids_medias": false,
     "aucun_sdk_nvidia_dlss5": true,
     "avertissement": "Les 37 scènes/154 contenus ont déjà participé à l'entraînement; les audits à 18% et 62% ne sont pas un jeu de scènes vierges. Stabilité inférieure ou presque égale au bicubique selon la fenêtre."
+  },
+  "jalon_rne04_fidelite_textures": {
+    "date": "2026-11-14",
+    "statut": "recherche_privee_non_deployable",
+    "corpus": {
+      "videos_verifiees_sha256": 157,
+      "contenus_uniques": 154,
+      "groupes": 37,
+      "images_comparees": 74,
+      "instants_sources": [
+        0.62,
+        0.83
+      ],
+      "scenes_non_vues_par_modele": 0,
+      "degradations": "x2 artificiel, deuxieme instant compresse JPEG qualite 60"
+    },
+    "scores_spatiaux_74": {
+      "psnr_bicubique_db": 33.43385,
+      "psnr_rne04_temporal_db": 33.86264,
+      "gain_rne04_vs_bic_db": 0.42878,
+      "mae_contours_bicubique": 9.07442,
+      "mae_contours_rne04": 8.23847,
+      "mae_textures_bicubique": 4.58035,
+      "mae_textures_rne04": 4.60053,
+      "mae_roi_visage_proposee_bicubique": 4.24439,
+      "mae_roi_visage_proposee_rne04": 4.09015,
+      "images_avec_roi_visage_proposee": 30,
+      "limite": "ROI Haar non annotee et non equivalente au vrai masque visage; originaux peuvent deja etre filtres, toutes scenes precedemment apprises"
+    },
+    "protection": {
+      "module": "outils/rne/fidelity_guard.py",
+      "masque_verifie_explicite": true,
+      "limite_contours_RGB255": 8,
+      "limite_hors_contours_RGB255": 16,
+      "psnr_guard_db": 33.78095,
+      "decision": "protection conservatrice facultative, pas meilleure PSNR moyenne, ne garantit pas identité ni pixels authentiques"
+    },
+    "entrainement_textures": {
+      "module": "outils/rne/train_texture_detail.py",
+      "checkpoint_depart": "RNE04 temporal",
+      "videos_autorisees": 157,
+      "triplets": 919,
+      "steps_par_bras": 220,
+      "batch": 8,
+      "poids_gradient": 0.015,
+      "poids_temporel": 0.025,
+      "psnr_A_B_temoins_sur_74": 33.85586,
+      "psnr_A_B_gradients_sur_74": 33.85805,
+      "gain_gradients_vs_temoin_db": 0.00219,
+      "mae_texture_temoins": 4.60838,
+      "mae_texture_gradients": 4.59641,
+      "mae_contours_temoins": 8.21411,
+      "mae_contours_gradients": 8.21762,
+      "decision": "gain insuffisant, garder en recherche sans promotion"
+    },
+    "code": [
+      "outils/rne/fidelity_guard.py",
+      "outils/rne/audit_spatial_fidelity.py",
+      "outils/rne/train_texture_detail.py"
+    ],
+    "tests": [
+      "tests/test_rne_fidelity_guard.py",
+      "tests/test_rne_spatial_audit.py",
+      "tests/test_rne_texture_training.py"
+    ],
+    "nouveaux_tests_locaux": "32/32 reussis, medias entièrement synthetiques",
+    "document": "RETOUCHE_NEURAL_ENGINE_FIDELITE_TEXTURES.md",
+    "archive_privee": "RetoucheNeuralEngine_RNE04_Fidelite_Textures_prive_2026-11-14.zip",
+    "memoire_sauvegarde": "aucune vidéo brute, image extraite ou poids privé sur GitHub",
+    "sdk_NVIDIA_DLSS5": false,
+    "iphone_Safari_valide": false,
+    "auto_activation": false,
+    "CI_distante": "a_verifier"
   }
 }
