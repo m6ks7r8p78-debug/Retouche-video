@@ -20,5 +20,7 @@ jobs:
           node --check sw.js
       - name: Tests du Directeur IA
         run: node --test tests/directeur-ia.test.mjs
-      - name: Verifier l empreinte du cache PWA en lecture seule
-        run: node tests/sw.test.mjs
+      - name: Afficher l empreinte PWA attendue et verifier le cache
+        run: |
+          node tests/directeur-empreinte.mjs
+          node tests/sw.test.mjs
