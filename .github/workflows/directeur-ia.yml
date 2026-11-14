@@ -20,8 +20,5 @@ jobs:
           node --check sw.js
       - name: Tests du Directeur IA
         run: node --test tests/directeur-ia.test.mjs
-      - name: Calculer l empreinte du cache PWA (sans ecrire sur le depot)
-        run: |
-          node tests/sw.test.mjs --maj
-          grep -o 'const H="[^"]*"' sw.js
-          node tests/sw.test.mjs
+      - name: Verifier l empreinte du cache PWA en lecture seule
+        run: node tests/sw.test.mjs
