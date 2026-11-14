@@ -1,8 +1,6 @@
 # Résultats des bancs et journal d'expériences — Directeur IA
 
-Seuls des résultats réellement exécutés figurent ici. Aucun résultat sur la bibliothèque privée de 157 vidéos
-n'existe encore : les médias ne sont pas accessibles depuis Claude et aucune autorisation `evaluation_benchmark`
-n'a été enregistrée.
+Seuls des résultats réellement exécutés figurent ici. Des expériences privées distinctes ont été effectuées chez ChatGPT sur les vidéos autorisées du catalogue, avec consentements contrôlés localement ; elles ne sont ni accessibles automatiquement à Claude, ni reproductibles par la CI publique. Seuls les agrégats non identifiants figurent dans GitHub. Les métriques sur incrustations AR simulées ne constituent pas une validation de vrais filtres AR.
 
 ## Résultats constatés (branche `chatgpt-ai-director-v01`)
 
@@ -32,9 +30,16 @@ n'a été enregistrée.
 - **E-2026-11-14-04** — Priorisation : un module mesuré faible (filtres AR) passait derrière des modules inconnus (score
   d'inconnu 0,5 non modulé). Corrigé : modulation constante 0,6 pour l'inconnu ; filtres AR → « améliorer » en tête.
 
+## Jalon ChatGPT : segmentation AR v4 et neural rendering (14 nov. 2026)
+
+- **AR v4, entraînement privé** : poursuite du segmentateur antérieur pendant 180 étapes sur 12 vidéos autorisées comme fonds, 4 fonds de validation indépendants de ce nouveau cycle ; 96 cas d'effets procéduraux compressés/bruités/rotés. IoU chat 0,0963 → 0,3792 ; chien 0,0205 → 0,3371 ; lunettes 0,0707 → 0,1747. Faux positifs témoins : 35,3973 % → 0,2838 %. **Pas de vérité terrain de vrais filtres AR**.
+- **Contre-évaluation scellée** : trois autres vidéos, 72 cas synthétiques, IoU chat 0,1025 → 0,2893 ; chien 0,0398 → 0,2226 ; lunettes 0,0468 → 0,0880 ; faux positifs après ajustement **1,4594 %**, au-dessus du seuil 1 %. **Candidat non admissible à l'activation**, sans essais iPhone ni masques corrigés. Ces vidéos sont indépendantes du nouvel ajustement, mais pas forcément de l'ancien préentraînement.
+- **DLSS 5 — étude documentaire seulement** : principes de rendu neuronal guidé par structure/mouvement/état causal et contrôle de masques. Le SDK NVIDIA DLSS 5 n'est pas public au 14 novembre 2026, et les buffers d'un moteur de jeu manquent aux vidéos 2D de Safari iPhone. Aucune implémentation NVIDIA ni qualité de rendu mesurée. Voir `RECHERCHE_DLSS5_ET_AR_V4.md`.
+- **Garde-fous** : `outils/directeur-garde-fou-neural.cjs` et 18 tests Node synthétiques réussis localement. Le module refuse la promotion du segmentateur AR v4 et ne fait aucune inférence, reconstruction, publication ou activation. Résultat des deux jobs de CI distante à confirmer après commit.
+
 ## À produire ensuite
 
-1. Catalogue réel (ChatGPT ou propriétaire) → résumé non nominatif partageable (`resume`, défauts par catégorie).
+1. Catalogue privé de 157 vidéos déjà consolidé côté ChatGPT : exploiter les groupes et les consentements vérifiés, sans partager médias, chemins ou empreintes.
 2. Détecteur d'éléments AR v4 (expérimental) : réentraînement avec compression JPEG 40–90, bruit, rotation ±10°, zoom,
    visages petits, éléments clairs et fins ; critères : chat ≥ 50 % de retrait en vidéo, chien/hasard sans recul, vidéo sans
    filtre inchangée ; puis validation sur les 74 vrais clips Snapchat privés (validation croisée par vidéo) avant intégration.
