@@ -15,8 +15,15 @@ function planDirecteur(type,m,fl){
     const mobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const choix={mode:"auto",longueur:$("#q")&&$("#q").value==="-1"?"origine":Math.max(0,+($("#q")&&$("#q").value)||0),
       autoriserGeneration:!!($("#o_max")&&$("#o_max").checked)};
-    const disponibles={voix:!(window.MODELS&&MODELS.isOff("voix"))};
+    const cap=window.DIRECTEUR_CAPACITES?DIRECTEUR_CAPACITES.inspecter({
+      type,webgl:!!gl,videoDecoder:!!window.VideoDecoder,videoEncoder:!!window.VideoEncoder,
+      audioEncoder:!!window.AudioEncoder,scintillementMesure:!!fl,
+      voixModele:!!(window.MODELS&&!MODELS.isOff("voix")&&MODELS.compat("voix").ok),
+      reconstructionAutorisee:choix.autoriserGeneration
+    }):null;
+    const disponibles=cap?cap.disponibles:{voix:!(window.MODELS&&MODELS.isOff("voix"))};
     const p=DIRECTEUR_IA.planifier({type,w,h,mesures:m,scintillement:fl,appareil:{mobile},choix,disponibles});
+    if(cap)p.capacites={version:cap.version,disponibles:cap.disponibles,options:cap.options,raison:cap.raison};
     if(type==="video"&&window.DIRECTEUR_SCENES&&Array.isArray(m.echantillons)){
       /* Diagnostic de variations observées dans le film ; aucune adaptation non validée injectée dans l'export. */
       p.zonage=DIRECTEUR_SCENES.analyser({duree:v.duration,echantillons:m.echantillons});
@@ -33,6 +40,13 @@ function afficherDirecteur(p){
   sum.textContent="Directeur IA · "+(actifs.length?actifs.length+" traitements évalués":"source peu dégradée");
   for(const a of p.operations){const li=document.createElement("li");li.textContent=a.nom+" — "+a.raison+(a.genere?" (reconstruction, à vérifier)":"");liste.appendChild(li)}
   for(const a of p.avertissements){const li=document.createElement("li");li.textContent="Limite : "+a;liste.appendChild(li)}
+  if(p.capacites){
+    for(const a of p.ecartes.slice(0,3)){const li=document.createElement("li");li.textContent="Non retenu : "+a.id+" — "+a.raison;liste.appendChild(li)}
+    const optionnels=p.capacites.options.filter(x=>x.possible);
+    if(optionnels.length){const li=document.createElement("li");
+      li.textContent="Outils supplémentaires disponibles sur demande : "+optionnels.map(x=>x.id.replaceAll("_"," ")).join(", ")+". Aucun n'est exécuté automatiquement.";
+      liste.appendChild(li)}
+  }
   if(p.zonage&&p.zonage.zones.length){
     const li=document.createElement("li");li.textContent="Variations observées : "+p.zonage.zones.length+" zone(s) estimée(s) sur "+p.zonage.echantillons+" images de contrôle. Les frontières sont approximatives, sans réglage par scène à l'export.";liste.appendChild(li);
     if(p.zonage.zones.length>1)for(const z of p.zonage.zones){
