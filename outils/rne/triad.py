@@ -201,3 +201,20 @@ def render_video(source, destination, weights=None, max_frames=0, tile=96):
             'seconds_cpu':round(time.monotonic()-t0,2),
             'model':'RNE 0.3 (independent 3-frame 2D super-resolution)',
             'not_nvidia_dlss5':True,'iphone_safari_tested':False}
+
+
+def main():
+    """Opt-in offline CLI; all media paths and personalized weights remain private."""
+    import argparse, json
+    from pathlib import Path
+    p=argparse.ArgumentParser(description='RNE 0.3 — super-résolution vidéo neuronale 2x, locale et expérimentale')
+    p.add_argument('input',type=Path)
+    p.add_argument('output',type=Path)
+    p.add_argument('--weights',type=Path,required=True,help='Poids personnels hors du depot Git')
+    p.add_argument('--max-frames',type=int,default=0)
+    p.add_argument('--tile',type=int,default=96)
+    a=p.parse_args()
+    print(json.dumps(render_video(a.input,a.output,a.weights,max_frames=a.max_frames,tile=a.tile),ensure_ascii=False))
+
+if __name__=='__main__':
+    main()
