@@ -63,11 +63,11 @@ var DIRECTEUR_IA = (() => {
         raison, genere: !!opts.generatif, executant: cat.gere, preuve: opts.preuve || "mesure de la source" });
     };
     if (mesures.compression > .12) proposer("debloc", mesures.compression, "Grille de compression mesurée");
-    if (mesures.bruit > .10) proposer("debruitage", mesures.bruit, "Bruit mesuré dans les zones calmes");
+    if (mesures.bruit > .08) proposer("debruitage", mesures.bruit, "Bruit mesuré dans les zones calmes");
     if (type === "video") {
       if (mesures.poussiere > .12) proposer("poussiere", mesures.poussiere, "Taches transitoires repérées");
       if (mesures.tremblement > .18) proposer("stabilisation", mesures.tremblement, "Secousses entre images");
-      if (mesures.scintillement > .22) proposer("scintillement", mesures.scintillement, "Variations temporelles mesurées");
+      if (mesures.scintillement > .18) proposer("scintillement", mesures.scintillement, "Variations temporelles mesurées");
     }
     if (Math.max(mesures.sousExposition, mesures.contrasteFaible) > .24)
       proposer("lumiere", Math.max(mesures.sousExposition, mesures.contrasteFaible), "Luminance ou contraste insuffisant mesuré ; préserver l'ambiance de la scène");
