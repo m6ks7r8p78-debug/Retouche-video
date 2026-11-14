@@ -71,7 +71,7 @@ var DIRECTEUR_SCENES = (() => {
       variation:zones.length>1||zones.some(x=>x.prioriteLocale),
       avertissements:[
         "Sondages répartis dans la durée : ne pas confondre changement d'éclairage et changement de scène.",
-        "Ces zones orientent un diagnostic, pas encore les réglages image par image de l'export."
+        "Seul le débruitage classique peut varier prudemment selon ces zones à l'export ; les autres traitements restent globaux."
       ]};
   }
   return Object.freeze({analyser});
