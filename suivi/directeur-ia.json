@@ -37,15 +37,16 @@
     "RNE 0.5 texture/temporel : 157 historiques verifiees, 154 uniques, 308 triplets, A/B 260 steps x 2; gain PSNR +0.00162 dB trop faible, perte temporelle aggravée, pas de promotion, 14 tests synthétiques réussis.",
     "RNE06: entraînement expérimental sur 308 triplets historiques, 260 steps x2, réduction faible des erreurs temporelles mais PSNR/contours en recul; 29 vidéos du lot réutilisé confirment l'absence de promotion. 16 tests nouveaux PASS.",
     "RNE07: 157 archives SHA vérifiées, 154 uniques, 308 triplets, 2 bras de 120 étapes, 4 dégradations dont vrai H264 en mémoire. +0,02433 dB sur H264 mais -0,03306 dB sur sources propres; candidat bloqué, 30 tests locaux verts, aucune des 41 vidéos de test utilisée pour l'apprentissage.",
-    "RNE08: 19 signaux de qualité sans vérité de référence à l'inférence ; validation 616 exemples historiques, +0,16442 dB vs +0,20554 RNE04, 3 pertes graves restent; 29 tests initiaux + 18 audits de rareté PASS; sélecteur non promu."
+    "RNE08: 19 signaux de qualité sans vérité de référence à l'inférence ; validation 616 exemples historiques, +0,16442 dB vs +0,20554 RNE04, 3 pertes graves restent; 29 tests initiaux + 18 audits de rareté PASS; sélecteur non promu.",
+    "RNE09: 246 historic synthetic stress cases, photometric attenuation rejected; stricter confidence-invariant gate refused 164/164 deliberately mismatched histories while preserving 82/82 valid examples. 23 new tests PASS; not deployable."
   ],
   "prochaines_etapes": [
-    "Garder RNE08 non déployé : régression critique rare, concentrée sur 1-3 groupes. Ne pas entraîner un détecteur de risque avec seulement 5 exemples historiques graves.",
-    "Maintenir 41 vidéos nouvelles strictement hors entraînement/calibration et éviter leur consultation répétée pour le choix de seuils.",
-    "Sur le corpus historique autorisé, collecter davantage de dégradations représentatives et de familles de scènes réellement difficiles, en séparant les groupes sources et variantes.",
-    "Fixer les seuils et méthodes AVANT le prochain vrai banc de scènes inédites ; pour les filtres AR, demander de vraies paires avant/après et masques de validation.",
-    "Conserver le bicubique comme repli; hystérésis RNE08 limitée à l'aperçu manuel de laboratoire et jamais à l'export automatique.",
-    "Vérifier les jobs Github Actions sur HEAD, puis évaluer sur un véritable Safari iPhone avant toute activation."
+    "Conserver RNE04 comme reference experimentale, RNE08 et RNE09 non promus; garder le bicubique par defaut.",
+    "Maintenir les 41 nouveaux medias en reserve et hors entrainement; ne pas les utiliser pour calibrer les seuils RNE09.",
+    "Valider le garde-fou sur de vraies ruptures de scenes, occlusions, flux incorrects et alignements naturels inedits, et sur d'autres modes de degradation.",
+    "Vérifier la fidélité faciale et les paires originals/filtrées, sans supposer qu'une forte confiance photométrique prouve une vraie reconstruction.",
+    "Valider Safari iPhone reel (latence, mémoire, export). Aucun deploiement automatique.",
+    "Verifier les GitHub Actions pour le dernier HEAD, sans fusion main ni partage de media/poids privé."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -56,19 +57,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
     "objets": [
-      "outils/rne/rne08/adaptive_selector.py",
-      "outils/rne/rne08/scene_router.py",
-      "outils/rne/rne08/build_private_dataset.py",
-      "outils/rne/rne08/evaluate_private.py",
-      "outils/rne/rne08/risk_audit.py",
-      "tests/test_rne08_adaptive.py",
-      "tests/test_rne08_risk_audit.py",
-      "RETOUCHE_NEURAL_ENGINE_08.md",
+      "outils/rne/rne09/confidence_invariant.py",
+      "tests/test_rne09_confidence_invariant.py",
+      "RETOUCHE_NEURAL_ENGINE_09.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "47 tests locaux synthétiques PASS et audit sur 1232 exemples historiques (5+4 pertes graves concentrées dans 3+1 groupes)",
     "statut_ci": "a_verifier",
-    "observations": "aucune vidéo, image, poids personnalisé ou étiquette de clip publiés"
+    "preuve_locale": "23 RNE09 tests + 22 premiere ablation + 47 RNE08 tests pass locally; 246 historical stress cases on frozen RNE04",
+    "observations": "Private archive contains no media or personal weights; no deployment."
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1095,6 +1091,61 @@
     "weights_published": false,
     "main_merged": false,
     "iphone_safari_validated": false,
+    "NVIDIA_DLSS5_used": false
+  },
+  "jalon_neural_engine_09": {
+    "date": "2026-11-14",
+    "stage": "RNE09 temporal confidence invariant; laboratory research only",
+    "dataset": {
+      "historical_videos": 157,
+      "historical_unique": 154,
+      "historical_scene_groups": 41,
+      "normal_cases": 82,
+      "synthetic_corrupted_contexts": 164,
+      "ablation_cases_per_method": 246,
+      "new_41_used": false,
+      "checkpoint_frozen": "RNE04"
+    },
+    "first_ablation": "Photometric trust attenuation rejected; worsened normal scenes and shifted-context errors",
+    "second_ablation": {
+      "type": "photometric upper-bound invariant, refuse entire neural frame on incompatible trust map",
+      "tolerance_posthoc": 0.05,
+      "violation_fraction_posthoc": 0.01,
+      "normal_unchanged": 82,
+      "normal_total": 82,
+      "corrupted_refused": 164,
+      "corrupted_total": 164,
+      "severe_psnr_regressions_without_guard": 87,
+      "severe_psnr_regressions_with_guard": 0,
+      "mean_gain_from_refusal_in_corrupted_cases_db": 0.85615,
+      "exploratory_group_bootstrap_ci_95pct_db": [
+        0.70544,
+        1.047
+      ],
+      "notes": "corruptions deliberately violate known confidence rule; historic scenes were already in pretraining; thresholds chosen after failed ablation; NOT independent validation"
+    },
+    "tests": {
+      "new_generic_tests": "23/23 PASS locally",
+      "all_RNE09_experimental_tests": "45/45 PASS locally",
+      "regression_RNE08": "47/47 PASS locally",
+      "ci_remote": "to_check"
+    },
+    "code_public": [
+      "outils/rne/rne09/confidence_invariant.py",
+      "tests/test_rne09_confidence_invariant.py",
+      "RETOUCHE_NEURAL_ENGINE_09.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE09_Protection_Temporelle_Prive.zip",
+    "privacy": {
+      "new_41_videos_opened": false,
+      "new_41_used_for_training": false,
+      "video_or_frames_public": false,
+      "personal_model_weights_public": false
+    },
+    "quality_gate": "BLOCKED for production; only opt-in laboratory preview; no iPhone validation; no authentic scene-cut generalization",
+    "site_deployed": false,
+    "main_merged": false,
     "NVIDIA_DLSS5_used": false
   }
 }
