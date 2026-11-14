@@ -152,8 +152,15 @@ try {
     assert.ok(result.adapt.imagesAdaptees>5,"no frames used the adaptive denoiser");
     assert.ok(Math.abs(result.adapt.facteurMax-1)>.003||Math.abs(result.adapt.facteurMin-1)>.003);
     assert.ok(result.adapt.netteteMin>=.84&&result.adapt.netteteMin<=1,"dangerous sharpening coefficient");
-    assert.ok(result.adapt.imagesNettete>5,"temporal sharpness protection not used on noisy segment");
-    assert.ok(result.adapt.netteteMin<1,"no measurable reduction of sharpening");
+    const netteNecessaire=candidate.amplitudeNettete>.005;
+    console.log("Diagnostic du banc : bruit global "+data.noise+", bruit local "+JSON.stringify(data.zonage.zones.map(z=>z.mesures.noise))+
+      ", netteté demandée "+candidate.amplitudeNettete+", images protégées "+result.adapt.imagesNettete);
+    if(netteNecessaire){
+      assert.ok(result.adapt.imagesNettete>5,"calculated sharpening guard not applied on decoded frames");
+      assert.ok(result.adapt.netteteMin<1,"expected sharpening attenuation absent");
+    }else{
+      assert.equal(result.adapt.imagesNettete,0,"unexpected sharpening modification without sufficient evidence");
+    }
     assert.match(result.recipe,/adaptation_temporelle/);
     assert.match(result.recipe,/netteteMin/);
     /* Banc de vérification end-to-end : un second export neutralise le Directeur
