@@ -5,23 +5,26 @@
   "pr": 1,
   "pr_brouillon": true,
   "dernier_succes": {
-    "sha": "4f18c54b8d4613b8ef9545d3ae9b8b19e84fc4f7",
-    "run_id": 43558397824,
-    "url": "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43558397824",
-    "remarque": "Derniere execution globale reussie constatee avant l'installation du mecanisme de reprise. A revalider apres chaque nouveau commit."
+    "sha": "ce99d7031447eb25ae6debb7cccce3b046e59b31",
+    "run_id": 43559135621,
+    "url": "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43559135621",
+    "remarque": "Dernier succes global (2 jobs) verifie par Claude le 2026-11-14 avant le cycle catalogue/priorisation. A revalider apres chaque commit."
   },
   "termine": [
     "Directeur IA avec planification, analyse et adaptation prudente du debruitage et de la nettete par zone temporelle.",
     "Precontrole export et repli de resolution; prototype 8K FFmpeg hors navigateur, pas de 8K iPhone operationnel.",
     "Laboratoire synthétique avec evaluation independante et aucun entrainement sur donnees personnelles.",
-    "GitHub Actions: derniers tests globaux constates reussis au run 43558397824."
+    "GitHub Actions: derniers tests globaux constates reussis au run 43558397824.",
+    "Catalogueur prive outils/catalogue_medias.py (SHA-256, metadonnees, mesures, doublons exacts, rapprochements hypothetiques, groupes de scene, partition sans fuite, 9 autorisations separees, import du catalogue ChatGPT) teste sur medias synthetiques.",
+    "Priorisation des modules faibles outils/directeur-priorites.cjs + suivi/etat-modules.json (aucune qualite inventee : action mesurer, filtres AR en tete).",
+    "Documents MEDIA_CATALOG_SCHEMA.md, BENCHMARK_PROTOCOL.md, BENCHMARK_RESULTS.md, CHATGPT_CLAUDE_HANDOFF.md."
   ],
   "prochaines_etapes": [
     "Verifier le SHA actuel de la branche et le resultat global des deux jobs GitHub Actions; ne pas confondre avec le dernier succes archive.",
-    "En cas de CI echouee, examiner les logs, isoler la cause, corriger uniquement sur cette branche, relancer les tests et conserver les traces.",
-    "Poursuivre le Directeur IA avec des modifications mesurees et des tests de non-regression; respecter les reglages manuels et Claude.",
-    "Valider les traitements sur des medias de reference autorises puis sur un vrai iPhone Safari; ne pas annoncer une qualite 8K ou un detail retrouve non demontres.",
-    "Actualiser ce journal a chaque jalon important et conserver la PR #1 en brouillon sans fusion."
+    "Obtenir le catalogue ChatGPT (CSV/JSON, sans medias) et lancer catalogue_medias.py sur la bibliotheque la ou elle se trouve; partager seulement le resume non nominatif.",
+    "Faire enregistrer par le proprietaire les autorisations evaluation_benchmark (consentements.json prive), puis generer le plan de banc.",
+    "Construire le banc retrait de filtres AR/beaute (couples verifies + degradations synthetiques) et remplir qualite_mesuree/taux_echec dans suivi/etat-modules.json.",
+    "Valider sur un vrai iPhone Safari; ne pas annoncer une qualite 8K ou un detail retrouve non demontres; garder la PR #1 en brouillon sans fusion."
   ],
   "garde_fous": {
     "main_intouchable": true,

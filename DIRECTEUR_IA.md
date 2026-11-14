@@ -36,6 +36,16 @@ Le code d'export actuel utilise un profil H.264/HEVC prévu pour la 4K, n'a pas 
 
 Les données réelles exigeraient des consentements **séparés** pour stockage et entraînement, un corpus licite, des partitions indépendantes et des tests perceptuels. Même avec consentement, cette voie n'est **pas raccordée** actuellement. Un progrès sur signal 1D synthétique ne prouve aucune amélioration de vraie photo ou vidéo. Le laboratoire est exécuté en CI sur la branche, sans déclencher de modifications de `main` ou de déploiement.
 
+## Bibliothèque de recherche et priorisation (v1.0)
+
+- `outils/catalogue_medias.py` : catalogue **privé** des médias de recherche (schéma `MEDIA_CATALOG_SCHEMA.md`),
+  partition sans fuite par groupe de scène, autorisations séparées par finalité, import du catalogue ChatGPT.
+  15 tests sur médias synthétiques (`tests/catalogue_medias_test.py`), exécutés en CI.
+- `outils/directeur-priorites.cjs` : classe les modules par besoin mesuré ; `suivi/etat-modules.json` ne contient
+  encore aucune qualité mesurée → recommandation actuelle : **mesurer les filtres AR en premier**. 7 tests.
+- Protocole : `BENCHMARK_PROTOCOL.md` ; résultats réels : `BENCHMARK_RESULTS.md` ; transmission : `CHATGPT_CLAUDE_HANDOFF.md`.
+- Outils hors application : pas de changement de `app.js`, `sw.js` ni de l'empreinte hors ligne.
+
 ## Délimitations importantes
 
 Ce module constitue une **intégration progressive**, pas un nouveau réseau de neurones. Il ne prétend pas que les détails disparus ont été retrouvés, ne valide pas encore le réalisme perceptuel, et ne coordonne pas encore tous les traitements image par image : seuls le débruitage classique et une baisse prudente d'accentuation dans les zones bruitées peuvent varier. Son plan est un guide ; seule une partie de ses recommandations est reliée aux fonctions réellement présentes. Les traitements d'origine restent responsables de l'exécution. L'option « résolution » est une proposition et n'active aucun encodeur.

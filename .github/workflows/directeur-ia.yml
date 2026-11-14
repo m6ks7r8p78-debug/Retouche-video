@@ -31,10 +31,13 @@ jobs:
           node --check directeur-rendu.js
           node --check directeur-export.js
           node --check outils/directeur-laboratoire.cjs
+          node --check outils/directeur-priorites.cjs
           node --check app.js
           node --check sw.js
       - name: Tests du Directeur IA
-        run: node --test tests/directeur-ia.test.mjs tests/directeur-qualite.test.mjs tests/directeur-scenes.test.mjs tests/directeur-capacites.test.mjs tests/directeur-rendu.test.mjs tests/directeur-export.test.mjs
+        run: node --test tests/directeur-ia.test.mjs tests/directeur-qualite.test.mjs tests/directeur-scenes.test.mjs tests/directeur-capacites.test.mjs tests/directeur-rendu.test.mjs tests/directeur-export.test.mjs tests/directeur-priorites.test.mjs
+      - name: Priorisation des modules faibles (etat versionne)
+        run: node outils/directeur-priorites.cjs suivi/etat-modules.json | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const r=JSON.parse(s);console.log(JSON.stringify(r.prochaine_priorite))})"
       - name: Laboratoire d'autonomie et garde-fous de recherche
         run: |
           node --test tests/directeur-laboratoire.test.mjs
@@ -77,6 +80,15 @@ jobs:
           echo "Navigateur utilisé : $CHROME"
           test -x "$CHROME"
           node --test tests/directeur-browser.test.mjs
+      - name: Python pour le catalogueur prive
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Catalogueur de bibliotheque privee (medias synthetiques uniquement)
+        run: |
+          python -m pip install --quiet numpy
+          python -m py_compile outils/catalogue_medias.py
+          python -W error::ResourceWarning tests/catalogue_medias_test.py -v
       - name: Démontrer l'encodage 8K hors navigateur avec audio
         run: node --test tests/directeur-8k.test.mjs
       - name: Capturer le resultat et les prochaines etapes (meme si test echoue)

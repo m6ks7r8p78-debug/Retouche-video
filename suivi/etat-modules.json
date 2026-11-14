@@ -1,0 +1,19 @@
+{
+ "schema": "retoucheproai.etat_modules/1",
+ "avertissement": "Aucune qualité mesurée n'est encore disponible sur la bibliothèque autorisée : qualite_mesuree/taux_echec restent null et l'outil recommande donc de MESURER. importance_utilisateur reprend les priorités déclarées par le propriétaire (prompt maître, §6) ; faisabilite, cout_calcul et risque_regression sont des ESTIMATIONS techniques à remplacer par des mesures.",
+ "mise_a_jour": "2026-11-14",
+ "modules": [
+  {"module":"filtres_ar","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":1.0,"faisabilite":0.35,"cout_calcul":0.7,"risque_regression":0.5,"nb_cas":0,"source":"estimation"},
+  {"module":"filtres_beaute","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.95,"faisabilite":0.4,"cout_calcul":0.6,"risque_regression":0.5,"nb_cas":0,"source":"estimation"},
+  {"module":"filtres_colorimetriques","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.85,"faisabilite":0.7,"cout_calcul":0.2,"risque_regression":0.3,"nb_cas":0,"source":"estimation"},
+  {"module":"super_resolution","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.85,"faisabilite":0.6,"cout_calcul":0.8,"risque_regression":0.4,"nb_cas":0,"source":"estimation"},
+  {"module":"restauration_visages","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.8,"faisabilite":0.55,"cout_calcul":0.7,"risque_regression":0.5,"nb_cas":0,"source":"estimation"},
+  {"module":"coherence_temporelle","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.8,"faisabilite":0.45,"cout_calcul":0.5,"risque_regression":0.5,"nb_cas":0,"source":"estimation"},
+  {"module":"decompression","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.75,"faisabilite":0.6,"cout_calcul":0.4,"risque_regression":0.3,"nb_cas":0,"source":"estimation"},
+  {"module":"debruitage","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.75,"faisabilite":0.7,"cout_calcul":0.3,"risque_regression":0.3,"nb_cas":0,"source":"estimation"},
+  {"module":"faible_luminosite","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.6,"faisabilite":0.6,"cout_calcul":0.3,"risque_regression":0.3,"nb_cas":0,"source":"estimation"},
+  {"module":"export_x","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.6,"faisabilite":0.8,"cout_calcul":0.2,"risque_regression":0.2,"nb_cas":0,"source":"estimation"},
+  {"module":"stabilisation","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.5,"faisabilite":0.6,"cout_calcul":0.4,"risque_regression":0.3,"nb_cas":0,"source":"estimation"},
+  {"module":"audio","qualite_mesuree":null,"taux_echec":null,"gravite":null,"importance_utilisateur":0.4,"faisabilite":0.7,"cout_calcul":0.2,"risque_regression":0.2,"nb_cas":0,"source":"estimation"}
+ ]
+}
