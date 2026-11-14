@@ -172,9 +172,14 @@ zoom 4 %, décalage 6/−4 px retrouvés à 0,05 px près). Appliqué aussi à F
 - **De bout en bout dans l'app** (`tests/rfv.test.mjs` 6/6, Chromium, vrais modèles ; vidéo de test 36 images) : export sans l'option
   écart 46,6 / scintillement 4,38 / LPIPS 0,111 → **avec** 22,9 / 3,11 / 0,067 ; 1 section, 147 s de pré-calcul (36 images, ordinateur).
   Moteur seul sur les images brutes : 21,7 / 2,85 / 0,032. Vidéo sans filtre : rien n'est modifié.
+- **v7.7** : (1) la zone avance le long des contours forts qui la touchent (liseré, ombre d'un élément ; 0,10 écart des yeux au
+  plus) — banc 6 séquences : écart 18,3 → **16,5**, LPIPS 0,026 → **0,022**, précision de zone 72 % → 63 % (on efface un peu plus) ;
+  un simple élargissement fait moins bien (17,2 au mieux, puis pire) ; dans l'app : 22,9 → 21,8, LPIPS 0,067 → 0,063.
+  (2) fondu de 8 images entre deux reconstructions quand une nouvelle section commence. (3) **Écarté sur mesure** : reconstruire
+  dans un repère plus grand (704 au lieu de 384) pour une tête de 690 px n'apporte rien (écart 20,1 → 20,8, netteté déjà égale à la
+  vérité) ; le défaut visible était le liseré laissé autour de l'élément, traité par (1).
 - **Limites** : le détecteur manque les traits fins (moustaches) → restes visibles (défaut de F30, pas de la vidéo) ; ce qui bouge
-  SOUS le filtre (bouche sous un museau) est remplacé par une reconstruction fixe ; tête qui tourne beaucoup → nouvelle section
-  (changement brusque de reconstruction, pas de fondu) ; reconstruction en 384 px (floue si la tête est très grande ou en 4K) ;
+  SOUS le filtre (bouche sous un museau) est remplacé par une reconstruction fixe ; tête qui tourne beaucoup → nouvelle section (fondu de 8 images depuis la v7.7) ;
   visage le plus grand seulement ; déformations, lissage, maquillage : non traités.
 - **Critère de fin** : mesure sur ≥ 10 vrais clips filtrés autorisés (vérité : clip sans filtre du propriétaire) ; iPhone : 10 s de
   vidéo sans fermeture d'onglet, temps noté ; fondu entre sections ; avis du propriétaire.
@@ -544,3 +549,11 @@ Relevé avant toute modification de cette séance : dépôt `m6ks7r8p78-debug/re
 - Tests v7.6 : `rvv` 5/5 (dans l'app : visage 0,249 → 0,190 LPIPS, scintillement 5,75 → 5,35) ; `rfv` 6/6 (22,9 / 3,08 / 0,067) ;
   `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Aucun test sur iPhone.
 - 12/11 : **v7.6 confirmée en ligne** (`VER="v7.6"`, `recalage.js` servi). Sauvegarde : branche `sauvegarde-v7.5`.
+
+### Historique — v7.7 (13/11/2026)
+- F10 : zone élargie le long des contours, fondu entre sections ; repère plus grand écarté sur mesure. Détecteur non réentraîné :
+  l'apprentissage v3 dépend des clips privés du propriétaire, absents ici — un réentraînement sur données simulées seules ne
+  pourrait pas être vérifié sur de vrais filtres (risque de régression invisible).
+- Tests v7.7 : `rfv` 7/7 (dans l'app : écart 46,7 → 21,7, scintillement 4,4 → 3,1, LPIPS 0,110 → 0,062 ; fondu : saut en trop 2,64 → 0,88) ;
+  `rvv` 5/5 ; `atelier` 10/10 ; `pages` 5/5 ; `studio` 11/11 ; `sw` 8/8. Une exécution de `rfv` a échoué sur « Failed to fetch »
+  (coupure réseau passagère de l'environnement de test, non reproduite ; les requêtes échouées sont désormais affichées par le test).

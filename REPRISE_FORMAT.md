@@ -22,7 +22,7 @@
 - FAIT : documentation (CHANGELOG v8.0, fiche F32 du registre, NOTES, licences, guide).
 - FAIT : empreinte du service worker (`node tests/sw.test.mjs --maj`).
 - FAIT : non-régression (aucun échec nouveau par rapport à main v7.6 ; détail fiche F32).
-- FAIT : v8.0 publiée sur `main` le 14 nov. 2026 (point de restauration : branche `sauvegarde-v7.6`).
+- FAIT : v8.0 publiée sur `main` le 14 nov. 2026 (point de restauration : branche `sauvegarde-v7.7`).
 
 ## Ensuite (par ordre d'intérêt mesuré)
 1. Intégrer LaMa (Apache-2.0) pour les côtés : mesuré nettement meilleur que MI-GAN (voir REGISTRE_MODELES_LICENCES.md).

@@ -18,6 +18,10 @@
 - Limite connue : une vidéo verticale filmée caméra à la main vers 16:9 demande d'inventer ~68 % de l'image ; aucun modèle
   gratuit tournant sur téléphone ne le fait de façon crédible → l'app choisit alors le prolongement flou ou l'hybride et le dit.
 - Tests : `tests/format.test.mjs` (16, calcul pur) et `tests/format_app.test.mjs` (16, de bout en bout dans Chromium). Fiche F32.
+## v7.7 (13 nov. 2026) — retrait de filtre en vidéo : moins de restes, transitions douces
+- La zone retirée suit maintenant le liseré et l'ombre de l'élément : moins de traces sombres autour du nez ou des oreilles
+  reconstruits (mesuré : zone 10 % plus proche de la vraie vidéo).
+- Quand la tête tourne beaucoup et qu'une nouvelle reconstruction prend le relais, le passage se fait en fondu au lieu d'un saut.
 
 ## v7.6 (12 nov. 2026) — visages en vidéo : plus nets et plus stables
 - « Restaurer les visages » en vidéo recale maintenant chaque image sur la première avant de reporter les détails (même recalage
