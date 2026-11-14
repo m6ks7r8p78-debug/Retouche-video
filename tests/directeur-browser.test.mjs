@@ -141,7 +141,7 @@ try {
     const candidate=await page.evaluate(()=>DIRECTEUR_RENDU.preparer({
       zonage:window.__dirplan.zonage,bruitGlobal:window.__prof.m.noise,activer:true,manuel:false,ia:false}));
     assert.ok(candidate.actif,"moderate denoise adaptation unexpectedly unavailable");
-    await page.locator('[data-q="-1"]').click();
+    await page.evaluate(()=>document.querySelector('[data-q="-1"]').click());
     await page.locator("#ex").click();
     await page.waitForFunction(()=>!exporting&&/Terminé|Échec|Impossible/.test(document.querySelector("#st1").textContent),null,{timeout:180000});
     const result=await page.evaluate(()=>({st:document.querySelector("#st1").textContent,
