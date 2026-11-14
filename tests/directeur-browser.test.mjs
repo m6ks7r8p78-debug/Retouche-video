@@ -74,6 +74,8 @@ try {
     assert.ok(p.plan.operations.some(x=>x.id==="export"));
     assert.ok(p.plan.zonage&&p.plan.zonage.echantillons>=5,"video local timing samples missing");
     assert.ok(p.plan.zonage.zones.length>=1);
+    assert.ok(p.plan.capacites&&p.plan.capacites.disponibles,"browser support registry absent");
+    assert.ok(p.plan.capacites.options.every(x=>x.declenchement==="manuel"),"high-risk modules must require manual use");
     await page.evaluate(()=>{
       const ai=document.querySelector("#o_max");ai.checked=false;ai.dispatchEvent(new Event("change"));
       document.querySelector('[data-q="-1"]').click();
