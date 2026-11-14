@@ -66,6 +66,13 @@ Seuls des résultats réellement exécutés figurent ici. Des expériences priv�
 - **66/66 tests Python locaux** (familles 0.1, 0.2, 0.3), dont 19 du moteur RNE 0.3 et 11 sur consentement/partition. MP4 synthétique 24 frames 128x96→256x192 et AAC vérifiés localement. La CI distante **reste à confirmer**.
 - Sources reproductibles et seules données publiques : `outils/rne/triad.py`, `outils/rne/prepare_triad.py`, `outils/rne/train_triad.py`, `tests/test_rne_triad.py`, `tests/test_rne_triad_protocol.py`, `RETOUCHE_NEURAL_ENGINE_03.md`. Poids, manifestes, empreintes individuelles et médias **privés hors GitHub**.
 
+## Jalon RNE 0.4 — entraînement de cohérence temporelle (14 nov. 2026)
+
+- Deux apprentissages **appariés** depuis RNE 0.3+ sur les 919 triplets privés des **154 contenus vidéo distincts du catalogue 157**, 180 étapes chacun, batch 8, même ordre/initialisation ; témoin MSE seule et candidat MSE + contrainte de résidu de détails temporel pondérée par confiance, λ=0,025.
+- Mesures **sur échantillons d'apprentissage** : PSNR bicubique **30,88856 dB**, RNE 0.3+ initial **31,11227 dB**, témoin **31,12542 dB**, candidat temporel **31,12229 dB**. Erreur du résidu temporel contre un teacher figé : **0,003307 → 0,002663** (−19,5 %) pour témoin → candidat, avec −0,00313 dB de PSNR. **Pas de preuve sur des scènes inédites**.
+- Audit de **37 groupes déjà entraînés**, deux fenêtres naturelles de 333 images / 296 transitions chacune, vers 18 % et 62 % des clips : MAE compensée bicubique **1,38190 / 1,42204**, RNE 0.3+ **1,41158 / 1,43128**, témoin **1,40887 / 1,42851**, candidat **1,40139 / 1,42285**. Le modèle temporel réduit les alertes de 24→21 et 21→19 mais **reste moins stable que le bicubique sur les deux fenêtres**. Une réduction de l'erreur temporelle ne prouve ni détails authentiques ni qualité perceptuelle.
+- **12/12 nouveaux tests Python CPU réussis localement** ; `outils/rne/train_temporal_residual.py` et `tests/test_rne04_temporal_train.py` ajoutés au workflow privé de médias. **CI distante à confirmer**, aucune activation. Voir `RETOUCHE_NEURAL_ENGINE_04.md`.
+
 ## À produire ensuite
 
 1. Catalogue privé de 157 vidéos déjà consolidé côté ChatGPT : exploiter les groupes et les consentements vérifiés, sans partager médias, chemins ou empreintes.
