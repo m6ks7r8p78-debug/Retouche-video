@@ -73,3 +73,9 @@ test('erreurs données d’entrée explicites',()=>{
  assert.throws(()=>D.planifier({type:'video',w:0,h:100}),/dimensions/);
  assert.throws(()=>D.planifier({type:'autre',w:100,h:100}),/type/);
 });
+
+test('seuils REC conservés: bruit modéré et scintillement ne sont pas écartés',()=>{
+ const p=D.planifier({type:'video',w:720,h:1280,mesures:{noise:1.6,sharp:35},scintillement:{frac:0,mean:.008}});
+ assert.ok(ids(p).includes('debruitage'));
+ assert.ok(ids(p).includes('scintillement'));
+});
