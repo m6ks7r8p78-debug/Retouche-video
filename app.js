@@ -6,6 +6,30 @@ function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((
   s.onload=ok;s.onerror=()=>{delete __charges[src];ko(new Error("Impossible de charger "+src+" (connexion ?)"))};document.head.appendChild(s)}))}
 function chargerModule(n){return Promise.all(MODULES[n].map(chargerScript))}
 const $=s=>document.querySelector(s);
+/* Directeur IA expérimental : plan global fondé sur les mesures existantes.
+   Pas de nouveau téléchargement de modèle ni de réseau ; on ne substitue pas le plan au moteur d'export. */
+function planDirecteur(type,m,fl){
+  try{
+    if(!window.DIRECTEUR_IA)return null;
+    const w=type==="video"?v.videoWidth:m.w,h=type==="video"?v.videoHeight:m.h;
+    const mobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const choix={mode:"auto",longueur:Math.max(0,+($("#q")&&$("#q").value)||0),
+      autoriserGeneration:!!($("#o_max")&&$("#o_max").checked)};
+    const disponibles={voix:!(window.MODELS&&MODELS.isOff("voix"))};
+    const p=DIRECTEUR_IA.planifier({type,w,h,mesures:m,scintillement:fl,appareil:{mobile},choix,disponibles});
+    window.__dirplan=p;return p;
+  }catch(e){console.warn("Directeur IA : plan non calculé",e);return null}
+}
+function afficherDirecteur(p){
+  const box=$("#dirbox"),sum=$("#dirsummary"),liste=$("#dirlist");
+  if(!box||!sum||!liste)return;
+  if(!p){box.hidden=true;liste.textContent="";return}
+  box.hidden=false;liste.textContent="";
+  const actifs=p.operations.filter(x=>x.id!=="controle"&&x.id!=="export");
+  sum.textContent="Directeur IA · "+(actifs.length?actifs.length+" traitements évalués":"source peu dégradée");
+  for(const a of p.operations){const li=document.createElement("li");li.textContent=a.nom+" — "+a.raison+(a.genere?" (reconstruction, à vérifier)":"");liste.appendChild(li)}
+  for(const a of p.avertissements){const li=document.createElement("li");li.textContent="Limite : "+a;liste.appendChild(li)}
+}
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
 const cv=$("#cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:false});
@@ -758,7 +782,7 @@ function btUpdate(){
 function loadFile(f){
   return new Promise(res=>{
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
-  curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
+  window.__dirplan=null;try{afficherDirecteur(null)}catch(e){}curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
   msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres","pv","erb","rvb","dfb"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
@@ -925,6 +949,8 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       const r=REC.recommend(m,fl);REC.last={m,fl,r};window.__prof={m,fl};
       try{PROF.recommend({w:v.videoWidth,h:v.videoHeight,noise:m.noise,blk:m.blk,p50:m.p50,p98:m.p98})}catch(e){}
       const ad=LEARN.adapt(r.o);r.learn=ad.notes;
+      const pd=planDirecteur("video",m,fl);
+      if(pd)DIRECTEUR_IA.concilier(r,pd);
       REC.apply(r);
       /* v3.7 : réglages calculés pour CHAQUE vidéo d'après ses mesures (avant, netteté 0,3 et bruit 0,2 fixes, chaleur fixe :
          toutes les vidéos recevaient presque les mêmes réglages). Base calée sur le style de la personne (5 nov. 2026). */
@@ -944,7 +970,7 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
         P.co=cl("co",P.co-.10*Math.max(0,Math.min(1,(P.co-1)/.15)));if(m.p50<.25&&P.br<0)P.br=0;P.sa=cl("sa",P.sa+.17);P.br=cl("br",m.p50<.25?P.br:P.br-.02);P.cs=cl("cs",P.cs-.05);sync()}
       if(r.o.bias){for(const k in r.o.bias)P[k]=Math.max(k==="co"||k==="sa"?.8:-.3,Math.min(k==="co"||k==="sa"?1.4:.3,P[k]+r.o.bias[k]));sync()}
       if(r.o.skip)r.it&&r.it.forEach((k,i)=>{const id={dust:"o_dust",defl:"o_defl",stab:"o_stab",voice:"o_voice"}[k];if(id&&r.o.skip[id]){REC.toggle(k,false,r);(r.off=r.off||{})[i]=true}});
-      REC.show(r);LEARN.snap();
+      REC.show(r);afficherDirecteur(pd);LEARN.snap();
       /* v6.0 caméra virtuelle : fiche de l'appareil et mesures de l'objectif (6 images), même quand la case est décochée : la fiche s'affiche
          et, avec l'accord « diagnostic », ses nombres aident à régler l'app pour chaque type d'appareil */
       if(window.CAM&&!halt()){try{if(await lim(CAM.analyser(v,my,{bruit:m.noise,blocs:m.blk&&m.blk.r,cancel:halt}),25000,null)&&!halt()){camShow();DIAG.send("camera",CAM.diag())}}catch(e){}}
@@ -2737,11 +2763,13 @@ const PHOTO={last:null,
     if(st.p98-st.p2<.45){n.push("Image peu contrastée : contraste relevé.");it.push("img")}
     else if(st.p50<.22){n.push("Image sombre : éclaircie avec mesure (une scène sombre voulue reste sombre).");it.push("img")}
     if(st.p98>=.985&&st.p50>.6)n.push("Zones très claires probablement brûlées : elles sont protégées, mais le détail perdu ne revient pas.");
+    const pd=planDirecteur("photo",m,null);
+    if(pd){const ord={o:{db:P.db,dn:P.dn}};DIRECTEUR_IA.concilier(ord,pd);P.db=ord.o.db;P.dn=ord.o.dn}
     sync();
     const r={n:n.slice(1),it:it.slice(1),o:{db:P.db,dn:P.dn}};REC.last={m,r};
     PROF.recommend(m);
     $("#rec").hidden=false;REC.show(r,n[0]+(r.n.length?" Voici ce que j’ai mesuré et réglé :":" Aucun défaut marqué mesuré : réglages doux."));
-    try{LEARN.snap()}catch(e){}
+    afficherDirecteur(pd);try{LEARN.snap()}catch(e){}
     try{DIAG.send("analyse_photo",{mesures:{w,h,bruit:+noise.toFixed(2),nettete:Math.round(sharp),blocs:blk&&+blk.r.toFixed(2),p50:+st.p50.toFixed(2)},profil:PROF.rec})}catch(e){}
   }
 };
@@ -2752,7 +2780,9 @@ function recipe(extra){
     ia:SRX.on()?{modele:"Real-ESRGAN general v3 (v0.2.5.0)",moteur:window.SR?SR.engine:"?",debruitage:+SRX.dn().toFixed(2),part_ia:PROF.k().ai}:"non",
     operations:[P.db>0&&"anti-blocs",PROF.v("dn")>0&&"réduction du bruit",PROF.v("sh")>0&&"netteté",PROF.v("cs")>0&&"nettoyage des couleurs",P.wb>0&&"équilibre des couleurs",FLT.sel>=0&&"retrait de filtre",
       mode==="video"&&o("o_dust")&&"poussières",mode==="video"&&o("o_defl")&&"anti-scintillement",mode==="video"&&o("o_stab")&&"stabilisation",mode==="video"&&o("o_voice")&&"voix",mode==="video"&&o("o_fluid")&&"fluidité"].filter(Boolean),
-    reglages_appliques:Object.fromEntries(["br","co","sa","wa","sh","dn","cs","db"].map(k=>[k,+(+PROF.v(k)).toFixed(3)])),protection_hautes_lumieres:PROF.k().hp,...(extra||{})};
+    reglages_appliques:Object.fromEntries(["br","co","sa","wa","sh","dn","cs","db"].map(k=>[k,+(+PROF.v(k)).toFixed(3)])),protection_hautes_lumieres:PROF.k().hp,
+    directeur:window.__dirplan?{version:window.__dirplan.version,operations:window.__dirplan.operations.map(x=>({id:x.id,intensite:x.intensite,genere:x.genere})),
+      sortie_proposee:window.__dirplan.sortie.propose,exportConfigure:window.__dirplan.sortie.exportConfigure}:undefined,...(extra||{})};
   try{const h=JSON.parse(localStorage.getItem("recettes")||"[]");h.push(r);localStorage.setItem("recettes",JSON.stringify(h.slice(-30)))}catch(e){}
   return r}
 function showRecipe(r){const e=$("#recipe");if(!e)return;e.textContent="Recette : "+JSON.stringify(r);$("#tech").hidden=false}
