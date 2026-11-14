@@ -50,7 +50,7 @@ var DIRECTEUR_RENDU=(()=>{
   /* Fonction définie une fois, plutôt qu'une nouvelle fermeture à chaque frame. */
   function interpoler(a,b,lim,t,champ){
     const front=(a.fin+b.debut)/2;
-    if(!bon(front)||Math.abs(front-t)>=lim)return null;
+    if(!bon(front)||Math.abs(front-t)>=lim||!bon(a[champ])||!bon(b[champ]))return null;
     const f=borne((t-front+lim)/(2*lim),0,1),smooth=f*f*(3-2*f);
     return a[champ]+(b[champ]-a[champ])*smooth;
   }
