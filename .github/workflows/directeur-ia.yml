@@ -1,0 +1,27 @@
+name: Directeur IA - tests de branche
+on:
+  push:
+    branches: [chatgpt-ai-director-v01]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recuperer la branche
+        uses: actions/checkout@v4
+      - name: Verifier le code JS
+        run: |
+          node --check directeur-ia.js
+          node --check app.js
+          node --check sw.js
+      - name: Tests du Directeur IA
+        run: node --test tests/directeur-ia.test.mjs
+      - name: Calculer l empreinte du cache PWA (sans ecrire sur le depot)
+        run: |
+          node tests/sw.test.mjs --maj
+          grep -o 'const H="[^"]*"' sw.js
+          node tests/sw.test.mjs
