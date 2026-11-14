@@ -1,20 +1,13 @@
-# Studio 3D — démonstration publique v1.8
+# Studio 3D — démonstration publique v1.9
 
-**État :** prototype stylisé local, non déployé. Personnages adultes **fictifs**, sans IA neuronale.
+Studio autonome pour les personnages **adultes fictifs** en géométrie procédurale stylisée. Aucun réseau, pas de photo ni de fichier tiré des 157 vidéos.
 
-- Ouvrir `index.html` ou héberger `/studio-3d/` via HTTPS. Aucun service, dépendance ou accès réseau exigé pour la génération.
-- Exemple : « Une femme adulte en robe noire qui fume deux fois de la main gauche, salue puis refume ».
-- Le moteur local interprète un vocabulaire délimité : vêtements, couleurs, cheveux, yeux, main gauche/droite, pose, marche sur place, salut, inclinaison, cigarette/cigare/pipe et **répétitions de gestes**.
-- L'ordre des gestes est conservé dans le clip `scenario` ; pour « fume deux fois », deux étapes distinctes sont enregistrées. Maximum **12 étapes** pour limiter les fichiers.
-- La fumée dessinée dans l'ancien prototype est remplacée par **trois volumes synthétiques transparents animés en échelle (GLB)**, sans simulation physique ni inhalation réelle.
-- Les accessoires sont purement géométriques ; un seul type d'accessoire peut être choisi par personnage/scénario, pas de changement pendant la chronologie.
-- Interaction tactile, pause, vitesse, recherche temporelle, exports GLB et JSON, import de fiches JSON v1.6, v1.7 et v1.8. Pas de persistence serveur : téléchargez les exports.
-- **Sécurité et limites :** pas de modèles photoréalistes, pas de reconstruction humaine anatomiquement fiable, pas de voix. Seules des personnes fictives majeures peuvent être générées. Aucune des 157 vidéos privées ni aucun modèle issu de ces vidéos ne figure dans ce pack.
-- Les descriptions et sorties restent dans le navigateur. CSP `connect-src 'none'`. Test Chromium sur HTML injecté (navigation directe `file://` bloquée par l'environnement), en écrans 390×844 et 1240×820, zéro erreur JS et zéro requête externe. **Safari physique non testé**.
+- Ouvrir `index.html` depuis Safari ou servir sous `/studio-3d/` sur HTTPS.
+- Décrire l'apparence et les mouvements : fumer, saluer, marcher, incliner la tête, cligner, sourire et respirer. Les actions peuvent être répétées et enchaînées.
+- Les yeux, le sourire, les cheveux et les lunettes suivent désormais le pivot de la tête dans les exports GLB.
+- La respiration est représentée uniquement par un mouvement de volume du torse, pas par une simulation physiologique.
+- Export GLB ou fiche JSON ; la fumée est un effet stylisé géométrique.
+- Le rendu est une approximation artistique sans modèle neuronal, sans identité réelle, ni animation photoréaliste ; une vraie reconstruction humaine reste du domaine recherche.
+- Anciennes fiches JSON v1.6, v1.7 et v1.8 acceptées.
 
-## Contenu
-- `index.html` : studio autonome contenant son moteur.
-- `generateur.js` : module source autonome utilisable sous Node ou navigateur.
-- `exemples/` : deux personnages GLB originaux uniquement.
-
-**Intégration web :** PR GitHub en brouillon. Ne fusionner qu'après contrôle Safari et revue fonctionnelle. Ne jamais publier le coffre privé.
+**Tests :** voir rapport technique dans l'archive privée. **Déploiement :** revue puis fusion de la PR nécessaires ; pas de médias privés dans la PR.
