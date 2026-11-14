@@ -979,6 +979,9 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
         P.co=cl("co",P.co-.10*Math.max(0,Math.min(1,(P.co-1)/.15)));if(m.p50<.25&&P.br<0)P.br=0;P.sa=cl("sa",P.sa+.17);P.br=cl("br",m.p50<.25?P.br:P.br-.02);P.cs=cl("cs",P.cs-.05);sync()}
       if(r.o.bias){for(const k in r.o.bias)P[k]=Math.max(k==="co"||k==="sa"?.8:-.3,Math.min(k==="co"||k==="sa"?1.4:.3,P[k]+r.o.bias[k]));sync()}
       if(r.o.skip)r.it&&r.it.forEach((k,i)=>{const id={dust:"o_dust",defl:"o_defl",stab:"o_stab",voice:"o_voice"}[k];if(id&&r.o.skip[id]){REC.toggle(k,false,r);(r.off=r.off||{})[i]=true}});
+      /* Directeur IA : atténuer uniquement une netteté excessive sur un média vraiment abîmé.
+         Ne touche pas aux modèles, aux choix manuels ni aux autres recommandations de REC. */
+      if(pd&&!PROF.manual){const n=DIRECTEUR_IA.protegerNettete(P.sh,pd);if(n!==P.sh){P.sh=n;sync()}}
       REC.show(r);afficherDirecteur(pd);LEARN.snap();
       /* v6.0 caméra virtuelle : fiche de l'appareil et mesures de l'objectif (6 images), même quand la case est décochée : la fiche s'affiche
          et, avec l'accord « diagnostic », ses nombres aident à régler l'app pour chaque type d'appareil */
@@ -2777,6 +2780,7 @@ const PHOTO={last:null,
     sync();
     const r={n:n.slice(1),it:it.slice(1),o:{db:P.db,dn:P.dn}};REC.last={m,r};
     PROF.recommend(m);
+    if(pd&&!PROF.manual){const n=DIRECTEUR_IA.protegerNettete(P.sh,pd);if(n!==P.sh){P.sh=n;sync()}}
     $("#rec").hidden=false;REC.show(r,n[0]+(r.n.length?" Voici ce que j’ai mesuré et réglé :":" Aucun défaut marqué mesuré : réglages doux."));
     afficherDirecteur(pd);try{LEARN.snap()}catch(e){}
     try{DIAG.send("analyse_photo",{mesures:{w,h,bruit:+noise.toFixed(2),nettete:Math.round(sharp),blocs:blk&&+blk.r.toFixed(2),p50:+st.p50.toFixed(2)},profil:PROF.rec})}catch(e){}
