@@ -18,6 +18,7 @@ on:
       - 'tests/test_rne_spatial_audit.py'
       - 'tests/test_rne_texture_training.py'
       - 'tests/test_rne_external_evidence.py'
+      - 'tests/test_rne_holdout_reporting.py'
       - '.github/workflows/rne-cpu.yml'
   workflow_dispatch:
 
@@ -40,7 +41,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verifier syntaxe du code RNE
-        run: python -m py_compile outils/rne/engine.py outils/rne/train.py outils/rne/temporal.py outils/rne/train_temporal.py outils/rne/triad.py outils/rne/prepare_triad.py outils/rne/train_triad.py outils/rne/finetune_all_corpus.py outils/rne/expanded_sampler.py outils/rne/balanced_finetune.py outils/rne/quality_gate.py outils/rne/temporal_safety.py outils/rne/residual_temporal.py outils/rne/bench_natural_motion.py outils/rne/train_temporal_residual.py outils/rne/fidelity_guard.py outils/rne/audit_spatial_fidelity.py outils/rne/train_texture_detail.py outils/rne/external_evidence.py tests/test_rne_external_evidence.py tests/test_rne_fidelity_guard.py tests/test_rne_spatial_audit.py tests/test_rne_texture_training.py tests/test_rne04_temporal_train.py tests/test_rne_temporal_safety.py tests/test_rne_residual_temporal.py tests/test_rne_all_corpus.py tests/test_rne_expanded_sampler.py tests/test_rne_quality_gate.py tests/test_rne_engine.py tests/test_rne_temporal.py tests/test_rne_triad.py tests/test_rne_triad_protocol.py
+        run: python -m py_compile outils/rne/engine.py outils/rne/train.py outils/rne/temporal.py outils/rne/train_temporal.py outils/rne/triad.py outils/rne/prepare_triad.py outils/rne/train_triad.py outils/rne/finetune_all_corpus.py outils/rne/expanded_sampler.py outils/rne/balanced_finetune.py outils/rne/quality_gate.py outils/rne/holdout_reporting.py tests/test_rne_holdout_reporting.py outils/rne/temporal_safety.py outils/rne/residual_temporal.py outils/rne/bench_natural_motion.py outils/rne/train_temporal_residual.py outils/rne/fidelity_guard.py outils/rne/audit_spatial_fidelity.py outils/rne/train_texture_detail.py outils/rne/external_evidence.py tests/test_rne_external_evidence.py tests/test_rne_fidelity_guard.py tests/test_rne_spatial_audit.py tests/test_rne_texture_training.py tests/test_rne04_temporal_train.py tests/test_rne_temporal_safety.py tests/test_rne_residual_temporal.py tests/test_rne_all_corpus.py tests/test_rne_expanded_sampler.py tests/test_rne_quality_gate.py tests/test_rne_engine.py tests/test_rne_temporal.py tests/test_rne_triad.py tests/test_rne_triad_protocol.py
       - name: Installer dependances CPU (jamais de medias prives)
         run: |
           python -m pip install --quiet --disable-pip-version-check --index-url https://download.pytorch.org/whl/cpu torch
