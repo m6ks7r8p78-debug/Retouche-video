@@ -1,0 +1,42 @@
+name: RNE - moteur neural video CPU (synthetique)
+on:
+  push:
+    branches: [chatgpt-ai-director-v01]
+    paths:
+      - 'outils/rne/**'
+      - 'tests/test_rne_engine.py'
+      - '.github/workflows/rne-cpu.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rne-cpu-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validation-rne:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Lire uniquement le code public
+        uses: actions/checkout@v4
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verifier syntaxe du code RNE
+        run: python -m py_compile outils/rne/engine.py outils/rne/train.py tests/test_rne_engine.py
+      - name: Installer dependances CPU (jamais de medias prives)
+        run: |
+          python -m pip install --quiet --disable-pip-version-check --index-url https://download.pytorch.org/whl/cpu torch
+          python -m pip install --quiet --disable-pip-version-check "numpy>=2,<3" opencv-python-headless
+      - name: Executer 17 tests sur donnees entierement synthetiques
+        run: |
+          OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=2 python -m unittest discover -s tests -p test_rne_engine.py -v
+      - name: Ne jamais telecharger les videos ou poids personnels
+        run: |
+          test ! -e prive
+          test ! -e rne_manifest_prive.json
+          test ! -e outils/rne/rne_2x_prive_non_deployable.pt
