@@ -87,3 +87,14 @@ test("fort bruit: la réduction de netteté plafonne à 16 %, sans multiplier le
  assert.ok(p.amplitudeNettete>.1);
  assert.ok(p.zones.every(v=>Number.isFinite(v.nettete)));
 });
+
+test("old/incomplete plans never generate NaN shader coefficients",()=>{
+ const p={actif:true,transition:.35,zones:[
+  {debut:0,fin:5,facteur:.9},
+  {debut:5,fin:10,facteur:1.05,nettete:.9}
+ ]};
+ for(let t=0;t<=10;t+=.05){
+  const x=R.facteurNettete(p,t);
+  assert.ok(Number.isFinite(x)&&x>=.84&&x<=1);
+ }
+});
