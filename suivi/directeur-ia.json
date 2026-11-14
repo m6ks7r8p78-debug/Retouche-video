@@ -29,13 +29,12 @@
     "RNE 0.3 : 157/157 vidéos privées retrouvées et vérifiées par SHA, 284 triplets sur 37 groupes, apprentissage 127 vidéos / validation 12 / test 18; 600 étapes ; PSNR test +0,432 dB vs bicubique et +0,428 dB vs RNE 0.2; 66 tests locaux réussis, 5 régressions importantes donc non activé."
   ],
   "prochaines_etapes": [
-    "Verifier la CI RNE CPU et les deux jobs du workflow Directeur IA sur les commits correspondants, sans inventer de statut.",
-    "Maintenir le test RNE03 de 18 vidéos scellé pour ce cycle: ne pas tuner de nouveaux poids sur les 72 patches d evaluation deja consultes.",
-    "Reserver pour RNE0.4 un autre banc de nouveaux groupes independants, si disponible; ne pas appeler nouveau test un test déjà vu.",
-    "Ameliorer RNE03 sur mouvement naturel et scenes en faible confiance : caracteriser 5/72 regressions >0.5 dB vs RNE0.2, puis construire un aiguillage non oracle.",
-    "Verifier SSIM/LPIPS ou metriques perceptuelles, coherence temporelle longue, visages, mouvement d accessoires AR et compression native.",
-    "Preparer backend iPhone Safari WebGPU/WASM ou calcul externe uniquement sur consentement de transfert explicite; rien sur main ou produit avant tests et accord.",
-    "Rester independant de NVIDIA DLSS5; ne pas revendiquer les technologies et poids proprietaires ni le meme rendu."
+    "Confirmer les jobs GitHub Actions (RNE CPU et Directeur IA) sur le nouveau HEAD, sans inventer un résultat.",
+    "Conserver le checkpoint RNE03 pre-tout corpus et son benchmark historique de 18 videos. Toute evaluation future du checkpoint tout157 exige de NOUVELLES videos jamais vues.",
+    "Augmenter la diversite des trames issues des 157 clips sans confondre entrainement et validation; ponderer les 3 copies exactes pour eviter leur surrepresentation.",
+    "Recherche RNE04 : multi-frame et masques occlusion/coupes, controle perceptuel et restauration fidele; mesurer scintillement sur scenes naturelles.",
+    "Tester les coûts et la compatibilité sur véritable iPhone Safari avant une future integration opt-in; pas de transfert cloud privé sans autorisation distincte.",
+    "Poursuivre aussi l'amelioration filtres AR avec vrais masques verifies, sans supposer que DLSS5 reconstruit les originaux definitivement caches."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -45,19 +44,16 @@
   },
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
-    "sha": "9996dfc033f4437232672a2584bd9663adcaa48f",
     "objets": [
-      "outils/rne/triad.py",
-      "outils/rne/prepare_triad.py",
-      "outils/rne/train_triad.py",
-      "tests/test_rne_triad.py",
-      "tests/test_rne_triad_protocol.py",
+      "outils/rne/finetune_all_corpus.py",
+      "tests/test_rne_all_corpus.py",
+      "RETOUCHE_NEURAL_ENGINE_03_ALL157.md",
       ".github/workflows/rne-cpu.yml",
-      "RETOUCHE_NEURAL_ENGINE_03.md"
+      "suivi/directeur-ia.json"
     ],
-    "preuve_locale": "66/66 tests Python CPU réussis localement avec données synthétiques; apprentissage prive reel sur 157 vidéos de corpus",
-    "statut_ci": "rNE_CPU_et_directeur_a_verifier",
-    "observations": "les 157 vidéos et leur index de hashes restent privés; aucun média ou poids entraîné dans le GitHub public"
+    "preuve_locale": "RNE03 full-corpus 157 sources / 284 triples / 450 steps, 30 tests Python existants réussis, mp4 synthétique decode",
+    "statut_ci": "a_verifier",
+    "observations": "nouveaux 7 tests publics non verifies localement; jamais de media, manifest ou poids personnels dans GitHub"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -300,5 +296,62 @@
     "poids_publies": false,
     "base_main_modifiee": false,
     "archive_privee": "RNE03_157_videos_recherche_prive.zip"
+  },
+  "jalon_neural_engine_03_all157": {
+    "date": "2026-11-14",
+    "etat": "entrainement prive termine ; recherche, non deployable",
+    "jeu_complet": {
+      "videos_retrouvees": 157,
+      "empreintes_sha256_verifiees": 157,
+      "taille_GB": 2.46,
+      "empreintes_uniques": 154,
+      "copies_exactes_supplementaires": 3,
+      "groupes": 37,
+      "entrainees_avec_autorisations_privees": 157
+    },
+    "train_apres_evaluation": {
+      "checkpoint_initial": "RNE0.3 sur 127 videos, evalue sur 12 validation + 18 tests",
+      "sources_presentes_optimiseur": 157,
+      "triplets_presentes": 284,
+      "etapes_supplementaires": 450,
+      "batch": 8,
+      "parametres": 13684
+    },
+    "benchmark_historique_sur_checkpoint_initial": {
+      "test_videos_alors_inedites": 18,
+      "patchs": 72,
+      "gain_vs_bicubic_db": 0.43214,
+      "regressions_de_plus_0_5db_vs_rne02": 5
+    },
+    "scores_sur_donnees_entrainement_apres_finetune": {
+      "patchs": 284,
+      "psnr_bicubic_db": 34.5021,
+      "psnr_checkpoint_avant_db": 34.9438,
+      "psnr_checkpoint_tout157_db": 34.9979,
+      "gain_in_sample_vs_avant_db": 0.0541,
+      "aucun_test_independant_restant": true
+    },
+    "demo_synthetique": {
+      "source_frames": 24,
+      "output_frames": 24,
+      "resolution": "256x192",
+      "images_traitees_temporellement": 22,
+      "mp4_decode_ok": true,
+      "source_audio": false
+    },
+    "tests_locaux_existants": "30/30 Python tests RNE03 + protocole, reexecutes",
+    "nouveaux_tests_ci": "7 tests du module finetune_all_corpus.py, CI GitHub a confirmer",
+    "code_public": [
+      "outils/rne/finetune_all_corpus.py",
+      "tests/test_rne_all_corpus.py",
+      "RETOUCHE_NEURAL_ENGINE_03_ALL157.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "poids_privés": "RetoucheNeuralEngine_RNE03_157_videos_prive.zip, jamais dans Github",
+    "avertissement": "Tous les groupes ont desormais servi a l'apprentissage; le score in-sample ne demontre pas generalisation. Necessite nouvelles videos independantes et tests iPhone. La totalité des frames n'a pas été utilisée, seulement 1-2 triplets/video.",
+    "dlss5_nvidia_integre": false,
+    "publication_medias_prives": false,
+    "activation_app": false,
+    "fusion_main": false
   }
 }
