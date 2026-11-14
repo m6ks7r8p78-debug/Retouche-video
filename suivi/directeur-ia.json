@@ -20,15 +20,16 @@
     "Documents MEDIA_CATALOG_SCHEMA.md, BENCHMARK_PROTOCOL.md, BENCHMARK_RESULTS.md, CHATGPT_CLAUDE_HANDOFF.md.",
     "Banc synthetique independant de segmentation sur masques verifies declaratifs; 12 tests locaux et garde-fous anti-fuite entre scenes (CI distante a verifier).",
     "Banc multi-cas du vrai module de retrait de filtre AR (8 cas synthetiques, Claude) : qualite 0,37, 62,5 % d'echecs, filtre chat non retire ; cause : detecteur (compression/pose/petits elements clairs). Autorisations du proprietaire enregistrees (suivi/autorisations-proprietaire.json).",
-    "Ajustement multibruit privé sur 8 vidéos + validation 4 + confirmation 4 scènes distinctes, 220 étapes ; modèle spécialisé fort bruit, non déployé. Module laboratoire de spécialistes de bruit et 13 tests locaux."
+    "Ajustement multibruit privé sur 8 vidéos + validation 4 + confirmation 4 scènes distinctes, 220 étapes ; modèle spécialisé fort bruit, non déployé. Module laboratoire de spécialistes de bruit et 13 tests locaux.",
+    "Pilote AR v4 privé : 180 étapes sur 12 vidéos, 4 validations et 3 confirmations; masque synthétique chat/chien/lunettes mieux détecté, mais candidat refusé pour faux positifs de 1,4594 % > 1 % sur confirmation.",
+    "Recherche inspirée DLSS 5 documentée (NVIDIA SDK non public, non disponible Safari iPhone); garde-fou de décision vidéo 2D et AR en laboratoire seulement, 18 tests locaux."
   ],
   "prochaines_etapes": [
-    "Confirmer les deux jobs du workflow Directeur IA pour le commit de jalon; ne pas confondre CI non verifiee et echec ni reussite.",
-    "Detecteur d'elements AR v4 experimental (augmentations compression/bruit/pose/petits visages/elements clairs) ; criteres : chat >= 50 % de retrait video, chien/hasard sans recul, video sans filtre inchangee ; puis validation sur les 74 clips prives avant integration.",
-    "Produire en prive des masques temporels AR revus par un humain; ne jamais traiter les pseudo-masques comme verite terrain.",
-    "Comparer le segmentateur et la methode classique sur groupes independants via le banc de comptes anonymises; ne publier aucun detail identifiant.",
-    "Valider Safari sur iPhone reel, puis discuter une eventualite d'integration apres revue du proprietaire; aucune fusion, aucun deploiement automatique.",
-    "Valider routage multibruit sans oracle (sur estimation réelle), non-régression compression/sain et iPhone avant activation; préserver la priorité filtres AR."
+    "Vérifier CI distante 2 jobs pour commit final, ne pas annoncer validation globale sans preuve.",
+    "Rendre le futur détecteur AR plus robuste sur petits éléments clairs et portraits compressés, sans dépasser 1 % de faux positifs sur nouvelles scènes ; conserver le test final scellé sans reoptimisation.",
+    "Créer des masques AR réels corrigés et vérifiés par annotation distincte avant supervision ; évaluer séparation des groupes et diversité des scènes.",
+    "Recherche 2D inspirée des principes DLSS 5 : mouvement optique causal, préservation de structure et pixels hors zone, benchmark vidéo contre base classique; jamais présenter comme SDK NVIDIA.",
+    "Valider vraie vidéo et vrais appareils iPhone Safari; protéger les anciens modules et les choix manuels; ne pas fusionner ou déployer."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -37,17 +38,18 @@
     "pas_de_medias_personnels": true
   },
   "jalon_en_attente_ci": {
-    "sha": "e006702f0705e724ee69619f713085aaf611e1d9",
+    "sha": "4cf0893820f40070be96d2116c39f880b4b1c428",
     "date": "2026-11-14",
     "objets": [
-      "outils/directeur-banc-masques-verifies.cjs",
-      "tests/directeur-banc-masques-verifies.test.mjs",
-      "BENCHMARK_MASQUES_VERIFIES.md",
-      ".github/workflows/directeur-ia.yml"
+      "outils/directeur-garde-fou-neural.cjs",
+      "tests/directeur-garde-fou-neural.test.mjs",
+      "RECHERCHE_DLSS5_ET_AR_V4.md",
+      ".github/workflows/directeur-ia.yml",
+      "BENCHMARK_RESULTS.md"
     ],
-    "preuve_locale": "12/12 tests Node synthetiques reussis dans un environnement local; aucun media reel traite dans ce jalon",
+    "preuve_locale": "18/18 tests Node directs réussis localement; expérimentation AR v4 CPU exécutée séparément sur données privées sous autorisation",
     "statut_ci": "a_verifier_2_jobs",
-    "observations": "mesures VP FP FN VN vs masques humains verifies declaratifs; aucun masque reel certifie, aucun deploiement"
+    "observations": "aucun SDK ou modèle DLSS 5 intégré, aucun média personnel versionné; garde-fou de projet"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -65,5 +67,36 @@
     "poids_et_resultats_details": "Archive privée ChatGPT, jamais Github",
     "etat_ci": "a_verifier_2_jobs",
     "decision": "recherche_seulement_pas_deploiement"
+  },
+  "jalon_dlss5_ar_v4": {
+    "date": "2026-11-14",
+    "doc": "RECHERCHE_DLSS5_ET_AR_V4.md",
+    "bilan": "BENCHMARK_RESULTS.md",
+    "source_publique_dlss5": [
+      "https://research.nvidia.com/labs/adlr/DLSS5/",
+      "https://developer.nvidia.com/blog/whats-new-for-game-developers-dlss-5-with-3d-guided-neural-rendering-nvidia-ace-updates-and-new-rtx-kit-capabilities/",
+      "https://forums.developer.nvidia.com/t/official-dlss-5-neural-rendering-plugin-access-for-unreal-engine-5-8-2/382731"
+    ],
+    "technologie_nvidia_integree": false,
+    "modele_entraine_ar_v4": "poids expérimental prive uniquement",
+    "essais_prives": {
+      "videos_ajustement": 12,
+      "videos_validation": 4,
+      "videos_confirmation": 3,
+      "iterations": 180,
+      "cas_validation_simules": 96,
+      "cas_confirmation_simules": 72
+    },
+    "confirmation": {
+      "iou_chat_ancien": 0.1025,
+      "iou_chat_candidat": 0.2893,
+      "faux_positifs_temoins": 0.014594,
+      "seuil_max_faux_positifs": 0.01
+    },
+    "statut": "recherche_only_candidat_AR_refuse",
+    "garde_fou": "outils/directeur-garde-fou-neural.cjs",
+    "tests_locaux": "18/18 Node reussis",
+    "verification_ci": "deux_jobs_distants_a_confirmer",
+    "limites": "aucun vrai masque AR verifie, pas de validation Safari iPhone; confirmation independante du nouvel ajustement et non garantie vierge de l'ancien preentrainement; vrai NVIDIA DLSS 5 pas utilise"
   }
 }
