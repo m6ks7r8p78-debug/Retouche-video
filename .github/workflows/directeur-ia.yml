@@ -25,10 +25,15 @@ jobs:
           node --check directeur-capacites.js
           node --check directeur-rendu.js
           node --check directeur-export.js
+          node --check outils/directeur-laboratoire.cjs
           node --check app.js
           node --check sw.js
       - name: Tests du Directeur IA
         run: node --test tests/directeur-ia.test.mjs tests/directeur-qualite.test.mjs tests/directeur-scenes.test.mjs tests/directeur-capacites.test.mjs tests/directeur-rendu.test.mjs tests/directeur-export.test.mjs
+      - name: Laboratoire d'autonomie et garde-fous de recherche
+        run: |
+          node --test tests/directeur-laboratoire.test.mjs
+          node -e "const p=require('./outils/directeur-laboratoire.cjs').experimenter(); console.log(JSON.stringify({etat:p.etat,train:p.nombreCasTrain,validation:p.nombreCasValidation,hypotheses:p.hypothesesEvaluees,gainValidation:p.gainValidation,aucunDeploiementAutomatique:p.aucunDeploiementAutomatique}))"
       - name: Contrôle de non-régression du reformatage v8.0
         run: node --test tests/format.test.mjs
       - name: Afficher l empreinte PWA attendue et verifier le cache
