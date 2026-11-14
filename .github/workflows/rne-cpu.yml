@@ -5,6 +5,7 @@ on:
     paths:
       - 'outils/rne/**'
       - 'tests/test_rne_engine.py'
+      - 'tests/test_rne_temporal.py'
       - '.github/workflows/rne-cpu.yml'
   workflow_dispatch:
 
@@ -27,16 +28,17 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verifier syntaxe du code RNE
-        run: python -m py_compile outils/rne/engine.py outils/rne/train.py tests/test_rne_engine.py
+        run: python -m py_compile outils/rne/engine.py outils/rne/train.py outils/rne/temporal.py outils/rne/train_temporal.py tests/test_rne_engine.py tests/test_rne_temporal.py
       - name: Installer dependances CPU (jamais de medias prives)
         run: |
           python -m pip install --quiet --disable-pip-version-check --index-url https://download.pytorch.org/whl/cpu torch
           python -m pip install --quiet --disable-pip-version-check "numpy>=2,<3" opencv-python-headless
-      - name: Executer 17 tests sur donnees entierement synthetiques
+      - name: Executer 36 tests RNE 0.1 et 0.2 uniquement synthetiques
         run: |
-          OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=2 python -m unittest discover -s tests -p test_rne_engine.py -v
+          OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=2 python -m unittest discover -s tests -p 'test_rne*.py' -v
       - name: Ne jamais telecharger les videos ou poids personnels
         run: |
           test ! -e prive
           test ! -e rne_manifest_prive.json
           test ! -e outils/rne/rne_2x_prive_non_deployable.pt
+          test ! -e outils/rne/rne_02_temporal_prive.pt
