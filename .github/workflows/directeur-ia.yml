@@ -4,6 +4,10 @@ on:
     branches: [chatgpt-ai-director-v01]
   workflow_dispatch:
 
+concurrency:
+  group: directeur-ia-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -23,6 +27,8 @@ jobs:
           node --check sw.js
       - name: Tests du Directeur IA
         run: node --test tests/directeur-ia.test.mjs tests/directeur-qualite.test.mjs tests/directeur-scenes.test.mjs tests/directeur-capacites.test.mjs
+      - name: Contrôle de non-régression du reformatage v8.0
+        run: node --test tests/format.test.mjs
       - name: Afficher l empreinte PWA attendue et verifier le cache
         run: |
           node tests/directeur-empreinte.mjs
