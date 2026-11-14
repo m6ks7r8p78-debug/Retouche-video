@@ -24,15 +24,16 @@
     "Pilote AR v4 privé : 180 étapes sur 12 vidéos, 4 validations et 3 confirmations; masque synthétique chat/chien/lunettes mieux détecté, mais candidat refusé pour faux positifs de 1,4594 % > 1 % sur confirmation.",
     "Recherche inspirée DLSS 5 documentée (NVIDIA SDK non public, non disponible Safari iPhone); garde-fou de décision vidéo 2D et AR en laboratoire seulement, 18 tests locaux.",
     "Fusion causale temporelle expérimentale AR sur cartes de probabilites ; 17 tests locaux; réduction de variation temporelle de 49,67 % sur 360 frames synthetiques, petite perte d'IoU; non déployé.",
-    "RNE 0.1 maison : moteur neuronal 2x trainable avec 13 692 paramètres, causal video et sortie MP4 audio tentative, 17 tests synthetiques CPU; 900 steps privés sur 12 clips, 4 validation, 5 test; gain moyen +0,0958 dB (modeste) vs bicubique, hors application et non deployable."
+    "RNE 0.1 maison : moteur neuronal 2x trainable avec 13 692 paramètres, causal video et sortie MP4 audio tentative, 17 tests synthetiques CPU; 900 steps privés sur 12 clips, 4 validation, 5 test; gain moyen +0,0958 dB (modeste) vs bicubique, hors application et non deployable.",
+    "RNE 0.2: réseau temporel causal 2 frames 9244 paramètres entraîné 600 étapes; tests locaux 36/36; +0,27784 dB vs RNE 0.1 sur 4 vidéos nouvelles, mais -0,20973 dB vs bicubique ; prototype rejeté pour activation."
   ],
   "prochaines_etapes": [
-    "Valider le job CI RNE CPU (installation Python torch+OpenCV) ainsi que les deux jobs Directeur IA sur le dernier HEAD ; ne pas affirmer CI passée sans preuve.",
-    "Retouche Neural Engine RNE 0.2 : vrai reseau de fusion temporelle entrainé avec séquences vidéo mobiles naturelles, occlusions, bruit et compression ; tests anti-ghosting et reference independante.",
-    "Mesurer RNE 0.1 sur nouveaux groupes d'images sources non consultés pendant calibration, real user video qualitatively and PSNR, SSIM, LPIPS ; aucun déploiement si gains minimes ou regressions.",
-    "Preparer exécution sur iPhone Safari par backend WebGPU/WASM ou traitement distant prive opt-in ; aucun transfert des medias sans consentement séparé.",
-    "Ajouter controles structure, apparence, tonalite et masques en mode fidelite/creativite, sans inventer une vraie identité ; priorite parallele filtres AR encore non verifies.",
-    "Jamais appeler le moteur produit DLSS5 ou utiliser le SDK non public ; respect de licence/marque NVIDIA, sauvegarde privee des poids, PR non fusionnee."
+    "Vérifier workflow CPU RNE du dernier HEAD (36 tests synthétiques) et les jobs existants; une absence de runs dans les queries PR ne prouve rien pour les workflows push.",
+    "Améliorer RNE temporel sur train/validation avec vraies séquences naturellement mobiles, limites de modèle et estimation d'occlusion; ne pas réoptimiser sur les 4 vidéos de contrôle déjà vues.",
+    "Réserver un NOUVEAU test final scellé avec groupes de scènes indépendants et vérifier bicubique, RNE 0.1, RNE 0.2, méthodes classiques temporelles, gains et régressions.",
+    "Évaluer LPIPS/SSIM, stabilité, fidélité visages, protection hors masque, artefacts d'upscaling, bruit/compression et endurance vidéo avant promotion.",
+    "Préparer éventuellement WebGPU/WASM iPhone Safari ou cloud privé uniquement après consentement distinct et mesures réelles; aucun déploiement ni publication de poids.",
+    "Continuer les vrais masques de filtres AR vérifiés et ne pas confondre le moteur RNE avec le SDK NVIDIA DLSS 5."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -41,19 +42,19 @@
     "pas_de_medias_personnels": true
   },
   "jalon_en_attente_ci": {
-    "sha": "650d239925c16c9aaddec562ac6fcc9b299d3143",
     "date": "2026-11-14",
+    "sha": "e3d776ed3b0442cdf47f50c140b27fa3414a72bd",
     "objets": [
-      "outils/rne/engine.py",
-      "outils/rne/train.py",
-      "tests/test_rne_engine.py",
+      "outils/rne/temporal.py",
+      "outils/rne/train_temporal.py",
+      "tests/test_rne_temporal.py",
       ".github/workflows/rne-cpu.yml",
-      "RETOUCHE_NEURAL_ENGINE.md",
-      ".gitignore"
+      "RETOUCHE_NEURAL_ENGINE_02.md",
+      "BENCHMARK_RESULTS.md"
     ],
-    "preuve_locale": "17/17 tests Python CPU reussis, 24 frames synthetiques encodees et relues, nouveau poids privé entraîné 900 steps",
-    "statut_ci": "attendre_workflow_RNE_et_deux_jobs_directeur",
-    "observations": "pas de videos privées, hashes, poids ou manifest GitHub"
+    "preuve_locale": "36/36 tests Python CPU synthétiques; 600 étapes entraînement privé; nouvelle vérification de 4 vidéos autorisées; vrai MP4 synthétique 24 frames décodable",
+    "statut_ci": "a_verifier_RNE_CPU_et_directeur",
+    "observations": "aucun média, poids, empreinte privée, manifest ou extraction dans GitHub"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -179,5 +180,59 @@
     "aucun_modele_nvidia_ou_dlss5_integre": true,
     "activation_application": false,
     "aucune_fusion_ou_deploiement": true
+  },
+  "jalon_rne_02": {
+    "date": "2026-11-14",
+    "nom": "Retouche Neural Engine 0.2 - reseau temporel causal maison",
+    "statut": "prototype_experimental_non_deploye",
+    "base": "RNE 0.1 13692 parametres geles",
+    "reseau_temporel_parametres": 9244,
+    "apprentissage": {
+      "videos": 12,
+      "paires_frames_consécutives": 24,
+      "steps": 600
+    },
+    "validation": {
+      "videos": 4,
+      "paires": 8,
+      "patches": 32,
+      "gain_psnr_vs_rne01_db": 0.207
+    },
+    "test_exploratoire": {
+      "videos": 5,
+      "paires": 10,
+      "patches": 40,
+      "gain_psnr_vs_rne01_db": 0.16652
+    },
+    "controle_supplementaire": {
+      "videos": 4,
+      "paires": 8,
+      "patches": 48,
+      "psnr_bicubique_db": 37.13346,
+      "psnr_rne01_db": 36.64589,
+      "psnr_rne02_db": 36.92373,
+      "gain_vs_rne01_db": 0.27784,
+      "perte_vs_bicubique_db": -0.20973,
+      "regressions_de_plus_de_0_5_db": 1,
+      "sha256_verifies": true,
+      "groupes_isoles_par_catalogue": true
+    },
+    "tests_synthetiques_cpu_locaux": "36/36 (17 RNE0.1 + 19 RNE0.2)",
+    "demonstration": "MP4 de 24 frames entièrement synthétiques, 256x192, sans piste audio; 23 transitions temporelles",
+    "code_public": [
+      "outils/rne/temporal.py",
+      "outils/rne/train_temporal.py",
+      "tests/test_rne_temporal.py"
+    ],
+    "docs": [
+      "RETOUCHE_NEURAL_ENGINE_02.md",
+      "BENCHMARK_RESULTS.md"
+    ],
+    "workflow": ".github/workflows/rne-cpu.yml",
+    "ci_distante": "a_verifier",
+    "modeles_personnalises": "archive privee ChatGPT RetoucheNeuralEngine_RNE_v0_2_prive.zip, non commitee",
+    "rappel_dlss5": "moteur independant pour video 2D, aucun sdk ou poids NVIDIA, pas de qualite comparable prouvee",
+    "iPhoneSafari": "aucune compatibilite ou mesure de temps reel prouvee",
+    "decision": "ne pas integrer automatiquement; bicubique meilleur sur nouvelles scènes"
   }
 }
