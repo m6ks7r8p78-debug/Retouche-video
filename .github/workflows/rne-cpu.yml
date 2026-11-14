@@ -8,6 +8,7 @@ on:
       - 'tests/test_rne_temporal.py'
       - 'tests/test_rne_triad.py'
       - 'tests/test_rne_triad_protocol.py'
+      - 'tests/test_rne_all_corpus.py'
       - '.github/workflows/rne-cpu.yml'
   workflow_dispatch:
 
@@ -30,12 +31,12 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verifier syntaxe du code RNE
-        run: python -m py_compile outils/rne/engine.py outils/rne/train.py outils/rne/temporal.py outils/rne/train_temporal.py outils/rne/triad.py outils/rne/prepare_triad.py outils/rne/train_triad.py tests/test_rne_engine.py tests/test_rne_temporal.py tests/test_rne_triad.py tests/test_rne_triad_protocol.py
+        run: python -m py_compile outils/rne/engine.py outils/rne/train.py outils/rne/temporal.py outils/rne/train_temporal.py outils/rne/triad.py outils/rne/prepare_triad.py outils/rne/train_triad.py outils/rne/finetune_all_corpus.py tests/test_rne_all_corpus.py tests/test_rne_engine.py tests/test_rne_temporal.py tests/test_rne_triad.py tests/test_rne_triad_protocol.py
       - name: Installer dependances CPU (jamais de medias prives)
         run: |
           python -m pip install --quiet --disable-pip-version-check --index-url https://download.pytorch.org/whl/cpu torch
           python -m pip install --quiet --disable-pip-version-check "numpy>=2,<3" opencv-python-headless
-      - name: Executer 66 tests RNE 0.1, 0.2 et 0.3 uniquement synthetiques
+      - name: Executer tests RNE 0.1 a 0.3 et protocole tout corpus (synthetiques)
         run: |
           OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=2 python -m unittest discover -s tests -p 'test_rne*.py' -v
       - name: Ne jamais telecharger les videos ou poids personnels
