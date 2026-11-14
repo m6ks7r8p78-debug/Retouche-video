@@ -21,7 +21,7 @@ jobs:
           node --check app.js
           node --check sw.js
       - name: Tests du Directeur IA
-        run: node --test tests/directeur-ia.test.mjs tests/directeur-qualite.test.mjs
+        run: node --test tests/directeur-ia.test.mjs tests/directeur-qualite.test.mjs tests/directeur-scenes.test.mjs
       - name: Afficher l empreinte PWA attendue et verifier le cache
         run: |
           node tests/directeur-empreinte.mjs
