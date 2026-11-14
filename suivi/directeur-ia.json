@@ -22,14 +22,16 @@
     "Banc multi-cas du vrai module de retrait de filtre AR (8 cas synthetiques, Claude) : qualite 0,37, 62,5 % d'echecs, filtre chat non retire ; cause : detecteur (compression/pose/petits elements clairs). Autorisations du proprietaire enregistrees (suivi/autorisations-proprietaire.json).",
     "Ajustement multibruit privé sur 8 vidéos + validation 4 + confirmation 4 scènes distinctes, 220 étapes ; modèle spécialisé fort bruit, non déployé. Module laboratoire de spécialistes de bruit et 13 tests locaux.",
     "Pilote AR v4 privé : 180 étapes sur 12 vidéos, 4 validations et 3 confirmations; masque synthétique chat/chien/lunettes mieux détecté, mais candidat refusé pour faux positifs de 1,4594 % > 1 % sur confirmation.",
-    "Recherche inspirée DLSS 5 documentée (NVIDIA SDK non public, non disponible Safari iPhone); garde-fou de décision vidéo 2D et AR en laboratoire seulement, 18 tests locaux."
+    "Recherche inspirée DLSS 5 documentée (NVIDIA SDK non public, non disponible Safari iPhone); garde-fou de décision vidéo 2D et AR en laboratoire seulement, 18 tests locaux.",
+    "Fusion causale temporelle expérimentale AR sur cartes de probabilites ; 17 tests locaux; réduction de variation temporelle de 49,67 % sur 360 frames synthetiques, petite perte d'IoU; non déployé."
   ],
   "prochaines_etapes": [
-    "Vérifier CI distante 2 jobs pour commit final, ne pas annoncer validation globale sans preuve.",
-    "Rendre le futur détecteur AR plus robuste sur petits éléments clairs et portraits compressés, sans dépasser 1 % de faux positifs sur nouvelles scènes ; conserver le test final scellé sans reoptimisation.",
-    "Créer des masques AR réels corrigés et vérifiés par annotation distincte avant supervision ; évaluer séparation des groupes et diversité des scènes.",
-    "Recherche 2D inspirée des principes DLSS 5 : mouvement optique causal, préservation de structure et pixels hors zone, benchmark vidéo contre base classique; jamais présenter comme SDK NVIDIA.",
-    "Valider vraie vidéo et vrais appareils iPhone Safari; protéger les anciens modules et les choix manuels; ne pas fusionner ou déployer."
+    "Verifier les deux jobs de la CI pour le dernier HEAD (aucun resultat suppose tant que non observe).",
+    "Constituer des annotations verifiees des vrais filtres AR et un jeu sans filtre certifie ; eviter de pretendre que absence d'incrustation synthetique signifie absence de filtre.",
+    "Evaluer mouvement naturel, zoom, rotations, occlusions, coupes, erreur de flux; comparer le banc temporel a un traitement image par image sur des sequences reelles.",
+    "Reduire les faux positifs du detecteur AR v4 sans sacrifier la precision des contours, en séparant le preentrainement historique et les nouvelles donnees vierges.",
+    "Poursuivre la recherche video 2D inspiree des principes DLSS 5 sans utiliser le SDK NVIDIA indisponible et sans promettre d'equivalence.",
+    "Tester sur Safari iPhone physique, revue humaine, aucune fusion de la PR ou deploiement."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -38,18 +40,18 @@
     "pas_de_medias_personnels": true
   },
   "jalon_en_attente_ci": {
-    "sha": "4cf0893820f40070be96d2116c39f880b4b1c428",
+    "sha": "31066b0e26620fd4fec314bb96705f3296718c77",
     "date": "2026-11-14",
     "objets": [
-      "outils/directeur-garde-fou-neural.cjs",
-      "tests/directeur-garde-fou-neural.test.mjs",
-      "RECHERCHE_DLSS5_ET_AR_V4.md",
+      "outils/directeur-fusion-temporelle-ar.cjs",
+      "tests/directeur-fusion-temporelle-ar.test.mjs",
+      "LABO_AR_V4_FUSION_TEMPORELLE.md",
       ".github/workflows/directeur-ia.yml",
       "BENCHMARK_RESULTS.md"
     ],
-    "preuve_locale": "18/18 tests Node directs réussis localement; expérimentation AR v4 CPU exécutée séparément sur données privées sous autorisation",
+    "preuve_locale": "17/17 tests Node executes localement; benchmarks prives sur frames procedurales",
     "statut_ci": "a_verifier_2_jobs",
-    "observations": "aucun SDK ou modèle DLSS 5 intégré, aucun média personnel versionné; garde-fou de projet"
+    "observations": "pas de poids ou medias dans GitHub, pas de SDK DLSS5; aucuns essais sur vrais filtres AR humainement verifies"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -98,5 +100,40 @@
     "tests_locaux": "18/18 Node reussis",
     "verification_ci": "deux_jobs_distants_a_confirmer",
     "limites": "aucun vrai masque AR verifie, pas de validation Safari iPhone; confirmation independante du nouvel ajustement et non garantie vierge de l'ancien preentrainement; vrai NVIDIA DLSS 5 pas utilise"
+  },
+  "jalon_ar_v4_temporel": {
+    "date": "2026-11-14",
+    "code": "outils/directeur-fusion-temporelle-ar.cjs",
+    "tests": "tests/directeur-fusion-temporelle-ar.test.mjs",
+    "documentation": "LABO_AR_V4_FUSION_TEMPORELLE.md",
+    "bench": "BENCHMARK_RESULTS.md",
+    "essai_prive_seuil": {
+      "videos_confirmation": 5,
+      "cas_synthetiques": 120,
+      "seuil_calibre_sur_validation": 0.5,
+      "iou_chat_ancien": 0.14895,
+      "iou_chat_v4": 0.36219,
+      "faux_positifs_temoins_v4": 0.002718,
+      "limite": "fonds peuvent deja contenir des filtres; seulement absence d'incrustation synthetique"
+    },
+    "essai_prive_temporel": {
+      "validation_groupes": 4,
+      "images_validation_synthetiques": 288,
+      "confirmation_groupes": 5,
+      "images_confirmation_synthetiques": 360,
+      "beta_causal": 0.45,
+      "instabilite_initiale": 0.007026,
+      "instabilite_lissee": 0.003536,
+      "iou_initial": 0.270691,
+      "iou_lissee": 0.266382,
+      "limite": "translations procedurales, pas de mouvement naturel ou verite terrain AR"
+    },
+    "sdk_dlss5_utilise": false,
+    "droit_publication": false,
+    "activation_automatique": false,
+    "modele_poids_en_public": false,
+    "tests_unitaires_locaux": "17/17 reussis",
+    "ci_git": "a_confirmer_2_jobs",
+    "archive_privee": "RetoucheProAI_AR_v4_calibrage_temporel_prive_2026-11-14.zip"
   }
 }
