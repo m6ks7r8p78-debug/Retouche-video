@@ -72,6 +72,8 @@ try {
     const p=await page.evaluate(()=>({type:mode,w:v.videoWidth,h:v.videoHeight,plan:window.__dirplan}));
     assert.equal(p.type,"video");assert.equal(p.w,320);assert.equal(p.h,180);
     assert.ok(p.plan.operations.some(x=>x.id==="export"));
+    assert.ok(p.plan.zonage&&p.plan.zonage.echantillons>=5,"video local timing samples missing");
+    assert.ok(p.plan.zonage.zones.length>=1);
     await page.evaluate(()=>{
       const ai=document.querySelector("#o_max");ai.checked=false;ai.dispatchEvent(new Event("change"));
       document.querySelector('[data-q="-1"]').click();
