@@ -32,15 +32,16 @@
     "RNE 0.4 — entraînement réel apparié MSE seule vs MSE+perte temporelle sur 919 triplets privés, 180 étapes x2 ; 2 fenêtres de mouvements naturels ×37 groupes ×333 images : stabilisation mesurée, bicubique encore meilleur. 12 tests locaux, poids privés, non deployable.",
     "Audit fidélité spatiale RNE 0.4 : 74 images de 37 groupes, régions de contours, textures et ROI visage proposées ; 32 nouveaux tests locaux. Essai textures 220 steps x2 bras sur 919 triplets, gain +0,00219 dB trop faible, pas d'activation.",
     "Banc photo externe indépendante du corpus : 6 photos naturelles, 108 essais RNE04, +0,29936 dB et 97/108 cas gagnants face au bicubique pour version temporelle, MAIS instabilité 13,076>12,643; 32 tests locaux, aucun déploiement.",
-    "RNE 0.4 nouvelles vidéos: 41 uploads audités; exclusion 3 copies exactes et 9 mêmes scènes malgré SHA différents; 29 candidats provisoires (580 reconstructions), +0,341 dB PSNR vs bicubique, 3 regressions sur un seul clip, textures encore difficiles, 232 vraies transitions, pas de déploiement."
+    "RNE 0.4 nouvelles vidéos: 41 uploads audités; exclusion 3 copies exactes et 9 mêmes scènes malgré SHA différents; 29 candidats provisoires (580 reconstructions), +0,341 dB PSNR vs bicubique, 3 regressions sur un seul clip, textures encore difficiles, 232 vraies transitions, pas de déploiement.",
+    "RNE cohérence LR post-hoc : 29 clips candidats, 580 reconstructions; gain propre +0,480→+0,723 dB et 3 regressions éliminées, mais JPEG +0,203→+0,090 dB, flicker 1,702→1,858 et textures pires. Blocage de déploiement maintenu, 14 tests synthétiques."
   ],
   "prochaines_etapes": [
-    "Préserver les 41 nouveaux uploads hors de tout entrainement tant que le propriétaire n'a pas explicitement autorisé un usage ultérieur; ne pas perdre le lot de test.",
-    "Auditer les 29 scènes restantes pour les variantes recadrées ou décalées; l'absence de correspondance pHash aux mêmes temps ne prouve pas une scene inédite.",
-    "Examiner le type de textures des trois regressions concentrées sur un seul clip sans modifier le modèle ni les seuils sur ce test.",
-    "Rassembler des paires originale/filtrée vérifiées pour evaluer la véritable restauration des filtres AR, pas un PSNR de degradation artificielle.",
-    "Tester plus de mouvements rapides, coupes, formes et fidelite géometrique; puis compatibilité native Safari iPhone de manière démontrable.",
-    "Verifier la nouvelle CI GitHub avant toute affirmation de réussite; PR reste brouillon, aucune fusion ni deployment."
+    "NE PAS appliquer la projection sur une video importée dont la chaîne de reduction/codec est inconnue; blocage de la fonction par défaut.",
+    "Conserver les 41 videos en test, jamais entraîner dessus sans nouvelle autorisation du propriétaire. Leur indépendance visuelle reste à confirmer.",
+    "Réduire la MAE de texture et de flicker en modifiant le modèle ou la perte sur le corpus d'apprentissage autorisé des 157 anciennes videos, sans choisir les seuils sur les 29 candidats.",
+    "Pour le prochain contrôle externe, préparer de nouvelles vidéos ou des vraies paires originales/filtrées ; ne pas prétendre qu'un PSNR synthétique valide un défiltrage AR.",
+    "Vérifier CI Github du dernier HEAD, et ne jamais annoncer iPhone Safari opérationnel sans test réel.",
+    "Ne pas déployer RNE 0.4, ni fusionner PR #1, tant que fidelite visages/texture/mouvements et mémoire iPhone non validées."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -51,14 +52,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
     "objets": [
-      "outils/rne/holdout_reporting.py",
-      "tests/test_rne_holdout_reporting.py",
-      "RETOUCHE_NEURAL_ENGINE_41_NOUVELLES_VIDEOS.md",
+      "outils/rne/data_consistency.py",
+      "tests/test_rne_data_consistency.py",
+      "RETOUCHE_NEURAL_ENGINE_DIAGNOSTIC_PROJECTION.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "41 SHA verifiés, 38 traités, 29 candidats après 12 exclusions doublons/scenes; 580 reconstructions, 232 transitions, 16 tests unitaires synthétiques locaux réussis",
-    "statut_ci": "a_verifier_nouveau_HEAD",
-    "observations": "Aucune video, frame, empreinte individuelle, chemin personnel, ni poids entraîné n'est sur GitHub."
+    "preuve_locale": "14/14 nouveaux tests synthétiques, 252 diagnostics post-hoc + 580 ablations sur 29 videos, 29 sources SHA re-verifiees; erreur temporelle/luma chiffrées",
+    "statut_ci": "a_verifier",
+    "observations": "aucun original, chemin media, video, frame, ni poids personnalisés sur GitHub; post-hoc non indépendant"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -748,5 +749,68 @@
     "auto_deploiement": false,
     "fusion_main": false,
     "SDK_NVIDIA_DLSS5": false
+  },
+  "jalon_rne04_posthoc_consistance_lr": {
+    "date": "2026-11-14",
+    "status": "ablation_experimentale_posthoc; recherche seulement, aucun deploiement",
+    "sources": {
+      "nouveaux_uploads": 41,
+      "scene_candidates_provisoires": 29,
+      "scene_independence_verified": false,
+      "train_on_41": false,
+      "model_rne04_frozen": true
+    },
+    "diagnosis": {
+      "source_videos": 7,
+      "source_videos_avec_regressions_historiques": 1,
+      "other_controls": 6,
+      "new_time_fractions": 6,
+      "total_reconstructions": 252,
+      "challenging_clip_clean_gain_db": -0.26304,
+      "challenging_clip_jpeg65_gain_db": 0.02771,
+      "controls_clean_gain_db": 0.70863,
+      "controls_jpeg65_gain_db": 0.29896,
+      "dominated_by_luminance_error": true,
+      "no_original_before_filter_ground_truth": true
+    },
+    "ablation": {
+      "method": "one non-learned luma back-projection toward known simulated area-downsample LR, no tuning on the test cases",
+      "cases": 580,
+      "videos": 29,
+      "psnr_gain_clean_rne04_db": 0.48028,
+      "psnr_gain_clean_after_projection_db": 0.7225,
+      "psnr_gain_jpeg_rne04_db": 0.20255,
+      "psnr_gain_jpeg_after_projection_db": 0.08987,
+      "psnr_gain_overall_rne04_db": 0.34141,
+      "psnr_gain_overall_after_projection_db": 0.40619,
+      "clean_corrections_improved_rne": 290,
+      "clean_total": 290,
+      "jpeg_corrections_worsened_rne": 280,
+      "jpeg_total": 290,
+      "regressions_gt_0_5db_before": 3,
+      "regressions_gt_0_5db_after": 0,
+      "temporal_mae_rne04": 1.70159,
+      "temporal_mae_after_projection": 1.85807,
+      "texture_degradation_rne04_mae": 0.1302,
+      "texture_degradation_after_projection_mae": 0.39782,
+      "lr_luma_consistency_error_before": 0.73272,
+      "lr_luma_consistency_error_after": 0.24907,
+      "no_untouched_validation": true,
+      "decision": "NOT PROMOTED: temporal and texture degradation, JPEG failure, unknown forward operator for imported files"
+    },
+    "safety": {
+      "code_public": "outils/rne/data_consistency.py",
+      "tests_public": "tests/test_rne_data_consistency.py",
+      "tests_synthetic_local": "14/14 passed",
+      "forced_known_operator_flag": true,
+      "model_train_during_this_turn": false,
+      "automatic_deployment": false,
+      "iphone_safari_validation": false,
+      "media_published": false,
+      "nvidia_dlss5_used": false,
+      "ci_remote": "to_check",
+      "documentation": "RETOUCHE_NEURAL_ENGINE_DIAGNOSTIC_PROJECTION.md",
+      "archive_privee": "RetoucheProAI_RNE04_diagnostic_projection_posthoc_prive.zip"
+    }
   }
 }
