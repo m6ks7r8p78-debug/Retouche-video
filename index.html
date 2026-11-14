@@ -518,7 +518,7 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
           <p id="profh"></p>
           <label class="s ponly" hidden><span>Format de la photo</span><select id="pfmt"><option value="jpeg">JPEG (léger, qualité 95 %)</option><option value="png">PNG (sans perte, plus lourd)</option></select></label>
         </div>
-        <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><p class="help" id="rec_hint" hidden style="margin:6px 0 0">Déjà appliqué. Décoche ce que tu ne veux pas.</p></div>
+        <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><p class="help" id="rec_hint" hidden style="margin:6px 0 0">Déjà appliqué. Décoche ce que tu ne veux pas.</p><details id="dirbox" hidden style="margin-top:12px"><summary id="dirsummary">Directeur IA · plan de traitement</summary><p class="help">Ordre proposé à partir des défauts mesurés. L’export utilise les moteurs déjà disponibles ; une proposition n’est pas une garantie de résultat.</p><ol id="dirlist" class="help"></ol></details></div>
         <div class="card simple-only" id="sai"><label class="chk"><input type="checkbox" id="s_ia"><span><b>⚡ Qualité IA</b><span id="s_iah"></span></span></label></div>
         <button class="btn main big" id="ex" style="margin-top:12px">Améliorer en 4K</button>
         <progress id="pg" value="0" max="1" hidden></progress>
@@ -698,6 +698,7 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
 <script defer src="kaggle.js"></script>
 <script defer src="camera.js"></script>
 <script defer src="analyse.js"></script>
+<script defer src="directeur-ia.js"></script>
 <script defer src="contribution.js"></script>
 <script defer src="visage.js"></script>
 <script defer src="app.js"></script>
