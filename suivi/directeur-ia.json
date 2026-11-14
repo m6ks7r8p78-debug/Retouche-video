@@ -30,15 +30,16 @@
     "RNE 0.3+ maison : corpus 157 SHA valides, 154 contenus uniques, 919 triplets non redondants / 37 groupes, 420 étapes supplémentaires équilibrées, 80 tests locaux RNE; gain in-sample +0,0579 dB seulement, 3 regressions > 0,5 dB; non déployable.",
     "QA temporelle sur mouvements naturels : 37 groupes et 333 images filmées, 296 transitions; RNE03+ légèrement moins stable que bicubique; prototype de lissage résiduel et garde-fou, 26 nouveaux tests locaux, aucun déploiement.",
     "RNE 0.4 — entraînement réel apparié MSE seule vs MSE+perte temporelle sur 919 triplets privés, 180 étapes x2 ; 2 fenêtres de mouvements naturels ×37 groupes ×333 images : stabilisation mesurée, bicubique encore meilleur. 12 tests locaux, poids privés, non deployable.",
-    "Audit fidélité spatiale RNE 0.4 : 74 images de 37 groupes, régions de contours, textures et ROI visage proposées ; 32 nouveaux tests locaux. Essai textures 220 steps x2 bras sur 919 triplets, gain +0,00219 dB trop faible, pas d'activation."
+    "Audit fidélité spatiale RNE 0.4 : 74 images de 37 groupes, régions de contours, textures et ROI visage proposées ; 32 nouveaux tests locaux. Essai textures 220 steps x2 bras sur 919 triplets, gain +0,00219 dB trop faible, pas d'activation.",
+    "Banc photo externe indépendante du corpus : 6 photos naturelles, 108 essais RNE04, +0,29936 dB et 97/108 cas gagnants face au bicubique pour version temporelle, MAIS instabilité 13,076>12,643; 32 tests locaux, aucun déploiement."
   ],
   "prochaines_etapes": [
-    "Vérifier les résultats CI GitHub Actions RNE et Directeur IA après le dernier commit, ne pas annoncer succès distant sans preuve.",
-    "Préparer un nouveau jeu de vidéos totalement indépendant des 157 vidéos déjà apprises, avec références fidèles et autorisations distinctes; toutes métriques actuelles RNE04 sont internes.",
-    "Mesurer stabilité entre images + fidélité des traits et contours sur vrais mouvements; ajouter masques visage vérifiés, ne pas assimiler proposition Haar à annotation authentique.",
-    "Ne pas promouvoir le candidat gradients et ne pas activer le limiteur strict universellement; rechercher une stratégie adaptative évaluée sur données nouvelles.",
-    "Valider une variante WebGPU / WASM ou calcul distant privé après accord, mémoire réelle, batterie, latence et qualité Safari iPhone.",
-    "Poursuivre la détection/restauration des vrais filtres AR par validation sur masques humains vérifiés et consentis; aucun SDK ni modèles NVIDIA DLSS 5."
+    "Confirmer GitHub Actions RNE CPU et Directeur IA sur dernier commit, sans revendiquer succès distant avant preuve.",
+    "Obtenir un véritable banc vidéo extérieure aux 157 vidéos d'entraînement, sans parenté avec leurs scènes ou versions, avec droits et références établis; mesurer PSNR (pour dégradations connues), indices perceptuels et stabilité sur mouvements naturels, occultations et coupes.",
+    "Évaluer fidélité des traits et visages sur masques vérifiés et évolution temporelle; les propositions Haar et le PSNR sur photo ne sont pas preuve d'identité.",
+    "Comparer séparément qualité spatiale vs coût du mouvement; réduire le scintillement sous la référence bicubique tout en maintenant les améliorations spatiales.",
+    "Tester une exécution iPhone Safari réelle (performances mémoire, chaleur, qualité, audio/vidéo), puis revue humaine avant toute intégration.",
+    "Continuer le laboratoire de retrait AR avec vraies annotations, sauvegarde privée de tous médias et poids, aucune utilisation du SDK NVIDIA DLSS5."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -49,18 +50,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
     "objets": [
-      "outils/rne/fidelity_guard.py",
-      "outils/rne/audit_spatial_fidelity.py",
-      "outils/rne/train_texture_detail.py",
-      "tests/test_rne_fidelity_guard.py",
-      "tests/test_rne_spatial_audit.py",
-      "tests/test_rne_texture_training.py",
-      "RETOUCHE_NEURAL_ENGINE_FIDELITE_TEXTURES.md",
+      "outils/rne/external_evidence.py",
+      "tests/test_rne_external_evidence.py",
+      "RETOUCHE_NEURAL_ENGINE_PHOTOS_EXTERNES.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "32/32 nouveaux tests Python locaux reussis, 74 echantillons reels avec degrades synthetiques et 2 bras de 220 etapes chacun",
-    "statut_ci": "a_verifier_sur_nouveau_HEAD",
-    "observations": "aucun média privé ou poids entraîné sur GitHub; promotion bloquée"
+    "preuve_locale": "32 tests Python locaux passes (16 banc photo, 16 politique de securite); 108 comparaisons photographiques par checkpoint executes en privé",
+    "statut_ci": "a_verifier_dernier_HEAD",
+    "observations": "aucune image, frame video ni poids personnalise dans GitHub"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -635,5 +632,54 @@
     "iphone_Safari_valide": false,
     "auto_activation": false,
     "CI_distante": "a_verifier"
+  },
+  "jalon_rne_externe_photos_2026_11_14": {
+    "date": "2026-11-14",
+    "etat": "recherche seulement, pas de deploiement",
+    "motivation": "Premier protocole sur sources photographiques extérieures au corpus des 157 vidéos, afin de vérifier une généralisation spatiale partielle.",
+    "protocole": {
+      "sources_photographiques": 6,
+      "variantes_totales": 108,
+      "decoupages_par_image": "3 mouvements de recadrage simulés × 2 degradations × 3 reconstructions",
+      "vraies_videos_en_mouvement": false,
+      "photos_jamais_utilisees_dans_entrainement_RNE": true,
+      "sources": "scikit-image.data (astronaut,coffee,chelsea,camera,rocket,hubble_deep_field)",
+      "temporal_pairs": 72
+    },
+    "candidat_temporel": {
+      "gain_PSNR_moyen_vs_bicubique_db": 0.29936,
+      "gagnants": 97,
+      "perdants": 11,
+      "pertes_superieures_a_0_5dB": 0,
+      "pire_delta_PSNR_db": -0.06953,
+      "mae_contours_changement_RGB255": -0.96921,
+      "mae_roi_proposee_RGB255": -0.44178,
+      "photos_avec_region_face_proposee": 14,
+      "temporal_MAE_bicubique": 12.643,
+      "temporal_MAE_rne": 13.07629
+    },
+    "autres_modeles": {
+      "rne04_supervised_control": {
+        "gain_psnr_db": 0.31051,
+        "mae_temporelle": 13.1097
+      },
+      "rne04_gradient": {
+        "gain_psnr_db": 0.31064,
+        "mae_temporelle": 13.09879
+      }
+    },
+    "limites": "Les 108 reconstructions sont corrélées au sein de 6 photos; déplacements artificiels et aucun test indépendant de mouvement naturel, masques faciaux humains corrigés ou iPhone Safari. Ces photos ont maintenant servi à comparer trois checkpoints et ne doivent pas être réutilisées comme jeu scellé.",
+    "code_public": [
+      "outils/rne/external_evidence.py",
+      "tests/test_rne_external_evidence.py"
+    ],
+    "protocole_complet_prive": "RetoucheNeuralEngine_banc_independant_photos_2026-11-14.zip (scripts, tests, résultats et poids privées; aucune image source)",
+    "doc_public": "RETOUCHE_NEURAL_ENGINE_PHOTOS_EXTERNES.md",
+    "tests_locaux": "32/32 : 16 tests banc externe, 16 tests interprétation/garde-fou; tests Github Actions nouveaux à confirmer",
+    "CI_distante": "a_verifier",
+    "nvidia_SDK_DLSS5": false,
+    "auto_activation": false,
+    "modele_promu": false,
+    "fichiers_personnels_publies": false
   }
 }
