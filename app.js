@@ -48,7 +48,7 @@ function afficherDirecteur(p){
       liste.appendChild(li)}
   }
   if(p.zonage&&p.zonage.zones.length){
-    const li=document.createElement("li");li.textContent="Variations observées : "+p.zonage.zones.length+" zone(s) estimée(s) sur "+p.zonage.echantillons+" images de contrôle. Les frontières sont approximatives, sans réglage par scène à l'export.";liste.appendChild(li);
+    const li=document.createElement("li");li.textContent="Variations observées : "+p.zonage.zones.length+" zone(s) estimée(s) sur "+p.zonage.echantillons+" images de contrôle. Frontières approximatives ; seul le débruitage classique peut varier prudemment à l'export.";liste.appendChild(li);
     if(p.zonage.zones.length>1)for(const z of p.zonage.zones){
       const note=document.createElement("li");
       note.textContent=Math.round(z.debut)+"–"+Math.round(z.fin)+" s · "+z.priorites.join(", ")+" ("+(z.confiance==="faible"?"faible confiance":"échantillonnage limité")+")";
@@ -1951,9 +1951,7 @@ $("#ex").onclick=async()=>{
       if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
       /* Horodatage SOURCE : préserve la cadence, les plans et l'interpolation existants. */
       DIRDN=dirRendu&&dirRendu.actif?DIRECTEUR_RENDU.facteur(dirRendu,(pl.a+.5)/OFPS):1;
-      if(window.__dirRendu&&Math.abs(DIRDN-1)>.001){
-        const d=window.__dirRendu;d.imagesAdaptees++;d.facteurMin=Math.min(d.facteurMin,DIRDN);d.facteurMax=Math.max(d.facteurMax,DIRDN);
-      }
+      /* Les compteurs ne sont incrémentés qu'après encodage réussi, pas sur les images retentées. */
       /* saut en arrière dans un plan (prolongation) : la lecture séquentielle repart de là */
       if(rdr&&isPlan&&(pl.a<pMax-1||(SRX.remote&&pl.a===pMax-1&&!rdr.peek(pl.a)))){
         /* v6.1 : à l'envers avec l'IA rapide : la lecture repart de l'image clé voisine, sans relire tout le fichier */
@@ -2010,7 +2008,11 @@ $("#ex").onclick=async()=>{
         if(prevT){let sm=true;for(let z=0;z<td.length;z++){if(td[z]!==prevT[z]){sm=false;break}}if(sm){dup++;run++;if(run>maxRun)maxRun=run}else run=0}
         prevT=td}
       tDu+=performance.now()-d0;
-      const e0=performance.now();enc.encode(f,{keyFrame:i%60===0});f.close();tEn+=performance.now()-e0;if(!rdr&&qa>=0){go(qa+POOL);if(qb>=0)go(qb+POOL)}
+      const e0=performance.now();enc.encode(f,{keyFrame:i%60===0});f.close();tEn+=performance.now()-e0;
+      if(window.__dirRendu&&Math.abs(DIRDN-1)>.001){
+        const d=window.__dirRendu;d.imagesAdaptees++;d.facteurMin=Math.min(d.facteurMin,DIRDN);d.facteurMax=Math.max(d.facteurMax,DIRDN);
+      }
+      if(!rdr&&qa>=0){go(qa+POOL);if(qb>=0)go(qb+POOL)}
       const t2=performance.now();tD+=t2-t1;
       while(enc.encodeQueueSize>6)await wait(8);
       tQ+=performance.now()-t2;
@@ -2043,6 +2045,10 @@ $("#ex").onclick=async()=>{
       if(pr!==true&&window.__plan)throw new Error("le fichier est illisible (code "+pr+")");
       if(pr!==true){
         msg("Le fichier image par image n’est pas lisible ici (code "+pr+"). Passage à la méthode de secours en temps réel : garde l’écran allumé…");
+        /* Le moteur de secours n'est pas synchronisé avec les zones temporelles.
+           Revenir au débruitage classique : ne pas attribuer les corrections abandonnées à la sortie. */
+        DIRDN=1;
+        if(window.__dirRendu){Object.assign(window.__dirRendu,{actif:false,raison:"Export de secours non piloté par zones",imagesAdaptees:0,facteurMin:1,facteurMax:1})}
         $("#pg").value=0;outBlob=await realtime();wa=!rtNoSound;
         if(cancel)throw new Error("export annulé.");
       }
