@@ -1,4 +1,4 @@
-/* Retouche 3D AI Lab v1.8 — original adult procedural characters, 100% local.
+/* Retouche 3D AI Lab v1.9 — original adult procedural characters, 100% local.
    Neither neural inference nor reconstruction of a real filmed person.
    Browser/Node UMD, no external assets or requests. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.Retouche3DGenerator=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
@@ -22,6 +22,9 @@ function parsePrompt(raw){
  const walk=/\b(marche|marcher|marchant|walking|walk|promene|promener)\b/.test(s);
  const tilt=/\b(penche|pencher|inclin(?:e|er)) (?:legerement )?(?:la |sa )?tete\b/.test(s);
  const smokeStyle=smoke?(/\b(lentement|doucement|nonchalant|nonchalante|lent|lente|slowly)\b/.test(s)?'lent':/\b(rapide|rapidement|vite|quickly)\b/.test(s)?'rapide':'standard'):null;
+ const blink=/\b(cligne|cligner|clignant|clignement|recligne|recligner|blink|blinking)\b/.test(s);
+ const smileAction=/\b(sourit|sourire|souriant|souriante|smile|smiling)\b/.test(s);
+ const breathe=/\b(respire|respirer|respiration|inspire|inspirer|expire|expirer|breath|breathe)\b/.test(s);
  const glasses=/\b(lunettes|glasses)\b/.test(s);
  const smiles=/\b(sourire|souriant|souriante|jolie|charmant|charmante|aguicheur|aguicheuse|joyeux|joyeuse|sourit|smiling)\b/.test(s);
  const outfitSegment=(s.match(/(?:robe|costume|veste|tenue|tailleur|pantalon|t[- ]shirt|chemise|dress|suit)\W+(?:(?:de couleur|en)\W+)?(?:noire?|rouge|bordeaux|bleue?|marine|blanche?|white|black|red|blue)/)||[])[0]||'';
@@ -36,11 +39,14 @@ function parsePrompt(raw){
   ['fumer',/\b(fume|fumer|fumant|fumante|cigarette|cigare|pipe|refume|refumer)\b/g,smoke],
   ['saluer',/\b(salue|saluer|saluant|bonjour|coucou|waving|wave)\b|fait signe|agite la main/g,wave],
   ['marcher',/\b(marche|marcher|marchant|walking|walk|promene|promener)\b/g,walk],
-  ['incliner',/\b(penche|pencher|inclin(?:e|er)) (?:legerement )?(?:la |sa )?tete\b/g,tilt]
+  ['incliner',/\b(penche|pencher|inclin(?:e|er)) (?:legerement )?(?:la |sa )?tete\b/g,tilt],
+  ['cligner',/\b(cligne|cligner|clignant|clignement|recligne|recligner|blink|blinking)\b/g,blink],
+  ['sourire',/\b(sourit|sourire|souriant|souriante|smile|smiling)\b/g,smileAction],
+  ['respirer',/\b(respire|respirer|respiration|inspire|inspirer|expire|expirer|breath|breathe)\b/g,breathe]
  ];
  for(const [name,re,enabled] of patterns){if(!enabled)continue;let m;
   while((m=re.exec(s))!==null){const tail=s.slice(m.index+m[0].length,m.index+m[0].length+35);
-   const repetition=tail.match(/^\s*(?:a nouveau\s*)?(?:\b(2|3|deux|trois)\s*fois\b)/);
+   const repetition=tail.match(/^\s*(?:(?:des?\s+yeux|de la main)\s*)?(?:a nouveau\s*)?(?:\b(2|3|deux|trois)\s*fois\b)/);
    const count=repetition?({'2':2,'3':3,'deux':2,'trois':3}[repetition[1]]):1;
    for(let j=0;j<count;j++)events.push({name,index:m.index,repeat:j,token:m[0]});
    if(m.index===re.lastIndex)re.lastIndex++;
@@ -64,7 +70,7 @@ function parsePrompt(raw){
  if(/blond|brun|rousse|roux|chatain|cheveux noir/.test(s))matched.push('cheveux');
  if(/robe|costume|veste|jean|pantalon|casual|decontract/.test(s))matched.push('tenue');
  if(elegant)matched.push('style');if(glasses)matched.push('lunettes');if(/yeux\s+(verts?|bleus?|noirs?)/.test(s))matched.push('yeux');if(/peau (mate|claire|foncee)/.test(s))matched.push('teint');
- if(smoke)matched.push('geste de fumer'+(smokeStyle!=='standard'?' ('+smokeStyle+')':''));if(wave)matched.push('salut');if(walk)matched.push('marche sur place');if(tilt)matched.push('inclinaison de tête');if(smoke)matched.push('main '+smokeHand);
+ if(smoke)matched.push('geste de fumer'+(smokeStyle!=='standard'?' ('+smokeStyle+')':''));if(wave)matched.push('salut');if(walk)matched.push('marche sur place');if(tilt)matched.push('inclinaison de tête');if(blink)matched.push('clignement des yeux');if(smileAction)matched.push('sourire animé');if(breathe)matched.push('respiration stylisée');if(smoke)matched.push('main '+smokeHand);
  const unhandled=[];
  if(/photoreal|hyperreal|ultrareal|comme une vraie photo|realisme absolu/.test(s))unhandled.push('photoréalisme non disponible');
  if(/parle|parler|discute|voix|dialogue|chant|chante/.test(s))unhandled.push('parole et voix non générées');
@@ -74,7 +80,7 @@ function parsePrompt(raw){
  if(/reprodui|exactement comme|identique a une personne/.test(s))unhandled.push('copie fidèle de personne non disponible');
  if(truncated)unhandled.push('scénario limité à 12 gestes dans ce prototype');
  if([/\bcigarette\b/,/\bcigare\b/,/\bpipe\b/].filter(re=>re.test(s)).length>1)unhandled.push('changement de type de cigarette/cigare/pipe au fil du scénario non disponible');
- return {adult:true,ageLabel:'adulte 18+',gender,hair,longHair,clothes,elegant,smoke,wave,walk,tilt,smokeHand,smokeStyle,tobacco,actions,glasses,smiles,outfitColor,eyes,skinTone,matched,unhandled,originalText:text,
+ return {adult:true,ageLabel:'adulte 18+',gender,hair,longHair,clothes,elegant,smoke,wave,walk,tilt,blink,smileAction,breathe,smokeHand,smokeStyle,tobacco,actions,glasses,smiles,outfitColor,eyes,skinTone,matched,unhandled,originalText:text,
   disclaimer:'Personnage synthétique stylisé, créé par formes paramétriques. Aucune identité réelle ni anatomie fidèle.'};
 }
 function build(config){
@@ -111,19 +117,26 @@ function build(config){
  if(c.clothes==='robe')node('robe_jupe',root,[0,0.96,0],[.315,.37,.205],2);
  if(c.clothes==='costume'||c.clothes==='elegant')node('chemise',root,[0,1.38,.142],[.10,.22,.016],9);
  node('cou',root,[0,1.66,0],[.085,.145,.085],0);
- const head=node('tete',root,[0,1.83,0],[.185,.222,.177],0);
- node('coiffure_calotte',root,[0,2.005,-.022],[.197,.122,.192],1);
+ // Le pivot de tête est distinct de son volume : les traits et cheveux suivent la rotation.
+ const head=node('tete_pivot',root,[0,1.83,0]);
+ node('tete_volume',head,[0,0,0],[.185,.222,.177],0);
+ node('coiffure_calotte',head,[0,.175,-.022],[.197,.122,.192],1);
  const length=c.longHair?.30:.12;
  for(let j=0;j<5;j++){
-   const x=-.15+j*.075;node('meche_'+j,root,[x,1.95-length*.38,-.095],[.052,length,.075],1);
+   const x=-.15+j*.075;node('meche_'+j,head,[x,.12-length*.38,-.095],[.052,length,.075],1);
  }
- node('oeil_gauche',root,[-.080,1.854,.157],[.040,.031,.016],4);
- node('oeil_droit',root,[.080,1.854,.157],[.040,.031,.016],4);
- node('iris_gauche',root,[-.080,1.854,.174],[.016,.020,.009],11);
- node('iris_droit',root,[.080,1.854,.174],[.016,.020,.009],11);
- node('nez',root,[0,1.785,.173],[.034,.053,.038],0);
- node('bouche',root,[0,1.731,.164],[c.smiles?.071:.055,.013,.012],5);
- if(c.glasses){node('lunette_gauche',root,[-.081,1.858,.18],[.07,.047,.012],10);node('lunette_droite',root,[.081,1.858,.18],[.07,.047,.012],10);node('pont_lunette',root,[0,1.861,.181],[.027,.012,.011],3);}
+ const eyes={};const eyebrows={};
+ for(const [side,sgn] of [['gauche',-1],['droite',1]]){
+   const eye=node('oeil_pivot_'+side,head,[sgn*.080,.024,.157]);
+   node('oeil_'+side,eye,[0,0,0],[.040,.031,.016],4);
+   node('iris_'+side,eye,[0,0,.017],[.016,.020,.009],11);
+   eyes[side]=eye;
+   eyebrows[side]=node('sourcil_'+side,head,[sgn*.083,.093,.157],[.054,.012,.013],1);
+ }
+ node('nez',head,[0,-.045,.173],[.034,.053,.038],0);
+ const mouth=node('bouche_pivot',head,[0,-.099,.164]);
+ node('bouche',mouth,[0,0,0],[c.smiles?.071:.055,.013,.012],5);
+ if(c.glasses){node('lunette_gauche',head,[-.081,.028,.18],[.07,.047,.012],10);node('lunette_droite',head,[.081,.028,.18],[.07,.047,.012],10);node('pont_lunette',head,[0,.031,.181],[.027,.012,.011],3);}
  const puffs=[];
  if(c.smoke){for(let i=0;i<3;i++)puffs.push(node('fumee_volute_'+(i+1),head,[.025+(i-1)*.032,-.078+i*.065,.22+i*.022],[.0001,.0001,.0001],12));}
  const limb={};
@@ -148,7 +161,10 @@ function build(config){
  function track(node,times,angles){return {node,times,path:'rotation',values:angles.map(quat),rotation:angles.map(quat)};}
  function scaleTrack(node,times,values){return {node,times,path:'scale',values:values.map(x=>x.slice())};}
  const animations=[];const poseT=[0,1.5,3.0,4.5];
- animations.push({name:'pose',label:'Pose douce',duration:4.5,channels:[track(head,poseT,[0,.045,-.045,0]),track(limb.gauche.shoulder,poseT,[0,.055,-.055,0]) ]});
+ animations.push({name:'pose',label:'Pose douce + clignement',duration:4.5,channels:[
+  track(head,poseT,[0,.045,-.045,0]),track(limb.gauche.shoulder,poseT,[0,.055,-.055,0]),
+  ...Object.values(eyes).map(id=>scaleTrack(id,[0,1.04,1.11,1.20,3.29,3.36,3.45,4.5],[[1,1,1],[1,1,1],[1,.075,1],[1,1,1],[1,1,1],[1,.075,1],[1,1,1],[1,1,1]]))
+ ]});
  if(c.smoke){const hand=limb[c.smokeHand];const duration=c.smokeStyle==='lent'?7:c.smokeStyle==='rapide'?3.3:5;
   const ts=[0,.15*duration,.38*duration,.58*duration,.80*duration,duration];
   animations.push({name:'fumer',label:'Porter à la bouche (stylisé)',duration,channels:[
@@ -156,6 +172,8 @@ function build(config){
    track(hand.elbow,ts,[0,c.smokeHand==='gauche'?.70:-.70,c.smokeHand==='gauche'?2.03:-2.03,c.smokeHand==='gauche'?2.03:-2.03,c.smokeHand==='gauche'?.70:-.70,0]),
    track(hand.wrist,ts,[0,c.smokeHand==='gauche'?.1:-.1,c.smokeHand==='gauche'?.22:-.22,c.smokeHand==='gauche'?.22:-.22,c.smokeHand==='gauche'?.1:-.1,0]),
    track(head,ts,[0,0,-.05,-.05,0,0]),
+   scaleTrack(mouth,ts,[[1,1,1],[1,1,1],[.90,1.42,1],[.82,2.05,1],[1,1,1],[1,1,1]]),
+   ...Object.values(eyes).map(id=>scaleTrack(id,ts,[[1,1,1],[1,1,1],[1,.7,1],[1,.64,1],[1,1,1],[1,1,1]])),
    ...puffs.map((id,i)=>scaleTrack(id,ts,[[.0001,.0001,.0001],[.0001,.0001,.0001],[.0001,.0001,.0001],[.020+i*.007,.033+i*.013,.016+i*.006],[.045+i*.007,.070+i*.015,.040+i*.008],[.0001,.0001,.0001]]))
   ]});
  }
@@ -177,6 +195,21 @@ function build(config){
   ]});
  }
  if(c.tilt){const ts=[0,.5,1.25,1.9,2.4,3.0];animations.push({name:'incliner',label:'Incliner la tête',duration:3,channels:[track(head,ts,[0,-.15,-.22,.16,.12,0])]});}
+ if(c.blink){const ts=[0,.35,.44,.53,.9,1.13,1.23,1.35,1.8];
+  animations.push({name:'cligner',label:'Cligner des yeux',duration:1.8,channels:Object.values(eyes).map(id=>scaleTrack(id,ts,[[1,1,1],[1,1,1],[1,.065,1],[1,1,1],[1,1,1],[1,.065,1],[1,.065,1],[1,1,1],[1,1,1]]))});
+ }
+ if(c.smileAction){const ts=[0,.4,.85,1.55,2.4,3.2];
+  animations.push({name:'sourire',label:'Sourire (stylisé)',duration:3.2,channels:[
+   scaleTrack(mouth,ts,[[1,1,1],[1.2,.95,1],[1.48,.78,1],[1.48,.78,1],[1.2,.95,1],[1,1,1]]),
+   ...Object.values(eyes).map(id=>scaleTrack(id,ts,[[1,1,1],[1,.95,1],[1,.86,1],[1,.86,1],[1,.95,1],[1,1,1]])),
+   track(eyebrows.gauche,ts,[0,.07,.14,.14,.07,0]),track(eyebrows.droite,ts,[0,-.07,-.14,-.14,-.07,0])
+  ]});
+ }
+ if(c.breathe){const ts=[0,.7,1.5,2.2,3.1,4.0],base=torsoW;
+  animations.push({name:'respirer',label:'Respirer (torse stylisé)',duration:4.0,channels:[
+    scaleTrack(torso,ts,[[base,.37,.15],[base*1.025,.374,.155],[base*1.065,.382,.164],[base*1.065,.382,.164],[base*1.01,.371,.152],[base,.37,.15]])
+  ]});
+ }
  // Séquence temporelle : chaque geste revient à la pose neutre ; 250 ms de transition.
  // Les pistes de chaque articulation sont complétées à 0 lorsque l'action n'agit pas dessus.
  let timeline=[];
@@ -187,7 +220,7 @@ function build(config){
    }
    const keys=[...new Set(timeline.flatMap(t=>animations.find(a=>a.name===t.action).channels.map(ch=>ch.node+':'+(ch.path||'rotation'))))].sort();
    const tracks=keys.map(key=>{const [idString,path]=key.split(':'),id=Number(idString),times=[],values=[];
-     const identity=path==='scale'?[.0001,.0001,.0001]:[0,0,0,1];
+     const identity=path==='scale'?(nodeList[id].scale||[1,1,1]).slice():[0,0,0,1];
      function push(t,v){if(times.length&&Math.abs(times[times.length-1]-t)<1e-7){values[values.length-1]=v.slice();return;}times.push(t);values.push(v.slice());}
      push(0,identity);
      for(const step of timeline){const clip=animations.find(a=>a.name===step.action),ch=clip.channels.find(v=>v.node===id&&(v.path||'rotation')===path);
@@ -222,10 +255,10 @@ function encodeGLB(model){
   animations.push({name:clip.name,samplers,channels});
  }
  while(pos%4){bytes.push(0);pos++}
- const doc={asset:{version:'2.0',generator:'Retouche 3D AI Lab v1.8 procedural adults'},scene:0,scenes:[{nodes:[0]}],nodes,meshes,
+ const doc={asset:{version:'2.0',generator:'Retouche 3D AI Lab v1.9 procedural adults'},scene:0,scenes:[{nodes:[0]}],nodes,meshes,
   materials:model.materials.map(m=>({name:m.name,pbrMetallicRoughness:{baseColorFactor:m.color,metallicFactor:0,roughnessFactor:.77},doubleSided:true,...(m.color[3]<1?{alphaMode:'BLEND'}:{})})),
   buffers:[{byteLength:bytes.length}],bufferViews:views,accessors,animations,
-  extras:{synthetic:true,notPhotorealistic:true,notReconstructedFromVideo:true,age:'adult 18+',generatorVersion:'1.8',animationNames:animations.map(a=>a.name),timeline:model.timeline,smokeHand:model.config.smokeHand,tobacco:model.config.tobacco,caveat:'procedural nodes, no skinning or faithful human motion'}};
+  extras:{synthetic:true,notPhotorealistic:true,notReconstructedFromVideo:true,age:'adult 18+',generatorVersion:'1.9',animationNames:animations.map(a=>a.name),timeline:model.timeline,smokeHand:model.config.smokeHand,tobacco:model.config.tobacco,caveat:'procedural nodes with facial pivot + eyes and mouth scales, no skinning or faithful human motion'}};
  let json=new TextEncoder().encode(JSON.stringify(doc));const pad=(4-json.length%4)%4;const output=new Uint8Array(12+8+json.length+pad+8+bytes.length);const dv=new DataView(output.buffer);
  output.set([103,108,84,70],0);dv.setUint32(4,2,true);dv.setUint32(8,output.length,true);dv.setUint32(12,json.length+pad,true);output.set([74,83,79,78],16);output.set(json,20);output.fill(32,20+json.length,20+json.length+pad);let offset=20+json.length+pad;dv.setUint32(offset,bytes.length,true);output.set([66,73,78,0],offset+4);output.set(new Uint8Array(bytes),offset+8);
  return {bytes:output,document:doc};
