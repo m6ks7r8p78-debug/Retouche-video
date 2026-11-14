@@ -847,7 +847,7 @@
       "temporal_regression_candidate": 0.000044,
       "triplets_gagnants_candidat": 203,
       "triplets": 308,
-      "aucune_validation_independante": false,
+      "aucune_validation_independante": true,
       "precision": "métriques internes au corpus pre-entraine; gain pas suffisant pour adopter"
     },
     "decision": {
