@@ -16,10 +16,11 @@ jobs:
       - name: Verifier le code JS
         run: |
           node --check directeur-ia.js
+          node --check directeur-qualite.js
           node --check app.js
           node --check sw.js
       - name: Tests du Directeur IA
-        run: node --test tests/directeur-ia.test.mjs
+        run: node --test tests/directeur-ia.test.mjs tests/directeur-qualite.test.mjs
       - name: Afficher l empreinte PWA attendue et verifier le cache
         run: |
           node tests/directeur-empreinte.mjs
