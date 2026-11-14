@@ -71,7 +71,7 @@ const cv=$("#cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias
 const v=document.createElement("video");v.playsInline=true;v.muted=true;v.setAttribute("playsinline","");v.preload="auto";
 v.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(v);
 let HP=.7;/* force de la protection des hautes lumières */
-const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],r:1};let WBG=[1,1,1],DFG=1,DIRDN=1;
+const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],r:1};let WBG=[1,1,1],DFG=1,DIRDN=1,DIRSH=1;
 /* ===== Profils de rendu =====
    Ils ne remplacent pas l'analyse automatique : ils dosent ce qu'elle a réglé (P reste la base, visible dans les curseurs).
    - sh, dn, cs : multiplient netteté, réduction du bruit, nettoyage des couleurs ;
@@ -332,7 +332,7 @@ function draw(el){
   const CL=show&&!dustOnly&&window.CAM?CAM.reglages():null;
   if(CL&&progL&&gl.getProgramParameter(progL,gl.LINK_STATUS)&&(CL.vg>0||CL.ca[0]||CL.ca[1])){const R=.5*Math.hypot(w,h);
     pass(progL,src,texL,w,h,()=>{gl.uniform1i(UL.t,0);gl.uniform2f(UL.px,1/w,1/h);gl.uniform2f(UL.sc,w/R,h/R);gl.uniform2f(UL.ca,CL.ca[0],CL.ca[1]);gl.uniform1f(UL.vg,CL.vg);gl.uniform1f(UL.sig,1);gl.uniform1f(UL.dk,0)});src=texL}
-  const eSh=PROF.v("sh")*(window.CAM?CAM.partNettete():1),eDn=Math.min(1,PROF.v("dn")*(exporting&&mode==="video"?DIRDN:1)),eCs=PROF.v("cs");
+  const eSh=PROF.v("sh")*(window.CAM?CAM.partNettete():1)*(exporting&&mode==="video"?DIRSH:1),eDn=Math.min(1,PROF.v("dn")*(exporting&&mode==="video"?DIRDN:1)),eCs=PROF.v("cs");
   if(show&&!srIn&&!dustOnly&&(eSh>0||eDn>0||eCs>0)){pass(progB,src,tex3,w,h,()=>{gl.uniform1i(UB.t,0);gl.uniform2f(UB.px,1/w,1/h);gl.uniform1f(UB.sh,eSh);gl.uniform1f(UB.dn,eDn);gl.uniform1f(UB.cs,eCs)});src=tex3}
   /* v6.0 caméra virtuelle, 2e temps de l'objectif : le flou, APRÈS le débruitage (sinon le bruit serait accentué) ; pas sur l'image IA, qui a déjà rendu le détail */
   if(CL&&!srIn&&CL.k>.05&&progL){const R=.5*Math.hypot(w,h),dst=src===texL?texL2:texL;
@@ -817,7 +817,7 @@ function btUpdate(){
 function loadFile(f){
   return new Promise(res=>{
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
-  window.__dirplan=null;window.__dirqualite=null;window.__prof=null;window.__dirDnManuel=false;DIRDN=1;try{if(REC)REC.last=null;afficherDirecteur(null)}catch(e){}curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
+  window.__dirplan=null;window.__dirqualite=null;window.__prof=null;window.__dirDnManuel=false;DIRDN=DIRSH=1;try{if(REC)REC.last=null;afficherDirecteur(null)}catch(e){}curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
   msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres","pv","erb","rvb","dfb"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
@@ -1774,7 +1774,7 @@ $("#ex").onclick=async()=>{
   if(REC.pr){window.__exStarting=true;msg("Fin de l’analyse, puis l’export démarre…");REC.stop=true;REC.redo=curFile;try{await Promise.race([REC.pr,new Promise(r=>setTimeout(r,4000))])}catch(e){}finally{window.__exStarting=false;REC.pr=null}}
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
   if(SPD.k()!==1&&!window.__plan&&!window.__baMode)return TR.go(SPD.k());
-  exporting=true;cancel=false;DIRDN=1;window.__dirRendu=null;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
+  exporting=true;cancel=false;DIRDN=DIRSH=1;window.__dirRendu=null;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
   try{const ch=window.__baMode||window.__plan?null:LEARN.record();DIAG.send("export_debut",ch&&Object.keys(ch).length?{ajustements:ch}:{})}catch(e){}
   window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
   $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;$("#dupn").hidden=true;
@@ -1796,7 +1796,7 @@ $("#ex").onclick=async()=>{
       ia:!!SRX.on()
     });
     window.__dirRendu=dirRendu?{actif:dirRendu.actif,raison:dirRendu.raison,
-      imagesAdaptees:0,facteurMin:1,facteurMax:1,amplitude:dirRendu.amplitude}:null;
+      imagesAdaptees:0,facteurMin:1,facteurMax:1,imagesNettete:0,netteteMin:1,amplitude:dirRendu.amplitude}:null;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
     if(!isPlan&&!fast&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
@@ -1951,6 +1951,7 @@ $("#ex").onclick=async()=>{
       if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
       /* Horodatage SOURCE : préserve la cadence, les plans et l'interpolation existants. */
       DIRDN=dirRendu&&dirRendu.actif?DIRECTEUR_RENDU.facteur(dirRendu,(pl.a+.5)/OFPS):1;
+      DIRSH=dirRendu&&dirRendu.actif?DIRECTEUR_RENDU.facteurNettete(dirRendu,(pl.a+.5)/OFPS):1;
       /* Les compteurs ne sont incrémentés qu'après encodage réussi, pas sur les images retentées. */
       /* saut en arrière dans un plan (prolongation) : la lecture séquentielle repart de là */
       if(rdr&&isPlan&&(pl.a<pMax-1||(SRX.remote&&pl.a===pMax-1&&!rdr.peek(pl.a)))){
@@ -2012,6 +2013,9 @@ $("#ex").onclick=async()=>{
       if(window.__dirRendu&&Math.abs(DIRDN-1)>.001){
         const d=window.__dirRendu;d.imagesAdaptees++;d.facteurMin=Math.min(d.facteurMin,DIRDN);d.facteurMax=Math.max(d.facteurMax,DIRDN);
       }
+      if(window.__dirRendu&&Math.abs(DIRSH-1)>.001){
+        const d=window.__dirRendu;d.imagesNettete++;d.netteteMin=Math.min(d.netteteMin,DIRSH);
+      }
       if(!rdr&&qa>=0){go(qa+POOL);if(qb>=0)go(qb+POOL)}
       const t2=performance.now();tD+=t2-t1;
       while(enc.encodeQueueSize>6)await wait(8);
@@ -2047,8 +2051,8 @@ $("#ex").onclick=async()=>{
         msg("Le fichier image par image n’est pas lisible ici (code "+pr+"). Passage à la méthode de secours en temps réel : garde l’écran allumé…");
         /* Le moteur de secours n'est pas synchronisé avec les zones temporelles.
            Revenir au débruitage classique : ne pas attribuer les corrections abandonnées à la sortie. */
-        DIRDN=1;
-        if(window.__dirRendu){Object.assign(window.__dirRendu,{actif:false,raison:"Export de secours non piloté par zones",imagesAdaptees:0,facteurMin:1,facteurMax:1})}
+        DIRDN=DIRSH=1;
+        if(window.__dirRendu){Object.assign(window.__dirRendu,{actif:false,raison:"Export de secours non piloté par zones",imagesAdaptees:0,facteurMin:1,facteurMax:1,imagesNettete:0,netteteMin:1})}
         $("#pg").value=0;outBlob=await realtime();wa=!rtNoSound;
         if(cancel)throw new Error("export annulé.");
       }
@@ -2069,7 +2073,8 @@ $("#ex").onclick=async()=>{
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
       try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)],
         adaptation_temporelle:window.__dirRendu?{actif:window.__dirRendu.actif,raison:window.__dirRendu.raison,
-          images:window.__dirRendu.imagesAdaptees,facteurMin:+window.__dirRendu.facteurMin.toFixed(3),facteurMax:+window.__dirRendu.facteurMax.toFixed(3)}:undefined}))}catch(e){}
+          images:window.__dirRendu.imagesAdaptees,facteurMin:+window.__dirRendu.facteurMin.toFixed(3),facteurMax:+window.__dirRendu.facteurMax.toFixed(3),
+          imagesNettete:window.__dirRendu.imagesNettete,netteteMin:+window.__dirRendu.netteteMin.toFixed(3)}:undefined}))}catch(e){}
       try{DIAG.send("export",{ok:true,codec:cfg.codec,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,...(window.__glN?{gl_reprises:window.__glN}:{}),msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
@@ -2082,7 +2087,7 @@ $("#ex").onclick=async()=>{
     try{DIAG.send("export",{ok:false,err:m.slice(0,300)})}catch(x){}}
   finally{
     if(SRX.remote){try{SRX.remote.fermer()}catch(e){}SRX.remote=null;SRX.idx=-1}
-    window.__plan=null;window.__planK=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;DIRDN=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
+    window.__plan=null;window.__planK=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;DIRDN=DIRSH=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}
     if(window.__retryPending)try{$("#q").dispatchEvent(new Event("change"));document.querySelectorAll("[data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q===$("#q").value?"true":"false"))}catch(e){}
@@ -2811,7 +2816,7 @@ $("#pickp").onclick=()=>$("#fp").click();
 let photoURL=null;
 $("#fp").onchange=e=>{
   if(exporting||window.__exStarting){e.target.value="";msg("Un export est en cours : attends la fin ou touche « Annuler » avant de choisir une photo.");return}
-  const f=e.target.files[0];e.target.value="";if(!f)return;window.__dirplan=null;window.__dirqualite=null;window.__prof=null;window.__dirDnManuel=false;DIRDN=1;try{afficherDirecteur(null)}catch(e){}window.__photoName=f.name;
+  const f=e.target.files[0];e.target.value="";if(!f)return;window.__dirplan=null;window.__dirqualite=null;window.__prof=null;window.__dirDnManuel=false;DIRDN=DIRSH=1;try{afficherDirecteur(null)}catch(e){}window.__photoName=f.name;
   const u=URL.createObjectURL(f),im=new Image();msg("Chargement de la photo…");
   im.onload=()=>{
     const k=Math.min(1,4096/Math.max(im.naturalWidth,im.naturalHeight));
