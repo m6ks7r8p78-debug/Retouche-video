@@ -1952,6 +1952,9 @@ $("#ex").onclick=async()=>{
       /* Horodatage SOURCE : préserve la cadence, les plans et l'interpolation existants. */
       DIRDN=dirRendu&&dirRendu.actif?DIRECTEUR_RENDU.facteur(dirRendu,(pl.a+.5)/OFPS):1;
       DIRSH=dirRendu&&dirRendu.actif?DIRECTEUR_RENDU.facteurNettete(dirRendu,(pl.a+.5)/OFPS):1;
+      /* Une modification manuelle pendant l'export prend effet immédiatement,
+         sans écraser la correction choisie par la personne. */
+      if(PROF.manual||window.__dirDnManuel)DIRDN=DIRSH=1;
       /* Les compteurs ne sont incrémentés qu'après encodage réussi, pas sur les images retentées. */
       /* saut en arrière dans un plan (prolongation) : la lecture séquentielle repart de là */
       if(rdr&&isPlan&&(pl.a<pMax-1||(SRX.remote&&pl.a===pMax-1&&!rdr.peek(pl.a)))){
