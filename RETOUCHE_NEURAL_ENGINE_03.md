@@ -17,7 +17,7 @@ Créer notre propre moteur 2D de super-résolution **x2** et de cohérence tempo
 - Nouveau modèle neuronal **13 684 paramètres**, 11 canaux d'entrée : image courante (RGB3), deux images précédentes recalées par flux optique (RGB3+RGB3), deux cartes de confiance (1+1).
 - Convolutions apprenantes, PixelShuffle, résiduel borné x2 sur l'agrandissement bicubique. Le flux estimé Farneback est évalué **dans les deux sens** pour détecter un alignement incertain et les occultations probables ; repli bicubique quand la confiance est nulle.
 - **Causal** : seules les images passées et l'image actuelle sont utilisées. Réinitialisation approximative en cas de différence importante de plan, protection de zones au pixel près, traitement par tuiles. Pas de nouvelle identité ni de détails originaux garantis.
-- Sortie MP4 réelle : test sur **24 frames entièrement synthétiques**, 128x96 → 256x192, 22 frames avec trois images disponibles. MP4 relu avec succès. L'audio ne peut être annoncé comme conservé que si la source en possède et que FFmpeg réussit le remux.
+- Sortie MP4 réelle : test sur **24 frames entièrement synthétiques**, 128x96 → 256x192, 22 frames avec trois images disponibles. MP4 relu avec succès. Un essai **entièrement synthétique avec piste AAC** a confirmé 24 frames vidéo + piste AAC conservée via le remux FFmpeg ; cela n'établit pas une compatibilité universelle avec tous les codecs.
 - **19 tests** du moteur et **11 tests** des consentements/partitions = **30 nouveaux tests** ; **66/66 tests locaux** de RNE 0.1, 0.2 et 0.3 réussis. La CI GitHub distante est à vérifier.
 
 Code dans `outils/rne/triad.py`, `outils/rne/prepare_triad.py`, `outils/rne/train_triad.py` et les deux nouveaux fichiers `tests/test_rne_triad*.py`. Aucun script public ne connaît les noms ni chemins des médias privés.
@@ -49,10 +49,10 @@ python outils/rne/prepare_triad.py --manifest /DOSSIER_PRIVE/manifest.json --out
 
 python outils/rne/train_triad.py --manifest /DOSSIER_PRIVE/manifest.json --cache-dir /DOSSIER_PRIVE/cache --output /DOSSIER_PRIVE/poids --base-weights /DOSSIER_PRIVE/rne_2x_prive_non_deployable.pt --temporal-weights /DOSSIER_PRIVE/rne_02_temporal_prive.pt --expected-count 157 --steps 600 --batch 8 --authorized-private-training
 
-python outils/rne/triad.py entree.mp4 sortie.mp4
+python outils/rne/triad.py entree.mp4 sortie_2x.mp4 --weights /DOSSIER_PRIVE/rne03_triframe_private.pt
 ```
 
-**Attention** : pour le rendu réel, `triad.py` expose actuellement la fonction Python `render_video(source,destination,weights,max_frames=...)` ; la dernière commande est **illustrative**, pas encore un CLI prêt à l'emploi. Depuis un environnement Python, utiliser :
+**Le CLI local est exécutable** avec `--weights` (obligatoire pour éviter un rendu IA aléatoire). Depuis un environnement Python, la même fonction est disponible :
 ```py
 from triad import render_video
 render_video('entree.mp4','sortie_2x.mp4','/DOSSIER_PRIVE/rne03_triframe_private.pt')
