@@ -151,7 +151,11 @@ try {
     assert.equal(result.adapt?.actif,true);
     assert.ok(result.adapt.imagesAdaptees>5,"no frames used the adaptive denoiser");
     assert.ok(Math.abs(result.adapt.facteurMax-1)>.003||Math.abs(result.adapt.facteurMin-1)>.003);
+    assert.ok(result.adapt.netteteMin>=.84&&result.adapt.netteteMin<=1,"dangerous sharpening coefficient");
+    assert.ok(result.adapt.imagesNettete>5,"temporal sharpness protection not used on noisy segment");
+    assert.ok(result.adapt.netteteMin<1,"no measurable reduction of sharpening");
     assert.match(result.recipe,/adaptation_temporelle/);
+    assert.match(result.recipe,/netteteMin/);
     await page.evaluate(()=>{const a=document.querySelector("#r_dn");a.value=".25";a.dispatchEvent(new Event("input"))});
     assert.equal(await page.evaluate(()=>window.__dirDnManuel),true);
   });
