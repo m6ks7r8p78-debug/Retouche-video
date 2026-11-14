@@ -1,4 +1,4 @@
-/* RetoucheProAI — Adaptation temporelle de débruitage v0.4.
+/* RetoucheProAI — Adaptation temporelle de débruitage et protection des textures v0.6.
  * S'applique uniquement au pipeline vidéo classique, pendant l'export.
  * Aucune seconde analyse ni allocation par image : un facteur scalaire par frame.
  * Ne modifie jamais les réglages P.dn, les profils, les pixels source ni les modules IA.
@@ -17,32 +17,42 @@ var DIRECTEUR_RENDU=(()=>{
     if(!zonage||!Array.isArray(zonage.zones)||zonage.zones.length<2)
       return neutre("Variations locales insuffisantes");
     const zones=zonage.zones.map(z=>{
-      const debut=z&&z.debut,fin=z&&z.fin,noise=z&&z.mesures&&z.mesures.noise;
-      if(!bon(debut)||!bon(fin)||fin<=debut||!bon(noise)||noise<0) return null;
+      const debut=z&&z.debut,fin=z&&z.fin,m=z&&z.mesures,noise=m&&m.noise;
+      if(!bon(debut)||debut<0||!bon(fin)||fin<=debut||!bon(noise)||noise<0) return null;
       let facteur=1;
       const fiable=z.echantillons>=2&&z.confiance==="limitee"&&fin-debut>=.5;
+      // Une forte netteté et une dynamique étendue peuvent signaler du détail
+      // naturel plutôt qu'un bruit aléatoire : atténuer les interventions.
+      // Ce garde-fou n'est pas un classificateur sémantique de texture.
+      const dynamique=m&&bon(m.p2)&&bon(m.p98)?m.p98-m.p2:null;
+      const textureProtegee=bon(m&&m.sharp)&&m.sharp>=55&&bon(dynamique)&&dynamique>=.45;
+      const prudence=textureProtegee?.25:1;
       // Moins de débruitage si un passage est propre, surtout pour conserver les textures.
       if(fiable&&noise<=1.5&&bruitGlobal-noise>=.65)
         facteur=1-borne(.045*(bruitGlobal-noise-.3),0,.22);
       // Renforcement modeste uniquement si une zone est réellement plus bruitée.
       else if(fiable&&noise>=3&&noise-bruitGlobal>=.8)
-        facteur=1+borne(.025*(noise-bruitGlobal-.4),0,.10);
+        facteur=1+borne(.025*(noise-bruitGlobal-.4),0,.10)*prudence;
       // Ne jamais accentuer une zone bruitée : on réduit modestement l'accentuation
       // existante au lieu de créer des détails. Les zones propres restent inchangées.
       const nettete=fiable&&noise>=3&&noise-bruitGlobal>=.8
-        ? 1-borne(.035*(noise-bruitGlobal-.3),0,.16) : 1;
+        ? 1-borne(.035*(noise-bruitGlobal-.3),0,.16)*prudence : 1;
       return {debut,fin,bruit:+noise.toFixed(3),echantillons:z.echantillons,
-        confiance:z.confiance,facteur:+facteur.toFixed(4),nettete:+nettete.toFixed(4)};
+        confiance:z.confiance,textureProtegee,facteur:+facteur.toFixed(4),nettete:+nettete.toFixed(4)};
     });
     if(zones.some(z=>!z))return neutre("Données temporelles incomplètes");
     for(let i=1;i<zones.length;i++)
-      if(zones[i].debut<zones[i-1].debut||zones[i].fin<zones[i-1].fin)
-        return neutre("Zones temporelles non ordonnées");
+      if(zones[i].debut<zones[i-1].debut||zones[i].fin<zones[i-1].fin||
+        Math.abs(zones[i].debut-zones[i-1].fin)>.005)
+        return neutre("Zones temporelles disjointes ou superposées");
+    if(bon(zonage.duree) && (Math.abs(zones[0].debut)>.005||
+      Math.abs(zones[zones.length-1].fin-zonage.duree)>.005))
+      return neutre("Zones temporelles incomplètes pour la durée annoncée");
     const amplitudeBruit=Math.max(...zones.map(z=>Math.abs(z.facteur-1))),
       amplitudeNettete=Math.max(...zones.map(z=>Math.abs(z.nettete-1)));
     const amplitude=Math.max(amplitudeBruit,amplitudeNettete);
     if(amplitude<.005)return neutre("Différences locales trop faibles pour intervenir");
-    return {version:2,actif:true,raison:"Bruit et accentuation de netteté adaptés avec retenue sur les zones suffisamment mesurées",
+    return {version:2,actif:true,raison:"Débruitage et netteté adaptés avec prudence aux zones mesurées, en protégeant les textures probables",
       zones,amplitude:+amplitude.toFixed(4),
       amplitudeBruit:+amplitudeBruit.toFixed(4),amplitudeNettete:+amplitudeNettete.toFixed(4),transition:.35,
       limite:"Adaptation expérimentale : baisse légère de netteté dans le bruit, jamais de hausse ni de détails inventés ; comparer le rendu aux originaux"};

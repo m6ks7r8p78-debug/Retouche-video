@@ -98,3 +98,33 @@ test("old/incomplete plans never generate NaN shader coefficients",()=>{
   assert.ok(Number.isFinite(x)&&x>=.84&&x<=1);
  }
 });
+
+test("zone riche en détails : protection conservatrice du grain, sans classifier une texture",()=>{
+ const plat={zones:[z(0,5,.7),z(5,10,4.5)]};
+ const texture={zones:[z(0,5,.7),{...z(5,10,4.5),mesures:{noise:4.5,sharp:85,p2:.02,p98:.94}}]};
+ const a=R.preparer({zonage:plat,bruitGlobal:2.5,activer:true});
+ const b=R.preparer({zonage:texture,bruitGlobal:2.5,activer:true});
+ assert.equal(a.actif,true);assert.equal(b.actif,true);
+ assert.equal(a.zones[1].textureProtegee,false);
+ assert.equal(b.zones[1].textureProtegee,true);
+ assert.ok(R.facteur(b,8)>1 && R.facteur(b,8)<R.facteur(a,8));
+ assert.ok(R.facteurNettete(b,8)<1 && R.facteurNettete(b,8)>R.facteurNettete(a,8));
+ assert.equal(R.facteur(b,2),R.facteur(a,2));
+});
+test("zones mal jointes : aucun saut de filtre aux trous ou aux recouvrements",()=>{
+ for(const bornes of [[0,5,4.5,10],[0,5,5.5,10],[0,5,5.006,10]]) {
+  const p=R.preparer({zonage:{zones:[z(bornes[0],bornes[1],.7),z(bornes[2],bornes[3],4.5)]},
+    bruitGlobal:2.5,activer:true});
+  assert.equal(p.actif,false);assert.equal(R.facteur(p,5),1);assert.equal(R.facteurNettete(p,5),1);
+ }
+});
+test("durée réelle incohérente ou bornes négatives : repli neutre",()=>{
+ for(const zng of [
+  {duree:12,zones:[z(0,5,.7),z(5,10,4.5)]},
+  {duree:10,zones:[z(.1,5,.7),z(5,10,4.5)]},
+  {duree:10,zones:[z(-1,5,.7),z(5,10,4.5)]}
+ ]) {
+  const p=R.preparer({zonage:zng,bruitGlobal:2.5,activer:true});
+  assert.equal(p.actif,false);assert.equal(R.facteur(p,8),1);
+ }
+});
