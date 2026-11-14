@@ -38,15 +38,16 @@
     "RNE06: entraînement expérimental sur 308 triplets historiques, 260 steps x2, réduction faible des erreurs temporelles mais PSNR/contours en recul; 29 vidéos du lot réutilisé confirment l'absence de promotion. 16 tests nouveaux PASS.",
     "RNE07: 157 archives SHA vérifiées, 154 uniques, 308 triplets, 2 bras de 120 étapes, 4 dégradations dont vrai H264 en mémoire. +0,02433 dB sur H264 mais -0,03306 dB sur sources propres; candidat bloqué, 30 tests locaux verts, aucune des 41 vidéos de test utilisée pour l'apprentissage.",
     "RNE08: 19 signaux de qualité sans vérité de référence à l'inférence ; validation 616 exemples historiques, +0,16442 dB vs +0,20554 RNE04, 3 pertes graves restent; 29 tests initiaux + 18 audits de rareté PASS; sélecteur non promu.",
-    "RNE09: 246 historic synthetic stress cases, photometric attenuation rejected; stricter confidence-invariant gate refused 164/164 deliberately mismatched histories while preserving 82/82 valid examples. 23 new tests PASS; not deployable."
+    "RNE09: 246 historic synthetic stress cases, photometric attenuation rejected; stricter confidence-invariant gate refused 164/164 deliberately mismatched histories while preserving 82/82 valid examples. 23 new tests PASS; not deployable.",
+    "RNE10: 328 stress essais sur anciens groupes; RNE09 laisse passer 164/164 faux alignements sous confiance recalculée malgré 20/41 pertes graves sur LR propre 1px. Garde-fou causal de provenance de sessions, 27 tests synthétiques PASS, aucune promotion."
   ],
   "prochaines_etapes": [
-    "Conserver RNE04 comme reference experimentale, RNE08 et RNE09 non promus; garder le bicubique par defaut.",
-    "Maintenir les 41 nouveaux medias en reserve et hors entrainement; ne pas les utiliser pour calibrer les seuils RNE09.",
-    "Valider le garde-fou sur de vraies ruptures de scenes, occlusions, flux incorrects et alignements naturels inedits, et sur d'autres modes de degradation.",
-    "Vérifier la fidélité faciale et les paires originals/filtrées, sans supposer qu'une forte confiance photométrique prouve une vraie reconstruction.",
-    "Valider Safari iPhone reel (latence, mémoire, export). Aucun deploiement automatique.",
-    "Verifier les GitHub Actions pour le dernier HEAD, sans fusion main ni partage de media/poids privé."
+    "Ne pas confondre bonne concordance photométrique et mouvement géométrique correct. RNE09 reste insuffisant pour déploiement malgré les premiers 164 refus.",
+    "Conserver les 41 vidéos récentes en réserve hors entraînement et exclues des expérimentations internes RNE09/RNE10.",
+    "Faire valider des anomalies de flux optique réellement observées sur des scènes originales jamais utilisées dans l'optimisation, avec métriques PSNR, mouvement et textures.",
+    "Examiner des méthodes de double validation flow avant/arrière, occlusions et cohérence des zones répétitives sur sources historiques avant un nouveau holdout indépendant.",
+    "Mettre RNE10 en laboratoire uniquement, ne pas brancher au moteur du site sans tests de conformité, flux de consentement et Safari iPhone.",
+    "Vérifier exécution CI Github; conserver RNE0.4 comme référence, bicubique comme fallback et main inchangée."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -57,14 +58,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
     "objets": [
-      "outils/rne/rne09/confidence_invariant.py",
-      "tests/test_rne09_confidence_invariant.py",
-      "RETOUCHE_NEURAL_ENGINE_09.md",
+      "outils/rne/rne10/causal_session_guard.py",
+      "tests/test_rne10_causal_session_guard.py",
+      "RETOUCHE_NEURAL_ENGINE_10.md",
       ".github/workflows/rne-cpu.yml"
     ],
+    "preuve_locale": "328 reconstructions historico-synthetiques avec RNE04 gelé et 27/27 tests unitaires synthétiques RNE10 réussis",
     "statut_ci": "a_verifier",
-    "preuve_locale": "23 RNE09 tests + 22 premiere ablation + 47 RNE08 tests pass locally; 246 historical stress cases on frozen RNE04",
-    "observations": "Private archive contains no media or personal weights; no deployment."
+    "observations": "Pas de média/poids sur GitHub, pas de nouveau contenu partagé, RNE10 laboratoire uniquement."
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1145,6 +1146,72 @@
     },
     "quality_gate": "BLOCKED for production; only opt-in laboratory preview; no iPhone validation; no authentic scene-cut generalization",
     "site_deployed": false,
+    "main_merged": false,
+    "NVIDIA_DLSS5_used": false
+  },
+  "jalon_neural_engine_10": {
+    "date": "2026-11-14",
+    "phase": "audit d'angle mort + couche de provenance temporelle",
+    "status": "research_only; no model training or promotion",
+    "historic_source": {
+      "files": 157,
+      "distinct": 154,
+      "old_scene_groups_examined": 41,
+      "model_previously_saw_these_scenes": true
+    },
+    "reserved_recent_corpus": {
+      "uploads": 41,
+      "used_for_training": false,
+      "used_for_this_evaluation": false,
+      "untouched": true
+    },
+    "bench": {
+      "comparisons": 328,
+      "modes": [
+        "clean_area",
+        "h264_crf34"
+      ],
+      "alterations": [
+        "unaltered",
+        "1px shifted with trust recomputed to photometric cap",
+        "2px shifted with trust recomputed",
+        "2px shifted with stale trust"
+      ],
+      "synthetic_motion_errors": true,
+      "real_optical_flow_recomputed_for_stress": false,
+      "weights_frozen": true,
+      "clean_unaltered_psnr_gain_db": 0.37483,
+      "clean_1px_recomputed_psnr_gain_db": -0.52406,
+      "clean_2px_recomputed_psnr_gain_db": -0.53531,
+      "clean_1px_recomputed_severe_regressions": 20,
+      "clean_2px_recomputed_severe_regressions": 19,
+      "h264_unaltered_psnr_gain_db": 0.0987,
+      "h264_1px_recomputed_psnr_gain_db": -0.00347,
+      "h264_2px_recomputed_psnr_gain_db": -0.04682,
+      "stale_confidence_refusals": 82,
+      "stale_total": 82,
+      "recomputed_confidence_refusals": 0,
+      "recomputed_total": 164,
+      "clean_1px_delta_vs_original_db": -0.89889,
+      "clean_1px_delta_bootstrap_group95_db": [
+        -1.115,
+        -0.73562
+      ],
+      "main_limitation": "A photometric invariant is insufficient evidence of geometric motion correctness."
+    },
+    "architecture": "A research-only session guard receives raw BGR frames + sequential index + ephemeral per-video token, rebuilds alignment and trust from raw images, falls back on cut/stream switch/drop/errors/no consent. Does not certify optical flow geometry.",
+    "code_public": [
+      "outils/rne/rne10/causal_session_guard.py",
+      "tests/test_rne10_causal_session_guard.py",
+      "RETOUCHE_NEURAL_ENGINE_10.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "local_tests": "27/27 synthetic unit tests pass",
+    "private_archive": "RetoucheProAI_RNE10_Protection_Alignement_Prive.zip",
+    "quality_gate": "BLOCKED: synthetic perturbation on old training scenes, natural tracking faults untested; unverified iPhone Safari and true AR before/after",
+    "ci_remote": "pending/unverified",
+    "media_or_private_weights_published": false,
+    "production_deployed": false,
     "main_merged": false,
     "NVIDIA_DLSS5_used": false
   }
