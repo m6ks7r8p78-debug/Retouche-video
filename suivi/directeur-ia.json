@@ -39,15 +39,16 @@
     "RNE07: 157 archives SHA vérifiées, 154 uniques, 308 triplets, 2 bras de 120 étapes, 4 dégradations dont vrai H264 en mémoire. +0,02433 dB sur H264 mais -0,03306 dB sur sources propres; candidat bloqué, 30 tests locaux verts, aucune des 41 vidéos de test utilisée pour l'apprentissage.",
     "RNE08: 19 signaux de qualité sans vérité de référence à l'inférence ; validation 616 exemples historiques, +0,16442 dB vs +0,20554 RNE04, 3 pertes graves restent; 29 tests initiaux + 18 audits de rareté PASS; sélecteur non promu.",
     "RNE09: 246 historic synthetic stress cases, photometric attenuation rejected; stricter confidence-invariant gate refused 164/164 deliberately mismatched histories while preserving 82/82 valid examples. 23 new tests PASS; not deployable.",
-    "RNE10: 328 stress essais sur anciens groupes; RNE09 laisse passer 164/164 faux alignements sous confiance recalculée malgré 20/41 pertes graves sur LR propre 1px. Garde-fou causal de provenance de sessions, 27 tests synthétiques PASS, aucune promotion."
+    "RNE10: 328 stress essais sur anciens groupes; RNE09 laisse passer 164/164 faux alignements sous confiance recalculée malgré 20/41 pertes graves sur LR propre 1px. Garde-fou causal de provenance de sessions, 27 tests synthétiques PASS, aucune promotion.",
+    "RNE11: recherche Reddit/OpenCV, capteur indépendant Lucas-Kanade vs Farneback, 23 tests synthétiques locaux PASS, 41 paires historiques de calibration. 1px de décalage synthétique détecté après réglage du seuil sur le même lot (résultats post-hoc, non indépendants). Non déployé."
   ],
   "prochaines_etapes": [
-    "Ne pas confondre bonne concordance photométrique et mouvement géométrique correct. RNE09 reste insuffisant pour déploiement malgré les premiers 164 refus.",
-    "Conserver les 41 vidéos récentes en réserve hors entraînement et exclues des expérimentations internes RNE09/RNE10.",
-    "Faire valider des anomalies de flux optique réellement observées sur des scènes originales jamais utilisées dans l'optimisation, avec métriques PSNR, mouvement et textures.",
-    "Examiner des méthodes de double validation flow avant/arrière, occlusions et cohérence des zones répétitives sur sources historiques avant un nouveau holdout indépendant.",
-    "Mettre RNE10 en laboratoire uniquement, ne pas brancher au moteur du site sans tests de conformité, flux de consentement et Safari iPhone.",
-    "Vérifier exécution CI Github; conserver RNE0.4 comme référence, bicubique comme fallback et main inchangée."
+    "Ne pas promouvoir RNE11 à partir des seules 41 paires historiques de calibration; conserver le seuil 0.75 px comme hypothèse de recherche, pas comme critère de qualité certifié.",
+    "Créer un nouveau contrôle de suivi du mouvement sur véritables occultations et scènes rapides avec données de vérité, pour mesurer fausses alertes et erreurs manquées.",
+    "Réutiliser le dense Farneback déjà produit par triad.alignment (ne pas recalculer un flux coûteux en plus), sans fusionner le changement de contrat d'API avant validation.",
+    "Réserver toujours les 41 vidéos récentes hors des entraînements et de la calibration de seuils, maintenir provenance/consentement et aucune publication.",
+    "Réévaluer l'ordre prétraitement/décompression puis upscale et la protection locale des petits visages, uniquement avec validations non destructives et références dignes de confiance.",
+    "Tester la mémoire et latence sur vrai iPhone Safari avant d'autoriser un pipeline automisé; RNE04 reste moteur de recherche principal, bicubique repli."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -58,14 +59,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
     "objets": [
-      "outils/rne/rne10/causal_session_guard.py",
-      "tests/test_rne10_causal_session_guard.py",
-      "RETOUCHE_NEURAL_ENGINE_10.md",
+      "outils/rne/rne11/sparse_motion_audit.py",
+      "tests/test_rne11_sparse_motion_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_11.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "328 reconstructions historico-synthetiques avec RNE04 gelé et 27/27 tests unitaires synthétiques RNE10 réussis",
+    "preuve_locale": "23/23 tests de suivi de points et abstention, 41 paires historiques de calibration sur 5 perturbations artificielles, benchmark CPU à trois tailles",
     "statut_ci": "a_verifier",
-    "observations": "Pas de média/poids sur GitHub, pas de nouveau contenu partagé, RNE10 laboratoire uniquement."
+    "observations": "CI remote à confirmer, aucune image/vidéo/poids/nom privé publiés."
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1214,5 +1215,89 @@
     "production_deployed": false,
     "main_merged": false,
     "NVIDIA_DLSS5_used": false
+  },
+  "jalon_neural_engine_11": {
+    "date": "2026-11-14",
+    "status": "independent sparse vs dense optical-flow sensor built, tested, NOT DEPLOYED",
+    "research_sources": [
+      "r/computervision tracking distributed keypoints (reddit.com/r/computervision/comments/1o222hi)",
+      "r/TopazLabs small face distortions (reddit.com/r/TopazLabs/comments/1ip8bit)",
+      "r/upscaling restoration before upscale (reddit.com/r/upscaling/comments/1ruxr5x)",
+      "r/StableDiffusion temporal flicker per-frame (reddit.com/r/StableDiffusion/comments/1kov1dl)",
+      "OpenCV forward-back optical-flow consistency (docs.opencv.org/5.0/extra_modules/optflow.html)"
+    ],
+    "source_note": "4chan /g/ searched; no trustworthy source was retained. Forum statements are suggestions, not RNE measurements.",
+    "existing_code_finding": "outils/rne/triad.py already computes forward and backward Farneback, photometric error and edge validity; new sensor crosschecks with sparse Lucas-Kanade rather than duplicating forward/back.",
+    "detector": {
+      "module": "outils/rne/rne11/sparse_motion_audit.py",
+      "type": "grid-based Shi-Tomasi corners and sparse LK forward-backward cycle, compare to dense Farneback from current to prior",
+      "grid": "4x4",
+      "min_valid_tracks": 12,
+      "min_cells": 4,
+      "abstain_default": true,
+      "posthoc_median_disagreement_threshold_px": 0.75,
+      "provisional_only": true,
+      "not_connected_to_render": true
+    },
+    "historical_experiment": {
+      "historic_video_files_available": 157,
+      "pairs_sampled": 41,
+      "recent_41_videos_accessed": false,
+      "training": false,
+      "modified_neural_weights": false,
+      "frames_saved": false,
+      "sensitivity_cases_41_each": {
+        "nominal": {
+          "provisional_agreement": 41,
+          "disagreement": 0
+        },
+        "synthetic_offset_0_5px": {
+          "provisional_agreement": 41,
+          "disagreement": 0
+        },
+        "synthetic_offset_1px": {
+          "provisional_agreement": 0,
+          "disagreement": 41
+        },
+        "synthetic_offset_2px": {
+          "provisional_agreement": 0,
+          "disagreement": 41
+        },
+        "synthetic_offset_5px": {
+          "provisional_agreement": 0,
+          "disagreement": 41
+        }
+      },
+      "warning": "Threshold selected after observing this historic data; results NOT independent validation; artificial flow corruption not natural optical-flow errors."
+    },
+    "cpu_local_median_five_passes_ms": {
+      "square192": {
+        "reusing_dense": 2.32,
+        "recomputing_dense": 9.4
+      },
+      "width640_height360": {
+        "reusing_dense": 4.36,
+        "recomputing_dense": 57.39
+      },
+      "width1280_height720": {
+        "reusing_dense": 12.61,
+        "recomputing_dense": 224.57
+      }
+    },
+    "tests": "23/23 synthetic tests PASS locally; GitHub Actions remote not confirmed",
+    "files": [
+      "outils/rne/rne11/sparse_motion_audit.py",
+      "tests/test_rne11_sparse_motion_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_11.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE11_Recherche_Forums_Mouvement_Prive.zip",
+    "no_private_media_in_archive": true,
+    "no_private_media_published": true,
+    "holdout_41_used": false,
+    "model_promotion": false,
+    "website_deployed": false,
+    "main_merged": false,
+    "iphone_safari_validated": false
   }
 }
