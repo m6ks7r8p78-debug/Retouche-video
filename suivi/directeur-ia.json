@@ -27,15 +27,16 @@
     "RNE 0.1 maison : moteur neuronal 2x trainable avec 13 692 paramètres, causal video et sortie MP4 audio tentative, 17 tests synthetiques CPU; 900 steps privés sur 12 clips, 4 validation, 5 test; gain moyen +0,0958 dB (modeste) vs bicubique, hors application et non deployable.",
     "RNE 0.2: réseau temporel causal 2 frames 9244 paramètres entraîné 600 étapes; tests locaux 36/36; +0,27784 dB vs RNE 0.1 sur 4 vidéos nouvelles, mais -0,20973 dB vs bicubique ; prototype rejeté pour activation.",
     "RNE 0.3 : 157/157 vidéos privées retrouvées et vérifiées par SHA, 284 triplets sur 37 groupes, apprentissage 127 vidéos / validation 12 / test 18; 600 étapes ; PSNR test +0,432 dB vs bicubique et +0,428 dB vs RNE 0.2; 66 tests locaux réussis, 5 régressions importantes donc non activé.",
-    "RNE 0.3+ maison : corpus 157 SHA valides, 154 contenus uniques, 919 triplets non redondants / 37 groupes, 420 étapes supplémentaires équilibrées, 80 tests locaux RNE; gain in-sample +0,0579 dB seulement, 3 regressions > 0,5 dB; non déployable."
+    "RNE 0.3+ maison : corpus 157 SHA valides, 154 contenus uniques, 919 triplets non redondants / 37 groupes, 420 étapes supplémentaires équilibrées, 80 tests locaux RNE; gain in-sample +0,0579 dB seulement, 3 regressions > 0,5 dB; non déployable.",
+    "QA temporelle sur mouvements naturels : 37 groupes et 333 images filmées, 296 transitions; RNE03+ légèrement moins stable que bicubique; prototype de lissage résiduel et garde-fou, 26 nouveaux tests locaux, aucun déploiement."
   ],
   "prochaines_etapes": [
-    "Valider le nouveau workflow CI RNE et les jobs du Directeur IA sur le dernier HEAD, ne jamais annoncer un succes GitHub sans preuve.",
-    "Acquérir avec consentement de nouvelles vidéos de scènes véritablement indépendantes (aucune vidéo vierge parmi les 157 après leur inclusion dans RNE 0.3) pour une validation réelle.",
-    "RNE 0.4: plus de diversité temporelle et entraînement sur séquences naturelles avec contrôles anti-hallucination, visages, mouvement et temporalité, et conservation du mode classique en repli.",
-    "Mesurer latence, mémoire, export et qualité visuelle sur iPhone Safari réel avant toute intégration; privilégier une preview opt-in et le maintien original.",
-    "Conserver priorité retrait de filtres AR, annotations de masques vrais vérifiés, faible taux de faux positifs.",
-    "Continuer neural rendering 2D indépendant inspiré d'objectifs similaires DLSS 5; aucun SDK NVIDIA DLSS 5 et aucune équivalence de performances affirmée."
+    "Vérifier job GitHub Actions RNE CPU et jobs Directeur IA sur HEAD actuel; aucun succès distant revendiqué sans observation.",
+    "Créer une nouvelle validation réellement inédite indépendante des 157 clips (et anciens jeux de tests), comprenant mouvements, lumière, petits détails et éventuellement références authentiques.",
+    "Étudier pertes temporelles et masques d'occultation sous supervision, sans optimiser exclusivement le scintillement (risque de gommage de détails).",
+    "Ajouter évaluation de fidélité des visages et géométrie avec annotations appropriées et masque protecteur ; aujourd'hui aucune identification automatique validée.",
+    "Mesurer sur véritable iPhone Safari les temps, consommation mémoire et robustesse ; garder le bac RNE Python hors application.",
+    "Poursuivre le laboratoire de vrais filtres AR avec masques humains corrigés ; aucune publication de médias/poids personnalisés, aucune fusion automatique."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -45,19 +46,18 @@
   },
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
-    "objet": "RNE 0.3+ diversity and fidelity safeguards",
     "objets": [
-      "outils/rne/expanded_sampler.py",
-      "outils/rne/balanced_finetune.py",
-      "outils/rne/quality_gate.py",
-      "tests/test_rne_expanded_sampler.py",
-      "tests/test_rne_quality_gate.py",
-      "RETOUCHE_NEURAL_ENGINE_03_PLUS.md",
+      "outils/rne/temporal_safety.py",
+      "outils/rne/residual_temporal.py",
+      "outils/rne/bench_natural_motion.py",
+      "tests/test_rne_temporal_safety.py",
+      "tests/test_rne_residual_temporal.py",
+      "RETOUCHE_NEURAL_ENGINE_QA_TEMPORELLE.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "80/80 tests Python RNE reussis sur medias synthetiques, 919 triplets prives issus de 154 contenus uniques, entrainement 420 steps, MP4 synthetique 24 frames audio confirme",
-    "statut_ci": "to_verify_rne_workflow",
-    "observations": "aucun groupe vierge dans le corpus 157, aucune activation ou poids prives sur GitHub"
+    "preuve_locale": "80 tests RNE existants et 26 nouveaux tests temporels exécutés localement avec succès; audit privé 37 groupes 333 images",
+    "statut_ci": "a_verifier_pour_HEAD",
+    "observations": "pas de médias privés ou poids sur GitHub; blocage de déploiement préservé"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -429,5 +429,54 @@
     ],
     "deploy": false,
     "merge": false
+  },
+  "jalon_rne03_plus_qa_temporelle": {
+    "date": "2026-11-14",
+    "etat": "mesure_privee_sur_mouvements_filmés; code_de_prototype, sans activation",
+    "statut_ci": "a_verifier_pour_nouveau_HEAD",
+    "corpus": {
+      "videos_catalogue": 157,
+      "groupes_representants": 37,
+      "images_reelles_decodees": 333,
+      "transitions_utilisables": 296,
+      "groupes_jamais_vus": 0,
+      "limite": "neuf images naturelles autour de 18% de chaque clip representant; les 157 videos ont deja participe a l'apprentissage"
+    },
+    "mesures": {
+      "mae_mediane_par_groupe_bicubique": 1.3819,
+      "mae_RNE03_checkpoint_tout157": 1.44168,
+      "mae_RNE03plus_919_triplets": 1.41158,
+      "mae_RNE03plus_detail_lisse_025": 1.41094,
+      "segments_bloques_avant_lissage": 24,
+      "segments_bloques_apres_lissage": 20,
+      "transitions_a_risque_apres_lissage": 27,
+      "seuil": "regle exploratoire non calibrée humainement, >max(0.2 RGB/255, 3% de la référence bicubique), coupe, mediane; jamais interpréter comme taux d'erreur perceptuelle"
+    },
+    "strategie": {
+      "correction": "déplacement optique arrière entre frames réelles, stabilisation d'un quart du seul résidu RNE−bicubique, sans accumulation des corrections",
+      "protection": "masque utilisateur explicite protège au pixel près la zone à ne pas modifier, aucune détection automatique de visages",
+      "preview": "uniquement revue manuelle de laboratoire sur segment sans alerte",
+      "deploiement": false
+    },
+    "fichiers_publics": [
+      "outils/rne/temporal_safety.py",
+      "outils/rne/residual_temporal.py",
+      "outils/rne/bench_natural_motion.py",
+      "tests/test_rne_temporal_safety.py",
+      "tests/test_rne_residual_temporal.py",
+      "RETOUCHE_NEURAL_ENGINE_QA_TEMPORELLE.md"
+    ],
+    "tests_locaux": {
+      "precedents_RNE": 80,
+      "nouveaux": 26,
+      "tous_reussis_separement": true
+    },
+    "archive_privee": "RetoucheNeuralEngine_RNE03plus_QA_Temporelle_prive_2026-11-14.zip",
+    "aucune_video_ou_image_personnelle_publiee": true,
+    "poids_prives_non_commites": true,
+    "sdk_NVIDIA_DLSS5_utilise": false,
+    "fidelite_visage_validee": false,
+    "iPhone_safari_valide": false,
+    "prochaine_priorite": "réseau de cohérence temporelle vraiment entraîné et jeux totalement neufs, évaluation visage/texture, scènes de mouvement et mémoire iPhone"
   }
 }
