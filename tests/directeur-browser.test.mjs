@@ -156,6 +156,32 @@ try {
     assert.ok(result.adapt.netteteMin<1,"no measurable reduction of sharpening");
     assert.match(result.recipe,/adaptation_temporelle/);
     assert.match(result.recipe,/netteteMin/);
+    /* Banc de vérification end-to-end : un second export neutralise le Directeur
+       avec les mêmes réglages. On compare les images *décodées*, pas les compteurs.
+       Aucune conclusion sur le réalisme d'une vraie vidéo n'est tirée ici. */
+    const enFichier=async nom=>{
+      const b64=await page.evaluate(async()=>{
+        const a=new Uint8Array(await outBlob.arrayBuffer());let bytes="";
+        for(let i=0;i<a.length;i+=32768)bytes+=String.fromCharCode(...a.subarray(i,i+32768));
+        return btoa(bytes);
+      });
+      const p=path.join(work,nom);fs.writeFileSync(p,Buffer.from(b64,"base64"));return p;
+    };
+    const adaptFile=await enFichier("video_adaptee.mp4");
+    await page.evaluate(()=>{window.__dirDnManuel=true});
+    await page.locator("#ex").click();
+    await page.waitForFunction(()=>!exporting&&/Terminé|Échec|Impossible/.test(document.querySelector("#st1").textContent),null,{timeout:180000});
+    const sans=await page.evaluate(()=>({st:document.querySelector("#st1").textContent,actif:window.__dirRendu?.actif}));
+    assert.match(sans.st,/Terminé/);assert.equal(sans.actif,false,"manual override must disable adaptation");
+    const baseFile=await enFichier("video_sans_adaptation.mp4");
+    const empreintes=file=>execFileSync("ffmpeg",["-hide_banner","-loglevel","error","-i",file,"-f","framemd5","-"],
+      {timeout:30000}).toString().split("\n").filter(l=>l&&!l.startsWith("#")).map(l=>l.trim().split(",").pop().trim());
+    const x=empreintes(adaptFile),y=empreintes(baseFile);
+    assert.equal(x.length,y.length,"number of decoded video frames changed");
+    const change=x.filter((h,i)=>h!==y[i]).length;
+    console.log("Comparaison adaptatif/global : "+change+"/"+x.length+" images décodées différentes (mesure technique, pas score esthétique)");
+    assert.ok(change>=3,"adaptive shader changes had no observable impact on decoded output");
+    assert.ok(x.length>=60,"video frame sequence unexpectedly short");
     await page.evaluate(()=>{const a=document.querySelector("#r_dn");a.value=".25";a.dispatchEvent(new Event("input"))});
     assert.equal(await page.evaluate(()=>window.__dirDnManuel),true);
   });
