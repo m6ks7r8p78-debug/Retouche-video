@@ -79,3 +79,18 @@ test('seuils REC conservés: bruit modéré et scintillement ne sont pas écart�
  assert.ok(ids(p).includes('debruitage'));
  assert.ok(ids(p).includes('scintillement'));
 });
+
+test('sortie origine: conserver la résolution source, même en 4K sur mobile',()=>{
+ const p=D.planifier({type:'video',w:3840,h:2160,mesures:{noise:.3},appareil:{mobile:true},choix:{longueur:'origine',mode:'reconstruction',autoriserGeneration:true}});
+ assert.equal(p.sortie.souhaite,3840);
+ assert.equal(p.sortie.propose,3840);
+ assert.equal(p.sortie.facteur,1);
+ assert.equal(p.sortie.limite,null);
+ assert.ok(!ids(p).includes('resolution'));
+});
+test('sortie origine: ne pas inventer de super-résolution pour une photo 8K',()=>{
+ const p=D.planifier({type:'photo',w:7680,h:4320,mesures:{noise:.2},choix:{longueur:'origine',mode:'reconstruction',autoriserGeneration:true}});
+ assert.equal(p.sortie.propose,7680);
+ assert.equal(p.sortie.facteur,1);
+ assert.ok(!ids(p).includes('resolution'));
+});
