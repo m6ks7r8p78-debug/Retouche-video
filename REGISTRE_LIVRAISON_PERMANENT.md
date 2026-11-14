@@ -12,7 +12,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 
 ---
 
-## Tableau de bord (à jour : v7.6, 12/11/2026)
+## Tableau de bord (à jour : v8.0, 14/11/2026)
 
 | | Fonctions |
 |---|---|
@@ -311,6 +311,10 @@ Statut : REMPLACÉ par F31 en v7.2 (ancien : INTÉGRÉ NON VALIDÉ).
 - **Mesures (Chromium sans carte graphique, machine de test)** : 4:3→16:9 plan fixe 10 s : analyse + décor 17 s, export 640×360
   6 s, image d'origine PSNR 30,1 dB, variation des côtés 0,01 (image : 0,55) ; vertical 3,2 s → 1920×1080 : analyse 6 s, export 3 s.
   Générateurs (16 images à vérité connue) : LPIPS MI-GAN 0,31–0,33 ; LaMa 0,15–0,27 ; flou 0,38–0,44.
+- **Non-régression (14/11/2026, Chromium)** : sw 8/8 · gestionnaire 24/24 · studio 11/11 · atelier 10/10 · reassemblage 5/5 · noyau OK ·
+  app 11/12 · effacer 15/19 · v3 4/7 · rvv 4/5. Tous les échecs existent à l'identique sur `main` v7.6 (comparé le même jour) :
+  médias de test absents de la machine (photo 12 Mpx, poids EdgeTAM, mesure LPIPS Python), 2 cas `ERASE.state` et 3 cas v3 déjà connus.
+  Aucune régression introduite. Aucune erreur JavaScript de page.
 - **Limites** : (1) vertical caméra à la main → 16:9 : 68 % à inventer, l'app retombe sur le prolongement flou (pas une « vraie »
   vidéo horizontale) ; (2) décor reconstruit crédible seulement sur ~20 % de profondeur et pour un plan fixe ou un mouvement simple ;
   (3) pas de profondeur ni de parallaxe ; (4) le contrôle qualité ne juge pas la vraisemblance du contenu inventé ; (5) HDR non
