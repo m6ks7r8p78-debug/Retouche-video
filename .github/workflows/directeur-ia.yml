@@ -17,6 +17,11 @@ jobs:
     steps:
       - name: Recuperer la branche
         uses: actions/checkout@v4
+      - name: Verifier le mecanisme de reprise
+        run: |
+          node --check outils/directeur-reprise.cjs
+          node --test tests/directeur-reprise.test.mjs
+          node outils/directeur-reprise.cjs inspecter
       - name: Verifier le code JS
         run: |
           node --check directeur-ia.js
@@ -40,6 +45,19 @@ jobs:
         run: |
           node tests/directeur-empreinte.mjs
           node tests/sw.test.mjs
+      - name: Capturer le resultat et les prochaines etapes (meme si test echoue)
+        if: ${{ always() }}
+        env:
+          JOB_RESULT: ${{ job.status }}
+        run: node outils/directeur-reprise.cjs capture --out .ci-checkpoint/tests.json
+      - name: Conserver le checkpoint CI du job tests
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: directeur-reprise-tests-${{ github.run_attempt }}
+          path: .ci-checkpoint/tests.json
+          if-no-files-found: warn
+          retention-days: 30
 
   parcours-navigateur:
     runs-on: ubuntu-latest
@@ -61,3 +79,16 @@ jobs:
           node --test tests/directeur-browser.test.mjs
       - name: Démontrer l'encodage 8K hors navigateur avec audio
         run: node --test tests/directeur-8k.test.mjs
+      - name: Capturer le resultat et les prochaines etapes (meme si test echoue)
+        if: ${{ always() }}
+        env:
+          JOB_RESULT: ${{ job.status }}
+        run: node outils/directeur-reprise.cjs capture --out .ci-checkpoint/parcours-navigateur.json
+      - name: Conserver le checkpoint CI du job navigateur
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: directeur-reprise-parcours-navigateur-${{ github.run_attempt }}
+          path: .ci-checkpoint/parcours-navigateur.json
+          if-no-files-found: warn
+          retention-days: 30
