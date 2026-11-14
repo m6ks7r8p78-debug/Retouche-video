@@ -28,15 +28,17 @@
     "RNE 0.2: réseau temporel causal 2 frames 9244 paramètres entraîné 600 étapes; tests locaux 36/36; +0,27784 dB vs RNE 0.1 sur 4 vidéos nouvelles, mais -0,20973 dB vs bicubique ; prototype rejeté pour activation.",
     "RNE 0.3 : 157/157 vidéos privées retrouvées et vérifiées par SHA, 284 triplets sur 37 groupes, apprentissage 127 vidéos / validation 12 / test 18; 600 étapes ; PSNR test +0,432 dB vs bicubique et +0,428 dB vs RNE 0.2; 66 tests locaux réussis, 5 régressions importantes donc non activé.",
     "RNE 0.3+ maison : corpus 157 SHA valides, 154 contenus uniques, 919 triplets non redondants / 37 groupes, 420 étapes supplémentaires équilibrées, 80 tests locaux RNE; gain in-sample +0,0579 dB seulement, 3 regressions > 0,5 dB; non déployable.",
-    "QA temporelle sur mouvements naturels : 37 groupes et 333 images filmées, 296 transitions; RNE03+ légèrement moins stable que bicubique; prototype de lissage résiduel et garde-fou, 26 nouveaux tests locaux, aucun déploiement."
+    "QA temporelle sur mouvements naturels : 37 groupes et 333 images filmées, 296 transitions; RNE03+ légèrement moins stable que bicubique; prototype de lissage résiduel et garde-fou, 26 nouveaux tests locaux, aucun déploiement.",
+    "RNE 0.4 — entraînement réel apparié MSE seule vs MSE+perte temporelle sur 919 triplets privés, 180 étapes x2 ; 2 fenêtres de mouvements naturels ×37 groupes ×333 images : stabilisation mesurée, bicubique encore meilleur. 12 tests locaux, poids privés, non deployable."
   ],
   "prochaines_etapes": [
-    "Vérifier job GitHub Actions RNE CPU et jobs Directeur IA sur HEAD actuel; aucun succès distant revendiqué sans observation.",
-    "Créer une nouvelle validation réellement inédite indépendante des 157 clips (et anciens jeux de tests), comprenant mouvements, lumière, petits détails et éventuellement références authentiques.",
-    "Étudier pertes temporelles et masques d'occultation sous supervision, sans optimiser exclusivement le scintillement (risque de gommage de détails).",
-    "Ajouter évaluation de fidélité des visages et géométrie avec annotations appropriées et masque protecteur ; aujourd'hui aucune identification automatique validée.",
-    "Mesurer sur véritable iPhone Safari les temps, consommation mémoire et robustesse ; garder le bac RNE Python hors application.",
-    "Poursuivre le laboratoire de vrais filtres AR avec masques humains corrigés ; aucune publication de médias/poids personnalisés, aucune fusion automatique."
+    "Vérifier GitHub Actions workflow RNE CPU et les jobs Directeur IA sur le dernier HEAD, sans présumer la réussite distante.",
+    "Obtenir de nouveaux médias réellement indépendants des 157 sources utilisées à l'apprentissage et des anciens jeux d'essais avant d'affirmer un gain généralisé.",
+    "Améliorer RNE 0.4 par robustesse d'occlusion, suivi de mouvement et supervision qualité spatiale pour conserver les détails, sans forcer la simple baisse du scintillement.",
+    "Préparer un banc perceptuel pour visages, bords et géométrie avec référents légitimes, sans présumer la reconstitution de détails invisibles.",
+    "Garder une architecture de repli bicubique ou méthode traditionnelle lorsque la confiance du Directeur IA est insuffisante, préserver le choix manuel.",
+    "Essais physiques Safari iPhone 15 Pro Max, mémoire/latence/énergie avant tout branchement de RNE au produit.",
+    "Reprendre en parallèle la reconnaissance AR sur vrais masques vérifiés, jamais entraîner un segmentateur comme si des pseudo-masques étaient des vérités humaines."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -47,17 +49,16 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
     "objets": [
-      "outils/rne/temporal_safety.py",
-      "outils/rne/residual_temporal.py",
-      "outils/rne/bench_natural_motion.py",
-      "tests/test_rne_temporal_safety.py",
-      "tests/test_rne_residual_temporal.py",
-      "RETOUCHE_NEURAL_ENGINE_QA_TEMPORELLE.md",
-      ".github/workflows/rne-cpu.yml"
+      "outils/rne/train_temporal_residual.py",
+      "tests/test_rne04_temporal_train.py",
+      "RETOUCHE_NEURAL_ENGINE_04.md",
+      "BENCHMARK_RESULTS.md",
+      ".github/workflows/rne-cpu.yml",
+      "suivi/directeur-ia.json"
     ],
-    "preuve_locale": "80 tests RNE existants et 26 nouveaux tests temporels exécutés localement avec succès; audit privé 37 groupes 333 images",
-    "statut_ci": "a_verifier_pour_HEAD",
-    "observations": "pas de médias privés ou poids sur GitHub; blocage de déploiement préservé"
+    "preuve_locale": "Deux vrais entrainements 180 steps, source 157 SHA vérifiés, 919 triplets, 12/12 tests Python synthétiques, 2 audits naturels 37 groupes chacun, MP4 synthétique décodable",
+    "statut_ci": "a_verifier_sur_le_nouveau_SHA",
+    "limites": "Pas de scène réellement inédite, aucune mesure visage ou Safari iPhone, aucun déploiement des modèles spécialisés"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -478,5 +479,86 @@
     "fidelite_visage_validee": false,
     "iPhone_safari_valide": false,
     "prochaine_priorite": "réseau de cohérence temporelle vraiment entraîné et jeux totalement neufs, évaluation visage/texture, scènes de mouvement et mémoire iPhone"
+  },
+  "jalon_neural_engine_04": {
+    "date": "2026-11-14",
+    "statut": "prototype RNE 0.4 entraîné et audité, pas d'intégration ni de déploiement",
+    "objectif": "apprentissage direct d'une perte de cohérence temporelle sur le résidu RNE-bicubique, avec confidence de flux optique, sans NVIDIA DLSS 5",
+    "protocole": {
+      "catalogue_sources_sha_verifiees": 157,
+      "contenus_uniques": 154,
+      "copies_exactes_eliminees": 3,
+      "groupes_conservateurs": 37,
+      "triplets_prives": 919,
+      "triplets_tous_presentes_optimiseur": 919,
+      "steps_par_variante": 180,
+      "batch": 8,
+      "variantes": [
+        "RNE 0.4 témoin MSE spatiale",
+        "RNE 0.4 MSE+perte temporelle résiduelle"
+      ],
+      "coefficient_perte_temporelle": 0.025,
+      "initialisation_poids_identiques": true
+    },
+    "psnr_apprentissage_db": {
+      "bicubique": 30.88856,
+      "checkpoint_rne03plus": 31.11227,
+      "controle_spatial": 31.12542,
+      "candidat_temporel": 31.12229,
+      "ecart_candidat_vs_temoin": -0.00313
+    },
+    "proxy_apprentissage": {
+      "residu_temporel_temoin": 0.003307,
+      "residu_temporel_candidat": 0.002663,
+      "limitation": "cible derivée d'un teacher gelé, sur les propres triplets appris; pas de vérité perceptuelle"
+    },
+    "qa_mouvements_naturels": [
+      {
+        "position_fraction": 0.18,
+        "groups": 37,
+        "frames": 333,
+        "usable_transitions": 296,
+        "bicubic_mae": 1.3819,
+        "rne03plus_mae": 1.41158,
+        "controle_mae": 1.40887,
+        "candidat_mae": 1.40139,
+        "segments_a_risque_reference": 24,
+        "segments_a_risque_candidat": 21,
+        "transitions_a_risque_reference": 27,
+        "transitions_a_risque_candidat": 22
+      },
+      {
+        "position_fraction": 0.62,
+        "groups": 37,
+        "frames": 333,
+        "usable_transitions": 296,
+        "bicubic_mae": 1.42204,
+        "rne03plus_mae": 1.43128,
+        "controle_mae": 1.42851,
+        "candidat_mae": 1.42285,
+        "segments_a_risque_reference": 21,
+        "segments_a_risque_candidat": 19,
+        "transitions_a_risque_reference": 23,
+        "transitions_a_risque_candidat": 21
+      }
+    ],
+    "demo": "24 images toutes synthétiques 128x96 → 256x192, 22 images neurales temporelles, mp4 décodable; comparateur bicubique/RNE",
+    "tests_locaux": "12/12 Python CPU réussis dans le dernier essai; CI GitHub à confirmer",
+    "source_et_tests": [
+      "outils/rne/train_temporal_residual.py",
+      "tests/test_rne04_temporal_train.py"
+    ],
+    "protocole_public": "RETOUCHE_NEURAL_ENGINE_04.md",
+    "benchmark_public": "BENCHMARK_RESULTS.md",
+    "archive_privee": "RetoucheNeuralEngine_RNE04_temporel_prive_2026-11-14.zip",
+    "preuve_generalisation_externe": false,
+    "mesure_qualite_visage": false,
+    "mesure_4k_8k": false,
+    "safari_iphone_reel": false,
+    "mediation_humaine_requise": true,
+    "activation_automatique": false,
+    "publication_poids_medias": false,
+    "aucun_sdk_nvidia_dlss5": true,
+    "avertissement": "Les 37 scènes/154 contenus ont déjà participé à l'entraînement; les audits à 18% et 62% ne sont pas un jeu de scènes vierges. Stabilité inférieure ou presque égale au bicubique selon la fenêtre."
   }
 }
