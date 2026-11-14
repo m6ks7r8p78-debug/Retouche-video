@@ -61,10 +61,17 @@ test('souffle audio => voix, sans bruit => absent',()=>{
  assert.ok(ids(D.planifier(bruit)).includes('voix'));
  assert.ok(!ids(D.planifier(base)).includes('voix'));
 });
-test('concilier refuse l’activation dangereuse et conserve les autres options',()=>{
+test('concilier conserve les recommandations existantes et les choix utilisateur',()=>{
  const p=D.planifier({type:'photo',w:3000,h:2000,mesures:{noise:.5,sharp:60}}), r={o:{db:.7,dn:.9,dust:true,stab:true,defl:true,voice:true,cs:.6}};
  assert.equal(D.concilier(r,p),r);
- assert.deepEqual(r.o,{db:0,dn:.2,dust:false,stab:false,defl:false,voice:false,cs:.6});
+ assert.deepEqual(r.o,{db:.7,dn:.9,dust:true,stab:true,defl:true,voice:true,cs:.6});
+});
+test('garde-fou anti-halos : ne réduit la netteté que sur une source réellement abîmée',()=>{
+ const sain={mesures:{compression:.1,bruit:.1}}, use={mesures:{compression:.9,bruit:.1}};
+ assert.equal(D.protegerNettete(.75,sain),.75);
+ assert.equal(D.protegerNettete(.75,use),.28);
+ assert.equal(D.protegerNettete(.12,use),.12);
+ assert.equal(D.protegerNettete(.75,{mesures:{compression:.6,bruit:.1}}),.42);
 });
 test('plan déterministe et mesure source inchangée',()=>{
  const x=JSON.parse(JSON.stringify(base));assert.deepEqual(D.planifier(x),D.planifier(x));assert.deepEqual(x,base);
