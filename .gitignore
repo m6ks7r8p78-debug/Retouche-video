@@ -16,3 +16,12 @@ tests/prive/
 tests/labo_filtres/migan_pipeline_v2.onnx
 tests/labo_filtres/hand_landmarker.task
 tests/medias/format/
+tests/medias/filtre_multi/
+
+# RNE : modèles entraînés et index de la Bibliothèque personnelle sont privés.
+*.pt
+*.pth
+*.safetensors
+rne_manifest_prive.json
+rne_2x_rapport_prive.json
+sorties_rne/

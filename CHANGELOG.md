@@ -1,5 +1,15 @@
 # Journal des versions
 
+## Expérimental — branche `chatgpt-ai-director-v01` (non publié, PR #1 brouillon)
+- Directeur IA v0.5–v0.9 : voir `DIRECTEUR_IA.md`.
+- v1.0 (14 nov. 2026) : catalogueur privé de la bibliothèque de recherche (`outils/catalogue_medias.py`,
+  `MEDIA_CATALOG_SCHEMA.md`), priorisation des modules faibles (`outils/directeur-priorites.cjs`,
+  `suivi/etat-modules.json`), protocole et résultats de bancs, document de transmission ChatGPT ⇄ Claude.
+  Aucun changement de l'application publiée.
+- v1.1 (14 nov. 2026) : banc multi-cas du vrai module de retrait de filtre AR (8 cas synthétiques, mesure contre la vérité),
+  conversion en état mesuré, priorisation corrigée (faiblesse confirmée > inconnue ; synthétique jamais « satisfaisant »),
+  déclaration d'autorisations du propriétaire enregistrée (`suivi/autorisations-proprietaire.json`).
+
 ## v8.0 (14 nov. 2026) — Changer de format (vertical ↔ horizontal, carré, 4:3, 21:9, sur mesure)
 - Nouvel outil **« Changer de format »** (studio → outils, et bouton « 📐 Changer le format de cette vidéo » dans l'atelier) :
   importer → choisir le format (ou « Auto ») → analyser → prévisualiser (curseur avant/après, scène par scène) → exporter.
