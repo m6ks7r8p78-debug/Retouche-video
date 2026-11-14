@@ -15,7 +15,7 @@ Les nouvelles vidéos restent **exclues de tout entraînement**. Aucun chemin, n
 ## Premier résultat sur les 29 candidats (non certifiés entièrement inédits)
 
 - **406 images** provenant de vidéos réellement filmées, prélevées en deux fenêtres temporelles (33 % et 67 %). L'entrée LR a été **simulée** par sous-échantillonnage ×2 à partir des mêmes images, puis évaluée avec/sans JPEG qualité 65.
-- **580 reconstructions** : **559 gains PSNR**, **21 pertes**, **3 régressions inférieures à −0,5 dB**.
+- **580 reconstructions** : **559 gains PSNR**, **21 pertes**, **3 régressions inférieures à −0,5 dB**. Les 3 régressions se concentrent sur **un seul clip** et uniquement dans le mode LR simulé sans compression JPEG additionnelle ; ce clip reste un contre-exemple de contrôle, sans ajustement des seuils.
 - PSNR moyen : **32,65557 dB bicubique vs 32,99698 dB RNE**, différence **+0,34141 dB**.
 - Intervalle exploratoire à 95 % du gain moyen, par **bootstrap de vidéos** plutôt que de frames corrélées : **[+0,26635 ; +0,42026] dB**.
 - Erreur MAE sur les contours : **9,62319 → 9,00643** niveaux RGB sur 255 (amélioration).
