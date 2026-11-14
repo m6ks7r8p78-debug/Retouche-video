@@ -44,6 +44,17 @@ Seuls des résultats réellement exécutés figurent ici. Des expériences priv�
 - **Code expérimental** : `outils/directeur-fusion-temporelle-ar.cjs` + **17 tests Node réussis localement**. Ce module ne calcule pas son propre flux : il fusionne des cartes numériques fournies par un estimateur externe, limite les zones autorisées et rejette les transitions incertaines. Aucun branchement au moteur de rendu iPhone ; CI distante à vérifier.
 - **Limites** : aucune annotation de filtre réel vérifiée, pas de récupération prouvée des pixels occultés, pas de test appareil Safari, et possible exposition historique des fonds au préentraînement initial. Détails : `LABO_AR_V4_FUSION_TEMPORELLE.md`.
 
+## RNE 0.2 — vrai réseau temporel, prototype non déployable (14 novembre 2026)
+
+- 12 vidéos privées autorisées (24 paires consécutives) pour entraîner un correcteur temporel de **9 244 paramètres** sur le modèle RNE 0.1 gelé ; 600 étapes. Les entrées LR ont une dégradation **synthétique**.
+- 4 vidéos de validation, 32 patches : PSNR RNE 0.1 35,07790 dB → RNE 0.2 **35,28490 dB** (+0,20700 dB).
+- 5 vidéos de test exploratoire déjà utilisées comme groupe de test RNE 0.1, 40 patches : **36,06042 → 36,22694 dB** (+0,16652 dB), 30/40 patches améliorés.
+- **4 autres vidéos jamais utilisées pour le choix de RNE 0.1 ou 0.2 dans ce cycle**, groupes catalogués isolés et SHA vérifiés ; 48 patches synthétiques. Bicubique **37,13346 dB**, RNE 0.1 **36,64589 dB**, RNE 0.2 **36,92373 dB**. Gain RNE 0.2 vs RNE 0.1 : **+0,27784 dB** ; mais **−0,20973 dB vs bicubique**, une régression de plus de 0,5 dB sur 48 patches.
+- **36/36 tests Python CPU locaux** des versions RNE 0.1 + 0.2 et export MP4 de démonstration **entièrement synthétique** (24 frames, 256×192) lisible. Résultats GitHub Actions distants à confirmer.
+- Pas d'évaluation qualitative sur images de vrais filtres AR, pas de vrais détails perdus prouvés, pas de benchmark temps réel 4K/8K ou Safari iPhone. Le code public ne contient ni vidéos privées ni poids entraînés. Voir `RETOUCHE_NEURAL_ENGINE_02.md`.
+
+**Décision : RNE 0.2 reste expérimental et n'est pas activé dans l'application.** Une meilleure comparaison au modèle initial ne suffit pas si le témoin bicubique reste meilleur.
+
 ## À produire ensuite
 
 1. Catalogue privé de 157 vidéos déjà consolidé côté ChatGPT : exploiter les groupes et les consentements vérifiés, sans partager médias, chemins ou empreintes.
