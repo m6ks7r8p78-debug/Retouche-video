@@ -40,22 +40,23 @@ var DIRECTEUR_RENDU=(()=>{
       zones,amplitude:+amplitude.toFixed(4),transition:.35,
       limite:"Adaptation expérimentale : contrôler les détails fins et le mouvement, aucune validation perceptuelle automatique"};
   }
+  /* Fonction définie une fois, plutôt qu'une nouvelle fermeture à chaque frame. */
+  function interpoler(a,b,lim,t){
+    const front=(a.fin+b.debut)/2;
+    if(!bon(front)||Math.abs(front-t)>=lim)return null;
+    const f=borne((t-front+lim)/(2*lim),0,1),smooth=f*f*(3-2*f);
+    return a.facteur+(b.facteur-a.facteur)*smooth;
+  }
   function facteur(plan,t){
     if(!plan||!plan.actif||!bon(t)||!Array.isArray(plan.zones)||!plan.zones.length)return 1;
     const zones=plan.zones;
-    const idx=zones.findIndex(z=>t<z.fin);
-    const i=idx<0?zones.length-1:idx;
+    let i=zones.length-1;
+    for(let k=0;k<zones.length;k++){if(t<zones[k].fin){i=k;break}}
     let v=zones[i].facteur;
-    const transition=(a,b,lim)=>{
-      const front=(a.fin+b.debut)/2;
-      if(!bon(front)||Math.abs(front-t)>=lim)return null;
-      const f=borne((t-front+lim)/(2*lim),0,1),smooth=f*f*(3-2*f);
-      return a.facteur+(b.facteur-a.facteur)*smooth;
-    };
     const tW=plan.transition||.35;
-    if(i>0){const v0=transition(zones[i-1],zones[i],tW);if(v0!==null)v=v0}
-    if(i<zones.length-1){const v1=transition(zones[i],zones[i+1],tW);if(v1!==null)v=v1}
-    return +borne(v,.78,1.10).toFixed(5);
+    if(i>0){const v0=interpoler(zones[i-1],zones[i],tW,t);if(v0!==null)v=v0}
+    if(i<zones.length-1){const v1=interpoler(zones[i],zones[i+1],tW,t);if(v1!==null)v=v1}
+    return Math.round(borne(v,.78,1.10)*100000)/100000;
   }
   return Object.freeze({preparer,facteur});
 })();
