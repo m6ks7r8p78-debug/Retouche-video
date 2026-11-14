@@ -6,10 +6,13 @@ import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { execFileSync } from "node:child_process";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const port=8787,base="http://127.0.0.1:"+port;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const work=fs.mkdtempSync(path.join(os.tmpdir(),"retouche-dir-"));
 const server=spawn(process.execPath,[path.join(root,"tests","serveur.mjs")],{env:{...process.env,PORT:String(port)},stdio:"ignore"});
 let browser;
 try {
@@ -56,10 +59,48 @@ try {
     assert.ok(r.quality&&r.quality.compte.compare>0,"contrôle technique photographique déclenché");
     assert.match(r.report,/Comparatif|comparatif/i);
   });
+  await test("vidéo de référence synthétique : import, Directeur IA, export local et son",async()=>{
+    const clip=path.join(work,"entree.mp4"),out=path.join(work,"sortie.mp4");
+    execFileSync("ffmpeg",["-y","-hide_banner","-loglevel","error",
+      "-f","lavfi","-i","testsrc2=size=320x180:rate=15",
+      "-f","lavfi","-i","sine=frequency=700:sample_rate=44100",
+      "-t","2.6","-c:v","libx264","-preset","ultrafast","-pix_fmt","yuv420p",
+      "-c:a","aac","-b:a","96k","-shortest","-movflags","+faststart",clip],{timeout:30000});
+    await page.locator("#f").setInputFiles(clip);
+    await page.waitForFunction(()=>mode==="video"&&v.videoWidth>0,null,{timeout:30000});
+    await page.waitForFunction(()=>!!window.__dirplan&&!!window.__prof&&!!window.__prof.m,null,{timeout:90000});
+    const p=await page.evaluate(()=>({type:mode,w:v.videoWidth,h:v.videoHeight,plan:window.__dirplan}));
+    assert.equal(p.type,"video");assert.equal(p.w,320);assert.equal(p.h,180);
+    assert.ok(p.plan.operations.some(x=>x.id==="export"));
+    await page.evaluate(()=>{
+      const ai=document.querySelector("#o_max");ai.checked=false;ai.dispatchEvent(new Event("change"));
+      document.querySelector('[data-q="-1"]').click();
+    });
+    await page.locator("#ex").click();
+    await page.waitForFunction(()=>!exporting&&/Terminé|Échec|Impossible/.test(document.querySelector("#st1").textContent),
+      null,{timeout:180000});
+    const result=await page.evaluate(async()=>{
+      const a=new Uint8Array(await outBlob.arrayBuffer());let bytes="";
+      for(let i=0;i<a.length;i+=32768)bytes+=String.fromCharCode(...a.subarray(i,i+32768));
+      return {size:a.length,base64:btoa(bytes),status:document.querySelector("#st1").textContent,qa:window.__dirqualite};
+    });
+    assert.match(result.status,/Terminé/);
+    assert.ok(result.size>5000,"fichier exporté vide");
+    fs.writeFileSync(out,Buffer.from(result.base64,"base64"));
+    const streams=JSON.parse(execFileSync("ffprobe",["-v","error","-show_entries",
+      "stream=codec_type,width,height,codec_name","-of","json",out]).toString()).streams;
+    const video=streams.find(x=>x.codec_type==="video"),audio=streams.find(x=>x.codec_type==="audio");
+    assert.ok(video,"piste vidéo absente");assert.ok(audio,"piste audio perdue");
+    assert.equal(video.width,320);assert.equal(video.height,180);
+    // Le contrôle comparatif post-export peut être différé après l'écriture ; il ne bloque pas la sauvegarde.
+    await page.waitForFunction(()=>!!window.__dirqualite,null,{timeout:60000});
+    assert.ok(result.qa||await page.evaluate(()=>window.__dirqualite?.compte.compare>0));
+  });
   await test("aucune erreur JavaScript non gérée pendant le parcours",async()=>{
     assert.deepEqual(jsErrors,[]);
   });
 } finally {
   if(browser)await browser.close();
   server.kill("SIGTERM");
+  fs.rmSync(work,{recursive:true,force:true});
 }
