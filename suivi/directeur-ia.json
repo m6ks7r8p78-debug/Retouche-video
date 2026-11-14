@@ -25,15 +25,17 @@
     "Recherche inspirée DLSS 5 documentée (NVIDIA SDK non public, non disponible Safari iPhone); garde-fou de décision vidéo 2D et AR en laboratoire seulement, 18 tests locaux.",
     "Fusion causale temporelle expérimentale AR sur cartes de probabilites ; 17 tests locaux; réduction de variation temporelle de 49,67 % sur 360 frames synthetiques, petite perte d'IoU; non déployé.",
     "RNE 0.1 maison : moteur neuronal 2x trainable avec 13 692 paramètres, causal video et sortie MP4 audio tentative, 17 tests synthetiques CPU; 900 steps privés sur 12 clips, 4 validation, 5 test; gain moyen +0,0958 dB (modeste) vs bicubique, hors application et non deployable.",
-    "RNE 0.2: réseau temporel causal 2 frames 9244 paramètres entraîné 600 étapes; tests locaux 36/36; +0,27784 dB vs RNE 0.1 sur 4 vidéos nouvelles, mais -0,20973 dB vs bicubique ; prototype rejeté pour activation."
+    "RNE 0.2: réseau temporel causal 2 frames 9244 paramètres entraîné 600 étapes; tests locaux 36/36; +0,27784 dB vs RNE 0.1 sur 4 vidéos nouvelles, mais -0,20973 dB vs bicubique ; prototype rejeté pour activation.",
+    "RNE 0.3 : 157/157 vidéos privées retrouvées et vérifiées par SHA, 284 triplets sur 37 groupes, apprentissage 127 vidéos / validation 12 / test 18; 600 étapes ; PSNR test +0,432 dB vs bicubique et +0,428 dB vs RNE 0.2; 66 tests locaux réussis, 5 régressions importantes donc non activé."
   ],
   "prochaines_etapes": [
-    "Vérifier workflow CPU RNE du dernier HEAD (36 tests synthétiques) et les jobs existants; une absence de runs dans les queries PR ne prouve rien pour les workflows push.",
-    "Améliorer RNE temporel sur train/validation avec vraies séquences naturellement mobiles, limites de modèle et estimation d'occlusion; ne pas réoptimiser sur les 4 vidéos de contrôle déjà vues.",
-    "Réserver un NOUVEAU test final scellé avec groupes de scènes indépendants et vérifier bicubique, RNE 0.1, RNE 0.2, méthodes classiques temporelles, gains et régressions.",
-    "Évaluer LPIPS/SSIM, stabilité, fidélité visages, protection hors masque, artefacts d'upscaling, bruit/compression et endurance vidéo avant promotion.",
-    "Préparer éventuellement WebGPU/WASM iPhone Safari ou cloud privé uniquement après consentement distinct et mesures réelles; aucun déploiement ni publication de poids.",
-    "Continuer les vrais masques de filtres AR vérifiés et ne pas confondre le moteur RNE avec le SDK NVIDIA DLSS 5."
+    "Verifier la CI RNE CPU et les deux jobs du workflow Directeur IA sur les commits correspondants, sans inventer de statut.",
+    "Maintenir le test RNE03 de 18 vidéos scellé pour ce cycle: ne pas tuner de nouveaux poids sur les 72 patches d evaluation deja consultes.",
+    "Reserver pour RNE0.4 un autre banc de nouveaux groupes independants, si disponible; ne pas appeler nouveau test un test déjà vu.",
+    "Ameliorer RNE03 sur mouvement naturel et scenes en faible confiance : caracteriser 5/72 regressions >0.5 dB vs RNE0.2, puis construire un aiguillage non oracle.",
+    "Verifier SSIM/LPIPS ou metriques perceptuelles, coherence temporelle longue, visages, mouvement d accessoires AR et compression native.",
+    "Preparer backend iPhone Safari WebGPU/WASM ou calcul externe uniquement sur consentement de transfert explicite; rien sur main ou produit avant tests et accord.",
+    "Rester independant de NVIDIA DLSS5; ne pas revendiquer les technologies et poids proprietaires ni le meme rendu."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -43,18 +45,19 @@
   },
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
-    "sha": "e3d776ed3b0442cdf47f50c140b27fa3414a72bd",
+    "sha": "9996dfc033f4437232672a2584bd9663adcaa48f",
     "objets": [
-      "outils/rne/temporal.py",
-      "outils/rne/train_temporal.py",
-      "tests/test_rne_temporal.py",
+      "outils/rne/triad.py",
+      "outils/rne/prepare_triad.py",
+      "outils/rne/train_triad.py",
+      "tests/test_rne_triad.py",
+      "tests/test_rne_triad_protocol.py",
       ".github/workflows/rne-cpu.yml",
-      "RETOUCHE_NEURAL_ENGINE_02.md",
-      "BENCHMARK_RESULTS.md"
+      "RETOUCHE_NEURAL_ENGINE_03.md"
     ],
-    "preuve_locale": "36/36 tests Python CPU synthétiques; 600 étapes entraînement privé; nouvelle vérification de 4 vidéos autorisées; vrai MP4 synthétique 24 frames décodable",
-    "statut_ci": "a_verifier_RNE_CPU_et_directeur",
-    "observations": "aucun média, poids, empreinte privée, manifest ou extraction dans GitHub"
+    "preuve_locale": "66/66 tests Python CPU réussis localement avec données synthétiques; apprentissage prive reel sur 157 vidéos de corpus",
+    "statut_ci": "rNE_CPU_et_directeur_a_verifier",
+    "observations": "les 157 vidéos et leur index de hashes restent privés; aucun média ou poids entraîné dans le GitHub public"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -234,5 +237,68 @@
     "rappel_dlss5": "moteur independant pour video 2D, aucun sdk ou poids NVIDIA, pas de qualite comparable prouvee",
     "iPhoneSafari": "aucune compatibilite ou mesure de temps reel prouvee",
     "decision": "ne pas integrer automatiquement; bicubique meilleur sur nouvelles scènes"
+  },
+  "jalon_neural_engine_03": {
+    "date": "2026-11-14",
+    "moteur": "Retouche Neural Engine 0.3, super-resolution neuronale 2x avec 3 frames et estimation d'occlusion",
+    "corpus": {
+      "videos_catalogue": 157,
+      "videos_sha_valides": 157,
+      "go_total": 2.46,
+      "groupes_conservateurs": 37,
+      "train_videos": 127,
+      "validation_videos": 12,
+      "test_videos": 18,
+      "groupes_train": 27,
+      "groupes_validation": 4,
+      "groupes_test": 6,
+      "triplets_train": 254,
+      "triplets_validation": 12,
+      "triplets_test": 18,
+      "aucuns_echecs_decodage": true,
+      "aucune_video_ancienne_rne01_rne02_dans_test_ou_validation": true
+    },
+    "entrainement": {
+      "steps": 600,
+      "batch": 8,
+      "reseau_params": 13684,
+      "meilleur_checkpoint": 600,
+      "apprentissage_initialise_de_zero": true,
+      "source_frames_naturelles_et_degradations_synthetiques": true
+    },
+    "scores_test": {
+      "patchs": 72,
+      "psnr_bicubique": 33.07405,
+      "psnr_rne01": 32.75664,
+      "psnr_rne02": 33.0782,
+      "psnr_rne03": 33.50619,
+      "gain_rne03_vs_bic_db": 0.43214,
+      "gain_rne03_vs_rne02_db": 0.42798,
+      "groupes_rne03_sup_bicubique": 5,
+      "groupes_test": 6,
+      "pertes_plus_0_5_db_vs_bicubique": 1,
+      "pertes_plus_0_5_db_vs_rne02": 5
+    },
+    "sorties": {
+      "demo_synthetique_24_frames": "128x96 vers 256x192, 22 transitions, MP4 decodable",
+      "test_audio_synthetique": "24 frames et AAC preserved par FFmpeg en essai local"
+    },
+    "source_publique": [
+      "outils/rne/triad.py",
+      "outils/rne/prepare_triad.py",
+      "outils/rne/train_triad.py",
+      "tests/test_rne_triad.py",
+      "tests/test_rne_triad_protocol.py"
+    ],
+    "documentation": "RETOUCHE_NEURAL_ENGINE_03.md",
+    "tests_locaux": "66/66 Python CPU sur medias synthetiques, dont 30 nouveaux tests RNE 0.3 et consentements",
+    "workflow": ".github/workflows/rne-cpu.yml",
+    "ci_distante": "verification_a_confirmer",
+    "risques": "5 regressions > 0,5 dB vs RNE 0.2; pas de mesure perceptuelle ni iPhone Safari",
+    "mode": "RECHERCHE PRIVE NON DEPLOYABLE; aucun SDK NVIDIA DLSS 5",
+    "medias_publies": false,
+    "poids_publies": false,
+    "base_main_modifiee": false,
+    "archive_privee": "RNE03_157_videos_recherche_prive.zip"
   }
 }
