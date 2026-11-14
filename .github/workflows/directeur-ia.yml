@@ -47,6 +47,8 @@ jobs:
           node --test tests/directeur-selection-pilotes.test.mjs
           node --check outils/directeur-audit-masques.cjs
           node --test tests/directeur-audit-masques.test.mjs
+          node --check outils/directeur-banc-masques-verifies.cjs
+          node --test tests/directeur-banc-masques-verifies.test.mjs
           node -e "const p=require('./outils/directeur-laboratoire.cjs').experimenter(); console.log(JSON.stringify({etat:p.etat,train:p.nombreCasTrain,validation:p.nombreCasValidation,hypotheses:p.hypothesesEvaluees,gainValidation:p.gainValidation,aucunDeploiementAutomatique:p.aucunDeploiementAutomatique}))"
       - name: Contrôle de non-régression du reformatage v8.0
         run: node --test tests/format.test.mjs
