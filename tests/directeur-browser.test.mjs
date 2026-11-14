@@ -117,6 +117,44 @@ try {
     assert.equal(p.zones[p.zones.length-1].etat.lumiere,"normale");
     assert.ok(p.zones.every(x=>x.precision.includes("approximatives")));
   });
+  await test("débruitage temporel : variation appliquée aux images exportées, sans profil manuel",async()=>{
+    const clip=path.join(work,"deux_bruits.mp4");
+    execFileSync("ffmpeg",["-y","-hide_banner","-loglevel","error",
+      "-f","lavfi","-i","color=c=gray:s=320x180:r=15:d=3",
+      "-f","lavfi","-i","color=c=gray:s=320x180:r=15:d=3",
+      "-filter_complex","[0:v]noise=alls=55:allf=t+u[n];[n][1:v]concat=n=2:v=1:a=0[v]",
+      "-map","[v]","-c:v","libx264","-preset","ultrafast",
+      "-pix_fmt","yuv420p","-movflags","+faststart",clip],{timeout:30000});
+    await page.evaluate(()=>{
+      localStorage.removeItem("profil");PROF.manual=false;
+      const ia=document.querySelector("#o_max");ia.checked=false;ia.dispatchEvent(new Event("change"));
+    });
+    await page.locator("#f").setInputFiles(clip);
+    await page.waitForFunction(()=>curFile?.name==="deux_bruits.mp4"&&!!window.__dirplan?.zonage&&!!window.__prof?.m,null,{timeout:90000});
+    const data=await page.evaluate(()=>({
+      zonage:window.__dirplan.zonage,
+      noise:window.__prof.m.noise,
+      manual:PROF.manual
+    }));
+    assert.equal(data.manual,false);
+    assert.ok(data.zonage.zones.length>=2,"noise transition not detected");
+    const candidate=await page.evaluate(()=>DIRECTEUR_RENDU.preparer({
+      zonage:window.__dirplan.zonage,bruitGlobal:window.__prof.m.noise,activer:true,manuel:false,ia:false}));
+    assert.ok(candidate.actif,"moderate denoise adaptation unexpectedly unavailable");
+    await page.locator('[data-q="-1"]').click();
+    await page.locator("#ex").click();
+    await page.waitForFunction(()=>!exporting&&/Terminé|Échec|Impossible/.test(document.querySelector("#st1").textContent),null,{timeout:180000});
+    const result=await page.evaluate(()=>({st:document.querySelector("#st1").textContent,
+      adapt:window.__dirRendu,
+      recipe:document.querySelector("#recipe").textContent}));
+    assert.match(result.st,/Terminé/);
+    assert.equal(result.adapt?.actif,true);
+    assert.ok(result.adapt.imagesAdaptees>5,"no frames used the adaptive denoiser");
+    assert.ok(Math.abs(result.adapt.facteurMax-1)>.003||Math.abs(result.adapt.facteurMin-1)>.003);
+    assert.match(result.recipe,/adaptation_temporelle/);
+    await page.evaluate(()=>{const a=document.querySelector("#r_dn");a.value=".25";a.dispatchEvent(new Event("input"))});
+    assert.equal(await page.evaluate(()=>window.__dirDnManuel),true);
+  });
   await test("aucune erreur JavaScript non gérée pendant le parcours",async()=>{
     assert.deepEqual(jsErrors,[]);
   });
