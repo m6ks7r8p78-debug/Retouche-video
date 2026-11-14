@@ -34,14 +34,16 @@
     "Banc photo externe indépendante du corpus : 6 photos naturelles, 108 essais RNE04, +0,29936 dB et 97/108 cas gagnants face au bicubique pour version temporelle, MAIS instabilité 13,076>12,643; 32 tests locaux, aucun déploiement.",
     "RNE 0.4 nouvelles vidéos: 41 uploads audités; exclusion 3 copies exactes et 9 mêmes scènes malgré SHA différents; 29 candidats provisoires (580 reconstructions), +0,341 dB PSNR vs bicubique, 3 regressions sur un seul clip, textures encore difficiles, 232 vraies transitions, pas de déploiement.",
     "RNE cohérence LR post-hoc : 29 clips candidats, 580 reconstructions; gain propre +0,480→+0,723 dB et 3 regressions éliminées, mais JPEG +0,203→+0,090 dB, flicker 1,702→1,858 et textures pires. Blocage de déploiement maintenu, 14 tests synthétiques.",
-    "RNE 0.5 texture/temporel : 157 historiques verifiees, 154 uniques, 308 triplets, A/B 260 steps x 2; gain PSNR +0.00162 dB trop faible, perte temporelle aggravée, pas de promotion, 14 tests synthétiques réussis."
+    "RNE 0.5 texture/temporel : 157 historiques verifiees, 154 uniques, 308 triplets, A/B 260 steps x 2; gain PSNR +0.00162 dB trop faible, perte temporelle aggravée, pas de promotion, 14 tests synthétiques réussis.",
+    "RNE06: entraînement expérimental sur 308 triplets historiques, 260 steps x2, réduction faible des erreurs temporelles mais PSNR/contours en recul; 29 vidéos du lot réutilisé confirment l'absence de promotion. 16 tests nouveaux PASS."
   ],
   "prochaines_etapes": [
-    "Conserver le checkpoint RNE04 temporel; rejeter candidat RNE05 car PSNR +0.00162 dB in-sample et erreur temporelle +0.000044.",
-    "Ne pas apprendre sur les 41 uploads récents; ils ont servi a des audits préalables et ne doivent pas être réutilisés pour tuner les hyperparametres.",
-    "Obtenir de nouvelles videos et des paires d'origine réellement inédites pour évaluer restauration AR et fidélité des visages; sans preuve ne pas activer RNE.",
-    "Mesurer mouvement naturel, textures, details du visage, lignes fines et stabilité avec annotations et témoins fiables.",
-    "Verifier le job CI GitHub du HEAD et la compatibilité Safari iPhone réelle avant de déployer quoi que ce soit."
+    "Maintenir les 41 vidéos récentes hors de tout entraînement et ne pas calibrer sur ce banc déjà réutilisé.",
+    "Conserver RNE04 comme référence expérimentale, RNE06 archivé comme tentative rejetée pour perte de fidélité spatiale.",
+    "Concevoir sur les 157 anciens clips des dégradations réalistes et des pertes jointes spatial/temporel, avant validation sur un nouveau jeu de scènes inédites.",
+    "Recueillir des paires avant/après filtre AR réellement vérifiées pour évaluer une véritable inversion de filtre, sans prétendre retrouver ce qui est occulté.",
+    "Mesurer la compatibilité et la mémoire de Safari sur un vrai iPhone, aucune activation sur retoucheproai.com en l'état.",
+    "Contrôler le statut de CI GitHub pour le dernier commit; aucun poids ni média personnel n'est publié."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -52,14 +54,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
     "objets": [
-      "outils/rne/texture_temporal_v05.py",
-      "tests/test_rne_v05_texture_temporal.py",
-      "RETOUCHE_NEURAL_ENGINE_05_TEXTURE_TEMPORAL.md",
+      "outils/rne/temporal_gradients.py",
+      "tests/test_rne06_temporal_gradients.py",
+      "RETOUCHE_NEURAL_ENGINE_06.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "157 fichiers historiques SHA-valides, 308 triplets sur 154 uniques, 2x260 steps CPU, 14 tests unitaires locaux réussis",
-    "statut_ci": "a_verifier_nouveau_HEAD",
-    "observations": "pas de media, frame, hash individuel ni poids sur GitHub ; 41 nouveaux videos exclues d'entraînement"
+    "preuve_locale": "16/16 tests RNE06 et 14/14 tests RNE05 reussis, 2 entrainements CPU et 290 comparaisons de recherche sur 29 videos candidates reutilisees",
+    "statut_ci": "a_verifier",
+    "observations": "Media et poids privés jamais publiés; candidat rejeté."
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -870,5 +872,63 @@
     "archive_privee": "RetoucheProAI_RNE05_texture_temporel_prive.zip (3 checkpoints + scripts + rapports, aucune vidéo/frame)",
     "progres_recherche": "nouvelle perte gradients Laplacien reentrainee et comparee à témoin avec un veto de promotion des poids",
     "prochaine_priorite": "garder les 41 vidéos réservées; mesurer textures et stabilité sur des références authentiques externes; améliorer continuité et fidélité des visages sans optimiser post-hoc sur le test"
+  },
+  "jalon_neural_engine_06": {
+    "date": "2026-11-14",
+    "status": "entrainement prive terminé, candidat RNE06 non promu",
+    "protocol": "Même checkpoint RNE04, ordre et MSE+temporal identiques pour 2 bras; candidat ajoute gradients temporels sur résidu aligné avec confiance de mouvement",
+    "train": {
+      "videos_historique": 157,
+      "sha_verified": 157,
+      "unique_sources": 154,
+      "triplets": 308,
+      "steps_per_arm": 260,
+      "batch": 8,
+      "used_new_41_uploads": false
+    },
+    "in_sample": {
+      "PSNR_reference_db": 30.63414,
+      "PSNR_candidate_db": 30.6323,
+      "delta_PSNR_db": -0.00184,
+      "grad_temporal_reference": 0.000546,
+      "grad_temporal_candidate": 0.000531,
+      "temporal_reference": 0.002255,
+      "temporal_candidate": 0.002225,
+      "spatial_reference": 0.018783,
+      "spatial_candidate": 0.018787
+    },
+    "reused_evaluation": {
+      "videos_provisional": 29,
+      "already_inspected": true,
+      "clips_new_used_for_training": false,
+      "samples": 290,
+      "natural_motion_transitions": 232,
+      "PSNR_gain_RNE04_db": 0.48028,
+      "PSNR_gain_RNE06_db": 0.464442,
+      "edge_MAE_RNE04": 7.328081,
+      "edge_MAE_RNE06": 7.370479,
+      "texture_MAE_RNE04": 3.596195,
+      "texture_MAE_RNE06": 3.576064,
+      "regressions_RNE04": 3,
+      "regressions_RNE06": 1,
+      "temporal_delta_RNE04": -0.012029,
+      "temporal_delta_RNE06": -0.01191,
+      "perceptual_independence_proven": false
+    },
+    "quality_gate": "FAILED: RNE06 PSNR/contours inferior to paired control and RNE04; smoother is not necessarily more faithful",
+    "tests": "16/16 new RNE06 + 14/14 previous RNE05 synthetic CPU tests local PASS, CI remote unverified",
+    "code": [
+      "outils/rne/temporal_gradients.py",
+      "tests/test_rne06_temporal_gradients.py",
+      "RETOUCHE_NEURAL_ENGINE_06.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE06_gradients_temporels_prive.zip",
+    "personal_media_published": false,
+    "weights_published": false,
+    "auto_deployment": false,
+    "main_merged": false,
+    "iphone_safari_tested": false,
+    "nvidia_dlss5_used": false
   }
 }
