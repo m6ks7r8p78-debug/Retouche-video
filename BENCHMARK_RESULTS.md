@@ -37,6 +37,13 @@ Seuls des résultats réellement exécutés figurent ici. Des expériences priv�
 - **DLSS 5 — étude documentaire seulement** : principes de rendu neuronal guidé par structure/mouvement/état causal et contrôle de masques. Le SDK NVIDIA DLSS 5 n'est pas public au 14 novembre 2026, et les buffers d'un moteur de jeu manquent aux vidéos 2D de Safari iPhone. Aucune implémentation NVIDIA ni qualité de rendu mesurée. Voir `RECHERCHE_DLSS5_ET_AR_V4.md`.
 - **Garde-fous** : `outils/directeur-garde-fou-neural.cjs` et 18 tests Node synthétiques réussis localement. Le module refuse la promotion du segmentateur AR v4 et ne fait aucune inférence, reconstruction, publication ou activation. Résultat des deux jobs de CI distante à confirmer après commit.
 
+## Jalon ChatGPT — calibration AR v4 et fusion causale temporelle (14 nov. 2026)
+
+- **Calibration par validation, sans réentraînement** : seuil AR v4 conservé à **0,50** sur 4 groupes / 96 cas d'incrustations synthétiques. Confirmation sur **5 autres groupes / 120 cas synthétiques** : IoU « chat » ancien **0,14895**, v4 **0,36219** ; pixels positifs sur témoins sans ajout AR **28,9299 % → 0,2718 %**. La confirmation précédente sur 3 scènes avait donné **1,4594 %** pour le modèle v4 : robustesse non démontrée sur tous les contenus. Les fonds peuvent déjà contenir de véritables effets ; « sans ajout » ne prouve pas « sans filtre ».
+- **Stabilité temporelle en vidéo 2D simulée** : 4 groupes / **288 images** pour sélectionner un coefficient de fusion causale de **0,45** ; 5 autres groupes / **360 images synthétiques** pour confirmer. Flux optique arrière OpenCV Farneback estimé à partir du passé ; variation temporelle des probabilités **0,007026 → 0,003536** (−49,67 %) ; IoU **0,270691 → 0,266382** ; pixels positifs sur témoins **0,1503 % → 0,1381 %**. Ces séquences sont des translations synthétiques sur fonds de vrais clips, **pas des mouvements naturels filmés**. Aucun SDK NVIDIA DLSS 5.
+- **Code expérimental** : `outils/directeur-fusion-temporelle-ar.cjs` + **17 tests Node réussis localement**. Ce module ne calcule pas son propre flux : il fusionne des cartes numériques fournies par un estimateur externe, limite les zones autorisées et rejette les transitions incertaines. Aucun branchement au moteur de rendu iPhone ; CI distante à vérifier.
+- **Limites** : aucune annotation de filtre réel vérifiée, pas de récupération prouvée des pixels occultés, pas de test appareil Safari, et possible exposition historique des fonds au préentraînement initial. Détails : `LABO_AR_V4_FUSION_TEMPORELLE.md`.
+
 ## À produire ensuite
 
 1. Catalogue privé de 157 vidéos déjà consolidé côté ChatGPT : exploiter les groupes et les consentements vérifiés, sans partager médias, chemins ou empreintes.
