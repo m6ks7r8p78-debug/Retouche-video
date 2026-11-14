@@ -55,6 +55,17 @@ Seuls des résultats réellement exécutés figurent ici. Des expériences priv�
 
 **Décision : RNE 0.2 reste expérimental et n'est pas activé dans l'application.** Une meilleure comparaison au modèle initial ne suffit pas si le témoin bicubique reste meilleur.
 
+## 14 novembre 2026 — RNE 0.3, campagne privée sur **les 157 vidéos**
+
+- **157/157 médias exacts**, SHA-256 du catalogue confirmé pour chaque fichier, environ 2,46 Go. **37 groupes conservateurs** de scènes et variantes (indicateurs de similarité du catalogue) ; 127 vidéos/27 groupes en apprentissage, 12/4 validation, 18/6 test, sans recouvrement avec les 21 vidéos RNE utilisées auparavant pour les deux dernières partitions.
+- **284 triplets de véritables frames vidéo successives** : 254 apprentissage, 12 validation, 18 test, 0 fichier indécodable. Ceci n'est **pas** un décodage exhaustif des 157 vidéos : au plus deux passages courts par vidéo, puis dégradations LR synthétiques pour créer les cibles.
+- **RNE 0.3 à trois frames**, entraîné **600 étapes** depuis zéro ; 13 684 paramètres, mouvements optiques avant/arrière, carte d'occultation/confiance, restitution x2.
+- **48 patchs validation** : bicubique 35,05058 dB, RNE 0.3 35,50851 dB (**+0,45793 dB**).
+- **72 patchs de test provenant de 18 vidéos et 6 groupes** : bicubique 33,07405 dB ; RNE 0.1 32,75664 dB ; RNE 0.2 33,07820 dB ; RNE 0.3 **33,50619 dB**. Gains **+0,43214 dB vs bicubique** et **+0,42798 dB vs RNE 0.2**.
+- 5 des 6 groupes progressent face au bicubique ; **1/72 régression >0,5 dB vs bicubique et 5/72 vs RNE 0.2**, empêchant promotion universelle. Scores sur dégradations **synthétiques de clips réels**, aucune preuve de fidélité aux détails physiquement perdus, ni iPhone ou 4K.
+- **66/66 tests Python locaux** (familles 0.1, 0.2, 0.3), dont 19 du moteur RNE 0.3 et 11 sur consentement/partition. MP4 synthétique 24 frames 128x96→256x192 et AAC vérifiés localement. La CI distante **reste à confirmer**.
+- Sources reproductibles et seules données publiques : `outils/rne/triad.py`, `outils/rne/prepare_triad.py`, `outils/rne/train_triad.py`, `tests/test_rne_triad.py`, `tests/test_rne_triad_protocol.py`, `RETOUCHE_NEURAL_ENGINE_03.md`. Poids, manifestes, empreintes individuelles et médias **privés hors GitHub**.
+
 ## À produire ensuite
 
 1. Catalogue privé de 157 vidéos déjà consolidé côté ChatGPT : exploiter les groupes et les consentements vérifiés, sans partager médias, chemins ou empreintes.
