@@ -38,10 +38,12 @@ var DIRECTEUR_IA = (() => {
   };
   function cible(type, w, h, appareil, demande) {
     const mobile = !!appareil.mobile, disponible = type === "video" ? (mobile ? 1920 : 3840) : 3840;
-    const souhaite = entiers(demande) || disponible, source = Math.max(w, h), propose = Math.min(souhaite, disponible);
+    const source = Math.max(w, h), origine = demande === "origine" || demande === -1;
+    const souhaite = origine ? source : (entiers(demande) || disponible);
+    const propose = origine ? source : Math.min(souhaite, disponible);
     // L'export réel garde sa propre autorité : ne pas activer un format non implémenté.
     return { souhaite, propose, plafondAutomatique: disponible, facteur: +(propose / source).toFixed(2),
-      exportConfigure: false, limite: souhaite > disponible ? "La sortie demandée dépasse le plafond automatique actuel : aucun export 8K n'est promis." : null };
+      exportConfigure: false, limite: !origine && souhaite > disponible ? "La sortie demandée dépasse le plafond automatique actuel : aucun export 8K n'est promis." : null };
   }
   function planifier(entree) {
     if (!entree || !["photo", "video"].includes(entree.type)) throw new TypeError("type photo ou video requis");
