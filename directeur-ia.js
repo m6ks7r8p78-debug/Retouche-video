@@ -92,20 +92,22 @@ var DIRECTEUR_IA = (() => {
     return { version: 1, type, mode, dimensions: { w, h }, mesures, sortie, operations, ecartes, avertissements,
       resume, execution: "planification ; seuls les réglages compatibles avec le pipeline existant seront appliqués" };
   }
-  /* Passerelle volontairement étroite : ne remplace ni les mesures ni les préférences de REC.
-     Les opérations sont déjà exécutées par REC/PHOTO, ici on borne seulement les excès observables.
-     N'active jamais un module indisponible et ne change pas les exclusions enregistrées de l'utilisateur. */
+  /* Garde-fou anti-régression : la nouvelle analyse ne supprime pas les choix
+     de REC, ni les réglages manuels. Elle ne peut que limiter une netteté
+     excessivement forte en présence d'artefacts mesurés. */
+  function protegerNettete(valeur, plan) {
+    if (!Number.isFinite(valeur) || !plan || !plan.mesures) return valeur;
+    const risque = Math.max(metr(plan.mesures.compression), metr(plan.mesures.bruit));
+    if (risque >= .8) return Math.min(valeur, .28);
+    if (risque >= .5) return Math.min(valeur, .42);
+    return valeur;
+  }
   function concilier(recommandation, plan) {
-    if (!recommandation || !recommandation.o || !plan || !Array.isArray(plan.operations)) return recommandation;
-    const o = recommandation.o, ids = new Set(plan.operations.map(x => x.id));
-    if (!ids.has("debloc") && Number.isFinite(o.db)) o.db = 0;
-    if (!ids.has("debruitage") && Number.isFinite(o.dn)) o.dn = Math.min(o.dn, .2);
-    if (!ids.has("poussiere") && o.dust === true) o.dust = false;
-    if (!ids.has("stabilisation") && o.stab === true) o.stab = false;
-    if (!ids.has("scintillement") && o.defl === true) o.defl = false;
-    if (!ids.has("voix") && o.voice === true) o.voice = false;
+    if (!recommandation || !recommandation.o || !plan) return recommandation;
+    if (Number.isFinite(recommandation.o.sh))
+      recommandation.o.sh = protegerNettete(recommandation.o.sh, plan);
     return recommandation;
   }
-  return Object.freeze({ planifier, concilier, valeurs, catalogue });
+  return Object.freeze({ planifier, concilier, protegerNettete, valeurs, catalogue });
 })();
 if (typeof module !== "undefined" && module.exports) module.exports = DIRECTEUR_IA;
