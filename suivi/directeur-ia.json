@@ -35,15 +35,16 @@
     "RNE 0.4 nouvelles vidéos: 41 uploads audités; exclusion 3 copies exactes et 9 mêmes scènes malgré SHA différents; 29 candidats provisoires (580 reconstructions), +0,341 dB PSNR vs bicubique, 3 regressions sur un seul clip, textures encore difficiles, 232 vraies transitions, pas de déploiement.",
     "RNE cohérence LR post-hoc : 29 clips candidats, 580 reconstructions; gain propre +0,480→+0,723 dB et 3 regressions éliminées, mais JPEG +0,203→+0,090 dB, flicker 1,702→1,858 et textures pires. Blocage de déploiement maintenu, 14 tests synthétiques.",
     "RNE 0.5 texture/temporel : 157 historiques verifiees, 154 uniques, 308 triplets, A/B 260 steps x 2; gain PSNR +0.00162 dB trop faible, perte temporelle aggravée, pas de promotion, 14 tests synthétiques réussis.",
-    "RNE06: entraînement expérimental sur 308 triplets historiques, 260 steps x2, réduction faible des erreurs temporelles mais PSNR/contours en recul; 29 vidéos du lot réutilisé confirment l'absence de promotion. 16 tests nouveaux PASS."
+    "RNE06: entraînement expérimental sur 308 triplets historiques, 260 steps x2, réduction faible des erreurs temporelles mais PSNR/contours en recul; 29 vidéos du lot réutilisé confirment l'absence de promotion. 16 tests nouveaux PASS.",
+    "RNE07: 157 archives SHA vérifiées, 154 uniques, 308 triplets, 2 bras de 120 étapes, 4 dégradations dont vrai H264 en mémoire. +0,02433 dB sur H264 mais -0,03306 dB sur sources propres; candidat bloqué, 30 tests locaux verts, aucune des 41 vidéos de test utilisée pour l'apprentissage."
   ],
   "prochaines_etapes": [
-    "Maintenir les 41 vidéos récentes hors de tout entraînement et ne pas calibrer sur ce banc déjà réutilisé.",
-    "Conserver RNE04 comme référence expérimentale, RNE06 archivé comme tentative rejetée pour perte de fidélité spatiale.",
-    "Concevoir sur les 157 anciens clips des dégradations réalistes et des pertes jointes spatial/temporel, avant validation sur un nouveau jeu de scènes inédites.",
-    "Recueillir des paires avant/après filtre AR réellement vérifiées pour évaluer une véritable inversion de filtre, sans prétendre retrouver ce qui est occulté.",
-    "Mesurer la compatibilité et la mémoire de Safari sur un vrai iPhone, aucune activation sur retoucheproai.com en l'état.",
-    "Contrôler le statut de CI GitHub pour le dernier commit; aucun poids ni média personnel n'est publié."
+    "Conserver RNE0.4 comme référence expérimentale et les modèles RNE07 comme essais rejetés; ne pas sélectionner par seule optimisation H264 sur sources déjà vues.",
+    "Ne JAMAIS utiliser les 41 nouveaux uploads pour entraîner sans autorisation distincte et nouveau protocole, ni retoucher les seuils en fonction de scores déjà inspectés.",
+    "Développer une adaptation au niveau de dégradation à partir d'indicateurs fiables, évaluée d'abord sur les anciens 157 contenus; prévoir des seuils contre le flou et les variations temporelles.",
+    "Obtenir nouvelles scènes jamais apprises et paires avant/après filtres AR authentiques pour un vrai test, pas seulement LR synthétique.",
+    "Tester la mémoire, la batterie, la latence et la fidélité sur un iPhone Safari réel avant toute activation.",
+    "Vérifier que les deux tests RNE07 sont bien exécutés dans GitHub Actions ; aucun média, cache, manifeste ou poids privé dans le dépôt."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -54,14 +55,19 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-14",
     "objets": [
-      "outils/rne/temporal_gradients.py",
-      "tests/test_rne06_temporal_gradients.py",
-      "RETOUCHE_NEURAL_ENGINE_06.md",
-      ".github/workflows/rne-cpu.yml"
+      "outils/rne/rne07/degradations.py",
+      "outils/rne/rne07/robust_gate.py",
+      "outils/rne/rne07/prepare_corpus.py",
+      "outils/rne/rne07/train_robust.py",
+      "tests/test_rne07_degradations.py",
+      "tests/test_rne07_protocol.py",
+      "RETOUCHE_NEURAL_ENGINE_07.md",
+      ".github/workflows/rne-cpu.yml",
+      ".gitignore"
     ],
-    "preuve_locale": "16/16 tests RNE06 et 14/14 tests RNE05 reussis, 2 entrainements CPU et 290 comparaisons de recherche sur 29 videos candidates reutilisees",
+    "preuve_locale": "157 vidéos d'origine vérifiées, 308 triplets; 616 exemples internes de contrôle; deux apprentissages privés 120 steps; 30 tests synthétiques locaux dont FFmpeg H264 vrai; ZIP vérifié sans média ni images",
     "statut_ci": "a_verifier",
-    "observations": "Media et poids privés jamais publiés; candidat rejeté."
+    "observations": "aucune des 41 vidéos du jeu de test incluse dans le réentraînement, modèle non promu"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -930,5 +936,91 @@
     "main_merged": false,
     "iphone_safari_tested": false,
     "nvidia_dlss5_used": false
+  },
+  "jalon_neural_engine_07": {
+    "date": "2026-11-14",
+    "status": "RNE 0.7 entraîné puis rejeté au contrôle multimode; recherche privée sans déploiement",
+    "objectif": "exposer des modèles RNE à des dégradations proches de celles des vidéos compressées, sans toucher aux 41 clips de test",
+    "corpus": {
+      "videos_catalogue_ancienne": 157,
+      "empreintes_sha_conformes": 157,
+      "contenus_uniques": 154,
+      "copies_exactes_non_surpesees": 3,
+      "triplets": 308,
+      "positions_privees": [
+        0.18,
+        0.64
+      ],
+      "exemples_entrainement_disponibles": 616,
+      "exemples_controle_interne": 616,
+      "aucune_nouvelle_video_utilisee_pour_entrainer": true
+    },
+    "experience": {
+      "modes": [
+        "clean_area",
+        "jpeg55",
+        "blur_noise",
+        "h264_crf34"
+      ],
+      "h264": "FFmpeg libx264, encodage/décodage réel en mémoire, YUV420p CRF34",
+      "poids_depart": "RNE0.4 temporel privé",
+      "method": "deux bras initialisation/ordre/optimiseur identiques, témoin inclut 2 slots propres, candidat remplace un slot propre par H264",
+      "iterations_par_bras": 120,
+      "batch": 8,
+      "objective": "MSE + 0.025 residual temporal"
+    },
+    "scores_interne_par_mode": {
+      "clean_area": {
+        "delta_PSNR_db": -0.03306,
+        "delta_contours": 0.000002,
+        "delta_proxy_temporel": -0.000027,
+        "psnr_candidat_db": 36.22107
+      },
+      "jpeg55": {
+        "delta_PSNR_db": -0.00139,
+        "delta_contours": -0.000013,
+        "delta_proxy_temporel": -0.000031,
+        "psnr_candidat_db": 30.45044
+      },
+      "blur_noise": {
+        "delta_PSNR_db": -0.01692,
+        "delta_contours": 0.000014,
+        "delta_proxy_temporel": -0.000027,
+        "psnr_candidat_db": 30.72363
+      },
+      "h264_crf34": {
+        "delta_PSNR_db": 0.02433,
+        "delta_contours": -0.000027,
+        "delta_proxy_temporel": -0.000023,
+        "psnr_candidat_db": 29.85925
+      }
+    },
+    "limites": "L'ancien checkpoint RNE04 a déjà appris les 154 contenus. Seul le moment du nouveau fine-tuning a été tenu à l'écart de ce fine-tuning. Pas de validation indépendante. Conditions LR simulées et codec H264 représentatif, pas chaîne caméra authentique; indicateur temporel de details non equivalent stabilité perceptuelle.",
+    "decision": {
+      "passed_internal_gate": false,
+      "promoted": false,
+      "reference_model": "RNE 0.4 temporel",
+      "bicubic_fallback": true,
+      "not_deployed": true,
+      "real_iphone_safari_tested": false,
+      "real_before_after_ar_pairs": false,
+      "main_unchanged": true,
+      "NVIDIA_DLSS5_used": false
+    },
+    "tests_locaux": "30/30 tests synthetiques + vrai encodeur H264, confidentialité et consentement",
+    "github_code": [
+      "outils/rne/rne07/degradations.py",
+      "outils/rne/rne07/robust_gate.py",
+      "outils/rne/rne07/prepare_corpus.py",
+      "outils/rne/rne07/train_robust.py",
+      "tests/test_rne07_degradations.py",
+      "tests/test_rne07_protocol.py",
+      "RETOUCHE_NEURAL_ENGINE_07.md",
+      ".github/workflows/rne-cpu.yml",
+      ".gitignore"
+    ],
+    "archive_privee": "RetoucheProAI_RNE07_Degradations_H264_Privé.zip",
+    "poids_media_prives_jamais_publies": true,
+    "ci_Github": "a_verifier"
   }
 }
