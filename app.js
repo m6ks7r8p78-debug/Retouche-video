@@ -2830,17 +2830,37 @@ async function exportPhoto(){
     size(PREVIEW);
     if(!blob){msg("Impossible de créer la photo (mémoire saturée ?). Réessaie, ou choisis le format JPEG.");return}
     /* contrôle du fichier produit : il doit se relire et avoir la taille prévue */
-    let ok=false;try{const bm=await createImageBitmap(blob);ok=bm.width===W&&bm.height===H;bm.close&&bm.close()}catch(e){ok=false}
+    let ok=false,qualitePhoto=null,bm=null;
+    try{
+      bm=await createImageBitmap(blob);ok=bm.width===W&&bm.height===H;
+      if(ok&&window.DIRECTEUR_QUALITE&&photoThumb){
+        /* Miniatures à taille comparable : RAM bornée, aucune photo envoyée.
+           On ne confond pas variation technique et amélioration esthétique. */
+        try{
+          const wQ=Math.min(320,photoThumb.width),a=AZ.grab(photoThumb,wQ),b=AZ.grab(bm,wQ);
+          const mQ=x=>{const st=AZ.stats(x);return{noise:AZ.noise(x),sharp:AZ.sharp(x),p2:st.p2,p50:st.p50,p98:st.p98}};
+          qualitePhoto=DIRECTEUR_QUALITE.evaluer(mQ(a),mQ(b),{media:"photo"});
+          window.__dirqualite=qualitePhoto;
+        }catch(e){console.warn("Mesures comparatives photo indisponibles",e)}
+      }
+    }catch(e){ok=false}finally{if(bm)try{bm.close&&bm.close()}catch(e){}}
     if(!ok){msg("La photo produite n’a pas pu être relue : réessaie.");return}
     outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
     $("#ri").src=outUrl;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
     $("#out").hidden=false;$("#sv").hidden=false;$("#kbb").hidden=false;$("#erb").hidden=false;$("#rvb").hidden=false;$("#dfb").hidden=false;$("#kbo").hidden=false;$("#kbres").hidden=true;$("#bab").hidden=true;$("#bares").hidden=true;
     PV.show(photoURL,outUrl,W,H);
-    const r=recipe({sortie:W+"×"+H,format:png?"PNG":"JPEG 95 %",ia_utilisee:ia,duree_s:+((performance.now()-t0)/1000).toFixed(1)});showRecipe(r);
+    const r=recipe({sortie:W+"×"+H,format:png?"PNG":"JPEG 95 %",ia_utilisee:ia,duree_s:+((performance.now()-t0)/1000).toFixed(1),
+      comparaison:qualitePhoto?{verdict:qualitePhoto.verdict,compte:qualitePhoto.compte,limite:qualitePhoto.preuve}:undefined});showRecipe(r);
     const ro=[["ok","Photo créée : "+W+"×"+H+" ("+(s>1?"agrandie ×"+(Math.round(s*10)/10).toString().replace(".",","):"taille d’origine")+"), "+(png?"PNG sans perte":"JPEG qualité 95 %")+", "+(blob.size/1048576).toFixed(1).replace(".",",")+" Mo. Fichier relu et vérifié ✓"],
       ["ok","Rendu : "+PROF.NOM[PROF.id]+(ia?" ; restauration IA (Real-ESRGAN general v3, moteur "+(SR.engine==="gpu"?"WebGPU":"WebGL2")+")":" ; sans IA")+"."]];
     if(s>1)ro.push([ia?"warn":"ok",ia?"Agrandissement par IA : une partie des fins détails est estimée par le réseau, elle n’existait pas dans l’original. Compare au zoom ci-dessous.":"Agrandissement classique : aucune information n’est inventée, l’image est seulement interpolée."]);
     if(SRX.lastErr)ro.push(["warn","IA non utilisée : "+SRX.lastErr.texte]);
+    if(qualitePhoto){
+      const q=qualitePhoto;
+      ro.push([q.compte.degrade?"warn":"ok","Contrôle comparatif local : "+q.compte.ameliore+" indicateur(s) en progrès, "+q.compte.degrade+" en recul. Cette mesure ne prouve pas le réalisme de la photo."]);
+      for(const a of q.alertes.slice(0,2))ro.push(["warn","À comparer au zoom : "+a]);
+      for(const a of q.prudences.slice(0,2))ro.push(["warn","Prudence : "+a]);
+    }
     orepShow(ro);
     msg("Terminé ! "+W+"×"+H+"."+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
     try{DIAG.send("export_photo",{ok:true,out:W+"x"+H,ia,profil:PROF.id,format:png?"png":"jpeg",mo:+(blob.size/1048576).toFixed(2)})}catch(e){}
