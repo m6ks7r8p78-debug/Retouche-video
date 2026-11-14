@@ -18,6 +18,7 @@ jobs:
           node --check directeur-ia.js
           node --check directeur-qualite.js
           node --check directeur-scenes.js
+          node --check directeur-capacites.js
           node --check app.js
           node --check sw.js
       - name: Tests du Directeur IA
