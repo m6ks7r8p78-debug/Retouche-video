@@ -50,3 +50,21 @@ Découpage par dégradation : le sélecteur conserve +0,37899 dB sur entrée pro
 Conserver RNE 0.4 comme modèle neuronal de référence dans le laboratoire, et le bicubique comme repli. Pour faire progresser réellement le Directeur IA, remplacer la simple prédiction de gain moyen par une **estimation du risque de perte grave** et de l'incertitude par scène, entraînée **uniquement sur les 157 vidéos consenties** et prévalidée par groupes. Ne pas surexploiter les **41 vidéos récentes**, déjà consultées dans les recherches précédentes et encore destinées à l'évaluation. Un **nouveau jeu réellement inédit**, des vérifications d'identité/texture et une mesure sur Safari iPhone physique sont indispensables avant un déploiement.
 
 **Ce moteur est indépendant de NVIDIA DLSS 5.**
+
+
+## Audit RNE 0.8.1 — queue des risques graves (14 novembre 2026)
+
+Un deuxième examen **sans entraînement** a analysé les 1 232 exemples du seul corpus historique de 157 vidéos (154 contenus distincts, 41 groupes conservateurs). Le seuil de perte grave est **fixé à un gain PSNR inférieur à −0,5 dB** ; il n'a pas été optimisé sur les résultats.
+
+| Sous-ensemble | Échantillons | Pertes graves | Groupes contenant une perte grave | Intervalle bootstrap par groupe du taux |
+|---|---:|---:|---:|---|
+| Apprentissage du sélecteur (instant 0) | 616 | **5** | **3 sur 41** | **[0 % ; 1,7342 %]** |
+| Validation du sélecteur (instant 1) | 616 | **4** | **1 sur 41** | **[0 % ; 1,6575 %]** |
+
+Répartition des cas graves : apprentissage **4 entrées propres et 1 H.264** ; validation **3 entrées propres et 1 H.264**. Aucun dans ces échantillons JPEG55 ou bruit/flou ; **cela ne prouve pas l'absence de risques dans ces conditions**.
+
+Le bootstrap rééchantillonne les **groupes de scènes**, et non des frames supposées indépendantes (5 000 tirages, graines fixes). Dans **36,54 %** des rééchantillonnages du lot de validation, le groupe contenant les quatre cas graves n'est pas tiré et le nombre d'échecs est donc zéro. Le zéro de la borne basse traduit la fragilité des données et **ne constitue pas une garantie de sécurité**.
+
+**Décision : il n'existe pas assez de groupes de scènes présentant des échecs pour entraîner et calibrer sérieusement un détecteur de risques graves.** Nous refusons cette promotion malgré un gain de PSNR moyen positif de RNE04. Le nouveau `outils/rne/rne08/risk_audit.py` impose une cardinalité et un protocole fixes, protège contre les doublons et contre les modifications a posteriori du seuil −0,5 dB et interdit l'activation automatique. `tests/test_rne08_risk_audit.py` apporte **18 tests synthétiques réussis localement** ; les **29 tests RNE08 existants** ont également été relancés avec succès.
+
+L'analyse et les paramètres restent privés dans l'archive du propriétaire `RetoucheProAI_RNE08_Audit_Risques_Privé.zip` (aucune vidéo ou image brute). Les **41 nouveaux uploads** restent exclus de l'entraînement et de ce contrôle. Le réseau initial RNE04 a déjà vu les vidéos historiques, la CI GitHub distante et la compatibilité sur véritable Safari iPhone restent à vérifier. **RNE08 n'est pas déployé et la PR reste en brouillon.**
