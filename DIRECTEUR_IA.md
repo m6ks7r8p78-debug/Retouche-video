@@ -8,7 +8,10 @@
 - Évite d'exagérer les détails si le bruit et la compression sont importants.
 - Expose la limite 1920 px côté vidéo mobile en réglage automatique et 3840 px dans les autres cas ; n'active **pas** un export 8K absent.
 - `app.js` appelle le Directeur dans le flux d'analyse de vidéo et photo ; `concilier` préserve les recommandations établies, tandis que `protegerNettete` limite la netteté excessive en présence d'artefacts clairement mesurés, sans écraser un profil manuel. Le plan est visible dans un volet facultatif « Directeur IA » (`index.html`), et ses propositions sont enregistrées dans la recette.
-- `tests/directeur-ia.test.mjs` : 18 scénarios de décision exécutés dans GitHub Actions avec Node.
+- `directeur-qualite.js` : comparateur technique avant/après sans fausse note de réalisme ; branché sur la vérification de l'export vidéo et sur des miniatures photo à mémoire bornée. Préserve les signaux contradictoires (ex. bruit réduit mais netteté effondrée).
+- `tests/directeur-ia.test.mjs` et `tests/directeur-qualite.test.mjs` : **28 tests unitaires réussis sur 28** dans GitHub Actions.
+- `tests/directeur-browser.test.mjs` : **6 tests Chromium réussis sur 6**, comprenant photo importée, analyse et export photo, profil manuel préservé, vidéo H.264 + AAC synthétique, export à taille d'origine, piste audio vérifiée par `ffprobe`, et absence d'erreur JavaScript non gérée.
+- `sw.js` : empreinte `8876fc9c31893589` vérifiée sur un checkout GitHub complet (**8/8 tests hors ligne**).
 
 ## Délimitations importantes
 
@@ -18,11 +21,11 @@ Un plan global calculé sur plusieurs échantillons n'équivaut pas encore à un
 
 ## Vérifications avant fusion sur main
 
-1. Exécuter `node --test tests/directeur-ia.test.mjs`, `node --check app.js` et les tests d'analyse/vidéo déjà existants.
+1. La syntaxe de `app.js` et des modules est vérifiée en CI ; 28 tests unitaires et 6 tests Chromium photo/vidéo ont réussi. Poursuivre la non-régression des autres fonctionnalités existantes, notamment filtres AR, restauration des visages, audio, réencadrement, export X et modèles lourds.
 2. Lancer une photo nette, une photo bruitée, une vidéo compressée, une vidéo avec mouvement et une vidéo saine. Vérifier que les réglages manuels et les choix enregistrés prévalent, puis comparer avant/après.
 3. Exécuter `node tests/sw.test.mjs --maj` **après les modifications** pour recalculer l'empreinte `H` dans `sw.js`, puis `node tests/sw.test.mjs`. Le numéro de cache a été passé de `retouche-v80` à `retouche-v81` et `directeur-ia.js` est ajouté au pré-cache. L'empreinte H a été recalculée sur un runner GitHub Actions qui contient tous les fichiers, puis enregistrée dans `sw.js`. Le workflow vérifie désormais cette empreinte sans la corriger silencieusement.
 4. Tester sur un véritable iPhone Safari, notamment mise à jour hors ligne du service worker, absence d'échec de chargement et export avec son.
-5. Reprendre les tests de non-régression du dépôt. Le workflow `.github/workflows/directeur-ia.yml` contrôle la syntaxe, les tests du Directeur et l'empreinte PWA en lecture seule.
+5. Le workflow `.github/workflows/directeur-ia.yml` vérifie la syntaxe, les 28 tests unitaires, l'empreinte PWA en lecture seule et le parcours photo/vidéo dans Chrome. Reprendre les tests de non-régression étendus du dépôt.
 
 ## Prochaine tranche
 
