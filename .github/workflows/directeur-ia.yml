@@ -25,3 +25,18 @@ jobs:
         run: |
           node tests/directeur-empreinte.mjs
           node tests/sw.test.mjs
+
+  parcours-navigateur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Récupérer le code expérimental
+        uses: actions/checkout@v4
+      - name: Installer Playwright sans télécharger un autre Chrome
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.55.0
+      - name: Vérifier le parcours complet depuis une photo de référence
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          echo "Navigateur utilisé : $CHROME"
+          test -x "$CHROME"
+          node --test tests/directeur-browser.test.mjs
