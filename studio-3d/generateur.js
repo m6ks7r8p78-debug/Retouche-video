@@ -1,4 +1,4 @@
-/* Retouche 3D AI Lab v1.7 — original adult procedural characters, 100% local.
+/* Retouche 3D AI Lab v1.8 — original adult procedural characters, 100% local.
    Neither neural inference nor reconstruction of a real filmed person.
    Browser/Node UMD, no external assets or requests. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.Retouche3DGenerator=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
@@ -17,6 +17,7 @@ function parsePrompt(raw){
  const smokeRequested=/\b(fume|fumant|fumante|fumer|cigarette|cigare|pipe)\b/.test(s);
  const smoke=smokeRequested&&!/\b(ne fume pas|sans cigarette|sans fumer|non fumeur|non fumeuse)\b/.test(s);
  const smokeHand=/\b(main gauche|dans sa main gauche|de la main gauche)\b/.test(s)?'gauche':'droite';
+ const tobacco=smoke?(/\bcigare\b/.test(s)?'cigare':/\bpipe\b/.test(s)?'pipe':'cigarette'):null;
  const wave=/\b(salue|saluer|saluant|bonjour|coucou|waving|wave)\b/.test(s)||/fait signe|agite la main/.test(s);
  const walk=/\b(marche|marcher|marchant|walking|walk|promene|promener)\b/.test(s);
  const tilt=/\b(penche|pencher|inclin(?:e|er)) (?:legerement )?(?:la |sa )?tete\b/.test(s);
@@ -27,15 +28,36 @@ function parsePrompt(raw){
  const outfitColor=/rouge|bordeaux|red/.test(outfitSegment)?'rouge':/bleu|marine|blue/.test(outfitSegment)?'bleu':/blanc|white/.test(outfitSegment)?'blanc':/noir|black/.test(outfitSegment)?'noir':'marine';
  const eyes=/yeux\s+(?:de couleur\s+)?verts?|green eyes/.test(s)?'vert':/yeux\s+(?:de couleur\s+)?bleus?|blue eyes/.test(s)?'bleu':/yeux\s+(?:de couleur\s+)?noirs?|dark eyes/.test(s)?'sombre':'brun';
  const skinTone=/peau\s+(?:tres\s+)?foncee?/.test(s)?'foncee':/peau\s+(?:mate|olive)/.test(s)?'mate':/peau\s+claire?/.test(s)?'claire':'standard';
- // Préserver l'ordre exprimé, sans prétendre comprendre librement toutes les phrases.
- const firstIndex=re=>{const m=re.exec(s);return m?m.index:Number.POSITIVE_INFINITY;};
- const actionOffsets=[
-  {name:'fumer',index:smoke?firstIndex(/\b(fume|fumer|fumant|fumante|cigarette|cigare|pipe)\b/):Infinity},
-  {name:'saluer',index:wave?firstIndex(/\b(salue|saluer|saluant|bonjour|coucou|waving|wave)\b|fait signe|agite la main/):Infinity},
-  {name:'marcher',index:walk?firstIndex(/\b(marche|marcher|marchant|walking|walk|promene|promener)\b/):Infinity},
-  {name:'incliner',index:tilt?firstIndex(/\b(penche|pencher|inclin(?:e|er)) (?:legerement )?(?:la |sa )?tete\b/):Infinity}
+ // Extraire les occurrences dans leur ordre, sans inventer les gestes non reconnus.
+ // « deux fois » après un geste duplique cette étape (max 3 répétitions) ; les autres
+ // réapparitions explicites restent des étapes distinctes.
+ const events=[];
+ const patterns=[
+  ['fumer',/\b(fume|fumer|fumant|fumante|cigarette|cigare|pipe|refume|refumer)\b/g,smoke],
+  ['saluer',/\b(salue|saluer|saluant|bonjour|coucou|waving|wave)\b|fait signe|agite la main/g,wave],
+  ['marcher',/\b(marche|marcher|marchant|walking|walk|promene|promener)\b/g,walk],
+  ['incliner',/\b(penche|pencher|inclin(?:e|er)) (?:legerement )?(?:la |sa )?tete\b/g,tilt]
  ];
- const actions=actionOffsets.filter(x=>Number.isFinite(x.index)).sort((a,b)=>a.index-b.index).map(x=>x.name);
+ for(const [name,re,enabled] of patterns){if(!enabled)continue;let m;
+  while((m=re.exec(s))!==null){const tail=s.slice(m.index+m[0].length,m.index+m[0].length+35);
+   const repetition=tail.match(/^\s*(?:a nouveau\s*)?(?:\b(2|3|deux|trois)\s*fois\b)/);
+   const count=repetition?({'2':2,'3':3,'deux':2,'trois':3}[repetition[1]]):1;
+   for(let j=0;j<count;j++)events.push({name,index:m.index,repeat:j,token:m[0]});
+   if(m.index===re.lastIndex)re.lastIndex++;
+  }
+ }
+ events.sort((a,b)=>a.index-b.index||a.repeat-b.repeat);
+ // Éviter un double comptage dans « fume une cigarette » ou « salue, fait signe ».
+ // Une conjonction temporelle explicite préserve les gestes réellement répétés.
+ const dedup=[];
+ for(const ev of events){const prev=dedup[dedup.length-1];
+   const between=prev&&s.slice(prev.index,ev.index);
+   if(prev&&prev.name===ev.name&&ev.repeat===0&&ev.index!==prev.index&&ev.index-prev.index<36&&
+      !/\b(puis|ensuite|apres|encore|nouveau)\b/.test(between||'')&&!/\brefume(?:r)?\b/.test(ev.token))continue;
+   dedup.push(ev);
+ }
+ const actions=dedup.map(x=>x.name).slice(0,12);
+ const truncated=dedup.length>12;
  if(actions.length===0)actions.push('pose');
  const matched=[];
  if(/\b(femme|homme|man|woman|dame)\b/.test(s))matched.push('type adulte');
@@ -50,7 +72,9 @@ function parsePrompt(raw){
  if(/assis|assise|s.asseoit|se couche|allonge|allongee/.test(s))unhandled.push('position assise/allongée non disponible');
  if(/decor|arriere.plan|ville|plage|salon|restaurant/.test(s))unhandled.push('décor non créé');
  if(/reprodui|exactement comme|identique a une personne/.test(s))unhandled.push('copie fidèle de personne non disponible');
- return {adult:true,ageLabel:'adulte 18+',gender,hair,longHair,clothes,elegant,smoke,wave,walk,tilt,smokeHand,smokeStyle,actions,glasses,smiles,outfitColor,eyes,skinTone,matched,unhandled,originalText:text,
+ if(truncated)unhandled.push('scénario limité à 12 gestes dans ce prototype');
+ if([/\bcigarette\b/,/\bcigare\b/,/\bpipe\b/].filter(re=>re.test(s)).length>1)unhandled.push('changement de type de cigarette/cigare/pipe au fil du scénario non disponible');
+ return {adult:true,ageLabel:'adulte 18+',gender,hair,longHair,clothes,elegant,smoke,wave,walk,tilt,smokeHand,smokeStyle,tobacco,actions,glasses,smiles,outfitColor,eyes,skinTone,matched,unhandled,originalText:text,
   disclaimer:'Personnage synthétique stylisé, créé par formes paramétriques. Aucune identité réelle ni anatomie fidèle.'};
 }
 function build(config){
@@ -70,7 +94,8 @@ function build(config){
    {name:'braise',color:[.98,.32,.12,1]},
    {name:'chemise',color:[.91,.92,.96,1]},
    {name:'verres',color:[.34,.53,.61,1]},
-   {name:'iris_'+c.eyes,color:({brun:[.30,.21,.12,1],bleu:[.18,.47,.66,1],vert:[.21,.47,.31,1],sombre:[.08,.08,.09,1]}[c.eyes]||[.30,.21,.12,1])}
+   {name:'iris_'+c.eyes,color:({brun:[.30,.21,.12,1],bleu:[.18,.47,.66,1],vert:[.21,.47,.31,1],sombre:[.08,.08,.09,1]}[c.eyes]||[.30,.21,.12,1])},
+   {name:'fumee_synthetique',color:[.79,.87,.90,.28]}
  ];
  const nodeList=[];const meshes=[];
  function node(name,parent=null,t=[0,0,0],scale=null,mat=null){
@@ -99,6 +124,8 @@ function build(config){
  node('nez',root,[0,1.785,.173],[.034,.053,.038],0);
  node('bouche',root,[0,1.731,.164],[c.smiles?.071:.055,.013,.012],5);
  if(c.glasses){node('lunette_gauche',root,[-.081,1.858,.18],[.07,.047,.012],10);node('lunette_droite',root,[.081,1.858,.18],[.07,.047,.012],10);node('pont_lunette',root,[0,1.861,.181],[.027,.012,.011],3);}
+ const puffs=[];
+ if(c.smoke){for(let i=0;i<3;i++)puffs.push(node('fumee_volute_'+(i+1),head,[.025+(i-1)*.032,-.078+i*.065,.22+i*.022],[.0001,.0001,.0001],12));}
  const limb={};
  for(const [side,sgn] of [['gauche',-1],['droite',1]]){
    const sh=node('epaule_'+side,root,[sgn*(torsoW+.047),1.51,0]);
@@ -108,14 +135,18 @@ function build(config){
    const wr=node('poignet_'+side,el,[0,-.41,0]);
    node('main_'+side,wr,[0,-.063,0],[.09,.12,.073],0);
    limb[side]={shoulder:sh,elbow:el,wrist:wr};
-   if(side===c.smokeHand&&c.smoke){node('cigarette_tige',wr,[.02,-.130,.053],[.017,.10,.017],7);node('cigarette_braise',wr,[.02,-.223,.053],[.018,.013,.018],8);}
+   if(side===c.smokeHand&&c.smoke){
+    if(c.tobacco==='pipe'){node('pipe_tuyau',wr,[.02,-.105,.050],[.021,.083,.022],3);node('pipe_foyer',wr,[.02,-.195,.057],[.047,.042,.045],3);node('pipe_braise',wr,[.02,-.230,.057],[.027,.008,.027],8);}
+    else{const cigar=c.tobacco==='cigare';node('cigarette_tige',wr,[.02,-.130,.053],[cigar?.031:.017,.10,cigar?.029:.017],cigar?3:7);node('cigarette_braise',wr,[.02,-.223,.053],[cigar?.027:.018,.013,cigar?.027:.018],8);}
+   }
    const hip=node('hanche_'+side,root,[sgn*legSpan,.89,0]);
    node('cuisse_'+side,hip,[0,-.24,0],[.112,.31,.114],c.clothes==='robe'?0:2);
    const knee=node('genou_'+side,hip,[0,-.50,0]);limb[side].hip=hip;limb[side].knee=knee;node('mollet_'+side,knee,[0,-.22,0],[.091,.29,.095],0);
    node('chaussure_'+side,knee,[0,-.49,.095],[.105,.095,.21],6);
  }
  const quat=angle=>[0,0,Math.sin(angle/2),Math.cos(angle/2)];
- function track(node,times,angles){return {node,times,rotation:angles.map(quat)};}
+ function track(node,times,angles){return {node,times,path:'rotation',values:angles.map(quat),rotation:angles.map(quat)};}
+ function scaleTrack(node,times,values){return {node,times,path:'scale',values:values.map(x=>x.slice())};}
  const animations=[];const poseT=[0,1.5,3.0,4.5];
  animations.push({name:'pose',label:'Pose douce',duration:4.5,channels:[track(head,poseT,[0,.045,-.045,0]),track(limb.gauche.shoulder,poseT,[0,.055,-.055,0]) ]});
  if(c.smoke){const hand=limb[c.smokeHand];const duration=c.smokeStyle==='lent'?7:c.smokeStyle==='rapide'?3.3:5;
@@ -124,7 +155,8 @@ function build(config){
    track(hand.shoulder,ts,[0,c.smokeHand==='gauche'?.38:-.38,c.smokeHand==='gauche'?1.14:-1.14,c.smokeHand==='gauche'?1.14:-1.14,c.smokeHand==='gauche'?.38:-.38,0]),
    track(hand.elbow,ts,[0,c.smokeHand==='gauche'?.70:-.70,c.smokeHand==='gauche'?2.03:-2.03,c.smokeHand==='gauche'?2.03:-2.03,c.smokeHand==='gauche'?.70:-.70,0]),
    track(hand.wrist,ts,[0,c.smokeHand==='gauche'?.1:-.1,c.smokeHand==='gauche'?.22:-.22,c.smokeHand==='gauche'?.22:-.22,c.smokeHand==='gauche'?.1:-.1,0]),
-   track(head,ts,[0,0,-.05,-.05,0,0])
+   track(head,ts,[0,0,-.05,-.05,0,0]),
+   ...puffs.map((id,i)=>scaleTrack(id,ts,[[.0001,.0001,.0001],[.0001,.0001,.0001],[.0001,.0001,.0001],[.020+i*.007,.033+i*.013,.016+i*.006],[.045+i*.007,.070+i*.015,.040+i*.008],[.0001,.0001,.0001]]))
   ]});
  }
  if(c.wave){const ts=[0,.5,1.0,1.4,1.8,2.2,2.65,3.1];
@@ -153,17 +185,17 @@ function build(config){
    for(const name of c.actions){const clip=animations.find(a=>a.name===name);if(!clip)continue;
      timeline.push({action:name,label:clip.label,start:cursor,end:cursor+clip.duration,duration:clip.duration});cursor+=clip.duration+gap;
    }
-   const nodeIds=[...new Set(timeline.flatMap(t=>animations.find(a=>a.name===t.action).channels.map(ch=>ch.node)))].sort((a,b)=>a-b);
-   const identity=[0,0,0,1];
-   const tracks=nodeIds.map(id=>{const times=[],rotation=[];
-     function push(t,q){if(times.length&&Math.abs(times[times.length-1]-t)<1e-7){rotation[rotation.length-1]=q.slice();return;}times.push(t);rotation.push(q.slice());}
+   const keys=[...new Set(timeline.flatMap(t=>animations.find(a=>a.name===t.action).channels.map(ch=>ch.node+':'+(ch.path||'rotation'))))].sort();
+   const tracks=keys.map(key=>{const [idString,path]=key.split(':'),id=Number(idString),times=[],values=[];
+     const identity=path==='scale'?[.0001,.0001,.0001]:[0,0,0,1];
+     function push(t,v){if(times.length&&Math.abs(times[times.length-1]-t)<1e-7){values[values.length-1]=v.slice();return;}times.push(t);values.push(v.slice());}
      push(0,identity);
-     for(const step of timeline){const clip=animations.find(a=>a.name===step.action),t=clip.channels.find(ch=>ch.node===id);
+     for(const step of timeline){const clip=animations.find(a=>a.name===step.action),ch=clip.channels.find(v=>v.node===id&&(v.path||'rotation')===path);
        push(step.start,identity);
-       if(t){for(let i=0;i<t.times.length;i++)push(step.start+t.times[i],t.rotation[i]);}
+       if(ch){for(let i=0;i<ch.times.length;i++)push(step.start+ch.times[i],(ch.values||ch.rotation)[i]);}
        push(step.end,identity);push(step.end+gap,identity);
      }
-     return {node:id,times,rotation};
+     return {node:id,path,times,values,...(path==='rotation'?{rotation:values}:{})};
    });
    const duration=timeline[timeline.length-1].end;
    animations.push({name:'scenario',label:'Scénario complet ('+timeline.map(t=>t.action).join(' → ')+')',duration,channels:tracks});
@@ -186,14 +218,14 @@ function encodeGLB(model){
  const nodes=model.nodes.map(n=>{let c={name:n.name,translation:n.translation.slice()};if(n.scale)c.scale=n.scale.slice();if(n.children)c.children=n.children.slice();if(n.mesh!==undefined)c.mesh=n.extras?.materialIndex??0;return c;});
  const animations=[];
  for(const clip of model.animations){const samplers=[],channels=[];
-  for(const motion of clip.channels){let ti=accessor(new Float32Array(motion.times),5126,'SCALAR');let rot=accessor(new Float32Array(motion.rotation.flat()),5126,'VEC4');let si=samplers.length;samplers.push({input:ti,output:rot,interpolation:'LINEAR'});channels.push({sampler:si,target:{node:motion.node,path:'rotation'}});}
+  for(const motion of clip.channels){let ti=accessor(new Float32Array(motion.times),5126,'SCALAR');let path=motion.path||'rotation';let values=motion.values||motion.rotation;let data=accessor(new Float32Array(values.flat()),5126,path==='scale'?'VEC3':'VEC4');let si=samplers.length;samplers.push({input:ti,output:data,interpolation:'LINEAR'});channels.push({sampler:si,target:{node:motion.node,path}});}
   animations.push({name:clip.name,samplers,channels});
  }
  while(pos%4){bytes.push(0);pos++}
- const doc={asset:{version:'2.0',generator:'Retouche 3D AI Lab v1.7 procedural adults'},scene:0,scenes:[{nodes:[0]}],nodes,meshes,
-  materials:model.materials.map(m=>({name:m.name,pbrMetallicRoughness:{baseColorFactor:m.color,metallicFactor:0,roughnessFactor:.77},doubleSided:true})),
+ const doc={asset:{version:'2.0',generator:'Retouche 3D AI Lab v1.8 procedural adults'},scene:0,scenes:[{nodes:[0]}],nodes,meshes,
+  materials:model.materials.map(m=>({name:m.name,pbrMetallicRoughness:{baseColorFactor:m.color,metallicFactor:0,roughnessFactor:.77},doubleSided:true,...(m.color[3]<1?{alphaMode:'BLEND'}:{})})),
   buffers:[{byteLength:bytes.length}],bufferViews:views,accessors,animations,
-  extras:{synthetic:true,notPhotorealistic:true,notReconstructedFromVideo:true,age:'adult 18+',generatorVersion:'1.7',animationNames:animations.map(a=>a.name),timeline:model.timeline,smokeHand:model.config.smokeHand,caveat:'procedural nodes, no skinning or faithful human motion'}};
+  extras:{synthetic:true,notPhotorealistic:true,notReconstructedFromVideo:true,age:'adult 18+',generatorVersion:'1.8',animationNames:animations.map(a=>a.name),timeline:model.timeline,smokeHand:model.config.smokeHand,tobacco:model.config.tobacco,caveat:'procedural nodes, no skinning or faithful human motion'}};
  let json=new TextEncoder().encode(JSON.stringify(doc));const pad=(4-json.length%4)%4;const output=new Uint8Array(12+8+json.length+pad+8+bytes.length);const dv=new DataView(output.buffer);
  output.set([103,108,84,70],0);dv.setUint32(4,2,true);dv.setUint32(8,output.length,true);dv.setUint32(12,json.length+pad,true);output.set([74,83,79,78],16);output.set(json,20);output.fill(32,20+json.length,20+json.length+pad);let offset=20+json.length+pad;dv.setUint32(offset,bytes.length,true);output.set([66,73,78,0],offset+4);output.set(new Uint8Array(bytes),offset+8);
  return {bytes:output,document:doc};
