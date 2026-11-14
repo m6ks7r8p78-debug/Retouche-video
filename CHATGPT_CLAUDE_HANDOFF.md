@@ -28,6 +28,21 @@ Correspondance des livrables demandés → fichiers existants (pas de doublons) 
 `REGISTRE_MODELES_LICENCES.md` + `MODELES.md` ; confidentialité = `CONFIDENTIALITE.md` + `AUTORISATIONS.md` +
 `MEDIA_CATALOG_SCHEMA.md` (finalités) ; rapport de tests = `BENCHMARK_RESULTS.md` + PR #1 ; journal = `CHANGELOG.md`.
 
+## 2 bis. Cycle 2 (14 nov., Claude) — autorisations et première mesure réelle d'un module
+
+- **Autorisations** : le propriétaire déclare avoir donné à ChatGPT TOUTES les autorisations (9 finalités) sur la
+  bibliothèque de recherche. Enregistré dans `suivi/autorisations-proprietaire.json` (clé `*`, provenance et limites :
+  consentement des autres personnes représentées à vérifier ; aucun média dans GitHub ; entraînement seulement avec
+  protocole validé). À utiliser avec `catalogue_medias.py analyser … --consentements suivi/autorisations-proprietaire.json`.
+- **Mesure du vrai module « Retirer le filtre du visage » en vidéo** (`tests/banc_filtres_app.mjs`, 8 cas synthétiques) :
+  qualité 0,37, 62,5 % d'échecs. Chien et éléments au hasard : 29–66 % de l'erreur retirée ; **filtre chat : 0–2 %**.
+  Cause localisée : le détecteur d'éléments (robustesse compression/pose, petits éléments clairs). Détails : `BENCHMARK_RESULTS.md`.
+- **Priorité calculée** : `filtres_ar` → **améliorer** (détecteur v4 expérimental), devant toutes les inconnues.
+- **Demande à ChatGPT** : sur la bibliothèque privée (autorisée), lancer le catalogueur avec ce fichier d'autorisations,
+  puis relever, sans médias ni noms, pour chaque clip AR : type d'éléments (sombre/épais, clair/fin, couvrant, accessoire),
+  taille du visage (px entre les yeux), qualité de compression (champ `blocs_8x8`, `bits_par_pixel`). Ces chiffres
+  agrégés diront si le cas « chat » (petits éléments clairs + compression) est fréquent dans les vraies vidéos.
+
 ## 3. Ce que ChatGPT doit fournir (sans aucun média)
 
 1. **Catalogue des 103 (puis 157 + 1) médias** en CSV ou JSON : colonnes `id, fichier, sha256` + ses observations
@@ -72,7 +87,7 @@ Ne jamais déposer de vidéo, photo, nom de personne ou donnée biométrique dan
 | bloqué | ce qu'il faut | qui |
 |---|---|---|
 | analyse des 157 vidéos + image | catalogue (CSV/JSON) ou exécution de l'outil là où sont les fichiers | ChatGPT / propriétaire |
-| bancs sur médias réels | `evaluation_benchmark = oui` par média + consentement des personnes représentées si nécessaire | propriétaire |
+| bancs sur médias réels | autorisations déclarées (fichier ci-dessus) ; les médias restent chez ChatGPT : il faut qu'il exécute les outils ou fournisse les fichiers | ChatGPT |
 | entraînement | autorisation `entrainement` distincte + protocole validé (non demandé) | propriétaire |
 | validation iPhone | ouvrir la version de test sur l'iPhone 15 Pro Max | propriétaire |
 | fusion dans `main` | décision explicite | propriétaire |

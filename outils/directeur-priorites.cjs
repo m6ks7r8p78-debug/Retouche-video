@@ -8,7 +8,7 @@
  */
 var DIRECTEUR_PRIORITES=(()=>{
   "use strict";
-  const SEUILS=Object.freeze({qualiteSatisfaisante:.8,echecSatisfaisant:.1,casMinimum:5});
+  const SEUILS=Object.freeze({qualiteSatisfaisante:.8,echecSatisfaisant:.1,casMinimum:5,modulationInconnu:.6});
   const POIDS=Object.freeze({qualite:.4,echec:.35,gravite:.25});
   const unite=["qualite_mesuree","taux_echec","gravite","importance_utilisateur","faisabilite","cout_calcul","risque_regression"];
   const fini=x=>typeof x==="number"&&Number.isFinite(x);
@@ -22,6 +22,7 @@ var DIRECTEUR_PRIORITES=(()=>{
     }
     if(m.nb_cas!=null&&(!Number.isInteger(m.nb_cas)||m.nb_cas<0))throw new RangeError(`${m.module}.nb_cas invalide`);
     if(m.source!=null&&!["mesure","estimation"].includes(m.source))throw new RangeError(`${m.module}.source : mesure|estimation`);
+    if(m.donnees!=null&&!["synthetique","reel","mixte"].includes(m.donnees))throw new RangeError(`${m.module}.donnees : synthetique|reel|mixte`);
   }
   function evaluer(m){
     const mesure=m.source==="mesure"&&(m.nb_cas||0)>=SEUILS.casMinimum&&fini(m.qualite_mesuree)&&fini(m.taux_echec);
@@ -37,24 +38,30 @@ var DIRECTEUR_PRIORITES=(()=>{
       besoin=.5;
       raisons.push(`mesures insuffisantes (${m.nb_cas||0} cas, source ${m.source||"inconnue"}) : besoin inconnu`);
     }
-    const satisfaisant=mesure&&m.qualite_mesuree>=SEUILS.qualiteSatisfaisante&&m.taux_echec<=SEUILS.echecSatisfaisant;
+    const synthetique=mesure&&m.donnees==="synthetique";
+    if(synthetique)raisons.push("mesuré sur données synthétiques : à confirmer sur médias réels autorisés");
+    // Un module n'est déclaré satisfaisant que sur des données réelles (ou mixtes) : le synthétique ne suffit pas.
+    const bon=mesure&&m.qualite_mesuree>=SEUILS.qualiteSatisfaisante&&m.taux_echec<=SEUILS.echecSatisfaisant;
+    const satisfaisant=bon&&!synthetique;
     // Modulation bornée : la faisabilité ne peut multiplier le besoin que de 0,7 à 1 ; coût et risque de 0,8 à 1.
     const modulation=(.7+.3*m.faisabilite)*(1-.2*m.cout_calcul)*(1-.2*m.risque_regression);
-    // Sans mesure, l'ordre des mesures à faire suit l'importance seule : la facilité ne doit pas choisir quoi mesurer.
-    let score=besoin*(.4+.6*imp)*(mesure?modulation:1);
+    // Sans mesure, l'ordre des mesures à faire suit l'importance seule (modulation constante) : la facilité ne choisit
+    // pas quoi mesurer, et une faiblesse CONFIRMÉE (besoin > 0,3) passe devant une simple inconnue d'importance égale.
+    let score=besoin*(.4+.6*imp)*(mesure?modulation:SEUILS.modulationInconnu);
     let action;
     if(satisfaisant){
       score=Math.min(score,.05);action="maintenir";
       raisons.push("satisfaisant : seulement surveiller les régressions");
-    }else if(!mesure){
+    }else if(!mesure||bon){
       action="mesurer";
+      if(bon)raisons.push("bon sur synthétique : confirmer sur médias réels avant de le déclarer satisfaisant");
       raisons.push("mesurer sur un banc autorisé avant tout développement");
     }else{
       action="ameliorer";
       if(m.risque_regression>.6)raisons.push("risque de régression élevé : expérimentation isolée et retour arrière obligatoires");
       if(m.cout_calcul>.7)raisons.push("coût de calcul élevé : vérifier la tenue sur iPhone");
     }
-    return {module:m.module,action,score:+score.toFixed(4),besoin:+besoin.toFixed(4),mesure,satisfaisant,raisons};
+    return {module:m.module,action,score:+score.toFixed(4),besoin:+besoin.toFixed(4),mesure,donnees:m.donnees||null,satisfaisant,raisons};
   }
   function prioriser(modules){
     if(!Array.isArray(modules)||!modules.length)throw new TypeError("liste de modules attendue");

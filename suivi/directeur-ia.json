@@ -18,10 +18,12 @@
     "Catalogueur prive outils/catalogue_medias.py (SHA-256, metadonnees, mesures, doublons exacts, rapprochements hypothetiques, groupes de scene, partition sans fuite, 9 autorisations separees, import du catalogue ChatGPT) teste sur medias synthetiques.",
     "Priorisation des modules faibles outils/directeur-priorites.cjs + suivi/etat-modules.json (aucune qualite inventee : action mesurer, filtres AR en tete).",
     "Documents MEDIA_CATALOG_SCHEMA.md, BENCHMARK_PROTOCOL.md, BENCHMARK_RESULTS.md, CHATGPT_CLAUDE_HANDOFF.md.",
-    "Banc synthetique independant de segmentation sur masques verifies declaratifs; 12 tests locaux et garde-fous anti-fuite entre scenes (CI distante a verifier)."
+    "Banc synthetique independant de segmentation sur masques verifies declaratifs; 12 tests locaux et garde-fous anti-fuite entre scenes (CI distante a verifier).",
+    "Banc multi-cas du vrai module de retrait de filtre AR (8 cas synthetiques, Claude) : qualite 0,37, 62,5 % d'echecs, filtre chat non retire ; cause : detecteur (compression/pose/petits elements clairs). Autorisations du proprietaire enregistrees (suivi/autorisations-proprietaire.json)."
   ],
   "prochaines_etapes": [
     "Confirmer les deux jobs du workflow Directeur IA pour le commit de jalon; ne pas confondre CI non verifiee et echec ni reussite.",
+    "Detecteur d'elements AR v4 experimental (augmentations compression/bruit/pose/petits visages/elements clairs) ; criteres : chat >= 50 % de retrait video, chien/hasard sans recul, video sans filtre inchangee ; puis validation sur les 74 clips prives avant integration.",
     "Produire en prive des masques temporels AR revus par un humain; ne jamais traiter les pseudo-masques comme verite terrain.",
     "Comparer le segmentateur et la methode classique sur groupes independants via le banc de comptes anonymises; ne publier aucun detail identifiant.",
     "Valider Safari sur iPhone reel, puis discuter une eventualite d'integration apres revue du proprietaire; aucune fusion, aucun deploiement automatique."

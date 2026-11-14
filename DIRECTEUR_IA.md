@@ -43,6 +43,9 @@ Les données réelles exigeraient des consentements **séparés** pour stockage 
   16 tests sur médias synthétiques (`tests/catalogue_medias_test.py`), exécutés en CI.
 - `outils/directeur-priorites.cjs` : classe les modules par besoin mesuré ; `suivi/etat-modules.json` ne contient
   encore aucune qualité mesurée → recommandation actuelle : **mesurer les filtres AR en premier**. 7 tests.
+- Banc multi-cas du vrai module de retrait de filtre AR en vidéo : `tests/banc_filtres_app.mjs` + `tests/labo_filtres/video_filtre_multi.py`,
+  conversion `outils/banc_vers_etat.py` → `suivi/etat-modules.json` (normalisation : `BENCHMARK_PROTOCOL.md` §6.1).
+  Résultat du 14 nov. : qualité 0,37, 62,5 % d'échecs (filtre chat non retiré) → priorité « améliorer le détecteur ».
 - Protocole : `BENCHMARK_PROTOCOL.md` ; résultats réels : `BENCHMARK_RESULTS.md` ; transmission : `CHATGPT_CLAUDE_HANDOFF.md`.
 - Outils hors application : pas de changement de `app.js`, `sw.js` ni de l'empreinte hors ligne.
 

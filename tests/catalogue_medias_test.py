@@ -137,6 +137,21 @@ class TestCatalogue(unittest.TestCase):
         self.assertLessEqual(tous, {"V002"})
         self.assertEqual(plan["entrainement_autorise"], [])
 
+    def test_declaration_globale_du_proprietaire(self):
+        cons = os.path.join(self.tmp, "global.json")
+        ecrire(cons, {"_provenance": {"declare_par": "proprietaire"}, "*": {f: "oui" for f in C.FINALITES},
+                      "V001": {"publication": "non"}})
+        s = os.path.join(self.tmp, "prive", "global.json")
+        self.assertEqual(C.main(["analyser", self.lib, "--sortie", s, "--autorisation-analyse", "--echantillons", "1",
+                                 "--chatgpt", self.chatgpt, "--consentements", cons]), 0)
+        c = {m["id"]: m for m in lire(s)["medias"]}
+        self.assertEqual(c["V002"]["autorisations"]["entrainement"], "oui")
+        self.assertEqual(c["V001"]["autorisations"]["publication"], "non")
+        self.assertTrue(all(m["droits"]["consentement_personnes_representees"] == "non_renseigne" for m in c.values()))
+        p = os.path.join(self.tmp, "prive", "plan_g.json")
+        self.assertEqual(C.main(["plan", s, "--sortie", p]), 0)
+        self.assertEqual(lire(p)["medias_eligibles"], 6)
+
     def test_refus_sans_autorisation_ou_consentement_invalide(self):
         s = os.path.join(self.tmp, "x.json")
         self.assertEqual(C.main(["analyser", self.lib, "--sortie", s]), 2)

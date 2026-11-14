@@ -56,6 +56,15 @@ le seuil d'acceptation), `gravite`, `nb_cas`, `source: "mesure"`. Ces valeurs re
 `suivi/etat-modules.json` ; `node outils/directeur-priorites.cjs` en déduit la prochaine priorité (besoin mesuré
 d'abord, faisabilité/coût/risque en modulation bornée, module satisfaisant = « maintenir »).
 
+### 6.1 Normalisation figée — retrait de filtre AR (`outils/banc_vers_etat.py`)
+
+Par cas : `retrait = 1 − écart_zone(avec) / écart_zone(sans)` borné à [0, 1] (part de l'erreur due au filtre supprimée,
+mesurée contre la vraie vidéo). Pénalités ×0,5 si le scintillement dans la zone augmente de plus de 2 % ou si le LPIPS
+de la tête n'est pas meilleur. **Échec** si `retrait < 0,5`, ou scintillement accru, ou LPIPS pire. Gravité d'un échec :
+`max(1 − retrait, 0,5 si scintillement/LPIPS)`. Un cas en erreur = échec de gravité 1. `qualite_mesuree` = moyenne
+des cas, `taux_echec` = part d'échecs, `donnees` = `synthetique` tant que les cas ne viennent pas de médias réels.
+Un module mesuré seulement sur synthétique n'est jamais déclaré satisfaisant (`directeur-priorites.cjs`).
+
 ## 7. Traçabilité
 
 Pour chaque exécution : commit, version des modèles (SHA-256), configuration, graine, matériel (CI simulée ≠ iPhone),

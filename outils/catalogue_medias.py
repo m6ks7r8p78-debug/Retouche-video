@@ -515,6 +515,8 @@ def charger_consentements(chemin):
         d = json.load(f)
     out = {}
     for cle, val in d.items():
+        if cle.startswith("_"):
+            continue          # métadonnées (provenance, portée, limites)
         if not isinstance(val, dict):
             raise ErreurCatalogue(f"consentements : entrée invalide pour {cle}")
         for fin, v in val.items():
@@ -619,7 +621,7 @@ def analyser(args):
         entree["defauts"] = defauts(meta, mes) if meta else []
         cons = {f: "non_renseigne" for f in FINALITES}
         cons["analyse_technique"] = "oui"
-        for cle in (ident, empreinte):
+        for cle in ("*", ident, empreinte):   # « * » : déclaration globale du propriétaire, précisée média par média
             cons.update(consent.get(cle, {}))
         entree["autorisations"] = cons
         entree["droits"] = {"proprietaire_declare": None, "consentement_personnes_representees": "non_renseigne",

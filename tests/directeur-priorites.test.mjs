@@ -47,11 +47,25 @@ test("déterministe et entrées invalides refusées",()=>{
  assert.throws(()=>P.prioriser([mod("aa",{qualite_mesuree:.5,taux_echec:0}),mod("aa",{qualite_mesuree:.5,taux_echec:0})]));
  assert.throws(()=>P.prioriser([mod("aa",{qualite_mesuree:.5,taux_echec:0,source:"devine"})]),RangeError);
 });
-test("état versionné : valide, aucune qualité inventée, mesurer les filtres AR d'abord",()=>{
+test("synthétique : jamais déclaré satisfaisant, une faiblesse synthétique reste à améliorer",()=>{
+ const bon=P.evaluer(mod("bon",{qualite_mesuree:.9,taux_echec:0,donnees:"synthetique"}));
+ assert.equal(bon.action,"mesurer");assert.equal(bon.satisfaisant,false);
+ const faible=P.evaluer(mod("faible",{qualite_mesuree:.4,taux_echec:.5,donnees:"synthetique"}));
+ assert.equal(faible.action,"ameliorer");assert.ok(faible.raisons.some(r=>r.includes("synthétiques")));
+ assert.throws(()=>P.prioriser([mod("x1",{qualite_mesuree:.4,taux_echec:.5,donnees:"imagine"})]),RangeError);
+});
+test("une faiblesse confirmée d'un module important passe devant des inconnues",()=>{
+ const r=P.prioriser([mod("faible",{qualite_mesuree:.37,taux_echec:.62,gravite:.77,importance_utilisateur:1,faisabilite:.35,cout_calcul:.7,risque_regression:.5,nb_cas:8,donnees:"synthetique"}),
+  mod("inconnu",{qualite_mesuree:null,taux_echec:null,source:"estimation",nb_cas:0,importance_utilisateur:1})]);
+ assert.deepEqual(r.prochaine_priorite,{module:"faible",action:"ameliorer"});
+});
+test("état versionné : valide, aucune qualité inventée, filtres AR mesurés et prioritaires",()=>{
  const etat=JSON.parse(readFileSync(new URL("../suivi/etat-modules.json",import.meta.url)));
- assert.ok(etat.modules.every(m=>m.qualite_mesuree===null&&m.source==="estimation"));
+ for(const m of etat.modules){
+  if(m.source==="mesure"){assert.ok(m.nb_cas>=5&&typeof m.preuve==="string"&&m.preuve.length>20&&m.donnees);continue}
+  assert.ok(m.qualite_mesuree===null&&m.source==="estimation");
+ }
  const r=P.prioriser(etat.modules);
- assert.ok(r.classement.every(c=>c.action==="mesurer"));
  assert.equal(r.prochaine_priorite.module,"filtres_ar");
  assert.equal(r.aucuneModificationAutomatique,true);
 });
