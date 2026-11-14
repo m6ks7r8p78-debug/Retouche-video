@@ -13,7 +13,7 @@ function planDirecteur(type,m,fl){
     if(!window.DIRECTEUR_IA)return null;
     const w=type==="video"?v.videoWidth:m.w,h=type==="video"?v.videoHeight:m.h;
     const mobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const choix={mode:"auto",longueur:Math.max(0,+($("#q")&&$("#q").value)||0),
+    const choix={mode:"auto",longueur:$("#q")&&$("#q").value==="-1"?"origine":Math.max(0,+($("#q")&&$("#q").value)||0),
       autoriserGeneration:!!($("#o_max")&&$("#o_max").checked)};
     const disponibles={voix:!(window.MODELS&&MODELS.isOff("voix"))};
     const p=DIRECTEUR_IA.planifier({type,w,h,mesures:m,scintillement:fl,appareil:{mobile},choix,disponibles});
@@ -30,6 +30,15 @@ function afficherDirecteur(p){
   for(const a of p.operations){const li=document.createElement("li");li.textContent=a.nom+" — "+a.raison+(a.genere?" (reconstruction, à vérifier)":"");liste.appendChild(li)}
   for(const a of p.avertissements){const li=document.createElement("li");li.textContent="Limite : "+a;liste.appendChild(li)}
 }
+/* Le choix de résolution ou du moteur IA peut changer après l'analyse.
+   Recalculer le plan sans refaire le décodage lourd ; ne jamais réutiliser un autre fichier. */
+function rafraichirDirecteur(){
+  try{
+    if(mode==="video"&&window.__prof&&window.__prof.m)afficherDirecteur(planDirecteur("video",window.__prof.m,window.__prof.fl));
+    else if(mode==="photo"&&PHOTO.last)afficherDirecteur(planDirecteur("photo",PHOTO.last,null));
+  }catch(e){console.warn("Actualisation du Directeur IA indisponible",e)}
+}
+for(const id of ["q","o_max"]){const el=$("#"+id);if(el)el.addEventListener("change",rafraichirDirecteur)}
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
 const cv=$("#cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:false});
@@ -782,7 +791,7 @@ function btUpdate(){
 function loadFile(f){
   return new Promise(res=>{
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
-  window.__dirplan=null;try{afficherDirecteur(null)}catch(e){}curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
+  window.__dirplan=null;window.__prof=null;try{afficherDirecteur(null)}catch(e){}curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
   msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres","pv","erb","rvb","dfb"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
@@ -2728,7 +2737,7 @@ $("#pickp").onclick=()=>$("#fp").click();
 let photoURL=null;
 $("#fp").onchange=e=>{
   if(exporting||window.__exStarting){e.target.value="";msg("Un export est en cours : attends la fin ou touche « Annuler » avant de choisir une photo.");return}
-  const f=e.target.files[0];e.target.value="";if(!f)return;window.__photoName=f.name;
+  const f=e.target.files[0];e.target.value="";if(!f)return;window.__dirplan=null;window.__prof=null;try{afficherDirecteur(null)}catch(e){}window.__photoName=f.name;
   const u=URL.createObjectURL(f),im=new Image();msg("Chargement de la photo…");
   im.onload=()=>{
     const k=Math.min(1,4096/Math.max(im.naturalWidth,im.naturalHeight));
