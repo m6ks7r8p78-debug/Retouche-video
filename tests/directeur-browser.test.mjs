@@ -100,6 +100,23 @@ try {
     await page.waitForFunction(()=>!!window.__dirqualite,null,{timeout:60000});
     assert.ok(result.qa||await page.evaluate(()=>window.__dirqualite?.compte.compare>0));
   });
+  await test("contraste noir/blanc en deux séquences : variations temporelles réellement détectées",async()=>{
+    const clip=path.join(work,"deux_lumieres.mp4");
+    execFileSync("ffmpeg",["-y","-hide_banner","-loglevel","error",
+      "-f","lavfi","-i","color=c=black:s=320x180:r=15:d=2",
+      "-f","lavfi","-i","color=c=white:s=320x180:r=15:d=2",
+      "-filter_complex","[0:v][1:v]concat=n=2:v=1:a=0[v]",
+      "-map","[v]","-c:v","libx264","-preset","ultrafast",
+      "-pix_fmt","yuv420p","-movflags","+faststart",clip],{timeout:30000});
+    await page.locator("#f").setInputFiles(clip);
+    await page.waitForFunction(()=>mode==="video"&&curFile&&curFile.name==="deux_lumieres.mp4"&&v.videoWidth===320,null,{timeout:30000});
+    await page.waitForFunction(()=>window.__dirplan&&window.__dirplan.zonage&&window.__dirplan.zonage.echantillons>=6,null,{timeout:90000});
+    const p=await page.evaluate(()=>window.__dirplan.zonage);
+    assert.ok(p.zones.length>=2,"forte variation de luminance non détectée");
+    assert.equal(p.zones[0].etat.lumiere,"sombre");
+    assert.equal(p.zones[p.zones.length-1].etat.lumiere,"normale");
+    assert.ok(p.zones.every(x=>x.precision.includes("approximatives")));
+  });
   await test("aucune erreur JavaScript non gérée pendant le parcours",async()=>{
     assert.deepEqual(jsErrors,[]);
   });
