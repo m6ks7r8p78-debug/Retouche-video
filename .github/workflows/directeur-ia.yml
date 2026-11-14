@@ -34,7 +34,11 @@ jobs:
         uses: actions/checkout@v4
       - name: Installer Playwright sans télécharger un autre Chrome
         run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.55.0
-      - name: Vérifier le parcours complet depuis une photo de référence
+      - name: Installer FFmpeg pour générer et vérifier les vidéos de test
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+      - name: Vérifier le parcours complet photo et vidéo
         run: |
           export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           echo "Navigateur utilisé : $CHROME"
