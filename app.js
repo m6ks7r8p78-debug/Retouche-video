@@ -1802,12 +1802,29 @@ $("#ex").onclick=async()=>{
     if(!isPlan&&!fast&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
     const dT=Math.max(.2,tE-tS);
     msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde");
-    /* résolution et encodeur */
-    let cfg=null,rdr0=false;window.__memDown=false;
+    /* résolution et encodeur : validation préalable des dimensions et de la mémoire.
+       Le codec réel est ensuite éprouvé par VideoEncoder.isConfigSupported. */
+    let cfg=null,rdr0=false;window.__memDown=false;window.__dirExport=null;
     /* v6.8 : « Préparer pour X » (case décochée par défaut) : H.264, taille et débit selon les limites publiées par X ; X recompresse quand même */
     const XP=window.ANALYSE&&$("#o_x")&&$("#o_x").checked?ANALYSE.profilX(v.videoWidth,v.videoHeight,OUTF,dT,!!($("#o_xp")&&$("#o_xp").checked)):null;window.__xprof=XP;
     if(XP&&XP.avertissements.length)msg("Pour X : "+XP.avertissements.join(" "));
-    for(const L of XP?[Math.max(XP.largeur,XP.hauteur),1280]:[+$("#q").value,1920,1280]){
+    const limitesExport={};
+    if(gl)try{
+      limitesExport.texture=gl.getParameter(gl.MAX_TEXTURE_SIZE);
+      limitesExport.rendu=gl.getParameter(gl.MAX_RENDERBUFFER_SIZE);
+      limitesExport.viewport=Array.from(gl.getParameter(gl.MAX_VIEWPORT_DIMS));
+    }catch(e){}
+    const diagnosticExport=!XP&&window.DIRECTEUR_EXPORT?DIRECTEUR_EXPORT.preparer({
+      w:v.videoWidth,h:v.videoHeight,demande:+$("#q").value,mobile:/iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+      limites:limitesExport}):null;
+    window.__dirExport=diagnosticExport;
+    if(diagnosticExport&&diagnosticExport.repli){
+      msg("Résolution ajustée pour préserver la stabilité : "+diagnosticExport.raisonRepli);
+      window.__memDown=true;
+    }
+    const candidatsExport=XP?[Math.max(XP.largeur,XP.hauteur),1280]:
+      diagnosticExport?diagnosticExport.candidats.map(x=>x.longueur):[+$("#q").value,1920,1280];
+    for(const L of candidatsExport){
       if(window.__plan&&L>1920&&window.__plan.length/FPS>60){msg("Version longue : export en Full HD pour ne pas saturer la mémoire de l’iPhone.");continue}
       size(L);
       /* fichier le plus léger possible sans perte visible : HEVC (H.265) quand l'iPhone sait l'encoder, sinon H.264.
@@ -2075,6 +2092,9 @@ $("#ex").onclick=async()=>{
         $("#orep_s").textContent=nb?"Compte rendu de l’export : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu de l’export : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro;window.__retried4k=false}catch(e){}
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
       try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)],
+        precontrole_export:window.__dirExport?{demande:window.__dirExport.demande,
+          resolution_preferee:window.__dirExport.sortiePreferee?window.__dirExport.sortiePreferee.largeur+"x"+window.__dirExport.sortiePreferee.hauteur:null,
+          repli:window.__dirExport.repli,raison:window.__dirExport.raisonRepli,examen8k:window.__dirExport.examen8k}:undefined,
         adaptation_temporelle:window.__dirRendu?{actif:window.__dirRendu.actif,raison:window.__dirRendu.raison,
           images:window.__dirRendu.imagesAdaptees,facteurMin:+window.__dirRendu.facteurMin.toFixed(3),facteurMax:+window.__dirRendu.facteurMax.toFixed(3),
           imagesNettete:window.__dirRendu.imagesNettete,netteteMin:+window.__dirRendu.netteteMin.toFixed(3)}:undefined}))}catch(e){}
