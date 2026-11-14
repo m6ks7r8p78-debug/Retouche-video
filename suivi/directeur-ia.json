@@ -5,10 +5,10 @@
   "pr": 1,
   "pr_brouillon": true,
   "dernier_succes": {
-    "sha": "ce99d7031447eb25ae6debb7cccce3b046e59b31",
-    "run_id": 43559135621,
-    "url": "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43559135621",
-    "remarque": "Dernier succes global (2 jobs) verifie par Claude le 2026-11-14 avant le cycle catalogue/priorisation. A revalider apres chaque commit."
+    "sha": "bbf1d34724bd06d292d1f65477f4675cc32df198",
+    "run_id": 43565861601,
+    "url": "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43565861601",
+    "remarque": "Succes global (2 jobs) verifie par Claude le 2026-11-14 : inclut le catalogueur 538f3e0 et le banc de triage bbf1d34. A revalider apres chaque commit."
   },
   "termine": [
     "Directeur IA avec planification, analyse et adaptation prudente du debruitage et de la nettete par zone temporelle.",

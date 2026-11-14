@@ -21,6 +21,7 @@ Dépendances : Python 3.9+, numpy, et ffmpeg/ffprobe (sinon repli OpenCV, sans a
           [--chatgpt catalogue_chatgpt.json|.csv] [--consentements prive/consentements.json] [--echantillons 8]
   python3 outils/catalogue_medias.py valider prive/catalogue.json
   python3 outils/catalogue_medias.py plan prive/catalogue.json --sortie prive/plan_benchmark.json
+  python3 outils/catalogue_medias.py exporter-banc prive/catalogue.json --sortie prive/banc_entrees.json
 """
 import argparse, csv, hashlib, json, math, os, re, shutil, subprocess, sys
 from datetime import datetime, timezone
@@ -722,6 +723,31 @@ def plan(args):
     return sortie
 
 
+INDICES_BANC_REEL = {"bruit": "bruit", "faible_luminosite": "faible_lumiere", "compression_severe": "compression",
+                     "debit_faible": "compression", "saturation_forte_filtre_couleur_possible": "tonal",
+                     "dominante_couleur_filtre_possible": "tonal", "audio_sature_possible": "audio"}
+
+
+def exporter_banc(args):
+    """Entrées anonymisées pour outils/directeur-banc-reel.cjs (banc de triage de ChatGPT) : aucun nom ni chemin."""
+    with open(args.catalogue, encoding="utf-8") as f:
+        cat = json.load(f)
+    probs = valider_catalogue(cat)
+    if probs:
+        raise ErreurCatalogue("catalogue invalide : " + "; ".join(probs[:5]))
+    entrees = []
+    for m in cat["medias"]:
+        if not m.get("metadonnees"):
+            continue
+        indices = sorted({INDICES_BANC_REEL[d["defaut"]] for d in m["defauts"] if d["defaut"] in INDICES_BANC_REEL})
+        entrees.append({"id": m["id"], "type": m["type"], "sha256": m["sha256"],
+                        "duree": float(m["metadonnees"].get("duree_s") or 0) if m["type"] == "video" else 0.0,
+                        "phash": m["empreintes_dhash"][:8], "famille": m["groupe_scene"], "indices": indices})
+    ecrire_json(args.sortie, entrees)
+    print(json.dumps({"entrees": len(entrees)}, ensure_ascii=False))
+    return entrees
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -739,6 +765,9 @@ def main(argv=None):
     p = sp.add_parser("plan")
     p.add_argument("catalogue")
     p.add_argument("--sortie", required=True)
+    e = sp.add_parser("exporter-banc")
+    e.add_argument("catalogue")
+    e.add_argument("--sortie", required=True)
     args = ap.parse_args(argv)
     try:
         if args.cmd == "analyser":
@@ -750,6 +779,8 @@ def main(argv=None):
                 probs = valider_catalogue(json.load(f))
             print("valide" if not probs else "\n".join(probs))
             return 0 if not probs else 1
+        elif args.cmd == "exporter-banc":
+            exporter_banc(args)
         else:
             plan(args)
     except ErreurCatalogue as e:

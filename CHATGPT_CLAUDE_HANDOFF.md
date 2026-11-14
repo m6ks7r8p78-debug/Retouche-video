@@ -19,6 +19,9 @@ netteté, précontrôle export, prototype 8K hors navigateur, laboratoire synth�
   hypothétiques, groupes, partition sans fuite, 9 autorisations, import du catalogue ChatGPT (`MEDIA_CATALOG_SCHEMA.md`).
 - `outils/directeur-priorites.cjs` + `suivi/etat-modules.json` — priorisation des modules faibles (besoin mesuré d'abord).
 - `BENCHMARK_PROTOCOL.md`, `BENCHMARK_RESULTS.md` (résultats + journal d'expériences).
+- Pont vers le banc de triage de ChatGPT (`outils/directeur-banc-reel.cjs`, commit `bbf1d34`) :
+  `catalogue_medias.py exporter-banc` produit exactement ses entrées anonymisées (test de compatibilité en CI).
+  Les deux outils se complètent : le catalogueur mesure les fichiers, le banc de triage regroupe et ordonne les lots.
 
 Correspondance des livrables demandés → fichiers existants (pas de doublons) : architecture = `DIRECTEUR_IA.md` +
 `ARCHITECTURE.md` ; feuille de route = `ROADMAP.md` + §6 ci-dessous ; registre des modèles =
@@ -47,6 +50,9 @@ Ne jamais déposer de vidéo, photo, nom de personne ou donnée biométrique dan
 - Aucun essai sur iPhone Safari réel de la branche.
 
 ## 5. Décisions techniques
+
+- Travail concurrent : avant chaque push, récupérer la branche et avancer en avance rapide uniquement (pas de
+  réécriture d'historique). Ce cycle : Claude `538f3e0`, ChatGPT `bbf1d34`, puis Claude par-dessus.
 
 - Catalogueur en Python (numpy + ffmpeg, repli OpenCV) pour être exécutable chez ChatGPT comme en CI.
 - Le catalogue refuse d'être écrit dans un dépôt Git hors d'un chemin ignoré ; `prive/` est ignoré.

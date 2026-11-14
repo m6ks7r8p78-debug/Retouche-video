@@ -40,7 +40,7 @@ Les données réelles exigeraient des consentements **séparés** pour stockage 
 
 - `outils/catalogue_medias.py` : catalogue **privé** des médias de recherche (schéma `MEDIA_CATALOG_SCHEMA.md`),
   partition sans fuite par groupe de scène, autorisations séparées par finalité, import du catalogue ChatGPT.
-  15 tests sur médias synthétiques (`tests/catalogue_medias_test.py`), exécutés en CI.
+  16 tests sur médias synthétiques (`tests/catalogue_medias_test.py`), exécutés en CI.
 - `outils/directeur-priorites.cjs` : classe les modules par besoin mesuré ; `suivi/etat-modules.json` ne contient
   encore aucune qualité mesurée → recommandation actuelle : **mesurer les filtres AR en premier**. 7 tests.
 - Protocole : `BENCHMARK_PROTOCOL.md` ; résultats réels : `BENCHMARK_RESULTS.md` ; transmission : `CHATGPT_CLAUDE_HANDOFF.md`.

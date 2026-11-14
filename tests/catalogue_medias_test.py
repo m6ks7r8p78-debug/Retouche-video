@@ -171,6 +171,20 @@ class TestCatalogue(unittest.TestCase):
         self.assertIn("autorisations", probs)
         self.assertIn("fuite", probs)
 
+    @unittest.skipUnless(shutil.which("node"), "node requis")
+    def test_export_vers_banc_reel_de_chatgpt(self):
+        p = os.path.join(self.tmp, "prive", "banc.json")
+        self.assertEqual(C.main(["exporter-banc", self.sortie, "--sortie", p]), 0)
+        entrees = lire(p)
+        self.assertEqual(len(entrees), 6)
+        self.assertTrue(all("nom" not in e and "fichier_relatif" not in e for e in entrees))
+        module = os.path.join(ICI, "..", "outils", "directeur-banc-reel.cjs")
+        js = ("const B=require(process.argv[1]);const e=JSON.parse(require('fs').readFileSync(process.argv[2]));"
+              "const r=B.banc(e,{autorisationEvaluation:true});console.log(JSON.stringify(B.bilanPublic(r)))")
+        r = subprocess.run(["node", "-e", js, module, p], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertTrue(r.stdout.strip().startswith("{"))
+
     def test_medias_jamais_modifies(self):
         avant = {f: C.sha256(os.path.join(self.lib, f)) for f in ("a.mp4", "b.mp4", "image.png")}
         C.main(["analyser", self.lib, "--sortie", os.path.join(self.tmp, "prive", "c3.json"), "--autorisation-analyse",

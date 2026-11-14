@@ -1,7 +1,7 @@
 # Schéma du catalogue privé de médias — `retoucheproai.catalogue/1`
 
 Outil de référence : `outils/catalogue_medias.py` (Python 3.9+, numpy, ffmpeg/ffprobe ou repli OpenCV).
-Tests : `tests/catalogue_medias_test.py` (15 tests sur médias **synthétiques** générés par ffmpeg).
+Tests : `tests/catalogue_medias_test.py` (16 tests sur médias **synthétiques** générés par ffmpeg).
 
 > **Le catalogue est privé.** Il contient des noms de fichiers et des empreintes de médias personnels : il ne doit
 > jamais être versionné ni publié. L'outil refuse d'écrire dans un dépôt Git hors d'un chemin ignoré (`prive/`
@@ -14,7 +14,12 @@ python3 outils/catalogue_medias.py analyser DOSSIER --sortie prive/catalogue.jso
         [--chatgpt catalogue_chatgpt.csv|.json] [--consentements prive/consentements.json] [--echantillons 8] [--anonymiser]
 python3 outils/catalogue_medias.py valider prive/catalogue.json
 python3 outils/catalogue_medias.py plan prive/catalogue.json --sortie prive/plan_benchmark.json
+python3 outils/catalogue_medias.py exporter-banc prive/catalogue.json --sortie prive/banc_entrees.json
 ```
+
+`exporter-banc` produit les entrées anonymisées (sans nom ni chemin) attendues par le banc de triage de ChatGPT
+`outils/directeur-banc-reel.cjs` (`LABORATOIRE_REEL.md`) : `famille` = groupe de scène, `phash` = 8 premières empreintes,
+`indices` déduits des défauts mesurés. Compatibilité vérifiée par test.
 
 Lecture seule : aucun média n'est modifié, déplacé ou supprimé (vérifié par test). Aucun accès réseau.
 

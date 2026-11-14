@@ -11,7 +11,7 @@ n'a été enregistrée.
 | ≤ 13 nov. 2026 | A/B adaptatif vs global (`directeur-browser.test.mjs`) | 1 vidéo synthétique bruitée/propre | 18 images décodées sur 90 différentes ; protection de netteté non déclenchée (écart de bruit insuffisant) | synthétique ; aucune mesure perceptuelle |
 | ≤ 13 nov. 2026 | laboratoire 1D (`directeur-laboratoire.cjs`) | 18 cas train / 18 validation synthétiques | gain sur validation, 0 famille dégradée > 5 % | signal 1D : ne prouve rien sur vraie image |
 | ≤ 13 nov. 2026 | export 8K hors navigateur (`directeur-8k.test.mjs`) | 1 image vidéo synthétique + audio | 7680×4320 H.264 + AAC vérifiés par ffprobe | Lanczos : aucun détail recréé ; pas d'iPhone |
-| 14 nov. 2026 | catalogueur (`catalogue_medias_test.py`) | 6 médias synthétiques | 15/15 : SHA-256, doublon exact, réencodage 160×120 rapproché, bruit +45 mesuré > +3 σ, partition sans fuite, consentements, refus d'écriture dans Git | seuils non calibrés sur corpus réel |
+| 14 nov. 2026 | catalogueur (`catalogue_medias_test.py`) | 6 médias synthétiques | 16/16 : SHA-256, doublon exact, réencodage 160×120 rapproché, bruit +45 mesuré > +3 σ, partition sans fuite, consentements, refus d'écriture dans Git, export accepté par `directeur-banc-reel.cjs` | seuils non calibrés sur corpus réel |
 | 14 nov. 2026 | priorisation (`directeur-priorites.test.mjs`) | cas construits | 7/7 ; état réel : toutes qualités inconnues → action « mesurer », filtres AR en tête | aucune mesure réelle encore |
 
 ## Journal d'expériences
