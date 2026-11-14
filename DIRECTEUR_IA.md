@@ -8,7 +8,7 @@
 - Évite d'exagérer les détails si le bruit et la compression sont importants.
 - Expose la limite 1920 px côté vidéo mobile en réglage automatique et 3840 px dans les autres cas ; n'active **pas** un export 8K absent.
 - \`app.js\` appelle le Directeur dans le flux d'analyse de vidéo et photo ; \`concilier\` borne certaines recommandations avant de les transmettre à l'ancien moteur. Le plan est visible dans un volet facultatif « Directeur IA » (\`index.html\`), et ses propositions sont enregistrées dans la recette.
-- \`tests/directeur-ia.test.mjs\` : 14 scénarios de décision vérifiés en local avec Node.
+- \`tests/directeur-ia.test.mjs\` : 15 scénarios de décision vérifiés en local avec Node.
 
 ## Délimitations importantes
 
