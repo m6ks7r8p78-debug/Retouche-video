@@ -791,7 +791,7 @@ function btUpdate(){
 function loadFile(f){
   return new Promise(res=>{
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
-  window.__dirplan=null;window.__prof=null;try{afficherDirecteur(null)}catch(e){}curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
+  window.__dirplan=null;window.__dirqualite=null;window.__prof=null;try{if(REC)REC.last=null;afficherDirecteur(null)}catch(e){}curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
   msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres","pv","erb","rvb","dfb"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
@@ -1022,9 +1022,25 @@ REC.after=async function(){
     if(m.shake>=REC.T.shake&&!A.stab){sug.push("Le résultat tremble encore : activer la stabilisation.");ch.stab=true}
     if(m.noise>=REC.T.noiseMid&&P.dn<.5){sug.push("Le bruit est encore visible : réduction du bruit renforcée.");ch.dn=m.noise>=REC.T.noiseHi?.6:.45}
     const ul=$("#rec_a");ul.textContent="";
-    if(!sug.length){$("#rec_at").textContent="Résultat vérifié : aucun défaut mesurable ne reste. Si quelque chose te gêne, ouvre « Réglages avancés ».";return}
-    $("#rec_at").textContent="J’ai analysé ta vidéo améliorée et je propose :";
-    sug.forEach(t=>{const li=document.createElement("li");li.textContent=t;ul.appendChild(li)});
+    /* Comparaison technique de la sortie avec les mesures de la source.
+       Un meilleur indicateur n'est PAS une preuve de réalisme et ne bloque pas l'export. */
+    let qc=null;
+    try{if(window.DIRECTEUR_QUALITE&&REC.last&&REC.last.m&&REC.last.m.kind!=="photo"){
+      qc=DIRECTEUR_QUALITE.evaluer(REC.last.m,m,{media:"video"});window.__dirqualite=qc;
+    }}catch(e){console.warn("Contrôle comparatif indisponible",e)}
+    const note=t=>{const li=document.createElement("li");li.textContent=t;ul.appendChild(li)};
+    if(qc){
+      const c=qc.compte;
+      note("Comparaison technique : "+c.ameliore+" mesure(s) en progrès, "+c.degrade+" en recul, "+c.stable+" stable(s). Ce n'est pas une mesure de réalisme.");
+      for(const x of qc.alertes.slice(0,3))note("À vérifier : "+x);
+      for(const x of qc.prudences.slice(0,2))note("Prudence : "+x);
+    }
+    if(!sug.length){
+      $("#rec_at").textContent=qc&&qc.alertes.length?"Certaines mesures se sont dégradées : inspecte le rendu avant de l'enregistrer.":"Contrôle technique terminé : aucun défaut ciblé ne justifie un nouvel essai automatique.";
+      return;
+    }
+    $("#rec_at").textContent="Analyse de la vidéo exportée :";
+    sug.forEach(note);
     b.hidden=false;b.textContent="Réessayer avec ces réglages";
     b.onclick=()=>{
       const set=(id,v)=>{$("#"+id).checked=v;try{localStorage.setItem(id,v?"1":"0")}catch(x){}};
@@ -2740,7 +2756,7 @@ $("#pickp").onclick=()=>$("#fp").click();
 let photoURL=null;
 $("#fp").onchange=e=>{
   if(exporting||window.__exStarting){e.target.value="";msg("Un export est en cours : attends la fin ou touche « Annuler » avant de choisir une photo.");return}
-  const f=e.target.files[0];e.target.value="";if(!f)return;window.__dirplan=null;window.__prof=null;try{afficherDirecteur(null)}catch(e){}window.__photoName=f.name;
+  const f=e.target.files[0];e.target.value="";if(!f)return;window.__dirplan=null;window.__dirqualite=null;window.__prof=null;try{afficherDirecteur(null)}catch(e){}window.__photoName=f.name;
   const u=URL.createObjectURL(f),im=new Image();msg("Chargement de la photo…");
   im.onload=()=>{
     const k=Math.min(1,4096/Math.max(im.naturalWidth,im.naturalHeight));
