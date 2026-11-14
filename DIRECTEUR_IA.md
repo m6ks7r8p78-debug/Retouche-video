@@ -18,6 +18,12 @@
 - `tests/directeur-browser.test.mjs` : **8 tests Chromium réussis sur 8**, comprenant photo importée, analyse/export, profil manuel préservé, H.264/AAC et son conservé, transition clair/sombre, et **banc A/B sur une vidéo bruitée et propre** : 18 images décodées sur 90 ont été différentes entre adaptation et traitement global. La protection de netteté n'a pas agi sur ce média car l'écart de bruit mesuré était insuffisant : déclenchement prudent confirmé.
 - `sw.js` : empreinte calculée sur le checkout GitHub complet par `tests/directeur-empreinte.mjs` puis vérifiée strictement dans GitHub Actions (**8 tests de cache hors ligne**). Recalculer après chaque modification des scripts.
 
+## Prototype 8K hors navigateur (v0.8)
+
+Un outil de secours autonome `outils/export-8k.mjs` encode une vidéo en **H.264 Level 6.2, résolution maximale 7680 × 4320**, en conservant le ratio portrait/paysage et la piste audio (AAC). Il opère sur des fichiers locaux, avec FFmpeg, sans conserver la vidéo entière en RAM et sans transférer de fichier sur Internet. Il peut être exécuté ultérieurement sur un environnement compatible FFmpeg (p. ex. une instance de calcul explicitement autorisée), pas depuis Safari seul. Son redimensionnement Lanczos ne recrée pas de détails perdus.
+
+Un test GitHub Actions crée une vidéo de référence avec son, convertit une image vidéo en 8K, puis vérifie les dimensions et les pistes réelles avec FFprobe. **Ce prototype ne permet pas encore à l'application iPhone de lancer cet export ni de traiter une vidéo réelle longue.** Les coûts, codecs, autorisations d'un éventuel serveur et limites des traitements doivent être validés séparément.
+
 ## Prochain jalon 8K
 
 Le code d'export actuel utilise un profil H.264/HEVC prévu pour la 4K, n'a pas de pipeline de rendu en tuiles 8K et ne garantit ni mémoire ni stabilité thermique sur iPhone. Le précontrôle v0.7 refuse donc toute sortie au-delà de 3840 px / 3840×2160 (tout en préservant l'orientation), et choisit un repli existant. **Cela ne correspond pas à un nouvel export 8K opérationnel.** Étape suivante : prototype autonome de profils codec 8K, validation encodeur et budget réel sur matériel compatible, tests de plusieurs durées, puis activation expérimentale après mesures visuelles.

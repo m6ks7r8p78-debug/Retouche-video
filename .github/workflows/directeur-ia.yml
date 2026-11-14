@@ -54,3 +54,5 @@ jobs:
           echo "Navigateur utilisé : $CHROME"
           test -x "$CHROME"
           node --test tests/directeur-browser.test.mjs
+      - name: Démontrer l'encodage 8K hors navigateur avec audio
+        run: node --test tests/directeur-8k.test.mjs
