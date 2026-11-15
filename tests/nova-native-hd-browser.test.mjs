@@ -363,6 +363,33 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   assert.equal(probed.streams.find(x=>x.codec_type==="video").color_space,"bt709");
   assert.equal(probed.streams.find(x=>x.codec_type==="audio").codec_name,"aac");
 
+  // En cas d'échec réel Safari, le JSON doit inclure les faits techniques
+  // de la première VideoFrame, mais jamais le message d'erreur brut.
+  await page.reload();
+  await page.locator("#novaHdPanel summary").click();
+  await page.evaluate(()=>{
+   window.NOVA_HD_COLOR={...window.NOVA_HD_COLOR,imagePourRendu:async()=>{
+    throw Error("PRIVATE_FILENAME_AND_GPS_MUST_NOT_ENTER_REPORT");
+   }};
+  });
+  await page.locator("#file").setInputFiles(matrix601);
+  await page.waitForFunction(()=>!document.querySelector("#novaHdRun").disabled);
+  await page.locator("#novaHdRun").click();
+  await page.waitForFunction(()=>/Essai HD non abouti/.test(
+   document.querySelector("#novaHdStatus")?.textContent||""),null,{timeout:100000});
+  const jsonHref=await page.locator("#novaHdColorJson").getAttribute("href");
+  assert.match(jsonHref||"",/^blob:/);
+  const checked=await page.evaluate(async()=>{
+   const url=document.querySelector("#novaHdColorJson").href;
+   return await (await fetch(url)).json();
+  });
+  assert.equal(checked.firstDecodedFrame.schema,
+   "retoucheproai.nova.hd-frame-evidence.v1");
+  assert.ok(["I420","NV12","I422","I444","RGBA","RGBX","BGRA",
+   "BGRX","opaque","other"].includes(checked.firstDecodedFrame.format));
+  assert.ok(!JSON.stringify(checked).includes("PRIVATE_FILENAME"));
+  assert.equal(await page.locator("#novaHdSave").getAttribute("href"),null);
+
   assert.deepEqual(failures,[]);
   assert.deepEqual(external,[]);
   assert.deepEqual(upload,[]);
