@@ -96,7 +96,7 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 </header>
 <section class="hero">
 <div><div class="eyebrow">Le studio qui protège votre original</div><h1>Votre image mérite<br>plus qu'un filtre.</h1><p>Importez un média. NOVA propose des variantes, vérifie les risques techniques et vous laisse comparer. Tous les calculs de ce prototype restent dans votre navigateur.</p></div>
-<label class="fileBtn" for="file">＋ Importer une photo ou vidéo</label><input id="file" type="file" accept="image/*,video/*" aria-label="Choisir une photo ou vidéo">
+<label class="fileBtn" for="file">＋ Importer une photo ou vidéo</label><input id="file" type="file" accept="image/*,video/*,.mov,.mp4,.m4v" aria-label="Choisir une photo ou vidéo">
 </section>
 <div class="workspace">
 <main>
@@ -249,7 +249,7 @@ $("#compare").addEventListener("input",e=>compareAt(+e.target.value));
 async function importer(f){
   reset();if(!f)return;latestFile=f;objectURL=URL.createObjectURL(f);
   txt($("#filename"),f.name.length>42?f.name.slice(0,39)+"…":f.name);
-  $("#empty").hidden=true;kind=f.type.startsWith("video/")?"video":f.type.startsWith("image/")?"photo":null;
+  $("#empty").hidden=true;kind=NOVA_IPHONE_REPORT.videoFile(f)?"video":f.type.startsWith("image/")?"photo":null;
   if(!kind){setStatus("Format non reconnu. Utilisez une photo ou une vidéo.");$("#empty").hidden=false;return}
   txt($("#typeLabel"),kind==="photo"?"PHOTO LOCALE":"VIDÉO LOCALE");
   if(kind==="photo"){

@@ -25,7 +25,7 @@ function reset(){
 window.addEventListener("nova:source-selected",event=>{
  reset();
  const f=event.detail?.file;
- if(!f||!f.type?.startsWith("video/")||f.size>60*1048576)return;
+ if(!NOVA_IPHONE_REPORT.videoFile(f)||f.size>60*1048576)return;
  file=f;run.disabled=false;
  status.textContent="Prêt : aucune analyse, conversion ou transmission n'a démarré.";
 });
@@ -34,6 +34,12 @@ function linkBlob(blob,label,element){
  urls.push(url);
  element.href=url;element.download=label;element.hidden=false;
 }
+// Safari suspend les tâches en arrière-plan ; ne jamais présumer que
+// l'export peut survivre à un changement d'onglet ou au verrouillage.
+window.addEventListener("pagehide",()=>controller?.abort());
+document.addEventListener("visibilitychange",()=>{
+ if(document.hidden)controller?.abort();
+});
 run.addEventListener("click",async()=>{
  if(controller){
   controller.abort();run.disabled=true;

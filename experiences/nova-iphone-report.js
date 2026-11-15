@@ -10,6 +10,12 @@ function finiteNumber(v){return typeof v==="number"&&Number.isFinite(v)}
 function count(v){return Number.isSafeInteger(v)&&v>=0?v:null}
 function rounded(v){return finiteNumber(v)&&v>=0?Math.round(v):null}
 function safeMode(v,allowed){return allowed.includes(v)?v:"unknown"}
+// Sur l'iPhone, le sélecteur Fichiers peut fournir un MOV avec MIME vide.
+ // L'extension ne sert qu'au choix local, jamais à une empreinte de rapport.
+function videoFile(file){
+ return !!file&&(file.type?.startsWith("video/")===true||
+  (!file.type&&/\.(mov|mp4|m4v)$/i.test(file.name||"")));
+}
 function environment(){
  const n=globalThis.navigator||{};
  return Object.freeze({
@@ -39,7 +45,7 @@ function classify(message,aborted){
 }
 function sourceSummary(file,info){
  return {
-  mimeCategory:file?.type?.startsWith("video/")?"video":"unknown",
+  mimeCategory:videoFile(file)?"video":"unknown",
   inputBytes:count(file?.size),
   containerVideo:info&&/^(hev1|hvc1)\./.test(info.codec||"")?"hevc":"other-or-unknown",
   width:count(info?.dw),height:count(info?.dh),
@@ -102,7 +108,7 @@ async function executer({file,moteur,arbitre,allowSilent=false,signal,
   if(!file||typeof file.slice!=="function"||!Number.isSafeInteger(file.size)||
      file.size<1||file.size>60*1048576)
    throw new Error("budget fichier source incorrect");
-  if(!file.type?.startsWith("video/"))
+  if(!videoFile(file))
    throw new Error("format vidéo requis");
   record.source=sourceSummary(file,null);
   if(!env.secureContext)throw new Error("HTTPS ou localhost sécure requis");
@@ -154,6 +160,6 @@ function serialiser(report){
  if(s.length>14000)throw new RangeError("rapport trop volumineux");
  return s+"\n";
 }
-return Object.freeze({environment,sourceSummary,exportSummary,executer,serialiser});
+return Object.freeze({videoFile,environment,sourceSummary,exportSummary,executer,serialiser});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_IPHONE_REPORT;

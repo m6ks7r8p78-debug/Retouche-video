@@ -24,7 +24,7 @@ function choisir(f){
  // Message local de sélection pour les bancs de validation opt-in.
  // La File n'est ni enregistrée, ni transmise sur le réseau.
  window.dispatchEvent(new CustomEvent("nova:source-selected",{detail:{file:f||null}}));
- if(!f||!f.type.startsWith("video/"))return;
+ if(!f||!NOVA_IPHONE_REPORT.videoFile(f))return;
  file=f;panel.hidden=false;
  if(f.size>60*1024*1024){msg("Pilote limité à 60 Mo. Utilisez la version principale.");return}
  if(typeof VideoEncoder==="undefined"||typeof Mp4Muxer==="undefined"){

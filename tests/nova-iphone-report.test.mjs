@@ -76,3 +76,13 @@ test("NOVA 0.23 : série de métriques non certifiée n'est jamais publiée comm
  assert.equal(report.output,null);
  assert.throws(()=>LAB.serialiser({schema:"garbage"}),/invalide/);
 });
+
+test("NOVA 0.23 : MOV iPhone sans MIME reconnu sans enregistrer son nom",async()=>{
+ const mov={...input,type:"",name:"absolument-prive.MOV"};
+ assert.equal(LAB.videoFile(mov),true);
+ assert.equal(LAB.videoFile({...mov,name:"archive.xyz"}),false);
+ const {report}=await run({file:mov});
+ assert.equal(report.result,"success");
+ assert.equal(report.source.mimeCategory,"video");
+ assert.equal(LAB.serialiser(report).includes(mov.name),false);
+});

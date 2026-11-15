@@ -680,3 +680,8 @@ Les choix réutilisés des travaux antérieurs RetoucheProAI / SmallMotion / lab
 `experiences/nova-iphone-lab-ui.js` fournit la commande opt-in et le téléchargement volontaire du JSON et, après réussite seulement, du MP4 de vérification. L'audio est **conservé par défaut**, et le choix explicite « sans son » reste celui du parcours export existant. Une sélection de fichier ne démarre jamais de calcul automatiquement. Le panneau est caché lorsque le pilote export n'est pas disponible ; aucune publicité du prototype n'est faite sur la production.
 
 **Les mesures de laboratoire ne sont pas un test Safari physique.** Les bancs Chromium/WebKit Linux et les tests de confidentialité du JSON s'exécutent en CI ; la vraie validation exige l'ouverture de l'aperçu expérimental dans Safari sur un iPhone et un fichier consenti, et l'enregistrement volontaire du rapport. Aucun lien de prévisualisation publique n'est déployé par ce commit. Les limites NOVA 0.22 (12 s / 60 Mo, HEVC 90 images 640×360, sortie H.264 15 i/s) restent inchangées.
+
+
+### NOVA 0.23 — Compatibilité des imports Fichiers iOS et suspension Safari
+
+Un fichier MOV/MP4/M4V fourni par le sélecteur Fichiers iOS avec un **MIME vide** est maintenant admis à la sélection locale par son extension (sans enregistrer son nom dans le rapport). Les types MIME renseignés autres que vidéo ne sont pas contournés par l'extension. En cours d'essai, `pagehide` ou `visibilitychange` (page devenue invisible) demande l'annulation du benchmark afin de ne pas prétendre qu'un calcul a été validé après suspension iOS. Ces événements n'impliquent **pas** une preuve de libération immédiate des ressources natives ; le parcours reste expérimental.
