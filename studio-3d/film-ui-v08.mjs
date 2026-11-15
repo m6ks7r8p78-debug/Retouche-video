@@ -6,7 +6,7 @@ import {buildSyntheticFilmSceneV08} from './film-motion-v08.mjs';
 import {readSyntheticGLB,sampleSyntheticPose,paintSyntheticScene} from './film-viewer-v03.mjs';
 import {createWebGLFilmRenderer} from './film-webgl-v04.mjs';
 import {sampleCadence,makeLocalDiagnostic} from './film-diagnostic-v06.mjs';
-import {createExportFile,canShareLocally,shareLocalFile} from './film-share-v07.mjs';
+import {createExportFile,canShareLocally,shareLocalFile} from './film-share-v08.mjs';
 
 const find=id=>document.querySelector(id);
 let canvas=find('#view');
