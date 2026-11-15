@@ -27,6 +27,10 @@ WebKit Safari 26 supporte WebGPU, mais aucune accélération GPU n'est nécessai
 Sources : https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement/requestVideoFrameCallback ; https://webkit.org/blog/17333/webkit-features-in-safari-26-0/ .
 Un ticket WebKit récent (2026-11-11, `331130`, classé doublon) signale une croissance mémoire possible du processus GPU sur iOS ; il justifie le choix **CPU local** avant d'imposer WebGPU : https://bugs.webkit.org/show_bug.cgi?id=331130 . Ce ticket n'est pas une mesure sur l'appareil du propriétaire.
 
+## Contre-exemple CI distant et correction
+
+Le premier workflow GitHub du pont a échoué sur `media_decode_error` : les assertions JS et le contrôle du raccordement HTML étaient **verts**, mais le Chromium Playwright du runner ne fournissait pas de décodeur H.264 compatible avec la vidéo générée par FFmpeg. Une validation locale dans Chromium système ne garantissait donc pas le même codec sur GitHub. Le banc a été corrigé pour fabriquer deux sorties entièrement synthétiques (H.264 et WebM VP8), puis **sélectionner le codec pris en charge par le navigateur de test** et inscrire ce choix dans le résultat JSON. Ce repli ne prouve pas que H.264 fonctionne sur le runner distant. Il ne change pas le code de SmallMotion ni de l’application.
+
 ## Limites ouvertes
 
 1. **Pas d'essai physique Safari/iPhone**, température/autonomie et gestion mémoire du décodeur inconnues.
