@@ -93,6 +93,37 @@ test("NOVA 0.25: vidéo HEVC/AAC admissible puis H264 refusé sans exporter ni r
   assert.equal(second.readyForExportAttempt,false);
   assert.equal(second.exportProposal,null);
   assert.ok(!JSON.stringify(second).includes("nova-smallmotion-synthetic.mp4"));
+  // Simulation UI uniquement : données entièrement synthétiques, aucune
+  // vidéo privée ni analyse haute résolution réelle dans ce test Chromium.
+  await page.evaluate(()=>{
+   const base=window.NOVA_REAL_PREFLIGHT;
+   window.NOVA_REAL_PREFLIGHT={...base,inspect:async()=>({
+    schema:"retoucheproai.nova.real-preflight.v1",version:1,
+    status:"hevc-profile-or-timeline-incompatible",readyForExportAttempt:false,
+    source:{bytes:2400000,videoCategory:"local-video",codec:"hevc",
+     width:1080,height:1920,durationMs:6000,frames:180,estimatedSourceFps:30},
+    audio:"not-tested",estimatedMiB:null,exportProposal:null,
+    blockers:["coded-pixels-over-limit","source-frames-over-limit"],
+    advisories:["source-rate-above-output-rate"],
+    pilotLimits:{codedPixelAreaMax:230400,sourceFramesMax:90,maxDurationMs:12000,outputFpsMax:15}
+   })};
+  });
+  await page.locator("#file").setInputFiles({
+   name:"SYNTHETIC_UI_ONLY.mov",mimeType:"video/quicktime",
+   buffer:Buffer.alloc(2000)
+  });
+  await page.locator("#novaRealPreflightRun").click();
+  await page.waitForFunction(()=>!!document.querySelector("#novaRealPreflightJson").getAttribute("href"),
+   null,{timeout:30000});
+  const message=await page.locator("#novaRealPreflightStatus").textContent();
+  assert.match(message,/Résolution trop élevée/);
+  assert.match(message,/1080 × 1920/);
+  assert.match(message,/180/);
+  assert.match(message,/30 images\/s/);
+  assert.match(message,/15 images\/s/);
+  assert.match(message,/audio.*non/i);
+  assert.equal(await page.locator("#iphoneBenchMp4").getAttribute("href"),null,
+   "même un résultat haute résolution ne doit pas exporter automatiquement");
   assert.deepEqual(errors,[],"aucune erreur JS");
   assert.deepEqual(external,[],"aucune requête externe");
   assert.deepEqual(uploads,[],"aucun upload");
