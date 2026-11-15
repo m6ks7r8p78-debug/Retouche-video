@@ -15,7 +15,8 @@ const advisoryCodes=new Set(["source-rate-above-output-rate"]);
 const codes=new Set(["ready-for-export-attempt","not-video","file-budget",
  "browser-unavailable","insecure-context","container-unreadable",
  "unsupported-video-codec","hevc-profile-or-timeline-incompatible",
- "resource-budget","audio-not-preservable","analysis-unavailable","cancelled"]);
+ "resource-budget","audio-not-preservable","analysis-unavailable","cancelled",
+ "ready-for-native-hd-attempt"]);
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
 const count=x=>Number.isSafeInteger(x)&&x>=0?x:null;
 const small=x=>finite(x)&&x>=0&&x<=160?Math.round(x*10)/10:null;
@@ -50,7 +51,8 @@ function state(file){
   limitation:"Précontrôle technique local uniquement : ni preuve de qualité, ni test de lecture finale, ni garantie d'export."};
 }
 function finish(base,status){
- return Object.freeze({...base,status,readyForExportAttempt:status==="ready-for-export-attempt"});
+ return Object.freeze({...base,status,readyForExportAttempt:status==="ready-for-export-attempt"||
+  status==="ready-for-native-hd-attempt"});
 }
 function category(info){
  const c=info?.codec;
@@ -101,6 +103,34 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
     r.advisories.push("source-rate-above-output-rate");
   }
   if(r.source.codec!=="hevc")return finish(r,"unsupported-video-codec");
+  // Ce parcours nouveau prend en charge HD / plus de 90 images sans
+  // présenter les anciennes limites WASM comme des limites universelles.
+  // Il n'est favorable QUE si le décodeur, encodeur et AAC sont vérifiés.
+  const hd=globalThis.NOVA_NATIVE_HD;
+  if(hd&&r.blockers.some(x=>x==="coded-pixels-over-limit"||
+                             x==="source-frames-over-limit")){
+   try{
+    const p=hd.analyse(info,file.size);
+    if(stopped())return finish(r,"cancelled");
+    await hd.configDecoder(info);
+    await hd.configEncoder(p);
+    if(stopped())return finish(r,"cancelled");
+    const aud=audioPlan||globalThis.NOVA_AAC_COPY?.planifier;
+    if(typeof aud!=="function")throw new Error("AAC-planifier unavailable");
+    const a=await aud(file,{durationSeconds:p.durationSeconds,signal});
+    if(stopped())return finish(r,"cancelled");
+    if(a?.mode==="aac-copy"&&a.packets?.length>0){
+     r.audio="aac-copy-verified";
+     r.blockers=[];r.advisories=[];
+     r.exportProposal={width:p.width,height:p.height,
+      fps:Math.round(p.sourceFps),frames:p.sourceFrames};
+     return finish(r,"ready-for-native-hd-attempt");
+    }
+   }catch{
+    if(stopped())return finish(r,"cancelled");
+    // Aucune promotion HD si les codecs/couleurs/AAC ne sont pas validés.
+   }
+  }
   const validateFn=validate||globalThis.NOVA_HEVC_RENDER?.metadata;
   if(typeof validateFn!=="function")return finish(r,"analysis-unavailable");
   let meta;
@@ -146,7 +176,8 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
 function serialiser(report){
  if(!report||report.schema!=="retoucheproai.nova.real-preflight.v1"||
   report.version!==1||!codes.has(report.status)||
-  report.readyForExportAttempt!==(report.status==="ready-for-export-attempt"))
+  report.readyForExportAttempt!==(
+   report.status==="ready-for-export-attempt"||report.status==="ready-for-native-hd-attempt"))
   throw new TypeError("Rapport de précontrôle inconnu");
  const r=report.source||{},p=report.exportProposal;
  const safe={
@@ -169,8 +200,10 @@ function serialiser(report){
   pilotLimits:{codedPixelAreaMax:MAX_CODED_PIXELS,sourceFramesMax:MAX_SOURCE_FRAMES,
    maxDurationMs:MAX_SECONDS_US/1000,outputFpsMax:MAX_OUTPUT_FPS},
   exportProposal:p&&[p.width,p.height,p.fps,p.frames].every(Number.isSafeInteger)&&
-    p.width>=2&&p.height>=2&&p.width<=640&&p.height<=640&&p.fps===15&&
-    p.frames>=1&&p.frames<=180?
+    p.width>=2&&p.height>=2&&p.width*p.height<=
+     (report.status==="ready-for-native-hd-attempt"?2200000:640*640)&&
+    p.fps>=5&&p.fps<=(report.status==="ready-for-native-hd-attempt"?61:15)&&
+    p.frames>=1&&p.frames<=(report.status==="ready-for-native-hd-attempt"?360:180)?
     {width:p.width,height:p.height,fps:p.fps,frames:p.frames}:null,
   privacy:{mediaUploaded:false,rawMediaInReport:false,filenameInReport:false,
    automaticSharing:false,mediaModified:false},
