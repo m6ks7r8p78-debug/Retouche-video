@@ -417,3 +417,38 @@ async function decodeVideoEvents(filename){
    "-f","rawvideo","-"],{encoding:null,maxBuffer:8*1024*1024});
  return impulsionsVideo(stdout,{width:8,height:8,fps:15});
 }
+
+
+test("NOVA 0.8 : le banc FFmpeg valide AAC préservé et détecte +250 ms audio réel",async(t)=>{
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-av-reference-"));
+ const src=path.join(tmp,"source.mp4"),good=path.join(tmp,"reference.mp4"),
+   shifted=path.join(tmp,"desynchronise.mp4");
+ try{
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error","-f","lavfi","-i",
+   "color=c=black:s=160x90:r=15:d=2,drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='between(t,0.395,0.465)+between(t,1.195,1.265)'",
+   "-f","lavfi","-i",
+   "aevalsrc=if(lt(abs(t-0.42)\\,0.03)\\,0.7*sin(2*PI*1000*t)\\,0)+if(lt(abs(t-1.22)\\,0.03)\\,0.7*sin(2*PI*1400*t)\\,0):s=48000:d=2",
+   "-c:v","libx264","-pix_fmt","yuv420p","-c:a","aac","-b:a","128k","-y",src]);
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error","-i",src,
+   "-map","0:v:0","-map","0:a:0","-c:v","copy","-c:a","aac","-b:a","128k","-y",good]);
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error","-i",src,
+   "-map","0:v:0","-map","0:a:0","-c:v","copy","-af","adelay=250:all=1",
+   "-c:a","aac","-b:a","128k","-t","2","-y",shifted]);
+  const [sourceAudio,sourceVideo,outputAudio,outputVideo,badAudio,badVideo]=await Promise.all([
+   decodeAudioEvents(src),decodeVideoEvents(src),decodeAudioEvents(good),decodeVideoEvents(good),
+   decodeAudioEvents(shifted),decodeVideoEvents(shifted)
+  ]);
+  const goodAudit=comparerImpulsions({sourceAudio,sourceVideo,outputAudio,outputVideo,toleranceMs:90});
+  assert.ok(goodAudit.offsetMs<90,"le réencodage de référence ne doit pas décaler le son");
+  assert.equal(badAudio.length,2,"les impulsions restent présentes malgré le retard");
+  assert.throws(()=>comparerImpulsions({
+    sourceAudio,sourceVideo,outputAudio:badAudio,outputVideo:badVideo,toleranceMs:90
+   }),/Décalage audio\/vidéo ajouté/);
+  const shiftMs=(badAudio[0]-sourceAudio[0])*1000;
+  assert.ok(shiftMs>210&&shiftMs<290,"le banc doit mesurer ~250 ms, obtenu "+shiftMs);
+  t.diagnostic("FFmpeg témoin sain : "+goodAudit.offsetMs.toFixed(1)+
+   " ms ; témoin corrompu : "+shiftMs.toFixed(1)+" ms mesurés");
+ }finally{
+  await fs.rm(tmp,{recursive:true,force:true});
+ }
+});
