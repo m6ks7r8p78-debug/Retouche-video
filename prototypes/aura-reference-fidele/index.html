@@ -86,7 +86,7 @@ main{display:flex;flex-direction:column;flex:1;min-height:0}.stage-wrap{margin:0
 </main>
 <input id="file" type="file" accept="image/*,video/*" class="visually-hidden" aria-label="Sélectionner une photo ou vidéo">
 <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
-<section id="fullStudio" class="full-studio" hidden role="dialog" aria-modal="true" aria-label="Studio complet RetoucheProAI"><div class="full-studio-top"><span><strong>Atelier complet RetoucheProAI</strong><small>Moteurs existants · même session de navigateur · fonctions et modèles selon disponibilité</small></span><button id="closeFullStudio" type="button">Revenir à AURA</button></div><p id="nativeMissing" hidden class="native-missing">Ce site de prévisualisation ne contient pas l'application complète sur la même origine. <a href="https://retoucheproai.com/" target="_blank" rel="noopener">Ouvrir l'application principale</a>.</p><iframe id="fullStudioFrame" title="Application complète RetoucheProAI" loading="lazy"></iframe></section>
+<section id="fullStudio" class="full-studio" hidden role="dialog" aria-modal="true" aria-label="Studio complet RetoucheProAI"><div class="full-studio-top"><span><strong>Atelier complet RetoucheProAI</strong><small>Moteurs existants · même session de navigateur · fonctions et modèles selon disponibilité</small></span><button id="closeFullStudio" type="button">Revenir à AURA</button></div><p id="studioTransferStatus" role="status" aria-live="polite" class="native-status"></p><p id="nativeMissing" hidden class="native-missing">Ce site de prévisualisation ne contient pas l'application complète sur la même origine. <a href="https://retoucheproai.com/" target="_blank" rel="noopener">Ouvrir l'application principale</a>.</p><iframe id="fullStudioFrame" title="Application complète RetoucheProAI" loading="lazy"></iframe></section>
 <section class="sheet" id="sheet" hidden><div class="sheet-head"><h2 id="sheetTitle">Projets</h2><button id="closeSheet" class="close-sheet" aria-label="Fermer"><svg><use href="#i-close"/></svg></button></div><div id="sheetContents"></div></section>
 </div>
 <script>
@@ -316,23 +316,62 @@ main{display:flex;flex-direction:column;flex:1;min-height:0}.stage-wrap{margin:0
 
  let studioOpened=false;
  const frame=$('fullStudioFrame');
+ const BRIDGE='retoucheproai:aura:handoff:v1';
+ let handoffCounter=0, pendingHandoff=null, nativeTimer=0;
+ function showStudioProblem(reason){
+  $('nativeMissing').hidden=false;frame.hidden=true;
+  $('studioTransferStatus').textContent=reason || 'Le studio complet n’est pas disponible dans cette prévisualisation.';
+ }
+ function handleStudioAck(e){
+  if(e.origin!==location.origin || e.source!==frame.contentWindow)return;
+  const d=e.data;
+  if(!d || d.channel!==BRIDGE || d.type!=='ack' || !pendingHandoff || d.id!==pendingHandoff.id)return;
+  clearTimeout(nativeTimer);
+  pendingHandoff=null;
+  if(d.ok){$('nativeMissing').hidden=true;frame.hidden=false;
+   $('studioTransferStatus').textContent='Média transmis au studio. Tu peux maintenant utiliser ses vrais moteurs.'}
+  else showStudioProblem(d.reason);
+ }
+ window.addEventListener('message',handleStudioAck);
+ function handoffFile(){
+  if(!studioOpened || !S.file)return;
+  clearTimeout(nativeTimer);
+  const id='aura-'+(++handoffCounter);
+  pendingHandoff={id, file:S.file,kind:S.kind};
+  $('studioTransferStatus').textContent='Ouverture des outils existants…';
+  $('nativeMissing').hidden=true;
+  frame.hidden=false;
+  try {frame.contentWindow.postMessage({channel:BRIDGE,type:'import',id,kind:S.kind,file:S.file},location.origin === 'null' ? '*' : location.origin)}
+  catch(err){showStudioProblem('Transfert indisponible sur ce navigateur.');pendingHandoff=null;return}
+  // Compatibilité avec l’application native sans script de pont.
+  nativeTimer=setTimeout(()=>{
+    if(!pendingHandoff || pendingHandoff.id!==id || !studioOpened)return;
+    try{
+      if(frame.contentWindow.__AURA_NATIVE_BRIDGE_V1__ === true){
+        nativeTimer=setTimeout(()=>{if(pendingHandoff&&pendingHandoff.id===id){pendingHandoff=null;showStudioProblem('Le studio ne répond pas. Aucun traitement confirmé.')}},6000);
+        return;
+      }
+      const doc=frame.contentDocument;
+      const input=doc && doc.getElementById(S.kind==='video'?'f':'fp');
+      if(!(input instanceof frame.contentWindow.HTMLInputElement) || input.type!=='file' || typeof frame.contentWindow.DataTransfer!=='function')
+        throw Error('formulaire absent');
+      const dt=new frame.contentWindow.DataTransfer();dt.items.add(S.file);
+      input.files=dt.files;input.dispatchEvent(new frame.contentWindow.Event('change',{bubbles:true}));
+      pendingHandoff=null;frame.hidden=false;
+      $('studioTransferStatus').textContent='Import envoyé au formulaire natif ; vérifie la confirmation du studio.';
+    }catch(err){pendingHandoff=null;showStudioProblem('Le studio complet n’est pas déployé sur cette adresse. Aucun média transmis.');}
+  },2400);
+ }
  $('openFullStudio').addEventListener('click',()=>{
   if(S.kind==='demo'){alertUser('Importez une photo ou vidéo avant d’ouvrir le studio complet.');return}
   $('fullStudio').hidden=false;studioOpened=true;document.body.classList.add('studio-active');
   if(!frame.src){frame.addEventListener('load',handoffFile);frame.src=new URL('../../index.html',location.href).href}
-  else handoffFile();
+  else if(frame.contentDocument && frame.contentDocument.readyState==='complete')handoffFile();
  });
- function handoffFile(){
-  if(!studioOpened||!S.file)return;
-  try{
-   const doc=frame.contentDocument,input=doc&&doc.getElementById(S.kind==='video'?'f':'fp');
-   if(!input)throw Error('atelier natif non disponible ici');
-   $('nativeMissing').hidden=true;frame.hidden=false;
-   const dt=new DataTransfer();dt.items.add(S.file);input.files=dt.files;
-   input.dispatchEvent(new Event('change',{bubbles:true}));
-  }catch(err){$('nativeMissing').hidden=false;frame.hidden=true;alertUser('L’atelier complet nécessite le site avec tout le dépôt, pas seulement le HTML AURA.')} 
- }
- $('closeFullStudio').addEventListener('click',()=>{$('fullStudio').hidden=true;studioOpened=false;document.body.classList.remove('studio-active')});
+ $('closeFullStudio').addEventListener('click',()=>{
+  $('fullStudio').hidden=true;studioOpened=false;pendingHandoff=null;clearTimeout(nativeTimer);
+  document.body.classList.remove('studio-active');
+ });
 
  const v=$('beforeVideo'),after=$('afterVideo');const time=x=>{if(!Number.isFinite(x))return'00:00';const q=Math.floor(x);return String(Math.floor(q/60)).padStart(2,'0')+':'+String(q%60).padStart(2,'0')};
  $('play').addEventListener('click',async()=>{if(v.paused){try{await v.play();await after.play()}catch(e){alertUser('Lecture non prise en charge par cet appareil')}}else{v.pause();after.pause()}});v.addEventListener('play',()=>{$('play').innerHTML='<svg><use href="#i-pause"></use></svg>'});v.addEventListener('pause',()=>{$('play').innerHTML='<svg><use href="#i-play"></use></svg>'});v.addEventListener('loadedmetadata',()=>{$('duration').textContent=time(v.duration)});v.addEventListener('timeupdate',()=>{$('current').textContent=time(v.currentTime);$('seek').value=v.duration?Math.round(v.currentTime/v.duration*1000):0;if(after.readyState>=1 && Math.abs(after.currentTime-v.currentTime)>.25)after.currentTime=v.currentTime});v.addEventListener('ended',()=>after.pause());$('seek').addEventListener('input',e=>{if(v.duration)v.currentTime=v.duration*(+e.target.value/1000);after.currentTime=v.currentTime});$('sound').addEventListener('click',()=>{v.muted=!v.muted;$('sound').setAttribute('aria-label',v.muted?'Activer le son':'Couper le son');alertUser(v.muted?'Son désactivé':'Son activé')});
