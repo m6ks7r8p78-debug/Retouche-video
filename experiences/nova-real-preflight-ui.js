@@ -10,7 +10,7 @@ const button=$("novaRealPreflightRun"),status=$("novaRealPreflightStatus"),
 if(!button||!status||!link)return;
 const label="Vérifier cette vidéo sans exporter";
 const messages=Object.freeze({
- "ready-for-export-attempt":"Précontrôle favorable pour ce chemin : codec, contraintes de durée et mémoire, PTS et copie AAC vérifiés. Essai d'export seulement, sans garantie de fidélité finale.",
+ "ready-for-export-attempt":"Précontrôle favorable pour ce moteur : codec, PTS, budget, capacités de décodage/encodage si H.264 et copie AAC contrôlés. Essai d'export seulement, sans garantie de fidélité finale.",
  "not-video":"Ce fichier n'est pas reconnu comme une vidéo.",
  "file-budget":"Précontrôle refusé : fichier vide, invalide ou supérieur à 60 Mio.",
  "browser-unavailable":"Ce navigateur ne présente pas toutes les fonctions WebCodecs requises.",
