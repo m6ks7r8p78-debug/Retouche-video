@@ -1,0 +1,28 @@
+name: Cinema P20 — annotated temporal bridge
+on:
+  push:
+    paths:
+      - 'studio-cinema/p20/**'
+      - 'studio-cinema/p19/**'
+      - 'studio-cinema/p15/**'
+      - '.github/workflows/ci-cinema-p20.yml'
+  pull_request:
+    paths:
+      - 'studio-cinema/p20/**'
+      - 'studio-cinema/p19/**'
+      - 'studio-cinema/p15/**'
+      - '.github/workflows/ci-cinema-p20.yml'
+  workflow_dispatch:
+jobs:
+  temporal-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: P15 + P19 + P20 integration and adversarial privacy tests
+        run: |
+          test -f studio-cinema/p15/behavior_ontology.js
+          test -f studio-cinema/p19/src/p19_micro_motion_generator.js
+          node --test studio-cinema/p20/tests/test_p20.cjs studio-cinema/p19/tests/test_p19.cjs studio-cinema/p15/tests/test_behavior_ontology.cjs
