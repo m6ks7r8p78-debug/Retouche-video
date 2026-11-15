@@ -25,7 +25,10 @@ test("NOVA 0.18 : le WASM HEVC versionné décode hors npm et égale FFmpeg",asy
  const glue=require(path.join(vendor,"wasm/hevc-decode.js"));
  assert.equal(typeof glue,"function");
  const originalGlobal=globalThis.HEVCDecoderModule,originalFetch=globalThis.fetch;
- globalThis.HEVCDecoderModule=options=>glue({...options,wasmBinary:new Uint8Array(wasm)});
+ // Le glue Emscripten MIT expose locateFile, pas wasmBinary comme option.
+ // En Node, locateFile est résolu par fs.readFileSync depuis le dépôt.
+ globalThis.HEVCDecoderModule=options=>glue({...options,
+  locateFile:()=>path.join(vendor,"wasm/hevc-decode.wasm")});
  globalThis.fetch=()=>{throw new Error("Interdiction réseau dans ce test HEVC local")};
  const temp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-hevc-offline-"));
  try{
