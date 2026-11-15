@@ -45,6 +45,30 @@ test("NOVA 0.20 : vrai hvcC SPS/VUI compare BT709 plage limitée à FFprobe",asy
     assert.equal(accepted.fullRange,false);
     assert.throws(()=>VUI.analyser({...info,color:{...info.color,matrix:9}}),
      /contradictoires/);
+    // Échantillon hev1 fabriqué à partir des VRAIS octets SPS / VCL
+    // du MOV x265 produit par FFmpeg. Répétition identique autorisée.
+    const mov=new Blob([await fs.readFile(file)]);
+    const sample=new Uint8Array(await mov.slice(info.so[0],
+      info.so[0]+info.sz[0]).arrayBuffer());
+    const extra=new Uint8Array(cfg.lengthBytes+sps.length);
+    let nalSize=sps.length;
+    for(let i=cfg.lengthBytes-1;i>=0;i--){extra[i]=nalSize&255;nalSize>>=8}
+    extra.set(sps,cfg.lengthBytes);
+    const appended=new Uint8Array(extra.length+sample.length);
+    appended.set(extra);appended.set(sample,extra.length);
+    const editedInfo={...info,codec:info.codec.replace(/^hvc1/,"hev1"),
+      ns:1,so:[0],sz:[appended.length]};
+    const packets=[];
+    for await(const packet of ANNEXB.flux(new Blob([appended]),editedInfo))
+     packets.push(packet);
+    assert.equal(packets.at(-1).inbandParameters,1);
+    // Un seul octet changé dans le même SPS doit désormais bloquer.
+    const altered=new Uint8Array(appended);
+    altered[cfg.lengthBytes+sps.length-1]^=1;
+    await assert.rejects(async()=>{
+     for await(const packet of ANNEXB.flux(new Blob([altered]),editedInfo))
+      void packet;
+    },/changement VPS\/SPS\/PPS/);
    }
    t.diagnostic("HEVC VUI réel : "+JSON.stringify({
     fullRange,vui,ffRange:ff.color_range,container:info.color}));
