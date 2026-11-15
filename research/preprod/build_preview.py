@@ -65,7 +65,7 @@ def build():
     staged_sw=src.replace('const LOURDS=["sr.bin","rnnoise.mjs","modeles/edgetam_encodeur.onnx","modeles/edgetam_decodeur.onnx"]','const LOURDS=[]')
     assert staged_sw!=src, 'Optional model list changed in repo'
     # Isolate preview cache from production and prior installations.
-    staged_sw=staged_sw.replace('const C="retouche-v85"','const C="retouche-v852"')
+    staged_sw=staged_sw.replace('const C="retouche-v86"','const C="retouche-v852"')
     assert 'retouche-v852' in staged_sw
     h=hashlib.sha256()
     for name in names:
