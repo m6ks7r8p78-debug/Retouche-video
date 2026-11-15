@@ -43,6 +43,19 @@ function choisir(sorted,seconds){
  }
  return sorted[lo];
 }
+/* Echantillonnage CFR : accepte une vraie trame légèrement future seulement
+ * si elle est plus proche du temps de sortie et située dans une demi-période.
+ * Ne fabrique ni interpolation, ni image absente.
+ */
+function choisirProche(sorted,seconds,fps=15){
+ if(!Number.isFinite(fps)||fps<=0)throw new TypeError("Cadence cible invalide");
+ const previous=choisir(sorted,seconds);
+ const goal=Math.round(seconds*1e6),maxLeadUs=Math.floor(500000/fps);
+ const idx=sorted.indexOf(previous),next=sorted[idx+1];
+ if(next&&next.ptsUs>goal&&next.ptsUs-goal<=maxLeadUs &&
+    next.ptsUs-goal<Math.abs(goal-previous.ptsUs))return next;
+ return previous;
+}
 async function creer(file,{signal}={}){
  if(!file||typeof file.slice!=="function"||!Number.isFinite(file.size))
   throw new TypeError("Fichier local MP4 requis");
@@ -103,7 +116,7 @@ async function creer(file,{signal}={}){
  async function imageA(seconds,target){
   if(state.closed||decoder.state!=="configured")throw new Error("Décodeur inactif");
   if(signal?.aborted)throw new Error("Export annulé");
-  const selected=choisir(timeline.nonnegative,seconds);
+  const selected=choisirProche(timeline.nonnegative,seconds);
   const rank=timeline.rankByPTS.get(selected.ptsUs);
   if(rank<state.target)throw new Error("Lecture non monotone interdite");
   state.target=rank;eliminate(rank);
@@ -159,6 +172,6 @@ async function creer(file,{signal}={}){
    ptsUs:timeline.nonnegative.map(x=>x.ptsUs)},
    statistiques:()=>({fed:state.fed,decoded:state.decoded,dropped:state.dropped,held:frames.size})});
 }
-return Object.freeze({creer,planifier,choisir});
+return Object.freeze({creer,planifier,choisir,choisirProche});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_PTS;
