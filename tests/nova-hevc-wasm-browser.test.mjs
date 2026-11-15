@@ -13,7 +13,10 @@ import crypto from "node:crypto";
 import {execFile} from "node:child_process";
 import {promisify} from "node:util";
 import {fileURLToPath} from "node:url";
-import {chromium} from "playwright";
+import {chromium,webkit} from "playwright";
+const isWebKit=process.env.NOVA_HEVC_ENGINE==="webkit";
+const browserEngine=isWebKit?webkit:chromium;
+const engineName=isWebKit?"WebKit Linux":"Chromium";
 const run=promisify(execFile);
 const root=path.resolve(fileURLToPath(new URL("../",import.meta.url)));
 function server(){
@@ -27,7 +30,7 @@ function server(){
    res.end(b)}catch{res.writeHead(404).end("Not found")}
  });
 }
-test("NOVA 0.17 : Chromium décode HEVC MOV via WASM local et égale FFmpeg YUV",async(t)=>{
+test("NOVA 0.17 : "+engineName+" décode HEVC MOV via WASM local et égale FFmpeg YUV",async(t)=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),"nova-hevc-wasm-"));
  const source=path.join(dir,"source.mov"),app=server();let browser;
  try{
@@ -43,8 +46,8 @@ test("NOVA 0.17 : Chromium décode HEVC MOV via WASM local et égale FFmpeg YUV"
   const expectedFrames=raw.length/(160*90*3/2);
   assert.ok(Number.isInteger(expectedFrames)&&expectedFrames>=15);
   await new Promise(ok=>app.listen(0,"127.0.0.1",ok));
-  browser=await chromium.launch({headless:true,
-   ...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  browser=await browserEngine.launch({headless:true,
+   ...(!isWebKit&&process.env.CHROME?{executablePath:process.env.CHROME}:{})});
   const page=await browser.newPage({viewport:{width:390,height:844}});
   const errors=[],requests=[];
   page.on("pageerror",e=>errors.push(e.message));
