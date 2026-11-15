@@ -75,6 +75,14 @@ test("NOVA HEVC natif : test opt-in via mire synthétique, rapport sans média p
   });
   assert.equal(raw.schema,"retoucheproai.nova.native-hevc-smoke.v1");
   assert.equal(raw.sourceKind,"bundled-ffmpeg-synthetic-hevc-aac");
+  // Régression capturée sur iPhone : ancienne mire HEVC refusée AVANT
+  // même d'interroger VideoDecoder à cause du colr MOV = 2/2/1.
+  // Ce banc doit atteindre au minimum la vérification HEVC native.
+  assert.equal(raw.source?.codec,"hevc","le contrat source HEVC doit être accepté");
+  assert.equal(raw.source?.width,160);
+  assert.equal(raw.source?.height,90);
+  assert.equal(raw.source?.frames,15);
+  assert.equal(raw.source?.durationMs,1000);
   assert.equal(raw.privacy.userMediaRead,false);
   assert.equal(raw.privacy.externalUpload,false);
   assert.equal(raw.privacy.filenameInReport,false);
@@ -85,6 +93,9 @@ test("NOVA HEVC natif : test opt-in via mire synthétique, rapport sans média p
   assert.ok(["failed","success"].includes(raw.result),JSON.stringify(raw));
   if(raw.result==="failed"){
    assert.ok(expectedStages.includes(raw.failedAt),JSON.stringify(raw));
+   assert.notEqual(raw.failedAt,"source-contract",
+    "mire corrigée : ne plus s'arrêter au précontrôle HEVC avant décodeur");
+   assert.notEqual(raw.failedAt,"fixture");
    assert.equal(raw.errorCode,raw.failedAt+"-failed");
    assert.equal(raw.decodedByNative,false);
    assert.equal(await page.locator("#novaHdSyntheticMp4").getAttribute("href"),null,
