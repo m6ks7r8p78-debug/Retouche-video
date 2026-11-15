@@ -33,6 +33,7 @@ jobs:
           node --check experiences/nova-hevc-render.js
           node --check experiences/nova-hevc-vui.js
           node --check experiences/nova-color709.js
+          node --check experiences/nova-export-meter.js
           node --check experiences/nova-pts.js
           node --check experiences/nova-guard.js
           node --check experiences/nova-avsync.js
@@ -41,7 +42,7 @@ jobs:
           node --check experiences/nova-export-ui.js
           node -e "const fs=require('fs'),vm=require('vm');const s=fs.readFileSync('experiences/nova.html','utf8');const a=s.indexOf('<script>');const b=s.indexOf('</script>',a);if(a<0||b<0)throw Error('script absent');new vm.Script(s.slice(a+8,b));console.log('NOVA inline JS valid');"
       - name: Garde-fous NOVA
-        run: node --test tests/nova-color709.test.mjs tests/nova-hevc-assets.test.mjs tests/nova-decision.test.mjs tests/nova-zones.test.mjs tests/nova-video.test.mjs tests/nova-demux.test.mjs tests/nova-timeline.test.mjs tests/nova-pts.test.mjs tests/nova-guard.test.mjs tests/nova-avsync.test.mjs tests/nova-aac-copy.test.mjs tests/nova-hevc-annexb.test.mjs tests/nova-av-pulses.test.mjs tests/nova-export.test.mjs
+        run: node --test tests/nova-export-meter.test.mjs tests/nova-color709.test.mjs tests/nova-hevc-assets.test.mjs tests/nova-decision.test.mjs tests/nova-zones.test.mjs tests/nova-video.test.mjs tests/nova-demux.test.mjs tests/nova-timeline.test.mjs tests/nova-pts.test.mjs tests/nova-guard.test.mjs tests/nova-avsync.test.mjs tests/nova-aac-copy.test.mjs tests/nova-hevc-annexb.test.mjs tests/nova-av-pulses.test.mjs tests/nova-export.test.mjs
   navigateur:
     runs-on: ubuntu-latest
     timeout-minutes: 12

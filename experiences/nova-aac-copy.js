@@ -263,7 +263,7 @@ async function planifier(file,{durationSeconds,signal}={}){
       "AAC-LC original copié avec préchargement roll et elst conservés":
       "AAC-LC original copié sans réencodage"});
 }
-async function copier(file,plan,muxer,{signal,onPacket=()=>{}}={}){
+async function copier(file,plan,muxer,{signal,onPacket=()=>{},beforePacket=()=>{}}={}){
  if(!plan?.packets?.length||typeof muxer?.addAudioChunkRaw!=="function")
   fail("plan AAC ou muxer invalide");
  let first=true,count=0;
@@ -271,6 +271,8 @@ async function copier(file,plan,muxer,{signal,onPacket=()=>{}}={}){
   if(signal?.aborted)fail("export annulé");
   const bytes=new Uint8Array(await file.slice(packet.offset,packet.offset+packet.size).arrayBuffer());
   if(bytes.length!==packet.size)fail("paquet AAC tronqué");
+  // Le budget doit être vérifié AVANT que le muxer alloue sa copie.
+  beforePacket({size:bytes.length,timestamp:packet.timestamp,duration:packet.duration});
   muxer.addAudioChunkRaw(bytes,"key",packet.timestamp,packet.duration,
     first?{decoderConfig:{codec:"mp4a.40.2",sampleRate:plan.sampleRate,
       numberOfChannels:plan.channels,description:plan.asc}}:undefined);

@@ -639,3 +639,11 @@ Le moteur d'export expose maintenant ses `hevcDiagnostics` issus de `NOVA_HEVC_L
 **Limites persistantes** : pilote expérimental plafonné à 12 s, 60 Mo, sortie 640 px / 15 i/s et source HEVC 640×360 / 90 échantillons ; HDR/P3 et changements de paramètres SPS non couverts, pas de vrai iPhone Safari ni 4K/8K. La PR #3 reste en brouillon ; `main`, le site public et les vidéos privées restent inchangés.
 
 **Prochaine priorité** : mesurer le coût du pipeline complet (export vidéo/audio, pas seulement décodage) et ajouter des scénarios de défaillance mémoire, puis un test iPhone physique contrôlé sans déployer la branche.
+
+
+## NOVA 0.22 — Comptabilité d'export audiovisuel de bout en bout (expérimental)
+
+Le nouveau module `nova-export-meter.js` suit les phases **précontrôle, analyse et copie audio, traitement et encodage des images, vidage de l'encodeur, assemblage MP4 et validation locale**. Il échantillonne facultativement `performance.memory.usedJSHeapSize`, mesure les octets utiles réellement remis au muxer par l'encodeur H.264, l'encodeur AAC ou la copie AAC sans recoder, le pic de queue de l'encodeur vidéo et le volume des plans de travail par image. Un plafond in-mémoire interne de **24 Mio** (abaissable mais pas relevable) s'applique aux octets encodés AVANT leur ajout au muxer, puis au MP4 complet. Le fichier n'est proposé qu'après validation et contrôle de ce plafond ; en cas de dépassement, le chemin doit refuser sans téléchargement ni export partiel.
+
+**Limitation fondamentale** : les octets des payloads et `performance.memory` quand disponible ne sont **pas** le pic de RAM/RSS du navigateur, et le muxer `in-memory` peut dupliquer des buffers. Le module n'observe pas directement les allocations internes du WebAssembly, de l'encodeur natif ni celles d'un Worker. Les durées de phase sont des temps écoulés locaux, non des mesures de consommation CPU/GPU/thermique. Les plafonds produit préexistants restent appliqués.
+

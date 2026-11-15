@@ -132,7 +132,8 @@ function transformateur(moteur,arbitre){
  function fermer(){closed=true;if(worker){worker.terminate();worker=null}}
  return {traiter,fermer};
 }
-async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=false,onProgress=()=>{},signal}={}){
+async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=false,onProgress=()=>{},signal,
+  maxEncodedBytes}={}){
  if(!file||typeof file.arrayBuffer!=="function"||!moteur?.restituer||!arbitre?.arbitrer)throw new TypeError("Fichier et moteurs NOVA requis");
  if(typeof VideoEncoder==="undefined"||typeof VideoFrame==="undefined"||typeof Mp4Muxer==="undefined")
    throw new Error("WebCodecs ou muxer MP4 indisponible sur cet appareil");
@@ -153,6 +154,9 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    NOVA_HEVC_RENDER.metadata(probe); // PTS/tailles/couleur avant export
   }
  }
+ // Garde-fou optionnel interne : l'interface ne peut pas relever la limite
+ // de 24 Mio de payloads + MP4 final in-memory.
+ const exportMeter=useHevcWasm?NOVA_EXPORT_METER.create({maxEncodedBytes}):null;
  const media=useHevcWasm?null:document.createElement("video");
  if(media){
   media.muted=true;media.playsInline=true;media.preload="auto";
@@ -178,6 +182,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   if(!globalThis.NOVA_TIMELINE)throw new Error("Horodatage NOVA indisponible");
   const timeline=NOVA_TIMELINE.calculer(sourceDuration,settings.fps);
   if(timeline.count!==settings.frames)throw new Error("Incohérence du plan temporel");
+  exportMeter?.stage("audio");
   let sourceAudit=null;
   if(useHevcWasm){
     sourceMode="hevc-wasm";
@@ -249,6 +254,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     if(!audioCheck.ok)throw new Error("Piste audio trop courte pour la durée vidéo : export interrompu");
   }
   if(signal?.aborted)throw new Error("Export annulé");
+  exportMeter?.stage("video");
   const target=new Mp4Muxer.ArrayBufferTarget();
   const audioConfig=audioCopy?{sampleRate:audioCopy.sampleRate,numberOfChannels:audioCopy.channels}:audio?.cfg;
   const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",video:{codec:"avc",width:settings.width,height:settings.height,
@@ -261,10 +267,24 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
         editGapSeconds:audioCopy.outputEditGapSeconds,
         editListVersion:audioCopy.editListVersion
       }:{})}}:{})});
-  videoEnc=new VideoEncoder({output:(chunk,meta)=>{try{muxer.addVideoChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
+  videoEnc=new VideoEncoder({output:(chunk,meta)=>{
+   try{
+    exportMeter?.add("video",chunk.byteLength);
+    muxer.addVideoChunk(chunk,meta);
+   }catch(e){error=e}
+  },error:e=>{error=e}});
   videoEnc.configure(config);
   if(audio){
-   audioEnc=new AudioEncoder({output:(chunk,meta)=>{try{audioPaquets.push({timestamp:chunk.timestamp,duration:chunk.duration});if(meta?.decoderConfig?.description)meta={...meta,decoderConfig:{...meta.decoderConfig,description:ascOnly(meta.decoderConfig.description)}};muxer.addAudioChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
+   audioEnc=new AudioEncoder({output:(chunk,meta)=>{
+    try{
+     exportMeter?.add("audio",chunk.byteLength);
+     audioPaquets.push({timestamp:chunk.timestamp,duration:chunk.duration});
+     if(meta?.decoderConfig?.description)
+      meta={...meta,decoderConfig:{...meta.decoderConfig,
+       description:ascOnly(meta.decoderConfig.description)}};
+     muxer.addAudioChunk(chunk,meta);
+    }catch(e){error=e}
+   },error:e=>{error=e}});
    audioEnc.configure(audio.cfg);
   }
   canvas.width=settings.width;canvas.height=settings.height;
@@ -294,6 +314,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
       entry.timestamp,entry.duration):
      new VideoFrame(canvas,{timestamp:entry.timestamp,duration:entry.duration});
    try{videoEnc.encode(frame,{keyFrame:entry.keyFrame})}finally{frame.close()}
+   exportMeter?.frame({queue:videoEnc.encodeQueueSize,
+    bufferBytes:processed.data.byteLength+settings.width*settings.height*3/2});
    if(videoEnc.encodeQueueSize>5)await NOVA_GUARD.attendreEncodeur(videoEnc,{maxQueue:3,signal});
    if(error)throw error;
    onProgress({stage:"video",progress:(entry.index+1)/settings.frames,
@@ -324,8 +346,10 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    }
    await encoderImage(entry);
   }
+  exportMeter?.stage("video-flush");
   await videoEnc.flush();
   if(error)throw error;
+  exportMeter?.stage("aac-copy");
   if(audio){
    const ab=audio.buffer,channels=ab.numberOfChannels,B=4096,src=Array.from({length:channels},(_,ch)=>ab.getChannelData(ch));
    // Durée audio limitée à la durée vidéo encodée : pas de longue queue silencieuse.
@@ -344,14 +368,19 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   }
   if(audioCopy){
     await NOVA_AAC_COPY.copier(file,audioCopy,muxer,{signal,
+      beforePacket:packet=>exportMeter?.add("audio",packet.size),
       onPacket:packet=>audioPaquets.push(packet)});
   }
   const audioAudit=audioConfig?NOVA_GUARD.auditerPaquetsAAC(audioPaquets,{
     durationSeconds:timeline.durationSeconds,
     leadingGapSeconds:audioCopy?.outputEditGapSeconds??0}):null;
+  exportMeter?.stage("mux");
+  if(error)throw error;
   muxer.finalize();
   const blob=new Blob([target.buffer],{type:"video/mp4"});
   if(blob.size<1024)throw new Error("Fichier de sortie incomplet");
+  exportMeter?.finalSize(blob.size);
+  exportMeter?.stage("verify");
   onProgress({stage:"verification",progress:1});
   const validation=await verifierMp4(blob,settings,signal);
   // Le MP4 de sortie doit porter réellement la boîte colr nclx
@@ -368,8 +397,11 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     colorAudit=Object.freeze({...color,qualification:
       "boîte nclx vérifiée, cohérence du SPS H.264 à contrôler séparément"});
   }
+  exportMeter?.stage("complete");
+  const pipelineAudit=exportMeter?.snapshot()??null;
+  if(hevcDiagnostics)hevcDiagnostics=Object.freeze({...hevcDiagnostics,pipelineAudit});
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,validation,colorAudit,hevcDiagnostics,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
+  return {blob,plan:settings,validation,colorAudit,hevcDiagnostics,pipelineAudit,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:sourceMode==="hevc-wasm"?"HEVC MIT WASM local, PTS MOV et sortie CFR":sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
   },report:sourceMode==="hevc-wasm"?"HEVC SDR BT.709 traité localement, sortie audiovisuelle à contrôler sur iPhone":sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
