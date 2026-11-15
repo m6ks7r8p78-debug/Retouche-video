@@ -261,3 +261,60 @@ test("Safari 0.33 : I420P10, transfert PQ, primaires P3 ou plage ambiguë ne pas
   {format:"I420",colorSpace:{...baseFrame.colorSpace,fullRange:null}}
  ])await assert.rejects(()=>COLOR.imagePourRendu(fr,e));
 });
+
+test("NOVA 0.34 : trame Safari BT709 avec transfer/range manquants et source BT601 SDR complète passe en affichage prudent",async()=>{
+ const evidence=COLOR.metadata({...base,color:{...base.color,matrix:6}});
+ COLOR.resetDiagnostic();
+ const fr={format:"RGBX",colorSpace:{primaries:"bt709",transfer:null,
+  matrix:"bt709",fullRange:null}};
+ const out=await COLOR.imagePourRendu(fr,evidence);
+ assert.equal(out.proof.sourceMismatch,true);
+ assert.equal(out.proof.colorFidelity,"uncertified-against-source");
+ const d=COLOR.diagnostic();
+ assert.equal(d.version,"0.34");
+ assert.equal(d.source.matrix,6);
+ assert.equal(d.decoded.transfer,"unspecified");
+ assert.equal(d.decoded.fullRange,null);
+ assert.equal(d.reason,"native-sdr-provisional");
+});
+test("NOVA 0.34 : plage source et décodée différente conserve rendu natif SDR avec avertissement, sans certification",async()=>{
+ const evidence=COLOR.metadata({...base,color:{...base.color,matrix:6,fullRange:false}});
+ const out=await COLOR.imagePourRendu({format:null,colorSpace:{
+  primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:true
+ }},evidence);
+ assert.equal(out.proof.colorFidelity,"uncertified-against-source");
+ assert.equal(COLOR.diagnostic().decoded.fullRange,true);
+});
+test("NOVA 0.34 : différence de primaires SDR n'est pas maquillée en correction certifiée",async()=>{
+ const evidence=COLOR.metadata({...base,color:{kind:"nclx",
+  primaries:6,transfer:6,matrix:6,fullRange:false}});
+ const out=await COLOR.imagePourRendu({format:null,colorSpace:{
+  primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false
+ }},evidence);
+ assert.equal(out.proof.colorFidelity,"uncertified-against-source");
+ assert.equal(COLOR.diagnostic().decoded.primaries,"bt709");
+});
+test("NOVA 0.34 : si source et trame ne confirment pas les autres composantes SDR, refuser avec diagnostic",async()=>{
+ const evidence=COLOR.metadata({...base,color:{kind:"nclx",primaries:2,
+  transfer:2,matrix:6,fullRange:false}});
+ await assert.rejects(()=>COLOR.imagePourRendu({format:"RGBX",colorSpace:{
+  primaries:null,transfer:null,matrix:"bt709",fullRange:null
+ }},evidence),/rendu natif SDR non vérifiable/);
+ assert.equal(COLOR.diagnostic().reason,"denied-insufficient-sdr-evidence");
+});
+test("NOVA 0.34 : refuser source 601 vs trame HDR, et aucune information privée en diagnostic",async()=>{
+ const evidence=COLOR.metadata({...base,color:{...base.color,matrix:6}});
+ const fr={format:"RGBX",colorSpace:{
+  primaries:"bt2020",transfer:"pq",matrix:"bt709",fullRange:false
+ }};
+ await assert.rejects(()=>COLOR.imagePourRendu(fr,evidence));
+ const d=COLOR.diagnostic();
+ assert.equal(d.reason,"denied-hdr-or-transfer");
+ const json=JSON.stringify(d);
+ for(const word of ["filename","filepath","videoBytes","sourceFile","userAgent","GPS","pixelData"])
+  assert.equal(json.includes(word),false);
+ assert.equal(d.privacy.mediaIncluded,false);
+ assert.equal(d.privacy.framePixelsIncluded,false);
+ COLOR.resetDiagnostic();
+ assert.equal(COLOR.diagnostic(),null);
+});
