@@ -717,3 +717,79 @@ test("NOVA 0.11 : cadence VFR + B-frames avec priming AAC elst et roll conservé
  }
 });
 
+
+
+test("NOVA 0.12 : retard audio de 250 ms conserve elst vide, AAC et sync AV",async(t)=>{
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-aac-leading-gap-"));
+ const src=path.join(tmp,"gap-source.mp4"),app=server();
+ try{
+  // Le son commence volontairement 250ms après le début de la vidéo.
+  // Le MP4 comprend normalement 2 edits : vide (-1), puis piste AAC.
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
+   "-f","lavfi","-i",
+   "color=c=black:s=160x90:r=15:d=2,drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='between(t,0.525,0.585)+between(t,1.325,1.385)'",
+   "-itsoffset","0.25","-f","lavfi","-i",
+   "aevalsrc=if(lt(abs(t-0.28)\\,0.03)\\,0.7*sin(2*PI*1000*t)\\,0)+if(lt(abs(t-1.08)\\,0.03)\\,0.7*sin(2*PI*1400*t)\\,0):s=48000:d=1.75",
+   "-map","0:v:0","-map","1:a:0",
+   "-c:v","libx264","-bf","0","-pix_fmt","yuv420p",
+   "-c:a","aac","-b:a","128k",
+   "-movflags","+faststart","-use_editlist","1","-y",src]);
+  const orig=new Blob([await fs.readFile(src)]);
+  const [meta,copy,a0,v0]=await Promise.all([
+   AVSYNC.analyser(orig),AAC_COPY.planifier(orig,{durationSeconds:2}),
+   decodeAudioEvents(src),decodeVideoEvents(src)
+  ]);
+  assert.equal(meta.edits,2,"FFmpeg doit produire deux edits AAC");
+  assert.ok(meta.delayUs>=240000&&meta.delayUs<=270000,
+   "véritable délai initial AAC ~250ms : "+JSON.stringify(meta));
+  assert.ok(copy.outputEditGapSeconds>.24&&copy.outputEditGapSeconds<.27);
+  assert.ok(copy.editMediaTime>0);
+  assert.equal(copy.rollDistance,-1);
+  assert.deepEqual([a0.length,v0.length],[2,2]);
+  await new Promise(resolve=>app.listen(0,"127.0.0.1",resolve));
+  const browser=await chromium.launch({headless:true,
+   ...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  try{
+   const page=await browser.newPage({viewport:{width:390,height:844},acceptDownloads:true});
+   const errors=[];page.on("pageerror",e=>errors.push(e.message));
+   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
+   await page.locator("#file").setInputFiles(src);
+   await page.waitForFunction(()=>!document.querySelector("#exportVideo").disabled);
+   await page.locator("#exportVideo").click();
+   await page.waitForFunction(()=>!!document.querySelector("#downloadVideo")?.getAttribute("href")||
+     document.querySelector("#exportStatus").textContent.startsWith("Export refusé"),
+     null,{timeout:90000});
+   const msg=await page.locator("#exportStatus").innerText();
+   assert.match(await page.locator("#downloadVideo").getAttribute("href")||"",/^blob:/,msg);
+   assert.match(msg,/audio AAC original copié/);
+   const pending=page.waitForEvent("download");
+   await page.locator("#downloadVideo").click();
+   const saved=await pending,out=await saved.path();
+   const outBlob=new Blob([await fs.readFile(out)]);
+   const [after,oldHash,newHash,a1,v1]=await Promise.all([
+    AVSYNC.analyser(outBlob),audioPacketHashes(src),audioPacketHashes(out),
+    decodeAudioEvents(out),decodeVideoEvents(out)
+   ]);
+   assert.equal(after.edits,2,"l'édition vide est réellement présente à la sortie");
+   assert.ok(Math.abs(after.delayUs-meta.delayUs)<=1000,
+    "conserve le délai initial 250ms à 1ms près");
+   assert.equal(after.trimUs,meta.trimUs,"le priming AAC reste inchangé");
+   assert.ok(newHash.length>=70);
+   assert.deepEqual(newHash,oldHash.slice(0,newHash.length),
+     "paquets AAC inchangés même si l'audio démarre plus tard");
+   const audit=comparerImpulsions({sourceAudio:a0,sourceVideo:v0,outputAudio:a1,outputVideo:v1,
+    toleranceMs:90});
+   assert.ok(audit.offsetMs<=35);
+   assert.ok(audit.driftMs<=35);
+   t.diagnostic("NOVA délai AAC physique conservé : "+JSON.stringify({
+    sourceDelayUs:meta.delayUs,outputDelayUs:after.delayUs,
+    sourceTrimUs:meta.trimUs,outputTrimUs:after.trimUs,
+    packets:newHash.length,offsetMs:audit.offsetMs,driftMs:audit.driftMs
+   }));
+   assert.deepEqual(errors,[]);
+  }finally{await browser.close()}
+ }finally{
+  if(app.listening)await new Promise(r=>app.close(r));
+  await fs.rm(tmp,{recursive:true,force:true});
+ }
+});
