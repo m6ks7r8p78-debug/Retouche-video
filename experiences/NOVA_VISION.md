@@ -308,3 +308,32 @@ Références : [MDN — pass-through WebCodecs](https://developer.mozilla.org/en
 - L'architecture d'export reste locale et gratuite. Les choix futurs doivent être motivés par essais end-to-end, respect des licences, mémoire iPhone et confidentialité.
 
 *La validation CI du HEAD documenté et le statut précis des tests sont consignés dans la PR GitHub. Une CI verte ne prouve pas la qualité perceptuelle ou la synchronisation universelle.*
+
+
+## NOVA 0.11 — amorçage AAC `elst + roll` et VFR/B-frames (15 novembre 2026)
+
+### Ce qui est effectivement développé
+
+Le pilote expérimentait une copie AAC bit-identique sans `AudioEncoder`, mais rejetait les listes de montage audio dont le `media_time` était non nul. Or ce temps peut représenter **l'amorçage de l'encodeur AAC**, et non un délai de début du son. Le supprimer ou l'ignorer décale le son ou expose des échantillons qui ne font pas partie de l'audio source.
+
+L'extension `experiences/nova-aac-copy.js` autorise désormais **une édition audio simple** (`elst`, version 0, exactement une entrée, vitesse 1x, début média positif <=125 ms), uniquement avec une piste AAC-LC mono/stéréo à groupes d'échantillons `roll` complets et vérifiés. Les paquets de préchargement d'origine sont copiés, **y compris ceux qui se situent avant la première portion sonore présentable**. La source est refusée en cas de montage complexe, délai vide en début de piste, préchargement sans `roll`, débordement de la durée réellement encodée, structure hors `mdat`, codecs non pris en charge ou informations contradictoires.
+
+L'extension ciblée du `mp4-muxer.js` insère une véritable boîte `edts/elst` **sur la piste audio seulement**, contenant le même `media_time` exprimé en échantillons audio et la durée à l'échelle du film. Elle conserve aussi le groupe `sgpd/sbgp roll` et ajuste les durées `tkhd/mvhd` pour que les métadonnées du fichier restent cohérentes. La durée de l'édition de sortie **ne peut jamais être supérieure à celle de l'édition source**. Les échantillons AAC restent identiques à ceux de la source ; ce n'est pas un réencodage.
+
+`experiences/nova-avsync.js` calcule désormais la **durée réellement présentée après montage**, plutôt que de confondre toute la couverture `stts` et la durée audio utilisable. Des listes qui indiquent des portions hors des échantillons décodables sont rejetées. Les tests unitaires couvrent également le cas théorique **2 112 échantillons** documenté par Apple, sans prétendre avoir mesuré un encodage iPhone réel de cette variante.
+
+### Tests indépendants
+
+- [Run 43686173484](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43686173484) : **72 tests unitaires / 72, 11 tests navigateur / 11, aucun ignoré.** Source réelle H.264 + AAC issue de FFmpeg, avec `elst` positif et `roll`. Après un export NOVA réel dans Chromium Linux : **21,333 ms d'amorçage source et 21,333 ms après copie**, **95 paquets AAC de mêmes empreintes SHA-256**, et **0 ms d'offset ajouté / 0 ms de dérive** sur les deux événements synthétiques.
+- [Run 43686545460](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43686545460) : **76/76 unitaires, 12/12 navigateur, aucun ignoré**. Le nouveau scénario *combiné* intègre dans **un seul vrai fichier** une source vidéo VFR, des B-frames réordonnées et une piste AAC avec `elst` positif/`roll=-1`. Les repères vidéo sont mesurés via les vrais timestamps FFprobe, et l'export conserve 95 paquets audio identiques, sans décalage ni dérive détectables sur les deux événements.
+- Les tests suivants renforcent encore les bornes de durée des edits audio, le contrôle de couverture des paquets et l'interdiction de prolonger une édition audible au-delà du segment source. Leur validation CI doit être confirmée sur le dernier commit et ne doit pas être déduite des runs précédents.
+
+### Limites importantes et options gratuites examinées
+
+1. L'édition directe ne couvre **pas** les `elst` version 1 ou multiples, silences initiaux volontaires, troncatures complexes, `roll` atypiques, HE-AAC, audio multicanal complexe, ni les cas où le priming dépasse 125 ms. Ils sont **refusés** si aucun traitement natif sûr n'est disponible.
+2. Un fichier synthétique et un décodeur FFmpeg sur Linux ne reproduisent pas le comportement perceptuel réel de **Safari iOS, de son matériel ou d'une séquence de 157 vidéos privées** : il reste indispensable de mesurer le son sur un iPhone physique. Aucun de ces médias n'a été utilisé ou publié dans ce banc.
+3. La spécification Apple décrit un cas courant avec **2112 échantillons d'amorçage**, une liste `elst` et des groupes `sgpd/sbgp roll` ; il ne suffit pas de réécrire l'`elst` isolément. [Apple — Representing encoder delay explicitly](https://developer.apple.com/documentation/quicktime-file-format/example_representing_encoder_delay_explicitly), [Apple — Using track structures](https://developer.apple.com/documentation/quicktime-file-format/using_track_structures_to_represent_encode_delay_explictly).
+4. Mediabunny, sous licence MPL-2.0, est une alternative libre à évaluer pour des flux plus complexes, mais **n'a pas été intégrée ni validée pour nos médias**. [Mediabunny #444](https://github.com/Vanilagy/mediabunny/issues/444).
+5. Toutes les limites de la version pilote restent en place : **12 secondes**, **60 Mo**, **sortie 640 px à 15 i/s**, décodage PTS source Full HD maximum ; pas de restauration neuronale 4K/8K démontrée.
+
+La PR #3 doit rester **DRAFT**, aucun déploiement sur `retoucheproai.com`, pas de fusion sur `main`, aucune publication des médias privés.
