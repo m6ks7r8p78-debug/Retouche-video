@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
+import {execFile} from "node:child_process";
+import {promisify} from "node:util";
 import {fileURLToPath} from "node:url";
 import {chromium} from "playwright";
 
@@ -67,3 +70,42 @@ for(const width of [390,1350]){
    }finally{await browser.close();await new Promise(r=>app.close(r))}
  });
 }
+
+const runBinary=promisify(execFile);
+test("NOVA : prévisualisation vidéo réelle à partir d'un MP4 synthétique",async()=>{
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-test-"));
+ const sample=path.join(tmp,"reference.mp4"),app=server();
+ try{
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error","-f","lavfi","-i","testsrc2=size=320x180:rate=15:duration=2.4",
+    "-f","lavfi","-i","sine=frequency=440:duration=2.4","-c:v","libx264","-pix_fmt","yuv420p","-c:a","aac",
+    "-movflags","+faststart","-shortest","-y",sample]);
+  await new Promise(r=>app.listen(0,"127.0.0.1",r));
+  const browser=await chromium.launch({headless:true,...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  try{
+   const page=await browser.newPage({viewport:{width:390,height:844}});
+   const errors=[];page.on("pageerror",e=>errors.push(e.message));
+   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
+   await page.locator("#file").setInputFiles(sample);
+   await page.waitForFunction(()=>document.querySelector("#run")&&!document.querySelector("#run").disabled);
+   await page.locator("#run").click();
+   await page.waitForFunction(()=>{
+     const el=document.querySelector("#videoAfter");
+     return !!el&&!el.hidden&&el.width>0&&el.height>0
+   },null,{timeout:30000});
+   const info=await page.locator("#modeReport").innerText();
+   assert.match(info,/Prévisualisation vidéo/);
+   assert.equal(await page.locator("#compare").isEnabled(),true);
+   await page.locator("#compare").evaluate(el=>{el.value="65";el.dispatchEvent(new Event("input",{bubbles:true}))});
+   assert.match(await page.locator("#videoAfter").evaluate(el=>el.style.clipPath),/35%/);
+   await page.locator("#video").evaluate(async el=>{el.muted=true;await el.play()});
+   await page.waitForTimeout(700);
+   await page.locator("#video").evaluate(el=>el.pause());
+   assert.equal(await page.locator("#save").isEnabled(),false,"pas d'export vidéo trompeur");
+   assert.deepEqual(errors,[]);
+   await page.close();
+  }finally{await browser.close()}
+ }finally{
+  if(app.listening)await new Promise(r=>app.close(r));
+  await fs.rm(tmp,{recursive:true,force:true});
+ }
+});
