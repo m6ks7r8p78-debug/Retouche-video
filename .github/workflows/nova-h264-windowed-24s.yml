@@ -29,7 +29,9 @@ jobs:
           node --check experiences/nova-real-preflight.js
           node --check experiences/nova-h264-path.js
           node --check tests/nova-h264-windowed-long-browser.test.mjs
-          node --test tests/nova-windows.test.mjs tests/nova-export.test.mjs tests/nova-h264-path.test.mjs tests/nova-avc-vui.test.mjs tests/nova-hevc-refusal-diagnostic.test.mjs tests/nova-real-preflight.test.mjs
+          node --check mp4-muxer.js
+          node --check tests/nova-muxer-24s.test.mjs
+          node --test tests/nova-muxer-24s.test.mjs tests/nova-windows.test.mjs tests/nova-export.test.mjs tests/nova-h264-path.test.mjs tests/nova-avc-vui.test.mjs tests/nova-hevc-refusal-diagnostic.test.mjs tests/nova-real-preflight.test.mjs
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 22
