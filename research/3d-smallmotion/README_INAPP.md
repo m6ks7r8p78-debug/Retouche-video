@@ -34,7 +34,7 @@ python research/3d-smallmotion/tests/test_app_wiring.py
 python research/3d-smallmotion/tests/browser_check.py
 ```
 
-Le test navigateur requiert `playwright`, `numpy`, `opencv-python`, `ffmpeg` avec `libx264`, et Chromium/Google Chrome. Le MP4 est synthétisé localement et ne contient aucun média personnel. Les tests browser ciblent un **harnais reproduisant les identifiants d'import** plutôt qu'une exécution complète de l'application (celle-ci nécessite des dépendances et services non simulés ici).
+Le test navigateur requiert `playwright`, `numpy`, `opencv-python`, `ffmpeg` avec `libx264`, et Chromium/Google Chrome. Le MP4 H.264 et le WebM VP8 sont synthétisés localement et ne contiennent aucun média personnel. Le test choisit H.264 lorsque Chromium annonce ce codec, sinon VP8 : les résultats JSON indiquent le codec **réellement décodé**, sans présenter VP8 comme une validation H.264. Les tests browser ciblent un **harnais reproduisant les identifiants d'import** plutôt qu'une exécution complète de l'application (celle-ci nécessite des dépendances et services non simulés ici).
 
 ## Interdictions de diffusion
 
