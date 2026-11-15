@@ -53,9 +53,17 @@ start.addEventListener("click",async()=>{
      "HEVC WASM local : "+step.frames+" images source BT.709 SDR analysées par PTS…":step.mode==="pts"?
      "Décodage vidéo selon les PTS MP4 natifs ("+step.frames+" images source)":
      "Mode compatibilité approximatif choisi : les images peuvent être dupliquées.");
-    if(step.stage==="window")msg("Traitement local de la fenêtre "+step.index+
-     "/"+step.total+" ("+(step.startMs/1000).toFixed(1)+"–"+
-     (step.endMs/1000).toFixed(1)+" s), piste audio continue…");
+    if(step.stage==="window"){
+     msg("Traitement local de la fenêtre "+step.index+
+      "/"+step.total+" ("+(step.startMs/1000).toFixed(1)+"–"+
+      (step.endMs/1000).toFixed(1)+" s), piste audio continue…");
+     // Événement local ne contenant NI fichier NI pixels NI nom privé.
+     // Les lecteurs d'écran reçoivent déjà le statut textuel.
+     document.dispatchEvent(new CustomEvent("nova:window-progress",{
+      detail:{index:step.index,total:step.total,
+       startMs:step.startMs,endMs:step.endMs}
+     }));
+    }
     if(step.stage==="audio")msg("Vérification de la piste audio d’origine…");
     if(step.stage==="audioMode")msg(step.mode==="aac-copy"?"AAC original conservé sans réencodage (MP4 compatible) : audio inchangé…":step.mode==="aac-encode"?"Piste audio réencodée après validation de la source…":"Export sans son demandé explicitement…");
     if(step.stage==="video")msg("Encodage MP4 : "+Math.round(step.progress*100)+" % ("+step.frame+"/"+step.total+" images)");
