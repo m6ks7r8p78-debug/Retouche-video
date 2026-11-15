@@ -20,7 +20,7 @@ function estimerMemoire({sourceBytes,sourceWidth,sourceHeight,outputWidth,output
  // Les nombres sont des coefficients prudents, pas une mesure matérielle.
  const detail={
   sourceEtCopie:sourceBytes*(withAudio?2:1),
-  tramesDecodees:sourceWidth*sourceHeight*4*6,
+  tramesDecodees:sourceWidth*sourceHeight*4*10,
   tramesEtTraitement:outputWidth*outputHeight*4*6,
   pcm:withAudio?durationSeconds*sampleRate*channels*4*3:0,
   muxage:4*MiB+Math.min(sourceBytes,12*MiB),
