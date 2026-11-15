@@ -20,6 +20,9 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   const names=m.files.map(x=>x.path);
   assert.ok(names.includes("experiences/nova.html"));
   assert.ok(names.includes("experiences/nova-iphone-report.js"));
+  assert.ok(names.includes("experiences/nova-smallmotion-bridge.js"));
+  assert.ok(names.includes("experiences/nova-smallmotion-ui.js"));
+  assert.ok(names.includes("experiences/vendor/smallmotion/smallmotion-local.js"));
   assert.ok(names.includes("experiences/vendor/hevc/wasm/hevc-decode.wasm"));
   assert.ok(names.includes("experiences/vendor/hevc/LICENSE.txt"));
   assert.equal(names.filter(x=>/\.(mov|mp4|png|jpg|jpeg)$/i.test(x)).join(","),
@@ -43,6 +46,9 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   const html=await fs.readFile(path.join(dir,"experiences/nova.html"),"utf8");
   assert.match(html,/Tester Safari sur cette vidéo/);
   assert.match(html,/Tester Safari sans vidéo personnelle/);
+  assert.match(html,/SmallMotion · mouvement local/);
+  assert.match(html,/nova-smallmotion-bridge.js/);
+  assert.match(html,/vendor\\/smallmotion\\/smallmotion-local.js/);
   assert.match(html,/nova-iphone-report.js/);
   assert.doesNotMatch(html,/<script src="https?:\/\//);
  }finally{await fs.rm(dir,{recursive:true,force:true})}
