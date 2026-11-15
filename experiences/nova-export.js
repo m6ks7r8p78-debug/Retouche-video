@@ -305,7 +305,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
       // Autorise le seul elst AAC original validé sur la durée 12-24 s.
       // Une source sans elst ne demande jamais cette exception au muxer.
       ...(windowedH264&&audioCopy?.editDurationSeconds!=null?
-        {windowed24Seconds:true}:{}),
+        {windowed24Seconds:useOpfs?"opfs":true}:{}),
       ...(audioCopy?.rollDistance!=null?{rollDistance:audioCopy.rollDistance}:{}),
       ...(audioCopy?.editDurationSeconds!=null?{
         editMediaTime:audioCopy.editMediaTime,
@@ -412,12 +412,14 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     if(windowPlan){
      await videoEnc.flush();
      if(error)throw error;
+     await opfsSink?.drain();
     }
    }
   }
   exportMeter?.stage("video-flush");
   await videoEnc.flush();
   if(error)throw error;
+  await opfsSink?.drain();
   exportMeter?.stage("aac-copy");
   if(audio){
    const ab=audio.buffer,channels=ab.numberOfChannels,B=4096,src=Array.from({length:channels},(_,ch)=>ab.getChannelData(ch));
@@ -436,9 +438,13 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    await audioEnc.flush();if(error)throw error;
   }
   if(audioCopy){
-    await NOVA_AAC_COPY.copier(file,audioCopy,muxer,{signal,
-      beforePacket:packet=>exportMeter?.add("audio",packet.size),
-      onPacket:packet=>audioPaquets.push(packet)});
+   let packetCount=0;
+   await NOVA_AAC_COPY.copier(file,audioCopy,muxer,{signal,
+     beforePacket:packet=>exportMeter?.add("audio",packet.size),
+     onPacket:async packet=>{
+      audioPaquets.push(packet);
+      if(opfsSink&&++packetCount%64===0)await opfsSink.drain();
+     }});
   }
   const audioAudit=audioConfig?NOVA_GUARD.auditerPaquetsAAC(audioPaquets,{
     durationSeconds:timeline.durationSeconds,
@@ -446,7 +452,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   exportMeter?.stage("mux");
   if(error)throw error;
   muxer.finalize();
-  const blob=new Blob([target.buffer],{type:"video/mp4"});
+  const streamed=opfsSink?await opfsSink.finish():null;
+  const blob=streamed?.file??new Blob([target.buffer],{type:"video/mp4"});
   if(blob.size<1024)throw new Error("Fichier de sortie incomplet");
   exportMeter?.finalSize(blob.size);
   exportMeter?.stage("verify");
@@ -471,7 +478,10 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   const pipelineAudit=exportMeter?.snapshot()??null;
   if(hevcDiagnostics)hevcDiagnostics=Object.freeze({...hevcDiagnostics,pipelineAudit});
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,windowPlan:windowPlan?{
+  outputCommitted=true;
+  return {blob,storageMode:streamed?"opfs-local-stream":"memory",
+   storageMetrics:streamed?.metrics??null,release:opfsSink?.release??null,
+   plan:settings,windowPlan:windowPlan?{
     mode:windowPlan.mode,count:windowPlan.windows.length,
     windowFrames:windowPlan.windowFrames,frames:windowPlan.frames,
     durationUs:windowPlan.durationUs}:null,
@@ -480,6 +490,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     audit:sourceMode==="hevc-wasm"?"HEVC MIT WASM local, PTS MOV et sortie CFR":sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
   },report:sourceMode==="hevc-wasm"?"HEVC SDR BT.709 traité localement, sortie audiovisuelle à contrôler sur iPhone":sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
  }finally{
+  if(opfsSink&&!outputCommitted)await opfsSink.release();
   try{trans?.fermer()}catch(_){}
   try{sourcePTS?.fermer()}catch(_){}
   try{if(videoEnc&&videoEnc.state!=="closed")videoEnc.close()}catch(_){}
