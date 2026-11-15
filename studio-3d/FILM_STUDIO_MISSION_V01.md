@@ -38,3 +38,25 @@ Un adulte de 18 à 75 ans et plus décrit librement son film en français ou fou
 - Un scénario à deux personnages ou une demande de reconstruction de personne réelle restent au stade JSON ; aucune fausse prétention de rendu n'est faite.
 - `film-preview-v01.test.mjs` ajoute quatre tests Node (en-tête glTF, refus multi-personnages, refus de réutiliser une référence privée, signalement des gestes non animés). Ils sont exécutés avec les huit tests du plan par `.github/workflows/ci-film-studio-v01.yml`.
 - **Attention :** le GLB n'est ni une vidéo ni un acteur photoréaliste ; les gestes boire, poser tasse, s'asseoir, parler, synchroniser les lèvres ne sont pas encore animés. Aucun média privé n'est traité.
+
+
+## Suite expérimentale — Film Studio v0.2 (15 novembre 2026)
+
+### Code livré sur la même PR en brouillon
+- film-sequence-v02.mjs : **GLB 2.0 réellement animé** par le générateur procédural v1.9. Une seule scène, un personnage original, dix gestes maximum : s’asseoir (approximation), boire, poser la tasse, parler (bouche muette), regarder, sourire.
+- Chaise, table et deux représentations **substituées** de la tasse : l’objet de table est masqué pendant que la copie suivie par le poignet est montrée, puis inversement. Cette substitution reste une **illusion visuelle**, pas une mesure physique du contact.
+- Continuité du personnage et de ses matériaux dans le GLB ; pistes temporelles glTF, aucun rendu vidéo. Assise simulée par échelle verticale et rotations simplifiées, pas une cinématique réaliste.
+- Les actions non prises en charge sont rapportées. Refus des scènes multiples, acteurs multiples, références photo/vidéo réelles même consenties, boisson non décrite, dépôt de tasse avant prise, demandes sans geste reconnu. Aucun média de référence n’est chargé.
+- film-studio-v02.html + film-ui-v02.mjs : écran tactile local français, un champ texte/un bouton, compte-rendu du scénario et fichier GLB téléchargeable seulement sur action explicite. Aucun envoi, API réseau ou bibliothèque externe ; aucun déploiement.
+- Tests de film-sequence-v02.test.mjs : structure GLB, animation, chronologie et refus ; film-ui-v02.test.mjs : bouton/export/refus avec DOM simulé, qui **n’est pas** une validation Safari.
+
+### Limites non franchies
+- Aucun film MP4, dialogue audio, synchronisation labiale, caméra, mouvement réellement physique, décor réaliste, IA neuronale générative, reconstruction depuis photo/vidéo ou modèle entraîné.
+- Vérification GLB **structurelle** : elle ne prouve ni qualité visuelle ni contact main-tasse. Test dans un vrai moteur 3D et inspection humaine restent nécessaires.
+- Page non déployée ; Safari iPhone réel non validé. Les 157 vidéos, photos privées et voix ne sont ni chargées ni publiées.
+- NOVA, Cinema, et le site public restent inchangés. Ne pas fusionner ou diffuser automatiquement.
+
+### Prochain jalon
+1. Contact main-objet mesuré, prise/dépôt continus, vraie cinématique articulée pour l’assise.
+2. Visualiseur local en navigateur Safari avec inspection et performance iPhone.
+3. Continuité multi-personnages et multi-plans, dialogues audibles puis sortie MP4 avec consentements distincts.
