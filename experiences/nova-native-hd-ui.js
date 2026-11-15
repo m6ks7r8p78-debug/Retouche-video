@@ -6,14 +6,15 @@
 "use strict";
 const $=id=>document.getElementById(id);
 const run=$("novaHdRun"),save=$("novaHdSave"),keep=$("novaHdOriginal"),
- status=$("novaHdStatus"),panel=$("novaHdPanel");
+ reportLink=$("novaHdColorJson"),status=$("novaHdStatus"),panel=$("novaHdPanel");
 if(!run||!save||!keep||!status||!panel)return;
 const label="Essayer le traitement HD sans réduire la vidéo";
-let selected=null,controller=null,outputURL=null,originalURL=null,generation=0;
+let selected=null,controller=null,outputURL=null,originalURL=null,generation=0,reportURL=null;
 function revoke(){
  if(outputURL){URL.revokeObjectURL(outputURL);outputURL=null}
  if(originalURL){URL.revokeObjectURL(originalURL);originalURL=null}
- for(const el of [save,keep]){el.hidden=true;el.removeAttribute("href")}
+ if(reportURL){URL.revokeObjectURL(reportURL);reportURL=null}
+ for(const el of [save,keep,reportLink]){if(el){el.hidden=true;el.removeAttribute("href")}}
 }
 function reset(){
  generation++;controller?.abort();controller=null;
@@ -40,6 +41,8 @@ run.addEventListener("click",async()=>{
  if(!selected)return;
  if(outputURL){URL.revokeObjectURL(outputURL);outputURL=null}
  save.hidden=true;save.removeAttribute("href");
+ if(reportURL){URL.revokeObjectURL(reportURL);reportURL=null}
+ if(reportLink){reportLink.hidden=true;reportLink.removeAttribute("href")}
  const my=generation,ctrl=new AbortController(),src=selected;
  controller=ctrl;run.textContent="Annuler l'essai HD";
  status.textContent="Décodage HEVC natif, restauration classique douce et export en cours…";
@@ -61,8 +64,27 @@ run.addEventListener("click",async()=>{
    out.originalHeight+", "+out.outputFrames+" images / "+
    out.sourceFrames+" source, cadence d'origine ~"+out.sourceFps+
    " i/s, AAC original copié. "+out.modifiedFrames+
-   " images avec correction locale de lumière. Vérifie visuellement la fidélité et écoute le son ; aucune restauration neuronale.";
+   " images avec correction locale de lumière. Couleur source vérifiée : "+
+   (out.decodedColorEvidence||out.sourceColorEvidence)+
+   (out.decodedColorEvidence==="decoded-frame-sdr-full-to-limited"?
+    " (conversion contrôlée de plage entière SDR vers plage vidéo limitée)." : ".")+
+   " Vérifie visuellement la fidélité et écoute le son ; aucune restauration neuronale.";
  }catch(e){
+  if(my===generation&&!ctrl.signal.aborted&&reportLink){
+   try{
+    // Les chiffres des métadonnées et le résultat de l'audit SPS/VUI seulement.
+    // Aucun nom de fichier, octet vidéo, GPS, identifiant ou image dans le JSON.
+    const info=await NOVA_DEMUX.analyser(src);
+    if(info&&my===generation){
+     const report=NOVA_HD_COLOR.report(info);
+     const json=JSON.stringify(report,null,2)+"\n";
+     reportURL=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+     reportLink.href=reportURL;
+     reportLink.download="NOVA_diagnostic_couleur_local.json";
+     reportLink.hidden=false;
+    }
+   }catch(_){}
+  }
   if(my===generation){
    status.textContent=ctrl.signal.aborted?"Essai HD annulé. Aucun export incomplet.":
     "Essai HD non abouti sur ce navigateur : "+(e?.message||"erreur inconnue")+

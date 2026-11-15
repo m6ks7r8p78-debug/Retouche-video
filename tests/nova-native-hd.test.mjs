@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import HD from "../experiences/nova-native-hd.js";
+import COLOR from "../experiences/nova-hd-color.js";
+globalThis.NOVA_HD_COLOR=COLOR;
 function make({w=1920,h=1088,frames=195,us=6500000,codec="hvc1.1.6.L120"}={}){
  const pts=Array.from({length:frames},(_,i)=>Math.round(i*us/frames));
  return {codec,W:w,H:h,dw:h,dh:w,ns:frames,durationUs:us,

@@ -40,24 +40,20 @@ function analyse(info,size,{testCodec=false}={}){
  if(fps<5||fps>60.5)fail("cadence source hors 5 à 60 images/s");
  if(!Array.isArray(info.mat)||info.mat.length!==6)fail("rotation source non auditée");
  // La matrice de presentation orthogonale est déjà contrôlée par NOVA_DEMUX.
- const color=info.color;
- if(!color||!["nclc","nclx"].includes(color.kind)||color.primaries!==1||
-    color.transfer!==1||color.matrix!==1||color.fullRange===true)
-  fail("BT.709 SDR 8 bits limité non confirmé");
- if(!testCodec){
-  if(!globalThis.NOVA_DEMUX?.exigerPresentationFidele)fail("contrôle géométrie absent");
-  NOVA_DEMUX.exigerPresentationFidele(info);
-  if(/^(hvc1|hev1)\./.test(info.codec)){
-   if(!globalThis.NOVA_HEVC_VUI?.analyser)fail("audit SPS/VUI absent");
-   NOVA_HEVC_VUI.analyser(info);
-  }
- }
+ const colorModule=globalThis.NOVA_HD_COLOR;
+ if(!colorModule?.metadata||!colorModule?.verifyFrame)
+  fail("analyseur de couleur HEVC et VideoFrame indisponible");
+ // Le conteneur colr peut omettre des champs. L'audit lit aussi le SPS/VUI;
+ // si les deux sont muets, la première image native doit apporter la preuve.
+ // Toute annonce explicite HDR/P3 contradictoire bloque le chemin SDR.
+ const colorEvidence=colorModule.metadata(info);
  // Exécuter une restauration classique uniquement sur les images réellement
  // décodées. Ne pas effacer des filtres AR ou reconstruire des détails inventés.
  return Object.freeze({codec:info.codec,width:info.dw,height:info.dh,
   encodedWidth:info.W,encodedHeight:info.H,
   sourceFrames:info.ns,sourceFps:Math.round(fps*10)/10,
   durationSeconds:info.durationUs/1e6,ptsUs:sorted,
+  colorEvidence,
   rotated:info.mat[0]!==1||info.mat[1]!==0||info.mat[2]!==0||info.mat[3]!==1});
 }
 async function configEncoder(plan,VideoEncoderClass=globalThis.VideoEncoder){
@@ -120,7 +116,8 @@ function rgba709(data,w,h,timestamp,duration){
   timestamp,duration,colorSpace:{primaries:"bt709",transfer:"bt709",
    matrix:"bt709",fullRange:false}});
 }
-function frameToOutput(frame,info,canvas,moteur,arbitre,duration){
+function frameToOutput(frame,info,canvas,moteur,arbitre,duration,evidence){
+ const colorProof=globalThis.NOVA_HD_COLOR.verifyFrame(frame,evidence);
  const w=canvas.width,h=canvas.height;
  const ctx=canvas.getContext("2d",{willReadFrequently:true});
  if(!ctx)fail("canvas 2D indisponible");
@@ -135,7 +132,7 @@ function frameToOutput(frame,info,canvas,moteur,arbitre,duration){
  if(!restored?.data||restored.data.length!==img.data.length||
     !restored?.bilan)fail("restauration classique invalide");
  return {out:rgba709(restored.data,w,h,frame.timestamp,duration),
-  modified:!!restored.bilan.intervention};
+  modified:!!restored.bilan.intervention,colorProof};
 }
 async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  probe,demux,checkAudio,clock=()=>performance.now()}={}){
@@ -179,6 +176,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  const ranks=new Map(p.ptsUs.map((time,i)=>[time,i]));
  const decoded=new Map();
  let encoder,decoder,failed=null,sent=0,encoded=0,encodedBytes=0,modified=0,closed=false;
+ let confirmedColor=null;
  const started=clock();
  const check=()=>{if(signal?.aborted)fail("annulé");if(failed)throw failed};
  try{
@@ -223,7 +221,8 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    if(frame){
     decoded.delete(next);
     try{
-     const result=frameToOutput(frame,info,canvas,moteur,arbitre,durations[next]);
+     const result=frameToOutput(frame,info,canvas,moteur,arbitre,durations[next],p.colorEvidence);
+     confirmedColor=result.colorProof.method;
      modified+=Number(result.modified);
      try{encoder.encode(result.out,{keyFrame:next===0||next%90===0})}
      finally{result.out.close()}
@@ -271,6 +270,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    sourceFrames:p.sourceFrames,outputFrames:checkOut.ns,
    durationSeconds:p.durationSeconds,sourceFps:p.sourceFps,
    modifiedFrames:modified,audioMode:"aac-copy",outputBytes:blob.size,
+   sourceColorEvidence:p.colorEvidence.kind,decodedColorEvidence:confirmedColor,
    elapsedMs:Math.round(clock()-started),
    disclaimer:"Traitement classique doux, pas de reconstruction neuronale, visuel et audio à vérifier sur iPhone"});
  }finally{
