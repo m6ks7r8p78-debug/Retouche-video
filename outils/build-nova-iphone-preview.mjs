@@ -59,8 +59,50 @@ if(fixtureBytes.length<1000||fixtureBytes.length>100000)
 manifest.push({path:fixture,bytes:fixtureBytes.length,
  sha256:crypto.createHash("sha256").update(fixtureBytes).digest("hex"),
  origin:"ffmpeg-synthetic-only"});
+// Mire H.264 entièrement synthétique pour tester le diagnostic SmallMotion
+// sans devoir sélectionner ni transmettre une vidéo personnelle.
+const motionFixture="experiences/nova-smallmotion-synthetic.mp4";
+const motionTarget=path.join(out,motionFixture);
+await execFileAsync("ffmpeg",[
+ "-hide_banner","-loglevel","error","-nostdin",
+ "-f","lavfi","-i","testsrc2=size=160x120:rate=15:duration=1.2",
+ "-c:v","libx264","-preset","veryfast","-threads","1",
+ "-pix_fmt","yuv420p","-color_primaries","bt709",
+ "-color_trc","bt709","-colorspace","bt709",
+ "-movflags","+faststart","-f","mp4","-y",motionTarget
+],{timeout:60000});
+const motionBytes=await fs.readFile(motionTarget);
+if(motionBytes.length<1000||motionBytes.length>250000)
+ throw Error("La mire SmallMotion synthétique dépasse les bornes prévues");
+manifest.push({path:motionFixture,bytes:motionBytes.length,
+ sha256:crypto.createHash("sha256").update(motionBytes).digest("hex"),
+ origin:"ffmpeg-synthetic-only"});
+
 const html=await fs.readFile(path.join(out,"experiences/nova.html"),"utf8");
 const scripts=[...html.matchAll(/<script\s+src="([^"]+)"/g)].map(x=>x[1]);
+// Politique de sécurité d'un site statique isolé : hachage exact du seul
+// script inline du laboratoire. Les fichiers personnels ne sont jamais inclus.
+const inlineScripts=[...html.matchAll(/<script(?!\s+src=)[^>]*>([\s\S]*?)<\/script>/g)]
+ .map(x=>x[1]);
+if(inlineScripts.length!==1)throw Error("Une seule section JS inline attendue");
+const scriptHash=crypto.createHash("sha256").update(inlineScripts[0]).digest("base64");
+const headers=[
+ "/*",
+ "  Content-Security-Policy: default-src 'self'; base-uri 'none'; script-src 'self' 'sha256-"+scriptHash+"' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob:; img-src 'self' blob: data:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; form-action 'none'; frame-ancestors 'none'",
+ "  X-Content-Type-Options: nosniff",
+ "  Referrer-Policy: no-referrer",
+ "  X-Robots-Tag: noindex, nofollow, noarchive",
+ "  Cache-Control: no-store",
+ "  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()",
+ ""
+].join("\n");
+const robots="User-agent: *\nDisallow: /\n";
+for(const [p,data] of [["_headers",headers],["robots.txt",robots]]){
+ await fs.writeFile(path.join(out,p),data);
+ manifest.push({path:p,bytes:Buffer.byteLength(data),
+  sha256:crypto.createHash("sha256").update(data).digest("hex"),
+  origin:"preview-security-only"});
+}
 for(const script of scripts){
  if(/^(?:https?:|\/\/|data:)/.test(script))throw Error("script tiers interdit");
  const destination=path.resolve(out,"experiences",script);
@@ -92,7 +134,8 @@ await fs.writeFile(path.join(out,"index.html"),home);
 manifest.push({path:"index.html",bytes:Buffer.byteLength(home),
  sha256:crypto.createHash("sha256").update(home).digest("hex")});
 const record={kind:"NOVA iPhone HTTPS preview, NOT DEPLOYED",version:"0.24",
- publication:"none",privateMediaIncluded:false,files:manifest.sort((a,b)=>a.path.localeCompare(b.path))};
+ publication:"none",privateMediaIncluded:false,
+ deployment:"manual-only-distinct-host",csp:"sha256-inline-allowlist",files:manifest.sort((a,b)=>a.path.localeCompare(b.path))};
 await fs.writeFile(path.join(out,"asset-manifest.json"),JSON.stringify(record,null,2)+"\n");
 console.log(JSON.stringify({version:record.version,files:manifest.length,
  bytes:manifest.reduce((n,f)=>n+f.bytes,0),out},null,2));

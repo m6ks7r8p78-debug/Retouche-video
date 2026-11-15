@@ -25,9 +25,9 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.ok(names.includes("experiences/vendor/smallmotion/smallmotion-local.js"));
   assert.ok(names.includes("experiences/vendor/hevc/wasm/hevc-decode.wasm"));
   assert.ok(names.includes("experiences/vendor/hevc/LICENSE.txt"));
-  assert.equal(names.filter(x=>/\.(mov|mp4|png|jpg|jpeg)$/i.test(x)).join(","),
-   "experiences/nova-test-synthetic.mov",
-   "seul le clip généré par FFmpeg est accepté");
+  assert.deepEqual(names.filter(x=>/\.(mov|mp4|png|jpg|jpeg)$/i.test(x)),
+   ["experiences/nova-smallmotion-synthetic.mp4","experiences/nova-test-synthetic.mov"],
+   "seules les deux mires générées par FFmpeg sont acceptées");
   const fixture=m.files.find(x=>x.path==="experiences/nova-test-synthetic.mov");
   assert.equal(fixture.origin,"ffmpeg-synthetic-only");
   assert.ok(fixture.bytes<100000);
@@ -38,6 +38,31 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.ok(streams.some(x=>x.codec_name==="hevc"&&x.width===160&&x.height===90&&
    x.color_primaries==="bt709"&&x.color_transfer==="bt709"&&x.color_space==="bt709"));
   assert.ok(streams.some(x=>x.codec_name==="aac"),"le clip doit conserver un son AAC");
+  const motion=m.files.find(x=>x.path==="experiences/nova-smallmotion-synthetic.mp4");
+  assert.equal(motion.origin,"ffmpeg-synthetic-only");
+  assert.ok(motion.bytes<250000);
+  const {stdout:motionProbe}=await run("ffprobe",["-v","error",
+   "-show_entries","stream=codec_name,width,height,pix_fmt",
+   "-of","json",path.join(dir,motion.path)],{timeout:10000});
+  const ms=JSON.parse(motionProbe).streams||[];
+  assert.ok(ms.some(x=>x.codec_name==="h264"&&x.width===160&&x.height===120&&
+    x.pix_fmt==="yuv420p"));
+  assert.equal(m.deployment,"manual-only-distinct-host");
+  assert.equal(m.csp,"sha256-inline-allowlist");
+  const headers=await fs.readFile(path.join(dir,"_headers"),"utf8");
+  assert.ok(headers.startsWith("/*\n  Content-Security-Policy: "));
+  assert.match(headers,/X-Robots-Tag: noindex, nofollow, noarchive/);
+  assert.match(headers,/Cache-Control: no-store/);
+  assert.match(headers,/frame-ancestors 'none'/);
+  assert.match(headers,/script-src 'self' 'sha256-[a-zA-Z0-9+/=]+' 'wasm-unsafe-eval'/);
+  const original=await fs.readFile(path.join(dir,"experiences/nova.html"),"utf8");
+  const inline=[...original.matchAll(/<script(?!\s+src=)[^>]*>([\s\S]*?)<\/script>/g)].map(x=>x[1]);
+  assert.equal(inline.length,1);
+  const signature=crypto.createHash("sha256").update(inline[0]).digest("base64");
+  assert.ok(headers.includes("'sha256-"+signature+"'"),"CSP liée au script inline exact");
+  assert.equal(await fs.readFile(path.join(dir,"robots.txt"),"utf8"),
+    "User-agent: *\nDisallow: /\n");
+
   for(const file of m.files){
    const data=await fs.readFile(path.join(dir,file.path));
    assert.equal(file.bytes,data.length);
@@ -47,6 +72,7 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.match(html,/Tester Safari sur cette vidéo/);
   assert.match(html,/Tester Safari sans vidéo personnelle/);
   assert.match(html,/SmallMotion · mouvement local/);
+  assert.match(html,/Tester SmallMotion sans vidéo personnelle/);
   assert.match(html,/nova-smallmotion-bridge.js/);
   assert.ok(html.includes('src="./vendor/smallmotion/smallmotion-local.js"'));
   assert.match(html,/nova-iphone-report.js/);

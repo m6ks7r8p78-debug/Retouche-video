@@ -24,12 +24,18 @@ test("NOVA × SmallMotion : import H.264 synthétique, bouton opt-in et rapport 
    "-c:v","libx264","-threads","1","-pix_fmt","yuv420p",
    "-movflags","+faststart","-y",clip],{timeout:60000});
   await run(process.execPath,[path.join(root,"outils/build-nova-iphone-preview.mjs"),preview],{timeout:60000});
+  const staticHeaders=await fs.readFile(path.join(preview,"_headers"),"utf8");
+  const csp=staticHeaders.match(/^  Content-Security-Policy: (.+)$/m)?.[1];
+  assert.ok(csp&&csp.includes("wasm-unsafe-eval"),"politique HTTPS non créée");
   server=http.createServer(async(req,res)=>{
    const pathname=new URL(req.url,"http://localhost").pathname;
    const p=path.resolve(preview,"."+pathname);
    if(!p.startsWith(preview+path.sep)){res.writeHead(403).end();return}
    try{
     const b=await fs.readFile(p);
+    res.setHeader("Content-Security-Policy",csp);
+    res.setHeader("Referrer-Policy","no-referrer");
+    res.setHeader("X-Robots-Tag","noindex, nofollow, noarchive");
     res.setHeader("Content-Type",p.endsWith(".html")?"text/html;charset=utf-8":
       p.endsWith(".js")?"text/javascript;charset=utf-8":
       p.endsWith(".wasm")?"application/wasm":
@@ -68,6 +74,7 @@ test("NOVA × SmallMotion : import H.264 synthétique, bouton opt-in et rapport 
   const file=await pending;
   const report=JSON.parse(await fs.readFile(await file.path(),"utf8"));
   assert.equal(report.provenance,"smallmotion_local_2frame_v1");
+  assert.equal(report.sourceKind,"local-user-file");
   assert.equal(report.action,"no_automatic_change");
   assert.equal(report.confidence,"not_calibrated");
   assert.deepEqual(report.analysisDimensions,[160,120]);
@@ -76,6 +83,27 @@ test("NOVA × SmallMotion : import H.264 synthétique, bouton opt-in et rapport 
   assert.equal(report.privacy.uploaded,false);
   assert.ok(!JSON.stringify(report).includes("motion-test.mp4"));
   assert.ok(!JSON.stringify(report).includes("base64"));
+  // Deuxième parcours : mire H.264 servie par le même paquet, sans aucun média privé.
+  await page.locator("#novaMotionSynthetic").click();
+  await page.waitForFunction(()=>{
+    const url=document.querySelector("#novaMotionJson")?.getAttribute("href");
+    const status=document.querySelector("#novaMotionStatus")?.textContent||"";
+    return !!url&&status.startsWith("Diagnostic :")||!!url&&status.includes("zone(s)");
+  },null,{timeout:30000});
+  const syntheticPending=page.waitForEvent("download");
+  await page.locator("#novaMotionJson").click();
+  const syntheticDownload=await syntheticPending;
+  const syntheticReport=JSON.parse(await fs.readFile(await syntheticDownload.path(),"utf8"));
+  assert.equal(syntheticReport.sourceKind,"synthetic-generated");
+  assert.equal(syntheticReport.action,"no_automatic_change");
+  assert.equal(syntheticReport.confidence,"not_calibrated");
+  assert.equal(syntheticReport.privacy.uploaded,false);
+  assert.deepEqual(syntheticReport.analysisDimensions,[160,120]);
+  assert.ok(!JSON.stringify(syntheticReport).includes("motion-test.mp4"));
+  assert.ok(!JSON.stringify(syntheticReport).includes("NOVA_mire_synthetique_H264.mp4"));
+  assert.deepEqual(errors,[],"aucune erreur CSP ou JS");
+  assert.deepEqual(external,[],"aucune requête vers un domaine tiers");
+  assert.deepEqual(uploads,[],"aucune requête POST/PUT");
   assert.deepEqual(errors,[]);
   assert.deepEqual(external,[]);
   assert.deepEqual(uploads,[]);

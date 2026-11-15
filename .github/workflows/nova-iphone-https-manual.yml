@@ -1,0 +1,80 @@
+name: NOVA iPhone - archive HTTPS manuelle isolée
+on:
+  push:
+    branches:
+      - chatgpt-nova-iphone-https-package-v1
+  pull_request:
+    branches:
+      - chatgpt-nova-smallmotion-bridge-v1
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-https-manual-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  paquet:
+    name: Vérifier et produire ZIP statique sans déploiement
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier syntaxe
+        run: |
+          node --check outils/build-nova-iphone-preview.mjs
+          node --check experiences/nova-smallmotion-bridge.js
+          node --check experiences/nova-smallmotion-ui.js
+          node --check tests/nova-smallmotion-bridge.test.mjs
+          node --check tests/nova-iphone-preview.test.mjs
+      - name: Vérifier FFmpeg et outils ZIP
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null || ! command -v zip >/dev/null || ! command -v unzip >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg zip unzip
+          fi
+      - name: Valider les sources et l'archive HTTPS sur médias entièrement synthétiques
+        run: |
+          node --test tests/nova-iphone-preview.test.mjs tests/nova-smallmotion-bridge.test.mjs tests/nova-decision.test.mjs tests/nova-iphone-report.test.mjs
+      - name: Construire le paquet statique à la racine du futur site
+        run: node outils/build-nova-iphone-preview.mjs
+      - name: Créer ZIP manuel séparé, sans déploiement
+        run: |
+          cd dist/nova-iphone-preview
+          zip -X -q -r ../../nova-iphone-https-manual.zip .
+          cd ../..
+          unzip -t nova-iphone-https-manual.zip >/dev/null
+          unzip -Z -1 nova-iphone-https-manual.zip | grep -qx index.html
+          unzip -Z -1 nova-iphone-https-manual.zip | grep -qx _headers
+          unzip -Z -1 nova-iphone-https-manual.zip | grep -qx experiences/nova.html
+          unzip -Z -1 nova-iphone-https-manual.zip | grep -qx experiences/nova-smallmotion-synthetic.mp4
+          echo "ZIP statique vérifié; aucun site n'a été déployé"
+      - name: Archiver le ZIP prêt pour dépôt manuel sur un hébergeur distinct
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-iphone-https-manual-zip
+          path: nova-iphone-https-manual.zip
+          retention-days: 7
+          if-no-files-found: error
+  navigateur:
+    name: Chromium sous CSP, aucun upload ni origine externe
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Playwright local sans modification des dépendances
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: Vérifier outils de génération et exécuter banc navigateur sous CSP
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          node --test tests/nova-smallmotion-browser.test.mjs
