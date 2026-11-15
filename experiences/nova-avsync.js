@@ -138,7 +138,7 @@ async function analyser(file){
  }
  fail("boîte moov introuvable");
 }
-function verifier(audio,{videoStartUs=0,durationSeconds}={}){
+function verifier(audio,{videoStartUs=0,durationSeconds,allowLeadingGap=false}={}){
  if(!audio)fail("aucune piste audio identifiable ; sortie sonore non garantie");
  if(!safe(videoStartUs)||!Number.isFinite(durationSeconds)||durationSeconds<=0)
   fail("référence vidéo invalide");
@@ -146,10 +146,17 @@ function verifier(audio,{videoStartUs=0,durationSeconds}={}){
  // de montage complexes ne sont pas démontrées, et sa timeline est perdue.
  if(audio.trimUs>125000)
   fail("trim audio trop important pour un décodage PCM sans chronologie");
- if(audio.delayUs>80000)
+ if(audio.delayUs>80000&&!allowLeadingGap)
   fail("départ audio décalé : ce pilote ne doit pas supprimer ce délai");
- if(Math.abs(audio.delayUs-videoStartUs)>100000)
-  fail("désalignement initial audio/vidéo");
+ if(audio.delayUs>500000)
+  fail("décalage de début audio supérieur à 500 ms");
+ // Un lead-in n'est permis que si le chemin bitstream-copy a déjà prouvé
+ // la présence d'une elst vide et peut la recréer dans le MP4 progressif.
+ if(allowLeadingGap){
+   if(videoStartUs>100000)
+     fail("première image trop tardive pour valider le décalage AAC");
+ }else if(Math.abs(audio.delayUs-videoStartUs)>100000)
+   fail("désalignement initial audio/vidéo");
  if(audio.presentationEndUs<durationSeconds*1e6-160000)
   fail("fin de piste audio trop précoce");
  return Object.freeze({...audio,aligned:true,
