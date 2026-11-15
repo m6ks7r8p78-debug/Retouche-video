@@ -185,6 +185,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   onProgress({stage:"audio",progress:0});
   const audio=await audioDuFichier(file,allowSilent,globalThis.AudioContext||globalThis.webkitAudioContext);
   let audioCheck=null;
+  const audioPaquets=[];
   if(audio){
     audioCheck=NOVA_TIMELINE.verifierAudio(audio.buffer.length,audio.buffer.sampleRate,timeline.durationSeconds);
     if(!audioCheck.ok)throw new Error("Piste audio trop courte pour la durée vidéo : export interrompu");
@@ -196,7 +197,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   videoEnc=new VideoEncoder({output:(chunk,meta)=>{try{muxer.addVideoChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
   videoEnc.configure(config);
   if(audio){
-   audioEnc=new AudioEncoder({output:(chunk,meta)=>{try{if(meta?.decoderConfig?.description)meta={...meta,decoderConfig:{...meta.decoderConfig,description:ascOnly(meta.decoderConfig.description)}};muxer.addAudioChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
+   audioEnc=new AudioEncoder({output:(chunk,meta)=>{try{audioPaquets.push({timestamp:chunk.timestamp,duration:chunk.duration});if(meta?.decoderConfig?.description)meta={...meta,decoderConfig:{...meta.decoderConfig,description:ascOnly(meta.decoderConfig.description)}};muxer.addAudioChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
    audioEnc.configure(audio.cfg);
   }
   canvas.width=settings.width;canvas.height=settings.height;
@@ -250,13 +251,15 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    }
    await audioEnc.flush();if(error)throw error;
   }
+  const audioAudit=audio?NOVA_GUARD.auditerPaquetsAAC(audioPaquets,{
+    durationSeconds:timeline.durationSeconds}):null;
   muxer.finalize();
   const blob=new Blob([target.buffer],{type:"video/mp4"});
   if(blob.size<1024)throw new Error("Fichier de sortie incomplet");
   onProgress({stage:"verification",progress:1});
   const validation=await verifierMp4(blob,settings,signal);
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,validation,hasAudio:!!audio,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,budget,trace:sourcePTS?trace:null,timeline:{
+  return {blob,plan:settings,validation,hasAudio:!!audio,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
   },report:sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
