@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<script>/* v5.2 : toujours en connexion sécurisée (cadenas) : carte graphique, version hors ligne et pubs l'exigent */
+if(location.protocol==="http:"&&/(^|\.)retoucheproai\.com$/.test(location.hostname))location.replace("https://retoucheproai.com"+location.pathname+location.search+location.hash)
+/* v5.5 : sur le site public, pas de chargement par lien (règles Google AdSense sur les outils de téléchargement) ; la fonction reste dans la version Claude */
+if(/(^|\.)retoucheproai\.com$/.test(location.hostname)||(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()))document.documentElement.classList.add("sans-liens")</script>
+<script src="natif.js"></script>
+<style>.sans-liens #lnkf,.sans-liens #lnkc,.sans-liens #lnkst,.sans-liens .lnkh,.sans-liens .avec-liens{display:none!important}</style>
+<meta name="google-adsense-account" content="ca-pub-4826284146220706">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="RetoucheProAI">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAFMElEQVR42u2dW0/UQBiGp0uJcaHlN/CXTBQ0UZSDCAsIXKAkXBpRIss5sgt4B2r8Uf4Gt0sAwdQbDhq2pdvtzHSmz5NeEExlO/P0e7+vy8Hxl94LgFaUWAJADkAOyA5XhCGrAFQOQA7ILlZYBIiSAzuAWAFiBYgVIFYAOYCeA+g5gFgBYgWIFTCOX+MnfbX7xAoQK5C8bLw6uSweu7KKB5UD6DlsRtYOUjkMzZTTlh/Tc4Ci2kHlAHoOmzJl4uzWZ077Pt8jVkBdshArppWNybO2Pk+sgJTq4fIDb/aokfVWEism0aj8Tv2vyAH0HIUrGOftlhZ/p5tR1monps4798nf7u5ADrBLi5b/VTpFiJVcOXEh2zZ/221HDtzQ7sT0hXr//C03gRygm+t9UmBJEieQo1iWtOXEv7GiJ1caa+/iLmZuqcjn+ptdQojGzJ8MtNjsEkKk6yypHDkuJJf7msaS63M7ATlMoH/58oOfiwqcuIbH55C/nuMOOnlVFp/bvxxTPPyNUrZPragcgBzQPo43s8gqmEVjtkV2+OsOlQOIFYiZV28VCRllQ/DGmyXI2UTesseOODn0NVaby+xqohy5NTT4a6Ixd/OxJFycMGA8uVoxX+1oWRJhqPLAjE4tuV7Mm0iRtVmON/VG0YVtfWB3Mwua6bdCiMa841dDmZUDM0wsIUrWsyRCIfvADEl++Kuh1I1jlGWCjcTxKgtyBd/+GJedqjoegyuEvgV0eiclyhHsRF6YV0GLvK+knvdWMMOIFStJbkdbXueCUNAGW3dENwCyvmJJZiVc4Y5Xkjgr0iqH0qohvMkFqkDqw4tqEG0ZZZmcjVlVvtkHInEpHBQOKgekqByUDkoHsYIbxApkKYfaBx36nhIEu5+seNyhblWLVTmC3dVgd5WSkLhyFKVw/KcIhSPJUdCeI6itBjVKCKNsrCJCCG98nnGFWIlSpEqsECvRftSrQb3KOvCcA0XaeEKqtgnI/V+GCupVb2zOtJaDt+yV+bG3FuytsQ7IgSJxchR+XLlLkcKOK7wrm8SPdSGENzpbsMccxEpyRfbXg/11eg6IU4RRtrijbEI/vJHXjLIQocjBRnCwQaxAnCI2x0qots6HYWilH73DM1pTxbpfNWkHerUgVjBD17QCaMEom5kWL6Zz95oYZTGDWEGLHMWK4gJooBbPc6+FLX9SIzTNjCkTXibPOdCCWNGvxZBpWhArqsyoGHiTEytowSiLFvQcuTHjmflm0HNI0GLSlpucngMtiBXpZjy1zgxiJQstJiy9yXlXFjOIFcjJqvL9HEDPQemgcgA9B9BzAD0H5LXnUPsraJqHNf6OX+qjeViLdMOs30Pa+2ScO1oB8tZZwx8dbh7VKAIpjuZRTaisGyJ0tfwEWvOo3vP4JTd9co6/1iPbDWk76JQHx3RdlRACRfK8gNLluPPyIDWyby2X2ZIJVscoe3X0yC9ORSwbg2OyN66k7krAtPV0ygMjSturb/tsbWdajCr7WiXF43rPwCgbnN6MgVGVm+WUH43outTj71SRxE7oQKcckHNcETLKQlTPAYAcgBxgfs9x/ONLXH/+cJhzMzmXygHIAYyyQnT2HSycS+UAYgV0xkouX1fIuUrOjcUpPxjiFgFiBZADLB9lgcoByAGMsmCbHNgBxAq0XTkYVoDKAfQcQOUARlkgVoBYAWIFqBxAzwHECgCxAsQKUDmAngOoHEDPAcQKECuAHFDEWCFXgMoByAGMssAoC8QKIAcwygKVA5ADCspf0iguEXq/3EYAAAAASUVORK5CYII=">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAFMElEQVR42u2dW0/UQBiGp0uJcaHlN/CXTBQ0UZSDCAsIXKAkXBpRIss5sgt4B2r8Uf4Gt0sAwdQbDhq2pdvtzHSmz5NeEExlO/P0e7+vy8Hxl94LgFaUWAJADkAOyA5XhCGrAFQOQA7ILlZYBIiSAzuAWAFiBYgVIFYAOYCeA+g5gFgBYgWIFTCOX+MnfbX7xAoQK5C8bLw6uSweu7KKB5UD6DlsRtYOUjkMzZTTlh/Tc4Ci2kHlAHoOmzJl4uzWZ077Pt8jVkBdshArppWNybO2Pk+sgJTq4fIDb/aokfVWEism0aj8Tv2vyAH0HIUrGOftlhZ/p5tR1monps4798nf7u5ADrBLi5b/VTpFiJVcOXEh2zZ/221HDtzQ7sT0hXr//C03gRygm+t9UmBJEieQo1iWtOXEv7GiJ1caa+/iLmZuqcjn+ptdQojGzJ8MtNjsEkKk6yypHDkuJJf7msaS63M7ATlMoH/58oOfiwqcuIbH55C/nuMOOnlVFp/bvxxTPPyNUrZPragcgBzQPo43s8gqmEVjtkV2+OsOlQOIFYiZV28VCRllQ/DGmyXI2UTesseOODn0NVaby+xqohy5NTT4a6Ixd/OxJFycMGA8uVoxX+1oWRJhqPLAjE4tuV7Mm0iRtVmON/VG0YVtfWB3Mwua6bdCiMa841dDmZUDM0wsIUrWsyRCIfvADEl++Kuh1I1jlGWCjcTxKgtyBd/+GJedqjoegyuEvgV0eiclyhHsRF6YV0GLvK+knvdWMMOIFStJbkdbXueCUNAGW3dENwCyvmJJZiVc4Y5Xkjgr0iqH0qohvMkFqkDqw4tqEG0ZZZmcjVlVvtkHInEpHBQOKgekqByUDkoHsYIbxApkKYfaBx36nhIEu5+seNyhblWLVTmC3dVgd5WSkLhyFKVw/KcIhSPJUdCeI6itBjVKCKNsrCJCCG98nnGFWIlSpEqsECvRftSrQb3KOvCcA0XaeEKqtgnI/V+GCupVb2zOtJaDt+yV+bG3FuytsQ7IgSJxchR+XLlLkcKOK7wrm8SPdSGENzpbsMccxEpyRfbXg/11eg6IU4RRtrijbEI/vJHXjLIQocjBRnCwQaxAnCI2x0qots6HYWilH73DM1pTxbpfNWkHerUgVjBD17QCaMEom5kWL6Zz95oYZTGDWEGLHMWK4gJooBbPc6+FLX9SIzTNjCkTXibPOdCCWNGvxZBpWhArqsyoGHiTEytowSiLFvQcuTHjmflm0HNI0GLSlpucngMtiBXpZjy1zgxiJQstJiy9yXlXFjOIFcjJqvL9HEDPQemgcgA9B9BzAD0H5LXnUPsraJqHNf6OX+qjeViLdMOs30Pa+2ScO1oB8tZZwx8dbh7VKAIpjuZRTaisGyJ0tfwEWvOo3vP4JTd9co6/1iPbDWk76JQHx3RdlRACRfK8gNLluPPyIDWyby2X2ZIJVscoe3X0yC9ORSwbg2OyN66k7krAtPV0ygMjSturb/tsbWdajCr7WiXF43rPwCgbnN6MgVGVm+WUH43outTj71SRxE7oQKcckHNcETLKQlTPAYAcgBxgfs9x/ONLXH/+cJhzMzmXygHIAYyyQnT2HSycS+UAYgV0xkouX1fIuUrOjcUpPxjiFgFiBZADLB9lgcoByAGMsmCbHNgBxAq0XTkYVoDKAfQcQOUARlkgVoBYAWIFqBxAzwHECgCxAsQKUDmAngOoHEDPAcQKECuAHFDEWCFXgMoByAGMssAoC8QKIAcwygKVA5ADCspf0iguEXq/3EYAAAAASUVORK5CYII=">
+<title>RetoucheProAI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preload" as="font" type="font/woff2" href="polices/bricolage-grotesque-latin.woff2" crossorigin><link rel="preload" as="font" type="font/woff2" href="polices/instrument-sans-latin.woff2" crossorigin><!-- v6.5 : les deux polices de l'accueil sont demandées tout de suite -->
+<link rel="stylesheet" href="polices/polices.css"><!-- polices hébergées avec l'app (v3.2) : plus aucune requête vers Google à l'ouverture -->
+<style>
+/* =====================================================================================================
+   v7.2 — Studio RetoucheProAI : système graphique unique (remplace les 6 couches successives v2 → v6.8).
+   Principes : surfaces gris neutre (on juge une image sans dominante de couleur autour), un seul accent
+   « lumière de labo » (ambre) pour l'action, un second (sarcelle) réservé à l'analyse IA, profondeur par
+   paliers de surface plutôt que par lueurs. Mise en page : espace de travail au centre, outils par besoin,
+   activité réelle à droite (ordinateur) ; une colonne + barre d'onglets fixe sur iPhone.
+   ===================================================================================================== */
+:root{
+  --fd:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --fb:"Instrument Sans","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --fm:"DM Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  /* clair : papier neutre */
+  --bg:#efeeeb;--bg2:#e6e5e1;--panel:#fbfbfa;--panel2:#f3f2ef;--line:rgba(24,22,18,.11);--line2:rgba(24,22,18,.2);
+  --ink:#181714;--mut:#67645d;--acc:#b2600c;--acc2:#d97f1e;--accink:#fff;--acc-soft:rgba(178,96,12,.1);
+  --ai:#17766a;--ai-soft:rgba(23,118,106,.1);--tc:#b2600c;--ok:#2f7d4f;--bad:#b83a3a;--stage:#0b0b0c;
+  --grad:linear-gradient(180deg,#c56d14,#a8580a);--grad2:linear-gradient(180deg,var(--panel),var(--panel2));--gradt:none;
+  --glow:rgba(178,96,12,.22);--halo:transparent;--verre:rgba(239,238,235,.82);
+  --g1:#b2600c;--g2:#b2600c;--g3:#b2600c;--g4:#17766a;
+  --r1:10px;--r2:14px;--r3:20px;--sh1:0 1px 2px rgba(0,0,0,.06);--sh2:0 12px 32px -18px rgba(0,0,0,.28);
+  --dock:0px;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e0e10;--bg2:#141417;--panel:#18181b;--panel2:#1f1f23;--line:rgba(255,255,255,.075);--line2:rgba(255,255,255,.15);
+  --ink:#ecebe7;--mut:#9b9992;--acc:#f0a64a;--acc2:#ffc173;--accink:#1d1205;--acc-soft:rgba(240,166,74,.13);
+  --ai:#7cd0c3;--ai-soft:rgba(124,208,195,.12);--tc:#f0a64a;--ok:#7fcf98;--bad:#ff7a7a;--stage:#050506;
+  --grad:linear-gradient(180deg,#f5b25c,#e8963a);--glow:rgba(240,166,74,.25);--verre:rgba(14,14,16,.78);
+  --g1:#f0a64a;--g2:#f0a64a;--g3:#f0a64a;--g4:#7cd0c3;--sh1:0 1px 0 rgba(255,255,255,.03) inset;--sh2:0 18px 40px -22px rgba(0,0,0,.8);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e0e10;--bg2:#141417;--panel:#18181b;--panel2:#1f1f23;--line:rgba(255,255,255,.075);--line2:rgba(255,255,255,.15);
+  --ink:#ecebe7;--mut:#9b9992;--acc:#f0a64a;--acc2:#ffc173;--accink:#1d1205;--acc-soft:rgba(240,166,74,.13);
+  --ai:#7cd0c3;--ai-soft:rgba(124,208,195,.12);--tc:#f0a64a;--ok:#7fcf98;--bad:#ff7a7a;--stage:#050506;
+  --grad:linear-gradient(180deg,#f5b25c,#e8963a);--glow:rgba(240,166,74,.25);--verre:rgba(14,14,16,.78);
+  --g1:#f0a64a;--g2:#f0a64a;--g3:#f0a64a;--g4:#7cd0c3;--sh1:0 1px 0 rgba(255,255,255,.03) inset;--sh2:0 18px 40px -22px rgba(0,0,0,.8);color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 64px);scroll-padding-bottom:calc(var(--dock) + 8px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--fb);-webkit-font-smoothing:antialiased;
+  padding-bottom:var(--dock)}
+button,select,input,textarea{font:inherit;color:inherit}
+button{-webkit-tap-highlight-color:transparent;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+[hidden]{display:none!important}
+.mono{font-family:var(--fm);font-variant-numeric:tabular-nums}
+.wrap{width:100%;max-width:640px;margin:0 auto;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+@keyframes entre{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- barre d'application ---------- */
+header.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:8px;
+  padding:calc(env(safe-area-inset-top,0px) + 8px) max(14px,env(safe-area-inset-right,0px)) 8px max(14px,env(safe-area-inset-left,0px));
+  background:var(--verre);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+.brand svg{width:30px;height:30px;flex:none}
+.brand b{display:block;font:700 17px/1.05 var(--fd);letter-spacing:-.02em;white-space:nowrap}
+.brand small{display:block;font:500 10.5px/1.2 var(--fm);letter-spacing:.1em;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+.mdlb{flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);
+  background:var(--panel);font:600 13px/1 var(--fd);color:var(--ink)}
+.mdlb:hover{border-color:var(--line2)}
+.mdlb svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+header.top #stb{width:36px;padding:0;justify-content:center;font-size:16px}
+.top .tag{flex:none;font:500 11px/1 var(--fm);color:var(--mut);padding:6px 8px;border-radius:999px;border:1px solid var(--line)}
+@media (max-width:1023px){header.top #mdlb{display:none}}
+.brand>div{min-width:0}.brand b,.brand small{overflow:hidden;text-overflow:ellipsis}
+@media (max-width:380px){.brand small{display:none}.mdlb{padding:0 10px}}
+
+/* ---------- structure du studio ---------- */
+.studio{display:grid;gap:16px;width:100%;max-width:1400px;margin:0 auto;
+  padding:16px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));
+  grid-template-columns:minmax(0,1fr);grid-template-areas:"ws" "rail" "insp"}
+.ws{grid-area:ws;min-width:0;animation:entre .35s ease both}
+.rail{grid-area:rail;min-width:0}
+.insp{grid-area:insp;min-width:0;display:grid;gap:16px;align-content:start}
+@media (min-width:1024px){
+  .studio{grid-template-columns:248px minmax(0,1fr) 300px;grid-template-areas:"rail ws insp";gap:20px;padding-top:20px}
+  .rail,.insp{position:sticky;top:76px;max-height:calc(100dvh - 92px);overflow:auto;scrollbar-width:thin}
+}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:var(--r3);padding:16px;box-shadow:var(--sh1)}
+.pane>h2,.rail-h{margin:0 0 12px;font:600 11px/1 var(--fm);letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+
+/* ---------- zone d'import (table lumineuse) ---------- */
+.drop{position:relative;border-radius:24px;background:
+  radial-gradient(120% 90% at 50% 0%,var(--panel2),var(--panel) 70%);border:1px solid var(--line);box-shadow:var(--sh2);overflow:hidden;
+  min-height:min(58vh,520px);display:grid;place-items:center;padding:36px 20px;transition:border-color .2s,box-shadow .2s}
+.drop-frame i{position:absolute;width:26px;height:26px;border:2px solid var(--line2);pointer-events:none;transition:border-color .2s}
+.drop-frame i:nth-child(1){top:16px;left:16px;border-right:0;border-bottom:0;border-radius:8px 0 0 0}
+.drop-frame i:nth-child(2){top:16px;right:16px;border-left:0;border-bottom:0;border-radius:0 8px 0 0}
+.drop-frame i:nth-child(3){bottom:16px;left:16px;border-right:0;border-top:0;border-radius:0 0 0 8px}
+.drop-frame i:nth-child(4){bottom:16px;right:16px;border-left:0;border-top:0;border-radius:0 0 8px 0}
+.drop-in{position:relative;text-align:center;max-width:460px}
+.drop-ic{width:64px;height:64px;margin:0 auto 18px;display:grid;place-items:center;border-radius:20px;background:var(--acc-soft);color:var(--acc)}
+.drop-ic svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.drop h1{margin:0 0 8px;font:700 clamp(26px,6.4vw,38px)/1.05 var(--fd);letter-spacing:-.03em;text-wrap:balance}
+.drop-s{margin:0 auto 22px;color:var(--mut);max-width:38ch;text-wrap:pretty}
+.drop-acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.act{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 20px;border-radius:16px;border:1px solid var(--line2);
+  background:var(--panel);font:600 16px/1.1 var(--fd);color:var(--ink);transition:transform .12s,border-color .15s,background .15s}
+.act svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.act .lbl{text-align:left}
+.act .lbl small{display:none}
+.act:hover{border-color:var(--acc)}
+.act:active{transform:scale(.97)}
+.act.main{background:var(--grad);border-color:transparent;color:var(--accink);box-shadow:0 10px 24px -12px var(--glow)}
+.act:disabled{opacity:.5}
+.drop-f{margin:20px 0 0;font:500 12px/1.4 var(--fm);color:var(--mut);letter-spacing:.02em}
+.drop-over{position:absolute;inset:10px;border-radius:18px;border:2px dashed var(--acc);background:var(--acc-soft);display:grid;place-items:center;
+  font:700 20px/1 var(--fd);color:var(--acc);opacity:0;pointer-events:none;transition:opacity .15s}
+.drop.over .drop-over{opacity:1}
+@media (max-width:600px){.drop{min-height:0;padding:44px 18px 40px}.drop-ic{width:56px;height:56px;margin-bottom:14px}}
+.drop.over .drop-frame i{border-color:var(--acc)}
+/* média ouvert : la table lumineuse devient une barre compacte, l'atelier prend la place */
+body.loaded .drop{min-height:0;padding:10px 12px;border-radius:var(--r2);box-shadow:none;place-items:stretch}
+body.loaded .drop-frame,body.loaded .drop-ic,body.loaded .drop-s,body.loaded .drop-f{display:none}
+body.loaded .drop-in{display:flex;align-items:center;gap:10px;max-width:none;text-align:left}
+body.loaded .drop h1{margin:0 auto 0 4px;font:600 14px/1.2 var(--fb);letter-spacing:0;color:var(--mut)}
+body.loaded .drop h1::before{content:"Importer :"}
+body.loaded .drop h1 span{display:none}
+body.loaded .drop-acts{flex-wrap:nowrap;gap:6px}
+body.loaded .act{min-height:38px;padding:0 12px;font-size:14px;border-radius:12px}
+body.loaded .act svg{width:18px;height:18px}
+body.loaded .act.main{background:var(--panel);color:var(--ink);border-color:var(--line2);box-shadow:none}
+
+/* ---------- déroulé réel (reflète l'état de l'app, jamais simulé) ---------- */
+.flow{list-style:none;display:flex;gap:6px;margin:14px 0 0;padding:0;counter-reset:f}
+.flow li{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:12px;background:transparent;border:1px solid var(--line);
+  font:600 12.5px/1.15 var(--fd);color:var(--mut);counter-increment:f}
+.flow li::before{content:counter(f);flex:none;display:grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1px solid var(--line2);font:500 11px/1 var(--fm)}
+.flow li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flow li.on{color:var(--ink);border-color:var(--acc);background:var(--acc-soft)}
+.flow li.on::before{background:var(--acc);border-color:var(--acc);color:var(--accink)}
+.flow li.ok{color:var(--ink)}
+.flow li.ok::before{content:"✓";background:var(--panel2);color:var(--ok);border-color:var(--ok)}
+@media (max-width:560px){.flow li span{display:none}.flow li.on span{display:inline}.flow li{flex:0 0 auto}.flow li.on{flex:1}}
+
+/* ---------- outils par besoin ---------- */
+.rail{background:var(--panel);border:1px solid var(--line);border-radius:var(--r3);padding:16px 10px 10px}
+.rail-h{padding:0 8px}
+.grp+.grp{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.grp-h{margin:0 8px 6px;font:600 13px/1.2 var(--fd);color:var(--ink)}
+.tool{display:flex;align-items:center;gap:12px;width:100%;padding:9px 8px;border:0;border-radius:12px;background:transparent;text-align:left;color:var(--ink);transition:background .15s}
+.tool:hover,.tool:focus-visible{background:var(--panel2)}
+.tool:active{transform:scale(.99)}
+.tool .ti{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line);color:var(--ink)}
+.tool .ti svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tool.ia .ti{color:var(--ai);background:var(--ai-soft);border-color:transparent}
+.tool .lbl{flex:1;min-width:0;display:block;font:600 14.5px/1.2 var(--fd)}
+.tool .lbl small{display:block;margin-top:2px;font:400 12.5px/1.3 var(--fb);color:var(--mut)}
+.tool .bdg2{display:inline-block;vertical-align:2px;margin-left:4px;font:500 10px/1 var(--fm);letter-spacing:.06em;text-transform:uppercase;padding:4px 6px;border-radius:6px;color:var(--ai);background:var(--ai-soft)}
+.tool:disabled{opacity:.5}
+@media (min-width:600px) and (max-width:1023px){.rail .grp{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}.rail .grp-h{grid-column:1/-1}}
+
+/* ---------- activité, exemple, confidentialité ---------- */
+.actl{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.actl li{display:flex;gap:10px;align-items:center;padding:8px 6px;border-radius:10px}
+.actl li:hover{background:var(--panel2)}
+.actl .ai{flex:none;width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--line);font-size:15px}
+.actl b{display:block;font:600 13.5px/1.25 var(--fd);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.actl span{display:block;font:400 12px/1.3 var(--fm);color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.actl div{min-width:0}
+.vide{margin:0;padding:14px;border-radius:12px;border:1px dashed var(--line2);font-size:13.5px;color:var(--mut);text-align:center}
+.vide b{display:block;margin-bottom:2px;font:600 14px/1.3 var(--fd);color:var(--ink)}
+.confiance{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;padding:0;list-style:none}
+.confiance li{padding:5px 9px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font:600 12px/1.2 var(--fd)}
+.privacy{margin:0;font-size:13px;line-height:1.5;color:var(--mut)}
+.demo{position:relative;margin:0;border-radius:var(--r2);overflow:hidden;aspect-ratio:3/2;background:#111;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.demo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.demo .demo-avant{position:absolute;inset:0;clip-path:inset(0 calc(100% - var(--p,50%)) 0 0)}
+.demo .demo-ligne{position:absolute;top:0;bottom:0;left:var(--p,50%);width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 10px rgba(0,0,0,.4)}
+.demo .demo-poignee{position:absolute;top:50%;left:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;font:700 14px/1 var(--fd);box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.demo .demo-l{position:absolute;top:10px;padding:4px 8px;border-radius:6px;font:500 10.5px/1 var(--fm);letter-spacing:.08em;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.demo .demo-l.avant{left:10px}.demo .demo-l.apres{right:10px}
+.demo input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize;-webkit-appearance:none;appearance:none}
+.demo-c{margin:8px 2px 0;font-size:12.5px;color:var(--mut)}
+.demo input:focus-visible~.demo-ligne{box-shadow:0 0 0 3px var(--acc)}
+@media (max-width:1023px){body.loaded .insp{display:none}}
+
+/* ---------- barre d'onglets iPhone ---------- */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:25;display:grid;grid-template-columns:repeat(4,1fr);
+  padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));
+  background:var(--verre);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border-top:1px solid var(--line)}
+.dock button{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:48px;padding:4px 2px;border:0;border-radius:12px;background:transparent;
+  font:600 11px/1.1 var(--fd);color:var(--mut)}
+.dock button svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.dock button[aria-current="true"]{color:var(--acc)}
+.dock button:active{background:var(--panel2)}
+@media (max-width:1023px){:root{--dock:calc(62px + env(safe-area-inset-bottom,0px))}}
+@media (min-width:1024px){.dock{display:none}}
+
+/* ---------- liens (version sans restriction uniquement) ---------- */
+.lnk{display:flex;gap:8px;margin-top:12px;align-items:stretch}
+.lnk svg{width:20px;height:20px;flex:none;align-self:center;stroke:var(--mut);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.lnk input{flex:1;min-width:0;padding:12px;border-radius:var(--r1);border:1px solid var(--line);background:var(--panel);color:var(--ink);font:500 16px/1.2 var(--fb)}
+.lnk .btn{width:auto;padding:12px 16px;flex:none}
+.lnkh{font-size:13px;color:var(--mut);margin:6px 0 0}
+body.loaded .lnkh{display:none}
+.lnkmsg{margin:8px 0 0;font-size:14px}
+
+/* ---------- atelier (aperçu + commandes) ---------- */
+.work{display:grid;gap:18px;padding-top:16px;animation:entre .3s ease both}
+.stagecol,.ctlcol{min-width:0}
+@media (min-width:1600px){.work{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start}.stagecol{position:sticky;top:76px}}
+.stage{position:relative;border-radius:var(--r3);overflow:hidden;background:var(--stage);border:1px solid var(--line);
+  background-image:linear-gradient(45deg,#101012 25%,transparent 25%),linear-gradient(-45deg,#101012 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#101012 75%),linear-gradient(-45deg,transparent 75%,#101012 75%);
+  background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0}
+#cv{display:block;width:100%;height:auto;max-height:58vh;object-fit:contain;margin:0 auto}
+.bdg{position:absolute;left:10px;top:10px;padding:5px 9px;border-radius:7px;background:var(--acc);color:var(--accink);font:500 11px/1 var(--fm);letter-spacing:.08em;text-transform:uppercase}
+.bdg.orig{background:rgba(255,255,255,.92);color:#111}
+.tcb{position:absolute;right:10px;bottom:10px;padding:5px 8px;border-radius:7px;background:rgba(0,0,0,.66);color:#f3f1ea;font-size:12px}
+.row{display:flex;gap:8px;margin-top:10px}
+.row .btn{flex:1;padding:11px 10px;font-size:15px}
+.btn{display:block;width:100%;padding:13px 14px;border-radius:var(--r2);border:1px solid var(--line);background:var(--panel);color:var(--ink);font-weight:600;transition:transform .12s,border-color .15s}
+.btn:hover{border-color:var(--line2)}
+.btn:active{transform:scale(.98)}
+.btn.main{background:var(--grad);border-color:transparent;color:var(--accink);box-shadow:0 10px 24px -14px var(--glow)}
+.btn.big{padding:17px 16px;font:700 clamp(16px,4.6vw,19px)/1.15 var(--fd);border-radius:16px;letter-spacing:-.01em}
+.btn:disabled{opacity:.5}
+#cmp{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#cmp:active,#spl[aria-pressed="true"]{background:var(--acc-soft);border-color:var(--acc);color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--acc);margin:10px 0 0}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.meta span{padding:5px 9px;border-radius:7px;border:1px solid var(--line);background:var(--panel);font:500 12px/1.1 var(--fm);color:var(--mut);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spd{display:flex;align-items:center;gap:10px;margin:10px 0 2px}
+.spd-l{flex:none;font:600 13px/1 var(--fb);color:var(--mut)}
+.spd input{flex:1;min-width:0;margin:0}
+.spd-v{flex:none;min-width:64px;padding:8px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:14px}
+.spd-v.on{background:var(--acc);border-color:var(--acc);color:var(--accink)}
+.tabs{display:flex;gap:2px;padding:3px;border-radius:var(--r2);background:var(--panel2);border:1px solid var(--line)}
+.tab{flex:1;padding:10px 6px;border:0;border-radius:11px;background:transparent;font:600 14px/1.1 var(--fd);color:var(--mut)}
+.tab[aria-selected="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.18),inset 0 0 0 1px var(--line)}
+.panel{padding-top:14px;scroll-margin-top:80px}
+.panel h2{font:700 17px/1.2 var(--fd);margin:0 0 6px}
+.help{margin:0 0 12px;font-size:14px;color:var(--mut)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{padding:11px 6px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font:600 14px/1.15 var(--fd);text-align:center;color:var(--ink)}
+.seg button small{display:block;margin-top:3px;font:500 11px/1.1 var(--fm);color:var(--mut)}
+.seg button[aria-pressed="true"]{border-color:var(--acc);background:var(--acc-soft);box-shadow:inset 0 0 0 1px var(--acc)}
+#qhint{margin:10px 0 0;font-size:13px;color:var(--mut);min-height:2.6em}
+.prof{margin-top:12px}
+#profh{margin:8px 0 0;font-size:13px;color:var(--mut);min-height:1.4em}
+.pre{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.pre .btn{flex:1;font-size:14px;padding:10px 6px}
+label.s{display:block;margin:14px 0 0}
+label.s span{display:flex;justify-content:space-between;font-size:14px;color:var(--mut)}
+select{width:100%;padding:11px;border-radius:var(--r1);border:1px solid var(--line);background:var(--panel)}
+.st{min-height:22px;margin:10px 0 0;font-size:14px;color:var(--mut)}
+progress{width:100%;height:8px;margin-top:12px;border-radius:99px;overflow:hidden;appearance:none;-webkit-appearance:none;border:0;background:var(--panel2)}
+progress::-webkit-progress-bar{background:var(--panel2)}
+progress::-webkit-progress-value{background:var(--acc);border-radius:99px}
+progress::-moz-progress-bar{background:var(--acc)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r3);padding:16px;margin-top:14px;box-shadow:var(--sh1)}
+.card h2{font:700 17px/1.2 var(--fd);margin:0 0 10px;letter-spacing:-.01em}
+.rec ul{margin:8px 0 0;padding-left:18px;font-size:14px;line-height:1.5}
+.rec ul:has(label){list-style:none;padding-left:0}
+.rec ul label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.rec ul label input{margin-top:3px;flex:none;width:18px;height:18px;accent-color:var(--acc)}
+.rec ul li.learn{color:var(--mut);font-size:13px;margin-top:6px}
+/* l'analyse IA porte la couleur « analyse » */
+#rec{border-color:transparent;background:linear-gradient(var(--panel),var(--panel)) padding-box,linear-gradient(135deg,var(--ai),transparent 60%) border-box;border:1px solid transparent}
+#rec h2::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ai);margin-right:8px;vertical-align:2px}
+#adv>summary{cursor:pointer;font-weight:700;padding:12px 2px}
+.opts{margin-bottom:6px}
+.chk{display:flex;gap:12px;align-items:flex-start;padding:12px;margin:0 0 8px;border-radius:var(--r2);background:var(--panel);border:1px solid var(--line)}
+.chk input{width:22px;height:22px;margin:2px 0 0;accent-color:var(--acc);flex:none}
+.chk b{display:block;font-family:var(--fd)}
+.chk span{font-size:14px;color:var(--mut)}
+.trim{padding:12px;border-radius:var(--r2);background:var(--panel);border:1px solid var(--line)}
+.trim b{display:block;font-family:var(--fd)}
+.trim .mono{display:block;font-size:13px;color:var(--mut);margin-bottom:2px}
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.fgrid button{padding:0;border:2px solid transparent;border-radius:10px;background:none;overflow:hidden;position:relative}
+.fgrid button.on{border-color:var(--acc)}
+.fgrid canvas{width:100%;display:block}
+.fgrid span{position:absolute;left:4px;bottom:3px;font:600 11px/1 system-ui;color:#fff;text-shadow:0 1px 2px #000}
+.frep{margin-top:10px;border-radius:var(--r2);padding:10px 12px;background:var(--panel);border:1px solid var(--line)}
+.frep summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none}
+.frep summary::-webkit-details-marker{display:none}
+.frep summary::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:8px;vertical-align:1px}
+.frep.warn summary::before{background:var(--tc)}
+.frep ul{list-style:none;margin:8px 0 0;padding:0;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.frep li{padding-left:16px;position:relative}
+.frep li::before{content:"";position:absolute;left:0;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.frep li.warn::before{background:var(--tc)}.frep li.bad::before{background:var(--bad)}
+.recipe{margin:6px 0 0;font-size:12px;color:var(--mut);word-break:break-word}
+#rv{width:100%;border-radius:12px;background:#000;max-height:52vh}
+#ri{width:100%;border-radius:12px;max-height:60vh;object-fit:contain}
+#ba{display:flex;flex-direction:column;gap:10px}
+.bac{display:flex;align-items:center;gap:10px}
+.bac button{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:var(--acc);color:var(--accink);font-size:18px}
+.bac input{flex:1;min-width:0;margin:0}
+.bsx{position:relative;width:100%;margin:0 auto;aspect-ratio:9/16;max-height:56vh;overflow:hidden;border-radius:12px;background:#000;touch-action:none;-webkit-user-select:none;user-select:none;cursor:ew-resize}
+.bsx video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+#bar{-webkit-clip-path:inset(0 0 0 50%);clip-path:inset(0 0 0 50%)}
+#bsp{width:100%}
+/* comparateur photo avec zoom */
+.pv{margin-top:10px}
+.pv-box{position:relative;width:100%;overflow:hidden;border-radius:12px;background:#000;touch-action:none;-webkit-user-select:none;user-select:none;cursor:grab}
+.pv-lay{position:absolute;inset:0;overflow:hidden}
+.pv-in{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
+.pv-in img{position:absolute;inset:0;width:100%;height:100%;display:block;-webkit-user-drag:none;pointer-events:none}
+.pv-box.px img{image-rendering:pixelated}
+.pv-line{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.6);pointer-events:none}
+.pv-t{position:absolute;top:8px;padding:4px 8px;border-radius:6px;font:500 11px/1 var(--fm);letter-spacing:.06em;text-transform:uppercase;background:rgba(0,0,0,.6);color:#fff;pointer-events:none}
+.pv-t.l{left:8px}.pv-t.r{right:8px}
+.pv-z{display:flex;gap:6px;margin-top:8px}
+.pv-z button{flex:1;padding:9px 4px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font:600 14px/1 var(--fd)}
+.pv-z button[aria-pressed="true"]{background:var(--acc-soft);border-color:var(--acc)}
+.note{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:var(--r2);background:var(--panel)}
+.note strong{display:block;margin-bottom:4px;font-family:var(--fd)}
+.note p{margin:0 0 10px;font-size:14px;color:var(--mut)}
+
+/* ---------- fenêtres (Modèles IA, Paramètres) ---------- */
+dialog.mdl{width:min(640px,100vw - 16px);max-height:calc(100dvh - 24px);padding:0;border:1px solid var(--line);border-radius:var(--r3);background:var(--bg);color:var(--ink);box-shadow:0 40px 80px -30px rgba(0,0,0,.6)}
+dialog.mdl::backdrop{background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.mdl-top{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:8px;padding:14px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+.mdl-top h2{margin:0;font:700 18px/1.2 var(--fd);flex:1}
+.mdl-top button{width:auto;padding:9px 14px}
+.mdl-body{padding:4px 16px 18px}
+.mdl-intro{font-size:14px;color:var(--mut);margin:10px 0}
+.mdl-sto,.mdl-rec,.mdl-cl,.mdl-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r2);padding:12px;margin-top:10px}
+.mdl-sto span,.mdl-cl span{display:block;font-size:14px;color:var(--mut);margin-top:4px}
+.mdl-sto .btn,.mdl-cl .btn{margin-top:8px}
+.mdl-rec ul,.mdl-cl ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+.mdl-rec li.warn{color:var(--tc)}
+.mdl-h{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}
+.mdl-h b{font-family:var(--fd)}
+.mdl-st{flex:none;font:500 11px/1.2 var(--fm);padding:4px 8px;border-radius:6px;background:var(--panel2);color:var(--ink);text-align:right}
+.mdl-st.ok{background:rgba(47,125,79,.16);color:var(--ok)}.mdl-st.warn{background:var(--acc-soft);color:var(--tc)}
+.mdl-f{margin:6px 0 4px;font-size:14px}
+.mdl-m{margin:4px 0;font-size:12px;color:var(--mut)}
+.mdl-err{margin:6px 0;font-size:14px;color:var(--tc)}
+.mdl-note{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--acc-soft);font-size:14px}
+.mdl-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.mdl-acts .btn{width:auto;flex:1 1 auto;padding:10px 12px;font-size:14px}
+.mdl-card details{margin-top:8px;font-size:13px}.mdl-card summary{cursor:pointer;color:var(--mut)}
+.mdl-card dl{margin:6px 0 0;display:grid;grid-template-columns:minmax(0,9em) minmax(0,1fr);gap:4px 10px}.mdl-card dt{color:var(--mut)}.mdl-card dd{margin:0;overflow-wrap:anywhere}
+.mdl-eng{display:block;margin-top:8px;font-size:14px}.mdl-eng span{display:block;color:var(--mut);margin-bottom:4px}
+
+/* ---------- mode simple (par défaut) : l'essentiel ; « Mode expert » réaffiche tout ---------- */
+body.simple .lnkh,body.simple .tabs,body.simple #prof,body.simple #rec,body.simple #qhint,body.simple #qwrap>.help,body.simple #asst,body.simple #frep,body.simple #spl,body.simple #meta,
+body.simple #ai,body.simple #rtb,body.simple #socn,body.simple #bab,body.simple #kbb,body.simple #erb,body.simple #orep,body.simple #tech,body.simple #rec_after,body.simple .top .tag{display:none!important}
+body.simple #tp2,body.simple #tp3{display:none!important}
+body.simple #tp1{display:block!important}
+body:not(.simple) .simple-only{display:none!important}
+#sai{margin-top:12px}#sai .chk{margin:0;border:0;padding:0}
+#s_iah{display:block;font-weight:400;opacity:.8;margin-top:2px}
+
+/* ---------- outils plein écran (Effacer, Retirer un filtre, Visages) : même système, toujours en « chambre noire » ----------
+   Ces écrans injectent leurs propres styles (effacer.js, defiltre-visage.js, restauration-visage.js) ; la couche ci-dessous,
+   plus précise (body #…), leur donne l'identité du studio sans toucher à leur fonctionnement. Toujours sombres : on y juge l'image. */
+body #ez,body #dfv,body #rvis{--t-bg:#0b0b0d;--t-pan:#16161a;--t-pan2:#1e1e23;--t-line:rgba(255,255,255,.09);--t-line2:rgba(255,255,255,.18);
+  --t-ink:#ecebe7;--t-mut:#a3a19a;--t-acc:#f0a64a;--t-accink:#1d1205;--t-ai:#7cd0c3;
+  background:var(--t-bg);color:var(--t-ink);font:15px/1.45 var(--fb);color-scheme:dark}
+body #ez header,body #dfv header,body #rvis header{padding:calc(env(safe-area-inset-top,0px) + 8px) max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px));
+  background:rgba(11,11,13,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-bottom:1px solid var(--t-line);gap:8px}
+body #ez header h2,body #dfv header h2,body #rvis header h2{font:700 17px/1.2 var(--fd);letter-spacing:-.015em;color:var(--t-ink);text-align:center}
+body #ez .ez-ib,body #dfv .d-ib,body #rvis .rv-ib{min-width:40px;min-height:40px;border-radius:12px;border:1px solid var(--t-line2);background:var(--t-pan);color:var(--t-ink);font:600 13px/1 var(--fd);padding:0 12px}
+body #ez .ez-ib[aria-pressed="true"],body #dfv .d-ib[aria-pressed="true"],body #rvis .rv-ib[aria-pressed="true"]{border-color:var(--t-ai);color:var(--t-ai);background:rgba(124,208,195,.12)}
+body #ez_stage,body #dfv_st,body #rv_stage{background:#000}
+body #ez_badge,body .dfv-tag,body .rv-tag{padding:5px 9px;border-radius:7px;background:rgba(0,0,0,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  font:500 11px/1 var(--fm);letter-spacing:.08em;text-transform:uppercase;color:#fff}
+body #ez_badge.gen{background:rgba(196,60,140,.85)}
+body #dfv_li,body #rv_ligne{width:2px;background:#fff}
+body #ez_msg,body #dfv_msg,body #rv_msg{color:var(--t-mut);font-size:13.5px;padding:10px 16px 0}
+body #dfv_bar,body #rv_bar{height:3px;margin:8px 16px 0;background:var(--t-line)}
+body #dfv_bar i,body #rv_bar i{background:var(--t-acc)}
+body #ez footer,body #dfv footer,body #rvis footer{background:var(--t-pan);border-top:1px solid var(--t-line);gap:10px;
+  padding:12px max(14px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 12px) max(14px,env(safe-area-inset-left,0px))}
+@media (min-width:900px){body #ez footer>*,body #dfv footer>*,body #rvis footer>*,body #ez_msg,body #dfv_msg,body #rv_msg{width:100%;max-width:760px;margin-inline:auto}
+  body #dfv_bar,body #rv_bar{width:calc(100% - 32px);max-width:760px;margin-inline:auto}}
+body #ez .ez-go,body #dfv .d-go,body #rvis .rv-go{min-height:50px;border-radius:14px;border:0;background:linear-gradient(180deg,#f5b25c,#e8963a);color:var(--t-accink);font:700 15.5px/1.1 var(--fd)}
+body #ez .ez-no,body #dfv .d-no,body #rvis .rv-no{min-height:50px;border-radius:14px;border:1px solid var(--t-line2);background:transparent;color:var(--t-ink);font:600 15px/1.1 var(--fd)}
+body #ez .ez-seg{border:1px solid var(--t-line);border-radius:13px;padding:3px;gap:2px;background:var(--t-bg)}
+body #ez .ez-seg button{border-radius:10px;min-height:40px;color:var(--t-mut);font:600 13px/1.1 var(--fd)}
+body #ez .ez-seg button[aria-pressed="true"]{background:var(--t-pan2);color:var(--t-ink);box-shadow:inset 0 0 0 1px var(--t-line2)}
+body #ez label.ez-sz,body #dfv label.d-f,body #rvis label.rv-f{color:var(--t-mut);font-size:13px}
+body #ez input[type=range],body #dfv input[type=range],body #rvis input[type=range]{accent-color:var(--t-acc);margin:0}
+body #ez details,body #dfv details,body #rvis details{color:var(--t-mut);font-size:13px;border-top:1px solid var(--t-line);padding-top:4px}
+body #ez details summary,body #dfv summary,body #rvis summary{color:var(--t-ink);font:600 13px/1.2 var(--fd)}
+body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:focus-visible{outline:2px solid var(--t-acc);outline-offset:2px}
+/* ---------- pied de page ---------- */
+.pied{max-width:1400px;margin:0 auto;padding:8px 16px calc(24px + env(safe-area-inset-bottom,0px));text-align:center;font-size:13px;line-height:2.1;color:var(--mut)}
+.pied a{color:var(--mut)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}.demo{--p:50%}}
+</style>
+<meta name="robots" content="noindex,nofollow">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="1.5" y="1.5" width="29" height="29" rx="9" fill="var(--ink)"/><path d="M8 8h6M8 8v6M24 24h-6M24 24v-6" stroke="var(--bg)" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M9.5 22.5L22.5 9.5" stroke="var(--acc)" stroke-width="2.2" stroke-linecap="round"/><circle cx="20" cy="20" r="1.6" fill="var(--bg)"/><circle cx="12" cy="12" r="1.6" fill="var(--acc)"/></svg><div><b>RetoucheProAI</b><small>Studio de restauration</small></div></div>
+  <button class="mdlb" id="modeb" type="button">Mode expert</button>
+  <button class="mdlb" id="mdlb" type="button" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/><path d="M10 10h4v4h-4z"/></svg><span class="t">Modèles IA</span></button>
+  <span class="tag"><span id="ver">v3.1</span></span>
+</header>
+<dialog class="mdl" id="mdl" aria-labelledby="mdlt">
+  <div class="mdl-top"><h2 id="mdlt">Modèles IA</h2><button class="btn" id="mdlx" type="button">Fermer</button></div>
+  <div class="mdl-body"><p class="mdl-intro">L’app choisit seule le bon modèle pour chaque photo ou vidéo. Ici, tu vois ce qui est installé, ce que ça occupe, et tu peux libérer de la place. Tout est calculé sur ton téléphone ; seul le fichier d’un modèle est téléchargé, jamais tes photos ni tes vidéos.</p><div class="mdl-body-in"></div></div>
+</dialog>
+<main class="studio" id="studio">
+  <section class="ws" id="ws" aria-label="Espace de travail">
+    <div class="drop" id="drop">
+      <div class="drop-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="drop-in">
+        <div class="drop-ic" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></div>
+        <h1><span>Restaure une photo ou une vidéo</span></h1>
+        <p class="drop-s">Dépose ton fichier ici ou choisis-le. L’analyse mesure le flou, le bruit et la lumière, puis règle le traitement pour toi.</p>
+        <div class="drop-acts">
+          <button class="act main" id="pick" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg><span class="lbl">Vidéo<small class="simple-sub">Depuis ta photothèque</small></span></button>
+          <button class="act" id="pickp" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg><span class="lbl">Photo</span></button>
+        </div>
+        <p class="drop-f">MP4 · MOV · JPEG · PNG · HEIC — calculé sur ton appareil</p>
+      </div>
+      <div class="drop-over" aria-hidden="true">Dépose pour importer</div>
+    </div>
+    <input type="file" id="f" accept="video/*" multiple hidden>
+    <input type="file" id="fp" accept="image/*" hidden>
+    <input type="file" id="fe" accept="image/*" hidden>
+    <input type="file" id="fv" accept="image/*" hidden>
+    <input type="file" id="ff" accept="video/*" hidden>
+    <input type="file" id="fd" accept="image/*" hidden>
+    <input type="file" id="fm" accept="video/*" multiple hidden>
+    <form class="lnk" id="lnkf" autocomplete="off" novalidate>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
+      <input id="lnk" type="url" inputmode="url" enterkeyhint="go" placeholder="Colle un lien ici" aria-label="Lien d’une vidéo (TikTok, Facebook, X, Snapchat, Pinterest…)">
+      <button class="btn" id="lnkgo" type="submit">Charger</button>
+    </form>
+    <div id="lnkc" class="row" hidden style="margin-top:8px"></div>
+    <p class="lnkmsg" id="lnkst" hidden aria-live="polite"></p>
+    <p class="lnkh"><b>Liens compatibles :</b> TikTok, Facebook, Twitter / X, Snapchat, Pinterest, Reddit, Tumblr, Bluesky, LinkedIn, Twitch (clips), Streamable, Imgur, 9GAG. La vidéo arrive dans sa meilleure qualité, prête à être retouchée ou enregistrée.</p>
+    <ol class="flow" id="flow" aria-label="Étapes du traitement">
+      <li data-e="1"><span>Importer</span></li><li data-e="2"><span>Analyser et régler</span></li><li data-e="3"><span>Traiter</span></li><li data-e="4"><span>Comparer et exporter</span></li>
+    </ol>
+    <div class="card" id="mg" hidden>
+      <h2>Regrouper des vidéos</h2>
+      <p class="help">Les vidéos seront mises bout à bout dans cet ordre. Choisis-les dans n’importe quel ordre : « Remettre dans l’ordre » le retrouve à partir des images et des dates ; les flèches permettent de corriger.</p>
+      <div id="mgl" style="display:flex;flex-direction:column;gap:6px"></div>
+      <button class="btn" id="mgadd" style="margin-top:8px">+ Ajouter d’autres vidéos</button>
+      <button class="btn" id="mgauto" style="margin-top:8px">🧩 Remettre dans l’ordre automatiquement</button>
+      <ul id="mgrep" class="help" hidden style="margin:8px 0 0;padding-left:18px"></ul>
+      <button class="btn main" id="mggo" style="margin-top:8px">Regrouper en une seule vidéo</button>
+      <div id="mgres" hidden style="margin-top:12px"><video id="mgv" controls playsinline style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
+        <button class="btn main" id="mgimp" style="margin-top:8px">✨ Améliorer cette vidéo</button>
+        <button class="btn" id="mgsave" style="margin-top:8px">Enregistrer la vidéo regroupée</button></div>
+    </div>
+    <p class="st" id="st0"></p>
+    <div class="note" id="inst" hidden>
+      <strong>Ajouter à l’écran d’accueil</strong>
+      <p>Dans Safari, appuie sur Partager, puis sur « Sur l’écran d’accueil ». L’app s’ouvrira ensuite comme une vraie app.</p>
+      <button class="btn" id="instx">Compris</button>
+    </div>
+
+  <div id="app" class="work" hidden>
+    <div class="stagecol">
+      <div class="stage">
+        <canvas id="cv" width="320" height="180"></canvas>
+        <span class="bdg" id="bdg">Amélioré</span>
+        <span class="tcb mono" id="tc">0:00 / 0:00</span>
+      </div>
+      <input type="range" id="tm" min="0" max="1000" value="0" aria-label="Position dans la vidéo">
+      <div class="spd vonly" id="spdw">
+        <span class="spd-l">Vitesse</span>
+        <input type="range" id="spd" min="75" max="130" step="5" value="100" aria-label="Vitesse de la vidéo">
+        <button type="button" class="spd-v mono" id="spdv" aria-label="Revenir à la vitesse normale">1,00×</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="pp">Lecture</button>
+        <button class="btn" id="cmp">Maintenir : original</button>
+        <button class="btn" id="spl" aria-pressed="false">Curseur</button>
+      </div>
+      <div class="meta" id="meta"></div>
+      <details class="frep" id="frep" hidden><summary id="frep_s">Rapport du fichier</summary><ul id="frep_l"></ul></details>
+    </div>
+
+    <div class="ctlcol">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-t="tp1" aria-selected="true">✨ Améliorer</button>
+        <button class="tab" role="tab" data-t="tp2" aria-selected="false">🎛️ Réglages</button>
+        <button class="tab" role="tab" data-t="tp3" id="tabx" aria-selected="false">🧰 Outils</button>
+      </div>
+
+      <div class="panel" id="tp1">
+        <div id="qwrap">
+          <p class="help">Choisis la taille du résultat. Tout le reste est réglé automatiquement.</p>
+          <div class="seg" role="group" aria-label="Taille du résultat">
+            <button data-q="3840" aria-pressed="false">4K<small>3840 · plus long</small></button>
+            <button data-q="1920" aria-pressed="true">Full HD<small>conseillé</small></button>
+            <button data-q="-1" aria-pressed="false">Origine<small>nettoyage seul</small></button>
+          </div>
+          <select id="q" hidden><option value="3840">4K</option><option value="1920" selected>Full HD</option><option value="-1">Taille d’origine (avant un autre outil)</option></select>
+          <p id="qhint"></p>
+        </div>
+        <div class="prof" id="prof">
+          <p class="help" style="margin:0 0 8px">Rendu voulu :</p>
+          <div class="seg" role="group" aria-label="Rendu voulu">
+            <button data-prof="naturel" aria-pressed="false">Naturel<small>fidèle</small></button>
+            <button data-prof="equilibre" aria-pressed="true">Équilibré<small>conseillé</small></button>
+            <button data-prof="details" aria-pressed="false">Détails<small>plus poussé</small></button>
+            <button data-prof="nuit" aria-pressed="false">Faible lumière<small>sombre, nuit</small></button>
+            <button data-prof="jour" aria-pressed="false">Nuit → jour<small>esthétique</small></button>
+          </div>
+          <p id="profh"></p>
+          <label class="s ponly" hidden><span>Format de la photo</span><select id="pfmt"><option value="jpeg">JPEG (léger, qualité 95 %)</option><option value="png">PNG (sans perte, plus lourd)</option></select></label>
+        </div>
+        <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><p class="help" id="rec_hint" hidden style="margin:6px 0 0">Déjà appliqué. Décoche ce que tu ne veux pas.</p></div>
+        <div class="card simple-only" id="sai"><label class="chk"><input type="checkbox" id="s_ia"><span><b>⚡ Qualité IA</b><span id="s_iah"></span></span></label></div>
+        <button class="btn main big" id="ex" style="margin-top:12px">Améliorer en 4K</button>
+        <progress id="pg" value="0" max="1" hidden></progress>
+        <p class="st" id="st1" role="status"></p>
+        <div class="card" id="out" hidden>
+          <h2>Résultat</h2>
+          <div class="rec" id="rec_after"><p class="help" id="rec_at" style="margin:0 0 6px"></p><ul id="rec_a"></ul><button class="btn" id="rec_b" hidden></button></div>
+          <img id="ri" alt="Photo retouchée" hidden>
+          <div class="pv" id="pv" hidden>
+            <div class="pv-box" id="pvb">
+              <div class="pv-lay"><div class="pv-in"><img id="pvo" alt="Avant"></div></div>
+              <div class="pv-lay" id="pvla"><div class="pv-in"><img id="pva" alt="Après"></div></div>
+              <div class="pv-line" id="pvl"></div><span class="pv-t l">Avant</span><span class="pv-t r">Après</span>
+            </div>
+            <input type="range" id="pvs" min="0" max="1000" value="500" aria-label="Séparation avant / après">
+            <div class="pv-z" role="group" aria-label="Zoom"><button type="button" data-z="1" aria-pressed="true">1×</button><button type="button" data-z="2" aria-pressed="false">2×</button><button type="button" data-z="4" aria-pressed="false">4×</button><button type="button" data-z="8" aria-pressed="false">8×</button></div>
+            <p class="help" style="margin:6px 0 0">Glisse le curseur pour comparer. Zoome puis fais glisser l’image pour inspecter les détails (à partir de 4×, chaque pixel réel est montré tel quel). Double-touche pour zoomer à cet endroit.</p>
+            <button class="btn" id="pvsolo" type="button" style="margin-top:8px">Voir la photo retouchée seule</button>
+          </div>
+          <div id="ba" hidden>
+            <div class="bsx" id="bsx">
+              <video id="bao" muted playsinline preload="auto"></video>
+              <video id="bar" playsinline preload="auto"></video>
+              <div class="pv-line" id="bsl"></div><span class="pv-t l">Avant</span><span class="pv-t r">Après</span>
+            </div>
+            <input type="range" id="bsp" min="0" max="1000" value="500" aria-label="Séparation avant / après">
+            <div class="bac"><button id="bap" aria-label="Lecture">▶</button><input type="range" id="bas" min="0" max="1000" value="0" aria-label="Position"></div>
+            <p class="help" style="margin:0">Fais glisser le doigt sur la vidéo (ou le curseur du dessous) : à gauche l’original, à droite le résultat.</p>
+          </div>
+          <button class="btn" id="bat" style="margin-top:8px" hidden>Voir le résultat seul</button>
+          <video id="rv" controls playsinline></video>
+          <button class="btn main" id="sv" style="margin-top:10px" hidden>Enregistrer la vidéo</button>
+          <button class="btn" id="rtb" style="margin-top:8px" hidden>Refaire avec le son (en temps réel)</button>
+          <p class="help" id="socn" hidden style="margin:10px 0 0">Pour publier sur TikTok ou Instagram : active « Importer en haute qualité » dans l’app au moment de publier, sinon elle recompresse fortement la vidéo.</p>
+          <p class="help" id="dupn" hidden style="margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--line)"></p>
+          <button class="btn" id="bab" style="margin-top:8px" hidden>🎬 Créer un avant / après à partager (10 s)</button>
+          <button class="btn" id="kbb" style="margin-top:8px" hidden>🎞️ Animer la photo en vidéo (8 s)</button>
+          <button class="btn" id="erb" style="margin-top:8px" hidden>🩹 Effacer une zone de la photo d’origine (IA)</button>
+          <button class="btn" id="dfb" style="margin-top:8px" hidden>🐶 Retirer le filtre (museau, oreilles…) de la photo d’origine (IA, essai)</button>
+          <button class="btn" id="rvb" style="margin-top:8px" hidden>🙂 Restaurer les visages de la photo d’origine (IA, essai)</button>
+          <label class="chk" id="kbo" hidden style="margin-top:8px"><input type="checkbox" id="o_relief" checked><span><b>Effet de relief</b>La caméra se déplace doucement dans la photo : le premier plan bouge plus que le fond. Rien n’est modifié dans la photo. Télécharge 27 Mo la première fois.</span></label>
+          <div id="kbres" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Photo animée</h2><video id="kbv" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
+            <button class="btn main" id="kbs" style="margin-top:8px">Partager la vidéo animée</button></div>
+          <div id="bares" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Avant / après</h2><video id="bav" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
+            <button class="btn main" id="bas2" style="margin-top:8px">Partager l’avant / après</button></div>
+          <details class="frep" id="orep" hidden><summary id="orep_s">Compte rendu de l’export</summary><ul id="orep_l"></ul></details>
+          <details id="tech" hidden style="margin-top:10px"><summary class="help" style="cursor:pointer;margin:0">Détails techniques</summary><p class="help mono" id="techt" style="margin:6px 0 0;font-size:12px;word-break:break-word"></p><p class="recipe mono" id="recipe"></p>
+            <button class="btn" id="diagb" style="margin-top:8px" hidden>Copier le diagnostic</button></details>
+        </div>
+        <button class="btn" id="ai" style="margin-top:12px" hidden>Analyse intelligente (IA)</button>
+        <div id="bt" class="card" hidden style="margin-top:12px"><p class="help" id="btt" style="margin:0 0 8px"></p>
+          <button class="btn main" id="exall">Améliorer tout le lot</button>
+          <div id="btl" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"></div>
+          <button class="btn" id="svall" style="margin-top:8px" hidden>Enregistrer toutes les vidéos</button></div>
+      </div>
+
+      <div class="panel" id="tp2" hidden>
+        <div class="opts">
+          <label class="chk"><input type="checkbox" id="o_max" checked><span><b>Qualité maximale (IA)</b>Restauration par intelligence artificielle : retire les blocs de compression, le bruit et le flou, et recrée le détail. Calculée sur ton téléphone, plus lente. Utilisée seulement pour les images de petite taille (jusqu’à 1280×720), celles qui en ont besoin.</span></label>
+          <label class="chk" id="o_srv_l"><input type="checkbox" id="o_srv"><span><b>IA rapide sur serveur gratuit (Kaggle)</b>La même IA, calculée sur les cartes graphiques gratuites de ton compte Kaggle au lieu du téléphone : environ 100 fois plus rapide pour une longue vidéo. Ta vidéo est envoyée dans un espace privé de ton compte, puis effacée. Accord demandé avant chaque envoi. À régler une fois dans ⚙️ Paramètres (jeton Kaggle).</span></label>
+          <label class="chk" id="o_cine_l"><input type="checkbox" id="o_cine"><span><b>Moteur Cinéma (essai)</b>Avec l’IA sur serveur : restauration SeedVR2, un modèle vidéo de nouvelle génération qui reconstruit textures, contours et visages en gardant la stabilité d’une image à l’autre. Plus lent (compte plusieurs minutes par minute de vidéo). Si son résultat s’écarte de ta vidéo, l’IA standard prend le relais toute seule.</span></label>
+        </div>
+        <div class="opts vonly">
+          <h2>Options de la vidéo</h2>
+          <label class="chk"><input type="checkbox" id="o_cam"><span><b>Caméra virtuelle (essai)</b>Reconnaît l’appareil qui a filmé, mesure les défauts de son objectif sur ta vidéo, puis les défait dans l’ordre : compression, bruit, puis objectif (flou, coins sombres, franges colorées sur les bords). À comparer avec le rendu habituel : coche, décoche, et garde ce que tu préfères.</span></label>
+          <div id="camf" class="help" hidden style="margin:-2px 0 10px;padding:10px 12px;border-radius:12px;background:var(--panel)"></div>
+          <label class="chk"><input type="checkbox" id="o_fast"><span><b>Mode rapide</b>Plus rapide pour les longues vidéos (sans stabilisation ni fluidité).</span></label>
+          <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Moins de tremblements (image un peu recadrée).</span></label>
+          <label class="chk"><input type="checkbox" id="o_defl"><span><b>Anti-scintillement</b>Pour les vieux films dont la lumière clignote.</span></label>
+          <label class="chk"><input type="checkbox" id="o_rfv"><span><b>Retirer le filtre du visage (IA, essai)</b>Museau, oreilles, lunettes dessinées, autocollants… retirés sur toute la vidéo, sans scintillement : une seule reconstruction, qui suit la tête. Ce qui est reconstruit est inventé (plausible, pas retrouvé).</span></label>
+          <label class="chk"><input type="checkbox" id="o_rvv"><span><b>Restaurer les visages (IA, essai)</b>Yeux, peau, cheveux reconstruits sur les visages, stables d’une image à l’autre. Vidéos courtes : environ 20 s de calcul par image clé (une image sur 3), modèle de 86 Mo téléchargé une fois.</span></label>
+          <label class="chk"><input type="checkbox" id="o_dust"><span><b>Poussières et points noirs</b>Efface les petites taches des films numérisés.</span></label>
+          <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Retire le souffle et les bruits de fond.</span></label>
+          <label class="chk"><input type="checkbox" id="o_fluid"><span><b>Mouvement plus fluide</b>Passe les vidéos saccadées à 30 images par seconde.</span></label>
+          <label class="chk"><input type="checkbox" id="o_x"><span><b>Préparer pour X</b>Fichier H.264 en 720p, au format que X accepte. X recompresse quand même la vidéo.</span></label>
+          <label class="chk"><input type="checkbox" id="o_xp"><span><b>Compte X Premium</b>Avec « Préparer pour X » : garde le 1080p.</span></label>
+          <div class="trim"><b>Partie à traiter</b><span class="mono" id="t_txt">tout</span>
+            <input type="range" id="t_in" min="0" max="1000" value="0" aria-label="Début"><input type="range" id="t_out" min="0" max="1000" value="1000" aria-label="Fin"></div>
+          <label class="s"><span>Autre taille de résultat (côté le plus long)</span><select id="qc"><option value="">— garder le choix de l’onglet Améliorer —</option><option value="1280">1280 px (720p)</option><option value="1920">1920 px (1080p, Full HD)</option><option value="2560">2560 px (1440p)</option><option value="3840">3840 px (4K UHD)</option></select></label>
+          <p class="help" style="margin:6px 0 0">Le format de l’image est toujours gardé (portrait reste portrait) ; rien n’est recadré ni déformé. Agrandir ne crée pas de vrais détails : au-delà de la taille d’origine, ils sont estimés.</p>
+        </div>
+        <details id="adv" style="margin-top:14px"><summary>Réglages manuels de l’image <span class="mono" style="font-weight:400">(déjà réglés automatiquement)</span></summary>
+        <p class="help">Facultatif : pars d’un préréglage, puis affine.</p>
+        <button class="btn" id="wbb" style="margin-bottom:8px">Équilibrer les couleurs (analyse la vidéo)</button>
+        <div class="pre">
+          <button class="btn" data-p="auto">Auto</button>
+          <button class="btn" data-p="vhs">Cassette VHS</button>
+          <button class="btn" data-p="film">Film jauni</button>
+          <button class="btn" data-p="dark">Vieux téléphone, peu de lumière</button>
+          <button class="btn" data-p="beauty">Vidéo avec filtre beauté</button>
+        </div>
+        <div id="sl"></div>
+        </details>
+      </div>
+
+      <div class="panel" id="tp3" hidden>
+        <div class="card" id="flt" hidden><h2>Retirer un filtre de réseau social <span class="mono" style="font-weight:400">(essai)</span></h2>
+          <p class="help" id="flt_h">Touche la miniature qui paraît la plus naturelle (peau, murs, vêtements). « Aucun » garde la vidéo telle quelle.</p>
+          <div id="flt_g" class="fgrid"></div>
+          <div id="flt_s" hidden><label class="help" style="display:block;margin:10px 0 4px">Force du retrait <span class="mono" id="flt_v">100 %</span></label><input type="range" id="flt_r" min="0" max="1" step=".05" value="1" aria-label="Force du retrait">
+</div>
+          <p class="help" style="margin:10px 0 0">Retire les filtres de couleur et de lumière. Pas les autocollants, textes, masques ou déformations.</p></div>
+        <button class="btn" id="diagb2" style="margin:0 0 10px">📋 Copier le diagnostic</button>
+        <button class="btn" id="fmb" style="margin:10px 0 0">📐 Changer le format de cette vidéo (16:9, 9:16, carré…)</button>
+        <button class="btn" id="fltb" style="margin:10px 0">Retirer un filtre de réseau social (essai)</button>
+        <div class="card" id="trc" style="margin:0 0 14px">
+          <h2>Vitesse et sens de lecture</h2>
+          <p class="help" id="tr_info">Corrige une vidéo accélérée ou ralentie, ou la remet à l’endroit. La partie choisie dans Réglages est respectée.</p>
+          <label class="s"><span>Vitesse</span><select id="tr_v"><option value="0.25">0,25× (4 fois plus lent)</option><option value="0.5">0,5× (2 fois plus lent)</option><option value="0.75">0,75×</option><option value="1" selected>1× (vitesse inchangée)</option><option value="1.25">1,25×</option><option value="1.5">1,5×</option><option value="2">2× (2 fois plus rapide)</option><option value="3">3×</option><option value="4">4×</option></select></label>
+          <label class="chk" style="margin-top:10px"><input type="checkbox" id="tr_r"><span><b>Lire à l’envers</b>Remet à l’endroit une vidéo inversée (ou l’inverse).</span></label>
+          <label class="chk"><input type="checkbox" id="tr_f"><span><b>Ralenti fluide</b>Pour un ralenti : images intermédiaires estimées à partir des voisines (peut créer des déformations sur les mouvements rapides). Décoché : chaque image d’origine est répétée, rien n’est inventé.</span></label>
+          <label class="s"><span>Son</span><select id="tr_a"><option value="garde">Adapté à la vitesse, hauteur de voix conservée</option><option value="cassette">Accéléré / ralenti comme une cassette (voix plus aiguë ou plus grave)</option><option value="inverse">Inversé (si lecture à l’envers)</option><option value="sans">Sans son</option></select></label>
+          <p class="help mono" id="tr_d" style="margin:8px 0 0"></p>
+          <button class="btn main" id="tr_go" style="margin-top:8px">Créer la version corrigée</button>
+        </div>
+        <div id="plc">
+          <h2>Prolonger la vidéo (essai)</h2>
+          <p class="help">Continue l’action en réutilisant les gestes qui se répètent dans ta vidéo. Sans le son, vidéo de 2 minutes maximum.</p>
+          <select id="pl" aria-label="Durée voulue"><option value="30">30 secondes</option><option value="60" selected>1 minute</option><option value="120">2 minutes</option><option value="180">3 minutes</option><option value="240">4 minutes</option></select>
+          <button class="btn main" id="plb" style="margin-top:10px">Créer la version prolongée</button>
+          <button class="btn" id="lfb" style="margin-top:8px">Enregistrer la dernière image</button>
+
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+  </section>
+  <aside class="rail" id="outils" aria-label="Outils">
+    <h2 class="rail-h">Outils</h2>
+    <div class="grp"><p class="grp-h">Restaurer</p>
+      <button class="tool" type="button" data-proxy="#pickp"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg></span><span class="lbl">Photo ancienne ou floue<small>Netteté, bruit, couleurs</small></span></button>
+      <button class="tool" type="button" data-proxy="#pick"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg></span><span class="lbl">Vidéo de vieux téléphone<small>Jusqu’en 4K, son compris</small></span></button>
+      <button class="tool" type="button" id="pickm"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="7" height="10" rx="1.5"/><rect x="14.5" y="7" width="7" height="10" rx="1.5"/><path d="M9.5 12h5"/></svg></span><span class="lbl">Regrouper des vidéos<small>Mettre bout à bout, puis améliorer</small></span></button>
+    </div>
+    <div class="grp"><p class="grp-h">Reconstruire</p>
+      <button class="tool ia" type="button" id="pickf"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3" width="8" height="18" rx="2"/><path d="M8 8H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h3M16 8h3a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-3" stroke-dasharray="2.5 2.5"/></svg></span><span class="lbl">Changer le format d’une vidéo <span class="bdg2">IA · nouveau</span><small>Verticale ↔ horizontale, 4:3 → 16:9, carré…</small></span></button>
+      <button class="tool ia" type="button" id="pickv"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="10" r="5"/><path d="M5 20c1.5-3.2 4-4.5 7-4.5s5.5 1.3 7 4.5"/><path d="M19 3l.7 1.6L21.3 5l-1.6.7L19 7.3l-.7-1.6L16.7 5l1.6-.4z"/></svg></span><span class="lbl">Visages d’une photo <span class="bdg2">IA · essai</span><small>Yeux, peau, cheveux ; zones inventées signalées</small></span></button>
+      <button class="tool ia" type="button" id="pickd"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M6 6l-2-3M18 6l2-3M9 15h6"/><path d="M3 21L21 3"/></svg></span><span class="lbl">Retirer un filtre du visage <span class="bdg2">IA · essai</span><small>Accessoires et effets Snapchat, Instagram</small></span></button>
+      <button class="tool ia" type="button" id="picke"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M4 21h16"/><path d="M13 7l4 4"/></svg></span><span class="lbl">Effacer une zone <span class="bdg2">IA</span><small>Reconstruction par IA</small></span></button>
+    </div>
+  </aside>
+  <aside class="insp" id="activite" aria-label="Activité">
+    <section class="pane"><h2>Activité</h2>
+      <ul class="actl" id="act_l" hidden></ul>
+      <p class="vide" id="act_v"><b>Aucun traitement pour l’instant</b>Tes exports apparaîtront ici. L’historique reste sur cet appareil.</p>
+    </section>
+    <section class="pane"><h2>Exemple réel</h2>
+      <figure class="demo" id="demo">
+    <picture><source srcset="demo/chat-apres.webp" type="image/webp"><img src="demo/chat-apres.jpg" alt="Après : photo nette, sans blocs ni bruit" width="720" height="480" decoding="async"></picture>
+    <div class="demo-avant"><picture><source srcset="demo/chat-avant.webp" type="image/webp"><img src="demo/chat-avant.jpg" alt="Avant : photo de vieux téléphone, floue et pixelisée" width="720" height="480" decoding="async"></picture></div>
+    <span class="demo-l avant" aria-hidden="true">Avant</span><span class="demo-l apres" aria-hidden="true">Après</span>
+    <div class="demo-ligne" aria-hidden="true"><span class="demo-poignee">⇆</span></div>
+    <input type="range" min="0" max="100" value="50" aria-label="Glisse pour comparer avant et après">
+    </figure>
+      <p class="demo-c">Photo de vieux téléphone améliorée par l’app, sans retouche à la main.</p>
+    </section>
+    <section class="pane"><h2>Confidentialité</h2>
+      <ul class="confiance" aria-label="Nos engagements"><li title="Traitement local par défaut ; tout envoi réseau demande un accord distinct">Local par défaut</li><li>Gratuit</li><li>Sans compte</li></ul>
+      <p class="privacy">Tes vidéos et photos restent sur ton téléphone : elles ne sont envoyées à aucun serveur. Internet ne sert qu’à télécharger un modèle IA (le fichier du modèle, rien d’autre)<span class="avec-liens">, à charger une vidéo à partir d’un lien</span> et, si tu l’actives, à calculer sur ton propre compte Kaggle. Dans la version Claude, l’analyse IA facultative envoie une image, et des mesures techniques anonymes (vitesse, réglages) aident à améliorer l’app.</p>
+    </section>
+  </aside>
+</main>
+<footer class="pied" id="pied"><a href="guide.html">Guide</a> · <a href="tarifs.html">Gratuit ou Premium</a> · <a href="mentions-legales.html">Mentions légales</a> · <a href="conditions.html">Conditions</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="licences.html">Licences</a></footer>
+<nav class="dock" id="dock" aria-label="Navigation">
+  <button type="button" data-go="ws" aria-current="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>Importer</button>
+  <button type="button" data-go="outils"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>Outils</button>
+  <button type="button" data-go="activite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>Activité</button>
+  <button type="button" data-go="mdlb"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/><path d="M10 10h4v4h-4z"/></svg>Modèles</button>
+</nav>
+
+<!-- v6.4 : tous les scripts sont différés (defer) : même ordre d'exécution qu'avant, mais l'écran s'affiche tout de suite.
+     « Effacer une zone » et « relief » (effacer.js, marquage.js, depth.js) ne sont plus lus au démarrage : chargés quand le téléphone est libre. -->
+<script defer src="models.js"></script>
+<script defer src="sr-gpu.js"></script>
+<script defer src="sr.js"></script>
+<script defer src="iak.js"></script>
+<script defer src="kaggle.js"></script>
+<script defer src="camera.js"></script>
+<script defer src="analyse.js"></script>
+<script defer src="contribution.js"></script>
+<script defer src="visage.js"></script>
+<script defer src="app.js"></script>
+<script defer src="studio.js"></script>
+<script defer src="abo.js"></script>
+<script defer src="pub.js"></script>
+<script defer src="mp4-muxer.js"></script>
+<script defer src="mode-simple.js"></script>
+<script defer src="atelier.js"></script>
+<script defer src="demarrage.js"></script>
+<!-- AURA bridge is dormant unless this studio is embedded by AURA on the same origin. -->
+<script defer src="aura-native-bridge.js"></script>
+</body>
+</html>
