@@ -7,6 +7,10 @@ import {execFile} from "node:child_process";
 import {promisify} from "node:util";
 import {fileURLToPath} from "node:url";
 import crypto from "node:crypto";
+import DEMUX from "../experiences/nova-demux.js";
+import HD from "../experiences/nova-native-hd.js";
+import HEVC_ANNEXB from "../experiences/nova-hevc-annexb.js";
+import HEVC_VUI from "../experiences/nova-hevc-vui.js";
 const root=path.resolve(fileURLToPath(new URL("../",import.meta.url))),run=promisify(execFile);
 test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",async()=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),"nova-iphone-preview-"));
@@ -40,6 +44,31 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.ok(streams.some(x=>x.codec_name==="hevc"&&x.width===160&&x.height===90&&
    x.color_primaries==="bt709"&&x.color_transfer==="bt709"&&x.color_space==="bt709"));
   assert.ok(streams.some(x=>x.codec_name==="aac"),"le clip doit conserver un son AAC");
+  // ffprobe se fie principalement au SPS du flux : il peut afficher BT.709
+  // alors que la boîte colr de la piste MP4/MOV annonce 'non spécifié'.
+  // Vérifier la mire avec les EXACTS parseurs utilisés par Safari NOVA.
+  const bytes=await fs.readFile(path.join(dir,fixture.path));
+  const localFile={size:bytes.length,slice:(start,end)=>new Blob([bytes.subarray(start,end)])};
+  const info=await DEMUX.analyser(localFile);
+  assert.ok(info,"mire MOV demuxable par NOVA");
+  assert.match(info.codec,/^hvc1\./,"codec HEVC hvc1 prévu pour le test Safari natif");
+  assert.equal(info.color?.kind,"nclc");
+  assert.equal(info.color?.primaries,1,"primaires colr MOV BT.709 explicites");
+  assert.equal(info.color?.transfer,1,"transfert colr MOV BT.709 explicite");
+  assert.equal(info.color?.matrix,1,"matrice colr MOV BT.709 explicite");
+  assert.equal(info.ns,15);
+  assert.equal(info.durationUs,1000000);
+  // Ne pas contourner les garde-fous pour le test : présentation,
+  // couleur et SPS/VUI doivent tous être validés avant l'encodeur.
+  globalThis.NOVA_DEMUX=DEMUX;
+  globalThis.NOVA_HEVC_ANNEXB=HEVC_ANNEXB;
+  globalThis.NOVA_HEVC_VUI=HEVC_VUI;
+  const planned=HD.analyse(info,bytes.length);
+  assert.equal(planned.sourceFrames,15);
+  assert.equal(planned.width,160);
+  assert.equal(planned.height,90);
+  assert.equal(HEVC_VUI.analyser(info).verified,true);
+
   const motion=m.files.find(x=>x.path==="experiences/nova-smallmotion-synthetic.mp4");
   assert.equal(motion.origin,"ffmpeg-synthetic-only");
   assert.ok(motion.bytes<250000);
