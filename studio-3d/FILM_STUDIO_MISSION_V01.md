@@ -86,3 +86,22 @@ Run GitHub Actions 43734295024 : **34 tests Node réussis sur 34**, SHA 05b055ab
 Effectuer un test navigateur effectif de la page locale, puis inspection visuelle/glTF dans un véritable moteur 3D ; comparer stabilité, doigts/objets, collisions et ressources. Déployer uniquement après revue et validation du chemin iPhone.
 
 **Renforcement des contrôles :** run GitHub Actions 43734491229, 34/34 tests Node réussis sur SHA 4a0b69e30b1f7c764649fa24d256bab055922320 avec seuil d’écart d’ancrage réduit à 25 mm. Ce seuil mesure uniquement la distance à un point de prise mathématique ; il ne certifie pas le contact doigt-tasse.
+
+
+## Film Studio v0.4 — véritable rendu local du maillage glTF (15 novembre 2026)
+
+### Réalisations
+- film-webgl-v04.mjs : lecture stricte des accesseurs POSITION/NORMAL/indices de triangles et des couleurs du GLB synthétique déjà généré ; validation des limites et de la cohérence. Rendu **des triangles du GLB** en WebGL2 avec tampon de profondeur, transformations animées 4×4 et lumière diffuse simplifiée. Ne nécessite aucun CDN, téléchargement de modèles, média privé ou accès réseau.
+- film-studio-v04.html + film-ui-v04.mjs : parcours tactile existant (champ → animation locale → lecture/pause/curseur/rotation → enregistrement GLB), mais avec nouveau moteur WebGL2 lorsque disponible ; repli Canvas 2D explicitement annoncé si WebGL2 n'est pas disponible. Pas de film vidéo exportable.
+- film-webgl-v04.test.mjs : audit indépendant de la géométrie, des indices, des matrices, du contrôle des GLB altérés et des commandes GPU simulées.
+- film-browser-v04.test.mjs : banc **réel dans Chromium** avec serveur HTTP local, sans ressources externes chargées par la page. Vérifie WebGL2 effectivement disponible, pixels peints dans le vrai tampon GPU, différences d'image lors des animations et de la rotation, contrôle du lien d'export puis refus d'une requête incomplète ; capture PNG d'une scène entièrement synthétique.
+- CI : job Node, puis job navigateur Playwright isolé sur Ubuntu 24.04 ; artefact capturable pour revue humaine. Ubuntu 26.04 non compatible avec Playwright 1.56.1 a été remplacé uniquement pour ce job, après un premier échec d'installation.
+
+### Preuves de tests
+- SHA 3928ae78c63aed7d3fc0e8c90c0d089fb20ac7a9, GitHub Actions run **43735906687** : Node **38/38 réussis** ; Chromium WebGL2 **réussi** ; pixels de premier plan **16 873** sur canevas 712×580, rendu dynamique et export/refus vérifiés ; capture de scène synthétique conservée dans l'artefact film-studio-v04-chromium-synthetic.
+- Ces tests prouvent l'exécution du **moteur de visualisation glTF stylisé** dans Chromium ; ils ne constituent ni inspection qualitative humaine, ni test sur appareil Safari iPhone, ni certification d'une animation physiologiquement réaliste.
+
+### Limites et suite
+- WebGL2 ne transforme pas notre géométrie procédurale en photoréalisme : formes simplifiées, texture et éclairage PBR absents, aucune peau/chevelure reconstruite, mouvements imparfaits, contacts physiques des doigts non vérifiés, scène unique, sans voix ni MP4.
+- Safari iPhone physique à mesurer : stabilité mémoire, thermiques, orientation, mise en arrière-plan, perte du contexte WebGL et export GLB via l'interface native.
+- PR en brouillon ; aucune fusion, aucun déploiement ni publication des 157 vidéos privées. La démonstration est disponible en **code source dans la branche**, non sur le site public.
