@@ -1,0 +1,80 @@
+{
+  "schema_version": "cinema-p1.0",
+  "project_type": "storyboard_and_animatic",
+  "status": "storyboard_only",
+  "description": "Une femme adulte entre dans un café. Puis elle répond au téléphone. Film de 6 secondes.",
+  "mode": "text",
+  "media": null,
+  "has_rights_confirmed": null,
+  "characters": [
+    {
+      "id": "character_01",
+      "role": "principal",
+      "description": "femme adulte",
+      "identity_source": "fictional",
+      "reference_id": null,
+      "voice_consented": false
+    }
+  ],
+  "props": [
+    {
+      "id": "tasse",
+      "label": "tasse",
+      "owner_character_id": "character_01",
+      "continuity_note": "À garder cohérent entre les plans"
+    },
+    {
+      "id": "telephone",
+      "label": "telephone",
+      "owner_character_id": "character_01",
+      "continuity_note": "À garder cohérent entre les plans"
+    }
+  ],
+  "shots": [
+    {
+      "id": "shot_01",
+      "title": "Plan 1",
+      "action": "Une femme entre dans un café",
+      "location": "cafe",
+      "camera": "Plan rapproché",
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": [
+        "tasse"
+      ],
+      "duration_seconds": 3,
+      "render_status": "not_rendered",
+      "dialogue": "Bonjour.",
+      "render_uri": null
+    },
+    {
+      "id": "shot_02",
+      "title": "Plan 2",
+      "action": "La femme répond au téléphone",
+      "location": "cafe",
+      "camera": "Plan rapproché",
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": [
+        "telephone"
+      ],
+      "duration_seconds": 3,
+      "render_status": "not_rendered",
+      "dialogue": "Allô.",
+      "render_uri": null
+    }
+  ],
+  "requested_duration_seconds": 6,
+  "format": "16:9",
+  "quality_flags": [],
+  "rendered_video": null,
+  "video_model_connected": false,
+  "privacy": {
+    "uploaded_to_server": false,
+    "media_embedded_in_json": false,
+    "training_opt_in": false
+  },
+  "disclaimer": "Découpage déterministe + animatique dessinée ; aucun film IA photoréaliste généré."
+}
