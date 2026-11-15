@@ -1,0 +1,419 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none';script-src 'unsafe-inline';style-src 'unsafe-inline';media-src blob:;img-src data: blob:;connect-src 'none';object-src 'none';form-action 'none';base-uri 'none';worker-src blob:">
+<title>RetoucheProAI — Mesure locale iPhone / Worker</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;color:#182b24;background:#f7f7f2}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:700px;margin:auto;padding:26px 16px 55px}header{display:flex;justify-content:space-between;align-items:center;padding-bottom:20px;border-bottom:1px solid #cad8d0;font-size:12px;font-weight:750}
+.brand{display:flex;align-items:center;gap:9px}.mark{display:grid;place-items:center;width:31px;height:31px;border-radius:10px;background:#193d32;color:#caffdf}.tag{font-size:10px;background:#e5f6eb;color:#256246;padding:7px 10px;border-radius:30px}
+h1{letter-spacing:-.06em;font-size:clamp(35px,8vw,56px);line-height:1.07;font-weight:740;max-width:600px;margin:40px 0 16px}p{line-height:1.55;font-size:14px;color:#5d6f64}.eyebrow{color:#2a7556;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.card{background:#fff;border:1px solid #d2ded5;border-radius:20px;padding:22px;margin:22px 0;box-shadow:0 5px 35px #193d3208}.row{display:flex;align-items:center;flex-wrap:wrap;gap:12px}button,.pick{font:inherit;border-radius:12px;min-height:46px;padding:11px 17px;background:#193d32;color:white;border:1px solid #193d32;cursor:pointer;font-weight:700;font-size:13px}button:focus-visible,.pick:focus-visible{outline:3px solid #e69d65;outline-offset:2px}button.secondary{background:white;color:#193d32}.pick{position:relative;overflow:hidden}.pick input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
+.readout{font-size:12px;padding:12px 14px;margin-top:12px;background:#eaf3ed;border-radius:12px;color:#234c3a}small{font-size:11px;line-height:1.55;color:#668071;display:block}#smallmotion-app-panel{margin:16px 0!important;max-width:none!important}#smallmotion-app-panel button{background:#193d32;color:white}#smallmotion-app-panel button[hidden]{display:none}#smallmotion-app-panel details{margin-top:14px}#smallmotion-app-panel pre{font-family:ui-monospace,monospace;font-size:11px;overflow-wrap:anywhere}footer{font-size:11px;color:#718075;line-height:1.6;margin-top:30px}
+@media(max-width:460px){.wrap{padding:18px 13px 35px}.card{padding:16px}h1{margin-top:32px}}
+</style></head><body><main class="wrap"><header><span class="brand"><span class="mark">✦</span> RETOUCHEPROAI / LAB</span><span class="tag">LOCAL · EXPÉRIMENTAL</span></header>
+<p class="eyebrow" style="margin-top:35px">Calcul hors interface & confidentialité</p><h1>Tester le mouvement.<br>Mesurer sans envoyer.</h1>
+<p>Choisis une vidéo depuis l’iPhone. Deux images sont décodées localement ; le calcul est placé dans un Web Worker si Safari le permet. La mesure ne modifie jamais la vidéo et ne quitte pas l’appareil. En l’absence de Worker, le repli reste local et ponctuel.</p>
+<section class="card" aria-label="Essai sur votre appareil"><strong>1. Sélectionner une seule vidéo</strong>
+<div class="row" style="margin-top:15px"><label class="pick" for="f">Choisir une vidéo <input type="file" id="f" accept="video/*" aria-label="Fichier vidéo local"></label><button id="pick" class="secondary" type="button">Choisir à nouveau</button></div>
+<p class="readout" id="offline">Aucun transfert réseau. Aucun compte, aucun modèle à télécharger.</p>
+<small>Le module fera une proposition géométrique ou s’abstiendra. Il ne reconnaît ni mains, ni objets, ni contacts.</small>
+</section>
+<section class="card"><strong>2. Diagnostic local</strong><div id="diagnostic" class="readout" role="status">Aucun essai effectué.</div>
+<div class="row" style="margin-top:15px"><button class="secondary" id="save" disabled type="button">Exporter uniquement le diagnostic JSON</button></div>
+<small>Le JSON comprend des durées, dimensions d’analyse et statuts. Il n’inclut pas la vidéo, les pixels, le nom du fichier, ni une prétendue mesure de batterie.</small></section>
+<footer>Laboratoire privé expérimental. Aucun résultat ne prouve un mouvement autonome ou une profondeur 3D. Safari iPhone physique : validation à effectuer sur appareil. Le temps d’échantillonnage inclut le décodage éventuel, la lecture et l’attente de trame.</footer></main>
+<script>
+/* RetoucheProAI Local Motion Lab - browser-only proposal detector.
+   Input: two ImageData-shaped {width,height,data} objects, contiguous RGBA.
+   No network, uploads, model weights, or identifiable features. The result is
+   a geometric motion hypothesis, NOT a semantic object or depth inference. */
+(function(root){
+'use strict';
+const median=a=>{a.sort((x,y)=>x-y);return a[Math.floor(a.length/2)]};
+function gray(im){
+ if(!im||!Number.isInteger(im.width)||!Number.isInteger(im.height)||im.width<64||im.height<64||im.width>320||im.height>240||im.data.length!==im.width*im.height*4)throw Error('Images RGBA invalides ou trop grandes');
+ const n=im.width*im.height, out=new Uint8Array(n),rgb=im.data;
+ for(let k=0;k<n;k++)out[k]=((rgb[k*4]*77+rgb[k*4+1]*150+rgb[k*4+2]*29)>>8);
+ return out;
+}
+function analyze(a,b){
+ if(!b||a.width!==b.width||a.height!==b.height)throw Error('Images de dimensions différentes');
+ const w=a.width,h=a.height,ga=gray(a),gb=gray(b);
+ // Too little texture means flow cannot be inferred reliably.
+ let globalMean=0,globalSq=0,allDelta=[];
+ for(let k=0;k<ga.length;k+=5){const v=ga[k];globalMean+=v;globalSq+=v*v;allDelta.push(Math.abs(v-gb[k]));}
+ globalMean/=allDelta.length;globalSq=globalSq/allDelta.length-globalMean*globalMean;
+ if(globalSq<30)return {status:'abstain_texture',candidates:[],confidence:'insuffisante'};
+ const step=8,radius=3, tiles=[];
+ for(let y=10;y<h-10;y+=step)for(let x=10;x<w-10;x+=step){
+  let sum=0,sumsq=0,n=0;
+  for(let py=-radius;py<=radius;py++)for(let px=-radius;px<=radius;px++){const z=ga[(y+py)*w+x+px];sum+=z;sumsq+=z*z;n++;}
+  if((sumsq/n-(sum/n)**2)<35)continue;
+  let best=Infinity,bestDx=0,bestDy=0;
+  for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){
+   if(y+dy-radius<0||y+dy+radius>=h||x+dx-radius<0||x+dx+radius>=w)continue;
+   let cost=0;
+   for(let py=-radius;py<=radius;py++)for(let px=-radius;px<=radius;px++)cost+=Math.abs(ga[(y+py)*w+x+px]-gb[(y+dy+py)*w+x+dx+px]);
+   if(cost<best){best=cost;bestDx=dx;bestDy=dy;}
+  }
+  // Avoid interpreting bad matches as movement evidence.
+  if(best/n>36)continue;
+  tiles.push({x,y,dx:bestDx,dy:bestDy,score:best/n});
+ }
+ if(tiles.length<24)return {status:'abstain_matches',candidates:[],confidence:'insuffisante',matched:tiles.length};
+ const globalDx=median(tiles.map(t=>t.dx)), globalDy=median(tiles.map(t=>t.dy));
+ const alignedDiff=[];
+ for(let y=5;y<h-5;y+=3)for(let x=5;x<w-5;x+=3){
+   const xx=x+globalDx,yy=y+globalDy;
+   if(xx>=0&&xx<w&&yy>=0&&yy<h)alignedDiff.push(Math.abs(ga[y*w+x]-gb[yy*w+xx]));
+ }
+ if(median(alignedDiff)>55)return {status:'abstain_cut_or_flash',candidates:[],confidence:'insuffisante',matched:tiles.length};
+ // Candidate tiles with displacement distinct from the dominant field.
+ const selected=tiles.filter(t=>Math.hypot(t.dx-globalDx,t.dy-globalDy)>=2.2&&t.score<24);
+ const q=new Map(selected.map(t=>[`${t.x},${t.y}`,t])),seen=new Set(),regions=[];
+ for(const t of selected){
+  const start=`${t.x},${t.y}`;if(seen.has(start))continue;
+  const stack=[t];seen.add(start);const group=[];
+  while(stack.length){const v=stack.pop();group.push(v);
+   for(const [mx,my] of [[-8,0],[8,0],[0,-8],[0,8]]){
+    const k=`${v.x+mx},${v.y+my}`;if(q.has(k)&&!seen.has(k)){seen.add(k);stack.push(q.get(k));}
+   }
+  }
+  if(group.length<3||group.length>tiles.length*.35)continue;
+  const xs=group.map(v=>v.x),ys=group.map(v=>v.y);
+  const left=Math.max(0,Math.min(...xs)-5),top=Math.max(0,Math.min(...ys)-5);
+  const width=Math.min(w-left,Math.max(...xs)-Math.min(...xs)+10),height=Math.min(h-top,Math.max(...ys)-Math.min(...ys)+10);
+  if(width<10||height<10||width*height>w*h*.17)continue;
+  regions.push({box:[left,top,width,height],support:group.length,description:'Région de mouvement visuel possible'});
+ }
+ regions.sort((x,y)=>y.support-x.support);
+ return {status:regions.length?'local_motion_candidate':'no_supported_local_motion',
+   candidates:regions.slice(0,4),globalMotionPx:[globalDx,globalDy],matched:tiles.length,
+   confidence:'non calibrée',limitations:'Essai local 2D : pas de segmentation, identité, contact, profondeur 3D ni preuve de mouvement indépendant'};
+}
+root.RetoucheLocalMotion={analyze};
+if(typeof module!=='undefined'&&module.exports)module.exports=root.RetoucheLocalMotion;
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+</script><script>
+/* RetoucheProAI · local-only resource policy for TWO sampled frames.
+   These are UX budgets, not a thermal/battery/memory measurement.
+   Capturing duration includes playback, frame scheduling and decoding; it is
+   deliberately NOT called isolated decoder latency. */
+(function(root){
+ 'use strict';
+ const LIMITS=Object.freeze({maxProcessorMs:500,maxCaptureMs:6000,slowProcessorMs:80,
+  maxFrameWidth:160,maxFrameHeight:120,reducedFrameWidth:128,reducedFrameHeight:96});
+ const finite=x=>typeof x==='number'&&Number.isFinite(x);
+ function assess({captureMs,processorMs,width,height,profile='full',visibility='visible',workerTransferBytes=0}={}) {
+   const ok=[captureMs,processorMs].every(v=>finite(v)&&v>=0)
+     && Number.isInteger(width)&&Number.isInteger(height)&&width>=64&&height>=64
+     && width<=LIMITS.maxFrameWidth&&height<=LIMITS.maxFrameHeight;
+   const validTransfer=Number.isInteger(workerTransferBytes)&&(workerTransferBytes===0||(ok&&workerTransferBytes===width*height*8));
+   const estimatedCpuOwnedBytes=ok&&validTransfer?Math.ceil(width*height*14+workerTransferBytes):null;
+   // Two RGBA snapshots (8 bytes/pixel), one 2D canvas (4 bytes/pixel),
+   // two Uint8 grayscale work arrays (2 bytes/pixel). Allocations in native
+   // video decoder, GPU buffers and browser internals are NOT observable.
+   // Transient Worker transfer copies (2 RGBA frames) are counted separately.
+   let state='within_budget',reason='within_local_budget',nextProfile=profile==='reduced'?'reduced':'full';
+   if(!ok||!validTransfer){state='abstain';reason='invalid_resource_measurement';nextProfile='reduced';}
+   else if(visibility==='hidden'){state='abstain';reason='page_hidden';nextProfile='reduced';}
+   else if(processorMs>LIMITS.maxProcessorMs || captureMs>LIMITS.maxCaptureMs){
+      state='abstain';reason='budget_exceeded';nextProfile='reduced';
+   }else if(processorMs>LIMITS.slowProcessorMs){
+      state='slow';reason='processor_slow_in_this_environment';nextProfile='reduced';
+   }
+   return Object.freeze({state,reason,profile:profile==='reduced'?'reduced':'full',nextProfile,
+     captureMs:finite(captureMs)?+captureMs.toFixed(2):null,
+     processorMs:finite(processorMs)?+processorMs.toFixed(2):null,
+     estimatedCpuOwnedBytes,workerTransferBytes:validTransfer?workerTransferBytes:null,
+     dimensions:ok?[width,height]:null,
+     nativeVideoDecoderBytes:null,deviceTemperatureC:null,batteryConsumption:null,
+     note:'Capture = attente + lecture + décodage éventuel ; RAM estimée = tableaux JS/canvas et copies de transfert Worker. Ni température, ni énergie, ni RAM totale mesurées.'});
+ }
+ const api=Object.freeze({assess,LIMITS});root.RetoucheMotionResourceGuard=api;
+ if(typeof module!=='undefined'&&module.exports)module.exports=api;
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+</script><script>
+/* RetoucheProAI: worker-first, locally bounded 2-frame execution.
+  Main thread decodes two video frames. CPU block matching runs off-thread
+  whenever same-origin Worker is available. Only RGBA samples are transferred;
+  the original video and filename never enter the worker. No remote fallback.
+  A worker crash/timeout abstains rather than silently rerunning on main UI. */
+(function(root){
+'use strict';
+const DEFAULT_WORKER='research/3d-smallmotion/smallmotion-worker.js';
+const MAX_MS=1800;
+const finite=x=>typeof x==='number'&&Number.isFinite(x);
+const aborted=()=>{const e=new Error('Analyse annulée');e.name='AbortError';return e;};
+let serial=0;
+function valid(a,b){return a&&b&&Number.isInteger(a.width)&&Number.isInteger(a.height)&&a.width>=64&&a.height>=64&&a.width<=320&&a.height<=240&&
+ a.width===b.width&&a.height===b.height&&a.data instanceof Uint8ClampedArray&&b.data instanceof Uint8ClampedArray&&a.data.length===a.width*a.height*4&&b.data.length===b.width*b.height*4;}
+function abstention(reason){return {status:reason,candidates:[],confidence:'insuffisante'};}
+async function run(a,b,{signal,analyzer,workerURL=(root.RetoucheMotionWorkerURL||DEFAULT_WORKER),WorkerCtor=(typeof root.Worker==='function'?root.Worker:null),timeoutMs=MAX_MS}={}){
+  if(!valid(a,b))throw Error('invalid_rgba_frames');
+  if(signal?.aborted)throw aborted();
+  if(typeof analyzer!=='function')throw Error('analyzer_missing');
+  const t0=performance.now();
+  const cpuFallback=async reason=>{
+    // Yield once so a spinner / cancellation can be presented before a
+    // bounded (<= 320x240, 2 frames) synchronous legacy calculation.
+    await new Promise(resolve=>setTimeout(resolve,0));
+    if(signal?.aborted)throw aborted();
+    const s=performance.now(),result=analyzer(a,b);
+    return {result,elapsedMs:performance.now()-t0,computeMs:performance.now()-s,
+      processingPath:'main_thread_fallback',fallbackReason:reason,transferredBytes:0};
+  };
+  if(typeof WorkerCtor!=='function')return cpuFallback('worker_unavailable');
+  let worker;
+  try{worker=new WorkerCtor(workerURL)}catch(_){return cpuFallback('worker_constructor_blocked');}
+  if(!worker || typeof worker.postMessage!=='function'||typeof worker.terminate!=='function'){
+    try{worker?.terminate?.()}catch(_){}return cpuFallback('worker_invalid');
+  }
+  const id=++serial;
+  // Copy before transfer: preserve the originals for a safe fallback when
+  // postMessage itself is unsupported. Original ImageData is never detached.
+  const ca=new Uint8ClampedArray(a.data),cb=new Uint8ClampedArray(b.data);
+  return new Promise((resolve,reject)=>{
+    let settled=false,timeout=null;
+    const cleanup=()=>{if(timeout!==null)clearTimeout(timeout);signal?.removeEventListener('abort',onAbort);
+      try{worker.onmessage=null;worker.onerror=null;worker.terminate()}catch(_){}};
+    const finish=(value,error)=>{if(settled)return;settled=true;cleanup();error?reject(error):resolve(value)};
+    const onAbort=()=>finish(null,aborted());
+    if(signal?.aborted){finish(null,aborted());return;}
+    signal?.addEventListener('abort',onAbort,{once:true});
+    worker.onmessage=e=>{
+      const msg=e?.data;if(!msg||msg.id!==id)return;
+      const ms=performance.now()-t0;
+      if(!msg.ok||!msg.result){finish({result:abstention('abstain_worker_error'),elapsedMs:ms,computeMs:null,processingPath:'worker_error',transferredBytes:a.width*a.height*8});return;}
+      finish({result:msg.result,elapsedMs:ms,computeMs:finite(msg.computeMs)?msg.computeMs:null,
+        processingPath:'worker',transferredBytes:a.width*a.height*8});
+    };
+    worker.onerror=()=>finish({result:abstention('abstain_worker_error'),elapsedMs:performance.now()-t0,computeMs:null,processingPath:'worker_error',transferredBytes:a.width*a.height*8});
+    timeout=setTimeout(()=>finish({result:abstention('abstain_worker_timeout'),elapsedMs:performance.now()-t0,computeMs:null,processingPath:'worker_timeout',transferredBytes:a.width*a.height*8}),
+      Math.min(4000,Math.max(200,timeoutMs)));
+    try{worker.postMessage({id,op:'analyze',a:{width:a.width,height:a.height,data:ca},b:{width:b.width,height:b.height,data:cb}},[ca.buffer,cb.buffer]);}
+    catch(_){if(settled)return;settled=true;cleanup();cpuFallback('worker_transfer_failed').then(resolve,reject);}
+  });
+}
+const api=Object.freeze({run,valid,DEFAULT_WORKER});
+root.RetoucheMotionWorkerRunner=api;
+if(typeof module!=='undefined'&&module.exports)module.exports=api;
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+</script><script>
+(function(){
+ window.RetoucheMotionWorkerURL = URL.createObjectURL(new Blob(["/* RetoucheProAI Local Motion Lab - browser-only proposal detector.\n   Input: two ImageData-shaped {width,height,data} objects, contiguous RGBA.\n   No network, uploads, model weights, or identifiable features. The result is\n   a geometric motion hypothesis, NOT a semantic object or depth inference. */\n(function(root){\n'use strict';\nconst median=a=>{a.sort((x,y)=>x-y);return a[Math.floor(a.length/2)]};\nfunction gray(im){\n if(!im||!Number.isInteger(im.width)||!Number.isInteger(im.height)||im.width<64||im.height<64||im.width>320||im.height>240||im.data.length!==im.width*im.height*4)throw Error('Images RGBA invalides ou trop grandes');\n const n=im.width*im.height, out=new Uint8Array(n),rgb=im.data;\n for(let k=0;k<n;k++)out[k]=((rgb[k*4]*77+rgb[k*4+1]*150+rgb[k*4+2]*29)>>8);\n return out;\n}\nfunction analyze(a,b){\n if(!b||a.width!==b.width||a.height!==b.height)throw Error('Images de dimensions diff\u00e9rentes');\n const w=a.width,h=a.height,ga=gray(a),gb=gray(b);\n // Too little texture means flow cannot be inferred reliably.\n let globalMean=0,globalSq=0,allDelta=[];\n for(let k=0;k<ga.length;k+=5){const v=ga[k];globalMean+=v;globalSq+=v*v;allDelta.push(Math.abs(v-gb[k]));}\n globalMean/=allDelta.length;globalSq=globalSq/allDelta.length-globalMean*globalMean;\n if(globalSq<30)return {status:'abstain_texture',candidates:[],confidence:'insuffisante'};\n const step=8,radius=3, tiles=[];\n for(let y=10;y<h-10;y+=step)for(let x=10;x<w-10;x+=step){\n  let sum=0,sumsq=0,n=0;\n  for(let py=-radius;py<=radius;py++)for(let px=-radius;px<=radius;px++){const z=ga[(y+py)*w+x+px];sum+=z;sumsq+=z*z;n++;}\n  if((sumsq/n-(sum/n)**2)<35)continue;\n  let best=Infinity,bestDx=0,bestDy=0;\n  for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){\n   if(y+dy-radius<0||y+dy+radius>=h||x+dx-radius<0||x+dx+radius>=w)continue;\n   let cost=0;\n   for(let py=-radius;py<=radius;py++)for(let px=-radius;px<=radius;px++)cost+=Math.abs(ga[(y+py)*w+x+px]-gb[(y+dy+py)*w+x+dx+px]);\n   if(cost<best){best=cost;bestDx=dx;bestDy=dy;}\n  }\n  // Avoid interpreting bad matches as movement evidence.\n  if(best/n>36)continue;\n  tiles.push({x,y,dx:bestDx,dy:bestDy,score:best/n});\n }\n if(tiles.length<24)return {status:'abstain_matches',candidates:[],confidence:'insuffisante',matched:tiles.length};\n const globalDx=median(tiles.map(t=>t.dx)), globalDy=median(tiles.map(t=>t.dy));\n const alignedDiff=[];\n for(let y=5;y<h-5;y+=3)for(let x=5;x<w-5;x+=3){\n   const xx=x+globalDx,yy=y+globalDy;\n   if(xx>=0&&xx<w&&yy>=0&&yy<h)alignedDiff.push(Math.abs(ga[y*w+x]-gb[yy*w+xx]));\n }\n if(median(alignedDiff)>55)return {status:'abstain_cut_or_flash',candidates:[],confidence:'insuffisante',matched:tiles.length};\n // Candidate tiles with displacement distinct from the dominant field.\n const selected=tiles.filter(t=>Math.hypot(t.dx-globalDx,t.dy-globalDy)>=2.2&&t.score<24);\n const q=new Map(selected.map(t=>[`${t.x},${t.y}`,t])),seen=new Set(),regions=[];\n for(const t of selected){\n  const start=`${t.x},${t.y}`;if(seen.has(start))continue;\n  const stack=[t];seen.add(start);const group=[];\n  while(stack.length){const v=stack.pop();group.push(v);\n   for(const [mx,my] of [[-8,0],[8,0],[0,-8],[0,8]]){\n    const k=`${v.x+mx},${v.y+my}`;if(q.has(k)&&!seen.has(k)){seen.add(k);stack.push(q.get(k));}\n   }\n  }\n  if(group.length<3||group.length>tiles.length*.35)continue;\n  const xs=group.map(v=>v.x),ys=group.map(v=>v.y);\n  const left=Math.max(0,Math.min(...xs)-5),top=Math.max(0,Math.min(...ys)-5);\n  const width=Math.min(w-left,Math.max(...xs)-Math.min(...xs)+10),height=Math.min(h-top,Math.max(...ys)-Math.min(...ys)+10);\n  if(width<10||height<10||width*height>w*h*.17)continue;\n  regions.push({box:[left,top,width,height],support:group.length,description:'R\u00e9gion de mouvement visuel possible'});\n }\n regions.sort((x,y)=>y.support-x.support);\n return {status:regions.length?'local_motion_candidate':'no_supported_local_motion',\n   candidates:regions.slice(0,4),globalMotionPx:[globalDx,globalDy],matched:tiles.length,\n   confidence:'non calibr\u00e9e',limitations:'Essai local 2D : pas de segmentation, identit\u00e9, contact, profondeur 3D ni preuve de mouvement ind\u00e9pendant'};\n}\nroot.RetoucheLocalMotion={analyze};\nif(typeof module!=='undefined'&&module.exports)module.exports=root.RetoucheLocalMotion;\n})(typeof globalThis!=='undefined'?globalThis:this);\n\n/* RetoucheProAI SmallMotion dedicated worker. No DOM, storage or networking.\n   Receives only two bounded RGBA images, NOT the media file or name.\n   In a hosted same-origin Worker importScripts loads the existing detector.\n   In the standalone offline demo this file is concatenated after the detector\n   in a blob: URL, and the import is deliberately skipped. */\n(function(root){\n'use strict';\nif(!root.RetoucheLocalMotion && typeof root.importScripts==='function')root.importScripts('smallmotion-local.js');\nfunction receive(payload){\n  if(!payload || payload.op!=='analyze' || !Number.isSafeInteger(payload.id) || payload.id<1) throw Error('invalid_job');\n  const {a,b}=payload;\n  if(!a||!b||!Number.isInteger(a.width)||!Number.isInteger(a.height)||a.width<64||a.height<64||a.width>320||a.height>240||a.width!==b.width||a.height!==b.height||\n    !(a.data instanceof Uint8ClampedArray)||!(b.data instanceof Uint8ClampedArray)||a.data.length!==a.width*a.height*4||b.data.length!==b.width*b.height*4)throw Error('invalid_rgba_frames');\n  const t0=performance.now();\n  const result=root.RetoucheLocalMotion.analyze(a,b);\n  return {id:payload.id,ok:true,result,computeMs:Math.max(0,performance.now()-t0)};\n}\nroot.onmessage=event=>{\n  const id=event?.data?.id;\n  try{root.postMessage(receive(event.data))}\n  catch(e){root.postMessage({id,ok:false,error:'worker_rejected_evidence'})}\n};\n})(typeof self!=='undefined'?self:globalThis);\n"],{type:"text/javascript"}));
+ window.addEventListener("pagehide",()=>URL.revokeObjectURL(window.RetoucheMotionWorkerURL),{once:true});
+})();
+</script><script>
+/* RetoucheProAI SmallMotion: local advisory bridge, experimental only.
+   No fetch, XMLHttpRequest, WebSocket, storage, or analytics. No export changes.
+   Consumes the existing SmallMotion 2D detector and an existing local file input.
+   The word "candidate" never means a detected hand/object/contact/depth. */
+(function (root) {
+  'use strict';
+  const SOURCE = 'smallmotion_local_2frame_v1';
+  const LIMIT_BYTES = 120 * 1024 * 1024;
+  const MAX_SIDE = [160, 120];
+  const MIN_DELTA_S = 0.105;
+  const MAX_ANALYSIS_MS = 6000;
+  const ABSTAINS = new Set(['abstain_texture','abstain_matches','abstain_cut_or_flash']);
+  const STATES = new Set(['local_motion_candidate','no_supported_local_motion',...ABSTAINS]);
+
+  function eligibility(file, opts = {}) {
+    if (!file || typeof file.size !== 'number' || !Number.isFinite(file.size)) return 'no_file';
+    if (!/^(video\/|application\/octet-stream$)/.test(file.type || '') && !((file.type||'')==='' && /\.(mp4|mov|m4v|webm)$/i.test(file.name||''))) return 'not_video';
+    if (file.size <= 0 || file.size > LIMIT_BYTES) return 'file_out_of_budget';
+    if (opts.hidden === true) return 'page_hidden';
+    if (opts.framesAPI === false) return 'frames_api_unavailable';
+    return null;
+  }
+  const finite = x => typeof x === 'number' && Number.isFinite(x);
+  function observation(result, sample, elapsedMs, resources) {
+    if (!result || !STATES.has(result.status) || !sample || !Array.isArray(sample.times) ||
+        sample.times.length !== 2 || !sample.times.every(finite) ||
+        sample.times[1] - sample.times[0] < MIN_DELTA_S - 0.005 ||
+        !Number.isInteger(sample.width) || !Number.isInteger(sample.height) || sample.width < 64 || sample.height < 64 || sample.width > 320 || sample.height > 240) {
+      return Object.freeze({status:'abstain_invalid_evidence',provenance:SOURCE,action:'no_automatic_change',candidates:[]});
+    }
+    const candidates = (Array.isArray(result.candidates)?result.candidates:[]).slice(0,4)
+      .filter(c => c && Array.isArray(c.box) && c.box.length === 4 && c.box.every(finite) &&
+        c.box[0]>=0 && c.box[1]>=0 && c.box[2]>0 && c.box[3]>0 &&
+        c.box[0]+c.box[2]<=sample.width && c.box[1]+c.box[3]<=sample.height)
+      .map(c=>({box:c.box.map(v=>Math.round(v)),support:Math.max(0,Math.round(c.support||0))}));
+    const detectedStatus = result.status === 'local_motion_candidate' && !candidates.length ? 'abstain_invalid_evidence':result.status;
+    const status = resources && resources.state==='abstain' ? 'abstain_resource_budget':detectedStatus;
+    return Object.freeze({
+      version:1,provenance:SOURCE,status,
+      action:'no_automatic_change',confidence:'not_calibrated',
+      method:'local_2d_block_matching',
+      frames:2,frameTimesSeconds:sample.times.map(t=>+t.toFixed(4)),
+      analysisDimensions:[sample.width,sample.height],
+      candidates:status==='local_motion_candidate'?candidates:[],
+      processorMs:finite(elapsedMs)?+elapsedMs.toFixed(2):null,
+      resourceEvaluation:resources || null,
+      limitations:'Hypothèses 2D seulement : aucune preuve de mouvement indépendant, de main, de profondeur, de contact ou de préhension.'
+    });
+  }
+  function makeAbortError() { const e = new Error('Analyse interrompue'); e.name='AbortError';return e; }
+  function measureSize(w,h,maxSize=MAX_SIDE) {
+    if (!finite(w)||!finite(h)||w<=0||h<=0) return null;
+    const k=Math.min(maxSize[0]/w,maxSize[1]/h,1);
+    const ww=Math.floor(w*k),hh=Math.floor(h*k);
+    if (ww<64 || hh<64) return null;
+    return [ww,hh];
+  }
+  // The callback runs only when the local video's decoded frame is presented.
+  // We explicitly reject engines without this API instead of guessing timestamps.
+  function sampleLocalVideo(file, {signal,documentRef,timeoutMs=MAX_ANALYSIS_MS,maxSize=MAX_SIDE}={}) {
+    const doc=documentRef || (typeof document!=='undefined'?document:null);
+    if (!doc || !doc.createElement) return Promise.reject(Error('Document indisponible'));
+    const prelim=eligibility(file,{hidden:doc.visibilityState==='hidden'});
+    if(prelim)return Promise.reject(Error(prelim));
+    const video=doc.createElement('video');
+    if(typeof video.requestVideoFrameCallback!=='function')return Promise.reject(Error('frames_api_unavailable'));
+    const cv=doc.createElement('canvas');
+    const ctx=cv.getContext('2d',{willReadFrequently:true});
+    if(!ctx)return Promise.reject(Error('canvas_unavailable'));
+    video.muted=true;video.playsInline=true;video.preload='auto';video.setAttribute('playsinline','');
+    video.style.cssText='position:fixed;left:-4px;top:-4px;width:2px;height:2px;opacity:.01;pointer-events:none';
+    const url=URL.createObjectURL(file);
+    return new Promise((resolve,reject)=>{
+      let finished=false,handle=null,timer=null,times=[],frames=[],size=null;
+      function cleanup(){
+        if(handle!==null && typeof video.cancelVideoFrameCallback==='function')video.cancelVideoFrameCallback(handle);
+        if(timer!==null)clearTimeout(timer);
+        if(signal)signal.removeEventListener('abort',aborted);
+        doc.removeEventListener('visibilitychange',hidden);
+        video.removeEventListener('error',mediaError);
+        try{video.pause();video.removeAttribute('src');video.load()}catch(_){}
+        video.remove();URL.revokeObjectURL(url);cv.width=0;cv.height=0;
+      }
+      function end(error,value){if(finished)return;finished=true;cleanup();error?reject(error):resolve(value)}
+      function aborted(){end(makeAbortError())}
+      function hidden(){if(doc.visibilityState==='hidden')end(Error('page_hidden'))}
+      function mediaError(){end(Error('media_decode_error'))}
+      if(signal?.aborted){end(makeAbortError());return}
+      signal?.addEventListener('abort',aborted,{once:true});
+      doc.addEventListener('visibilitychange',hidden);
+      video.addEventListener('error',mediaError);
+      const onFrame=(now,meta)=>{
+        if(finished)return;
+        const t=meta?.mediaTime;
+        if(finite(t) && video.videoWidth>0 && video.videoHeight>0 && (times.length===0 || t-times[0]>=MIN_DELTA_S)){
+          if(!size){size=measureSize(video.videoWidth,video.videoHeight,maxSize);if(!size){end(Error('aspect_ratio_unsupported'));return}
+             cv.width=size[0];cv.height=size[1];}
+          try{ctx.drawImage(video,0,0,size[0],size[1]);frames.push(ctx.getImageData(0,0,size[0],size[1]));times.push(t)}
+          catch(_){end(Error('canvas_read_failed'));return}
+          if(frames.length===2){end(null,{a:frames[0],b:frames[1],times,width:size[0],height:size[1]});return}
+        }
+        handle=video.requestVideoFrameCallback(onFrame);
+      };
+      doc.body.appendChild(video);
+      timer=setTimeout(()=>end(Error('sample_timeout')),Math.min(10000,Math.max(1000,timeoutMs)));
+      handle=video.requestVideoFrameCallback(onFrame);
+      // play called during the button-click handler: do not lose iOS gesture before async work.
+      video.src=url;
+      try{video.load();const p=video.play();if(p?.catch)p.catch(()=>end(Error('autoplay_or_codec_rejected')))}
+      catch(_){end(Error('autoplay_or_codec_rejected'))}
+    });
+  }
+  function mount({doc,analyzer,inputId='f',pickId='pick'}={}) {
+    const d=doc || document;
+    if(!d || !d.getElementById || typeof analyzer!=='function')throw Error('Analyseur ou document absent');
+    const input=d.getElementById(inputId),pick=d.getElementById(pickId);
+    if(!input||!pick)throw Error('Import vidéo introuvable : ne pas remplacer le parcours existant');
+    if(d.getElementById('smallmotion-app-panel'))return null;
+    const panel=d.createElement('section');panel.id='smallmotion-app-panel';
+    panel.setAttribute('aria-label','Observation de mouvement locale expérimentale');
+    panel.style.cssText='padding:12px;margin:10px 0;border:1px solid #b9d8ca;border-radius:12px;background:#f5faf7;color:#1b3930;max-width:600px';
+    panel.hidden=true;
+    const title=d.createElement('strong');title.textContent='Analyse de mouvement · sur cet appareil';panel.append(title);
+    const desc=d.createElement('p');desc.textContent='Analyse consultative de deux images seulement. Ne modifie ni le traitement ni l’export.';desc.style.fontSize='12px';panel.append(desc);
+    const button=d.createElement('button');button.type='button';button.textContent='Analyser localement';button.style.cssText='min-height:44px;padding:9px 15px;border-radius:10px';panel.append(button);
+    const cancel=d.createElement('button');cancel.type='button';cancel.textContent='Annuler';cancel.hidden=true;cancel.style.cssText='min-height:44px;margin-left:8px';panel.append(cancel);
+    const status=d.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.style.cssText='font-size:12px;line-height:1.5';panel.append(status);
+    const detail=d.createElement('details');const summary=d.createElement('summary');summary.textContent='Diagnostic de l’analyse (sans images)';const pre=d.createElement('pre');pre.style.cssText='font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere';detail.append(summary,pre);panel.append(detail);
+    pick.parentNode.insertBefore(panel,pick.nextSibling);
+    let chosen=null,controller=null,last=null,nonce=0,profile='full';
+    const reset=()=>{nonce++;if(controller)controller.abort();controller=null;button.disabled=false;cancel.hidden=true;last=null;pre.textContent='';};
+    input.addEventListener('change',e=>{
+      reset();profile='full';const files=Array.from(e.target.files||[]);
+      // Batch import stays controlled by app; do not silently choose one video.
+      chosen=files.length===1?files[0]:null;panel.hidden=files.length===0;button.disabled=!chosen;
+      status.textContent=chosen?'Vidéo sélectionnée. Analyse facultative, entièrement locale.':
+        'Import multiple : analyse suspendue pour ne pas désynchroniser le montage.';
+    },true);
+    cancel.onclick=()=>{reset();status.textContent='Analyse annulée. Vidéo originale inchangée.'};
+    d.addEventListener('visibilitychange',()=>{if(d.visibilityState==='hidden'&&controller){reset();status.textContent='Analyse interrompue : page masquée.'}});
+    button.onclick=async()=>{
+      if(controller)return;
+      const error=eligibility(chosen,{hidden:d.visibilityState==='hidden',framesAPI:typeof d.createElement('video').requestVideoFrameCallback==='function'});
+      if(error){status.textContent='Analyse non lancée : '+error;return;}
+      const run=++nonce;controller=new AbortController();button.disabled=true;cancel.hidden=false;status.textContent='Analyse de deux images sur l’appareil…';
+      try{
+        const sampleT0=performance.now();
+        const maxSize=profile==='reduced'?[128,96]:MAX_SIDE;
+        const sample=await sampleLocalVideo(chosen,{signal:controller.signal,documentRef:d,maxSize});
+        if(run!==nonce)return;
+        const captureMs=performance.now()-sampleT0;
+        const runner=root.RetoucheMotionWorkerRunner;
+        if(!runner || typeof runner.run!=='function')throw Error('worker_runner_unavailable');
+        const execution=await runner.run(sample.a,sample.b,{signal:controller.signal,analyzer});
+        if(run!==nonce)return;
+        const result=execution.result,elapsed=execution.elapsedMs;
+        const evaluator=root.RetoucheMotionResourceGuard?.assess;
+        // Never promote a candidate if the resource evaluator is absent or broken.
+        const resources=typeof evaluator==='function'?evaluator({captureMs,processorMs:elapsed,width:sample.width,height:sample.height,profile,visibility:d.visibilityState,workerTransferBytes:execution.transferredBytes}):null;
+        let evidence=resources?observation(result,sample,elapsed,resources):Object.freeze({status:'abstain_resource_guard_unavailable',provenance:SOURCE,action:'no_automatic_change',candidates:[]});
+        // Worker-side errors/timeouts cannot be promoted to a genuine detector conclusion.
+        if(execution.processingPath==='worker_timeout'||execution.processingPath==='worker_error')
+          evidence=Object.freeze({...evidence,status:result.status,candidates:[]});
+        evidence=Object.freeze({...evidence,processingPath:execution.processingPath,workerComputeMs:execution.computeMs==null?null:+execution.computeMs.toFixed(2),
+          processingWallMs:+elapsed.toFixed(2),transferredBytes:execution.transferredBytes,
+          fallbackReason:execution.fallbackReason||null});
+        if(resources?.nextProfile==='reduced')profile='reduced';
+        last=evidence;
+        // Local-only advisory data; never forwarded to DIAG/send, storage or export.
+        pre.textContent=JSON.stringify(evidence,null,2);
+        // The diagnostic contains timings only; it never includes pixels, file names or paths.
+        status.textContent=evidence.status==='abstain_resource_budget'?'Analyse trop coûteuse ou mesure invalide : aucune conclusion.':evidence.status==='abstain_resource_guard_unavailable'?'Protection de ressources indisponible : aucune conclusion.':evidence.status==='local_motion_candidate'
+          ? `${evidence.candidates.length} région(s) de mouvement possible. Aucun geste ni objet identifié.`
+          :evidence.status.startsWith('abstain')?'Observations insuffisantes : aucune conclusion automatique.'
+          :'Aucun petit mouvement étayé dans ces deux images. Aucun traitement automatique.';
+      }catch(e){if(run===nonce)status.textContent=e?.name==='AbortError'?'Analyse annulée.':`Analyse interrompue : ${String(e?.message||e)}`}
+      finally{if(run===nonce){controller=null;button.disabled=false;cancel.hidden=true}}
+    };
+    return {panel,observe:()=>last,cancel:reset};
+  }
+  const api=Object.freeze({eligibility,observation,measureSize,sampleLocalVideo,mount});
+  root.RetoucheMotionDirectorLocal=api;
+  if(typeof module!=='undefined'&&module.exports)module.exports=api;
+})(typeof globalThis!=='undefined'?globalThis:this);
+
+</script><script>
+/* Loaded defer after app.js only on the isolated experimental branch. */
+(function(){
+  'use strict';
+  function start(){
+    const motion=window.RetoucheLocalMotion,bridge=window.RetoucheMotionDirectorLocal;
+    if(!motion?.analyze || !bridge?.mount)return;
+    try {window.RetoucheMotionLabUI=bridge.mount({analyzer:motion.analyze});}
+    catch(err){console.warn('SmallMotion laboratoire désactivé :',err?.message)}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+
+</script>
+<script>(function(){'use strict';
+  document.getElementById('pick').onclick=()=>document.getElementById('f').click();
+  const observe=()=>window.RetoucheMotionLabUI?.observe?.()||null;
+  const stat=document.getElementById('diagnostic'),save=document.getElementById('save');
+  document.getElementById('f').addEventListener('change',()=>{stat.textContent='Fichier sélectionné. Lance l’analyse locale dans le panneau ci-dessus.';save.disabled=true},false);
+  const observer=new MutationObserver(()=>{const e=observe(); if(!e){save.disabled=true;return;}
+    const r=e.resourceEvaluation;const message=`État : ${e.status} · Exécution : ${e.processingPath||'—'} · Échantillonnage : ${r?.captureMs ?? '—'} ms · Calcul (mur) : ${r?.processorMs ?? '—'} ms · Profil suivant : ${r?.nextProfile ?? '—'}`;if(stat.textContent!==message)stat.textContent=message;save.disabled=false;
+  });observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+  save.onclick=()=>{const evidence=observe();if(!evidence)return;const json=JSON.stringify({diagnosticVersion:1,origin:'local_iphone_manual',evidence},null,2);const url=URL.createObjectURL(new Blob([json],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='retouche_motion_local_diagnostic.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+})();</script></body></html>
