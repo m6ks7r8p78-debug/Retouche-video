@@ -28,6 +28,8 @@ test("NOVA 0.23 : rapport iPhone contient mesures A/V agrégées, jamais média/
  assert.equal(report.output.colorVerified,true);
  assert.strictEqual(outputBlob,fakeResult.blob);
  const data=LAB.serialiser(report);
+ assert.equal(report.sourceKind,"local-user-file");
+ assert.equal(JSON.parse(data).sourceKind,"local-user-file");
  assert.match(data,/retoucheproai.nova.iphone-lab.v1/);
  for(const leaked of ["PRIVATE-157-video-sensitive.mov","location","latitude","iPhone15,","userAgent","blob:","rawMediaBytes"]){
   assert.ok(!data.includes(leaked),leaked+" must never appear in local report");
@@ -85,4 +87,15 @@ test("NOVA 0.23 : MOV iPhone sans MIME reconnu sans enregistrer son nom",async()
  assert.equal(report.result,"success");
  assert.equal(report.source.mimeCategory,"video");
  assert.equal(LAB.serialiser(report).includes(mov.name),false);
+});
+
+test("NOVA 0.24 : la source synthétique est tracée sans identifier l'appareil",async()=>{
+ const {report,outputBlob}=await run({synthetic:true});
+ assert.equal(report.result,"success");
+ assert.equal(report.sourceKind,"synthetic-generated");
+ assert.equal(outputBlob,fakeResult.blob);
+ const data=JSON.parse(LAB.serialiser(report));
+ assert.equal(data.sourceKind,"synthetic-generated");
+ assert.equal(data.privacy.automaticSharing,false);
+ assert.ok(!JSON.stringify(data).includes(input.name));
 });
