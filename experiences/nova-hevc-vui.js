@@ -60,12 +60,12 @@ function scalingList(b){
   }
 }
 function profileTierLevel(b,maxSub){
- b.bits(96); // general profile_space/tier/idc, compat, constraints, level
+ for(let i=0;i<3;i++)b.bits(32); // 96 bits general PTL par champs bornés
  const profile=[],level=[];
  for(let i=0;i<maxSub;i++){profile.push(b.bits(1));level.push(b.bits(1))}
  if(maxSub>0)b.bits((8-maxSub)*2);
  for(let i=0;i<maxSub;i++){
-  if(profile[i])b.bits(88);
+  if(profile[i]){b.bits(32);b.bits(32);b.bits(24)}
   if(level[i])b.bits(8);
  }
 }
