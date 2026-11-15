@@ -88,7 +88,7 @@ function buildSyntheticFilmSceneV03(request,generator){
    let i=0;while(i<track.times.length-2&&track.times[i+1]<t)i++;
    const a=track.times[i],b=track.times[i+1]??a;
    const mix=b===a?0:clamp((t-a)/(b-a),0,1);
-   const v=track.values[i].map((x,k)=>x+(track.values[i+1]?.[k]??x-x)*mix);
+   const v=track.values[i].map((x,k)=>x+((track.values[i+1]?.[k]??x)-x)*mix);
    if(track.path==='rotation'){const n=Math.hypot(...v)||1;return v.map(x=>x/n);}
    return v;
  };
