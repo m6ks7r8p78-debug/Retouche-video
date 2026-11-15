@@ -69,8 +69,13 @@ async function creer(file,{signal}={}){
  const timeline=planifier(info);
  const cfg={codec:info.codec,...(info.desc?{description:info.desc}:{}),
    codedWidth:info.W,codedHeight:info.H,hardwareAcceleration:"no-preference",optimizeForLatency:false};
- const supported=await VideoDecoder.isConfigSupported(cfg);
- if(!supported.supported)throw new Error("Codec vidéo source non pris en charge par VideoDecoder");
+ let supported=false;
+ try{supported=!!(await VideoDecoder.isConfigSupported(cfg)).supported}catch(_){}
+ if(!supported){
+   if(/^(hvc1|hev1)\./.test(info.codec))
+     throw new Error("HEVC/H.265 indisponible dans WebCodecs sur cet appareil ; aucun décodeur WASM de remplacement n'est intégré ou validé dans NOVA");
+   throw new Error("Codec vidéo source non pris en charge par VideoDecoder");
+ }
  const frames=new Map();
  const state={closed:false,fed:0,target:-1,decoded:0,dropped:0,fail:null,done:false,flush:false,can:null,lastIndex:-1,seeked:0};
  let wake=null,waiter=null;

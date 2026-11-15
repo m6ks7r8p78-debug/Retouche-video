@@ -26,7 +26,13 @@ function analyserOrientation(W,H,m){
  const minx=Math.min(...xs),miny=Math.min(...ys);
  const dw=Math.max(...xs)-minx,dh=Math.max(...ys)-miny;
  if(dw<2||dh<2||dw*dh!==W*H)return null;
- return Object.freeze({mat:[A,B,C,D,minx===0?0:-minx,miny===0?0:-miny],dw,dh,
+ // Les translations tkhd ne sont pas de simples décorations : refuser
+ // tout décalage non canonique, sinon l'export pourrait recadrer la vidéo.
+ // Zéro (matrices anciennes) ou le décalage normalisé exact sont admis.
+ const tx=-minx,ty=-miny;
+ if(!(near(m[6],0)||near(m[6],tx))||
+    !(near(m[7],0)||near(m[7],ty)))return null;
+ return Object.freeze({mat:[A,B,C,D,tx,ty],dw,dh,
    mirrored:A*D-B*C<0,oriented:dw!==W||dh!==H});
 }
 async function analyser(file){
@@ -49,7 +55,10 @@ async function analyser(file){
     const mh=find(trak.s,trak.e,["mdia","mdhd"])[0];if(!mh)return null;
     const ts=buf[mh.s]===1?dv.getUint32(mh.s+20):dv.getUint32(mh.s+12);
     const th=find(trak.s,trak.e,["tkhd"])[0];
-    const mo=th.s+(buf[th.s]===1?52:40),mt=[];for(let i=0;i<9;i++)mt.push(dv.getInt32(mo+i*4)/(i%3===2?1073741824:65536));
+    if(!th||![0,1].includes(buf[th.s]))return null;
+    const mo=th.s+(buf[th.s]===1?52:40),mt=[];
+    if(mo+36>th.e)return null;
+    for(let i=0;i<9;i++)mt.push(dv.getInt32(mo+i*4)/(i%3===2?1073741824:65536));
     const st=find(trak.s,trak.e,["mdia","minf","stbl"])[0];if(!st)return null;
     const sub=n=>kids(st.s,st.e).find(k=>k.t===n);
     const stsd=sub("stsd"),stts=sub("stts"),stsc=sub("stsc"),stsz=sub("stsz"),co=sub("stco")||sub("co64"),stss=sub("stss"),ctts=sub("ctts");

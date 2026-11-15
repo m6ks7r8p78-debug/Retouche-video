@@ -439,3 +439,16 @@ La PR expérimentale possédait déjà des tests Chromium, mais **pas de tests W
 ### Prochaine étape vérifiable
 
 Obtenir des mesures HEVC + rotation et AAC sur un environnement macOS Safari ou un iPhone physique, comparer le rendu pixel et la chronologie avant/après, et tester les cas 30/60 fps/VFR sans augmenter les plafonds avant certification mémoire/énergie et qualité.
+
+
+## Cycle NOVA 0.15 — HEVC/MOV, translation et VFR 30/60 (15 novembre 2026)
+
+**Modifications expérimentales (CI du nouveau commit à vérifier).** Les rotations orthogonales restent autorisées, mais une matrice `tkhd` dont les translations ne sont ni nulles ni conformes au cadrage normalisé est désormais rejetée : l'export ne doit pas recadrer silencieusement. Une matrice manquante/tronquée est refusée. Tests unitaires ajoutés.
+
+Le chemin HEVC vérifie `VideoDecoder.isConfigSupported` avant l'ouverture HTML de la source pour fournir une explication claire quand le décodage WebCodecs est absent. **Aucun décodeur HEVC WASM n'est encore intégré**, même si des candidats libres existent. L'import d'un **vrai conteneur QuickTime MOV** contenant HEVC/AAC et une rotation de 90° est ajouté au banc. MOV n'est pas pour autant validé sur tous les iPhone.
+
+Nouveau banc `tests/nova-iphone-cadence.test.mjs` : génération FFmpeg de fichiers réels VFR en 30 i/s (MP4) et 60 i/s (MOV), B-frames et audio AAC, avec contrôle externe des PTS par `ffprobe -show_packets`, comparaison image par image et mesure de l'erreur maximale. Les cadences décrivent les **sources**, l'export pilote reste à **15 i/s**.
+
+**Alternatives libres à évaluer** : décodage local `libde265` via WebAssembly (LGPL, coût mémoire/CPU et obligations de redistribution à auditer), `wasmpeg` (FFmpeg/WASM LGPL selon build, conteneurs divers ; intégration et comportement iOS à éprouver), et `ffmpeg.wasm` (selon compilation, GPL si modules GPL activés). Aucun succès de décodage iPhone ni accélération WebGPU ne doit être annoncé sans benchmark réel, et aucun de ces projets ne constitue actuellement un repli intégré.
+
+**Toujours interdits** : fusion de la PR #3, production, publication de médias privés. Aucune confirmation Safari iOS physique ; pas de restauration IA neuronale ni 4K/8K. Plafonds du pilote inchangés.

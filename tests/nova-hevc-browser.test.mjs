@@ -63,7 +63,8 @@ async function audioHashes(file){
 }
 test("NOVA 0.14 : HEVC iPhone portrait 90° — décoder ou refuser fidèlement",async(t)=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),"nova-hevc-"));
- const base=path.join(dir,"landscape.mp4"),rotated=path.join(dir,"portrait.mp4"),app=server();
+ const base=path.join(dir,"landscape.mp4"),rotated=path.join(dir,"portrait.mp4"),
+  movBase=path.join(dir,"landscape.mov"),movRotated=path.join(dir,"portrait.mov"),app=server();
  try{
   await run("ffmpeg",["-hide_banner","-loglevel","error",
    "-f","lavfi","-i","testsrc2=size=160x90:rate=15:duration=1.2",
@@ -74,6 +75,20 @@ test("NOVA 0.14 : HEVC iPhone portrait 90° — décoder ou refuser fidèlement"
    "-pix_fmt","yuv420p","-c:a","aac","-b:a","128k",
    "-movflags","+faststart","-shortest","-y",base],{timeout:60000});
   await fs.writeFile(rotated,pivoterSource90(await fs.readFile(base)));
+  // Conteneur QuickTime MOV réel : second chemin d'import à ne pas confondre
+  // avec un simple renommage de .mp4.
+  await run("ffmpeg",["-hide_banner","-loglevel","error","-i",base,
+   "-map","0:v:0","-map","0:a:0","-c","copy","-f","mov","-y",movBase]);
+  const movBytes=pivoterSource90(await fs.readFile(movBase));
+  await fs.writeFile(movRotated,movBytes);
+  const movInfo=await DEMUX.analyser(new Blob([movBytes]));
+  assert.ok(movInfo,"vrai MOV HEVC : tables ISO-BMFF lisibles");
+  assert.deepEqual([movInfo.W,movInfo.H,movInfo.dw,movInfo.dh],[160,90,90,160]);
+  assert.deepEqual(movInfo.mat,[0,1,-1,0,90,0]);
+  assert.match(movInfo.codec,/^(hvc1|hev1)\./);
+  const {stdout:movProbe}=await run("ffprobe",["-v","error","-select_streams","v:0",
+   "-show_entries","stream=codec_name","-of","json",movRotated]);
+  assert.equal(JSON.parse(movProbe).streams[0].codec_name,"hevc");
   const f=new Blob([await fs.readFile(rotated)]);
   const d=await DEMUX.analyser(f);
   assert.ok(d,"NOVA doit analyser les tables HEVC MP4");

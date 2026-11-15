@@ -32,3 +32,17 @@ test("NOVA 0.14 : refuser matrices MP4 qui déforment, étirent ou projettent l'
  ])assert.equal(DEMUX.analyserOrientation(160,90,matrix),null,JSON.stringify(matrix));
  assert.equal(DEMUX.analyserOrientation(1,90,m(1,0,0,1)),null);
 });
+
+test("NOVA 0.15 : les translations tkhd sont canonisées ou explicitement refusées",()=>{
+ const portrait=m(0,1,-1,0);portrait[6]=90;
+ assert.deepEqual(DEMUX.analyserOrientation(160,90,portrait)?.mat,[0,1,-1,0,90,0]);
+ const flipped=m(-1,0,0,-1);flipped[6]=160;flipped[7]=90;
+ assert.deepEqual(DEMUX.analyserOrientation(160,90,flipped)?.mat,[-1,0,0,-1,160,90]);
+ for(const invalid of [
+  (()=>{const x=m(1,0,0,1);x[6]=8;return x})(),
+  (()=>{const x=m(0,1,-1,0);x[6]=91;return x})(),
+  (()=>{const x=m(0,1,-1,0);x[7]=3;return x})(),
+  (()=>{const x=m(1,0,0,1);x[6]=0.25;return x})()
+ ])assert.equal(DEMUX.analyserOrientation(160,90,invalid),null,
+  "ne jamais ignorer une translation de présentation inattendue");
+});

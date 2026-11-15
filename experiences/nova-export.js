@@ -137,6 +137,20 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  if(typeof VideoEncoder==="undefined"||typeof VideoFrame==="undefined"||typeof Mp4Muxer==="undefined")
    throw new Error("WebCodecs ou muxer MP4 indisponible sur cet appareil");
  if(signal?.aborted)throw new Error("Export annulé");
+ // Diagnostic HEVC avant le lecteur HTML : canPlayType et les métadonnées
+ // ne prouvent pas que VideoDecoder peut extraire les vraies images.
+ // Aucun téléchargement externe ni repli WASM non validé.
+ if(!allowApproximate&&globalThis.NOVA_DEMUX&&typeof VideoDecoder==="function"){
+  const probe=await NOVA_DEMUX.analyser(file);
+  if(probe&&/^(hvc1|hev1)\./.test(probe.codec)){
+   let supported=false;
+   try{supported=!!(await VideoDecoder.isConfigSupported({
+    codec:probe.codec,description:probe.desc,
+    codedWidth:probe.W,codedHeight:probe.H
+   })).supported}catch(_){}
+   if(!supported)throw new Error("HEVC/H.265 indisponible dans WebCodecs sur cet appareil. Aucun décodeur local alternatif n'est encore intégré ni validé ; export refusé sans perte silencieuse.");
+  }
+ }
  const media=document.createElement("video");
  media.muted=true;media.playsInline=true;media.preload="auto";
  media.style.cssText="position:fixed;left:-20px;top:0;width:2px;height:2px;opacity:0;pointer-events:none";
