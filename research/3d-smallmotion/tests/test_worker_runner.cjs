@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const {run,valid}=require('../smallmotion-worker-runner.js');
+const {run,valid,BUILD}=require('../smallmotion-worker-runner.js');
 const detector=require('../smallmotion-local.js');
 const w=160,h=120;
 function pair(seed=4,object=true){
@@ -16,13 +16,13 @@ class SuccessWorker {
  constructor(){this.terminated=false;this.onmessage=null;this.onerror=null;SuccessWorker.total++;}
  postMessage(payload,transfer){
   assert.equal(transfer.length,2);assert.equal(payload.a.width,w);assert.equal(payload.a.data.length,w*h*4);
-  setTimeout(()=>this.onmessage?.({data:{id:payload.id,ok:true,result:detector.analyze(payload.a,payload.b),computeMs:20}}),10);
+  setTimeout(()=>this.onmessage?.({data:{id:payload.id,build:BUILD,ok:true,result:detector.analyze(payload.a,payload.b),computeMs:20}}),10);
  }
  terminate(){this.terminated=true;SuccessWorker.terminated++;}
 }
 SuccessWorker.total=0;SuccessWorker.terminated=0;
 class HungWorker{constructor(){this.terminated=false;}postMessage(){}terminate(){this.terminated=true;HungWorker.lastTerminated=true;}}
-class ErrorWorker{constructor(){}postMessage(x){setTimeout(()=>this.onmessage?.({data:{id:x.id,ok:false,error:'internal'}}),1)}terminate(){}}
+class ErrorWorker{constructor(){}postMessage(x){setTimeout(()=>this.onmessage?.({data:{id:x.id,build:BUILD,ok:false,error:'internal'}}),1)}terminate(){}}
 async function main(){
  let checks=0;const ok=(label,val)=>{assert.ok(val,label);checks++};
  const [a,b]=pair();ok('valid',valid(a,b));
@@ -55,6 +55,12 @@ async function main(){
  const tx=await run(a,b,{WorkerCtor:TransferDeniedWorker,analyzer:detector.analyze});
  ok('transfer fallback',tx.fallbackReason==='worker_transfer_failed'&&tx.result.status===main.status);
  ok('no data retention',a.data.length===w*h*4);
+ class OldWorker{postMessage(x){setTimeout(()=>this.onmessage?.({data:{id:x.id,ok:true,result:{status:'local_motion_candidate',candidates:[{box:[1,1,10,10]}]}}}),1)}terminate(){}}
+ const stale=await run(a,b,{WorkerCtor:OldWorker,analyzer:detector.analyze});
+ ok('stale worker build fails closed',stale.processingPath==='worker_version_mismatch' && stale.result.status==='abstain_worker_version_mismatch' && stale.result.candidates.length===0);
+ class WrongWorker{postMessage(x){setTimeout(()=>this.onmessage?.({data:{id:x.id,build:'other-release',ok:true,result:{status:'local_motion_candidate',candidates:[{box:[1,1,10,10]}]}}}),1)}terminate(){}}
+ const mixed=await run(a,b,{WorkerCtor:WrongWorker,analyzer:detector.analyze});
+ ok('mismatched build fails closed',mixed.result.status==='abstain_worker_version_mismatch' && mixed.result.candidates.length===0);
  console.log('Worker runner:',checks,'checks passed');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
