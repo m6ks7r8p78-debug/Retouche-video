@@ -138,7 +138,7 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
    const a=document.querySelector("#novaHdQualityJson");
    return a?.getAttribute("href")?JSON.parse(await (await fetch(a.href)).text()):null;
   });
-  assert.ok(report,"HD export must provide its local quality report");
+  assert.ok(qaReport,"HD export must provide its local quality report");
   assert.equal(qaReport.version,"0.35");
   assert.equal(qaReport.video.outputFrames,15);
   assert.equal(qaReport.video.dimensionsPreserved,true);
