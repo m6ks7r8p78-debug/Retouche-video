@@ -53,7 +53,8 @@ run.addEventListener("click",async()=>{
     if(p.stage==="source")status.textContent="Source : "+p.width+" × "+p.height+
       ", "+p.frames+" images, environ "+p.fps+" i/s. Aucun rééchantillonnage de cadence.";
     if(p.stage==="video")status.textContent="Traitement local HD : "+
-      p.frame+" / "+p.total+" images, audio original conservé.";
+      p.frame+" / "+p.total+" images, audio préparé sans export muet.";
+    if(p.stage==="audio")status.textContent="Copie AAC impossible : tentative d'encodage AAC-LC natif local…";
     if(p.stage==="complete")status.textContent="Vérification finale de l'export HD…";
    }});
   if(my!==generation||ctrl.signal.aborted)return;
@@ -63,7 +64,9 @@ run.addEventListener("click",async()=>{
   status.textContent="MP4 HD exporté : "+out.originalWidth+" × "+
    out.originalHeight+", "+out.outputFrames+" images / "+
    out.sourceFrames+" source, cadence d'origine ~"+out.sourceFps+
-   " i/s, AAC original copié. "+out.modifiedFrames+
+   " i/s, "+(out.audioMode==="aac-copy"?
+    "AAC original copié sans réencodage":"AAC-LC réencodé localement : vérifie le son et sa synchronisation")+
+   ". "+out.modifiedFrames+
    " images avec correction locale de lumière. Couleur source vérifiée : "+
    (out.decodedColorEvidence||out.sourceColorEvidence)+
    (out.decodedColorEvidence==="decoded-frame-sdr-full-to-limited"?
