@@ -52,7 +52,7 @@ test("NOVA HD : décodeur HEVC natif doit annoncer sa compatibilité",async()=>{
  }};
  const result=await HD.configDecoder(info,d);
  assert.equal(result.hardwareAcceleration,"prefer-hardware");
- await assert.rejects(()=>HD.configDecoder(info,{isConfigSupported:async()=>({supported:false})}),/indisponible/);
+ await assert.rejects(()=>HD.configDecoder(info,{isConfigSupported:async()=>({supported:false})}),/non disponible/);
 });
 test("NOVA HD : aucune exportation ne part si l'analyseur source ou les moteurs manquent",async()=>{
  const ff={type:"video/quicktime",size:4815517,slice(){}};
