@@ -1,4 +1,4 @@
-name: Film Studio - scenario et aperçu local v0.3
+name: Film Studio - aperçu WebGL2 expérimental v0.4
 on:
   push:
     branches:
@@ -21,6 +21,12 @@ on:
       - 'studio-3d/film-ui-v03.mjs'
       - 'studio-3d/film-ui-v03.test.mjs'
       - 'studio-3d/film-studio-v03.html'
+      - 'studio-3d/generateur.js'
+      - 'studio-3d/film-webgl-v04.mjs'
+      - 'studio-3d/film-webgl-v04.test.mjs'
+      - 'studio-3d/film-ui-v04.mjs'
+      - 'studio-3d/film-studio-v04.html'
+      - 'studio-3d/film-browser-v04.test.mjs'
       - '.github/workflows/ci-film-studio-v01.yml'
 jobs:
   scenario-contract:
@@ -34,4 +40,30 @@ jobs:
         with:
           node-version: '22'
       - name: Verifier le contrat de scenario sans medias prives
-        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs studio-3d/film-viewer-v03.test.mjs studio-3d/film-ui-v03.test.mjs studio-3d/film-contact-v03.test.mjs
+        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs studio-3d/film-viewer-v03.test.mjs studio-3d/film-ui-v03.test.mjs studio-3d/film-contact-v03.test.mjs studio-3d/film-webgl-v04.test.mjs
+
+  navigateur-webgl2:
+    needs: scenario-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer le banc Playwright sur le runner temporaire
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Installer Chromium et ses dépendances système
+        run: npx playwright install --with-deps chromium
+      - name: Vérifier la page complète, les pixels WebGL2, les gestes et le refus
+        run: node studio-3d/film-browser-v04.test.mjs
+      - name: Conserver la capture synthétique pour revue
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: film-studio-v04-chromium-synthetic
+          path: test-results/film-studio-v04-chromium.png
+          if-no-files-found: ignore
+          retention-days: 7
