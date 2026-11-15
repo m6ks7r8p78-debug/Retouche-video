@@ -88,6 +88,33 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   assert.equal(Number(v.nb_frames),15);
   assert.equal(a.codec_name,"aac");
   assert.ok(Math.abs(Number(check.format.duration)-1)<0.2);
+  // Simulation d'une vraie ambiguïté colr : les pixels H.264 sont
+  // réellement décodés, mais le conteneur source ne donne plus de colr.
+  // Le moteur doit utiliser VideoFrame.colorSpace plutôt que déclarer HDR.
+  await page.evaluate(()=>{
+   const analyse=window.NOVA_DEMUX.analyser;
+   window.NOVA_DEMUX.analyser=async f=>{
+    const v=await analyse(f);
+    return f instanceof File&&v?{...v,color:null}:v;
+   };
+  });
+  await page.locator("#novaHdRun").click();
+  await page.waitForFunction(()=>{
+   const msg=document.querySelector("#novaHdStatus")?.textContent||"";
+   return !!document.querySelector("#novaHdSave")?.getAttribute("href")||
+    /Essai HD non abouti/.test(msg);
+  },null,{timeout:100000});
+  const unknownColorStatus=await page.locator("#novaHdStatus").textContent();
+  assert.match(unknownColorStatus,/MP4 HD exporté/,
+   "VideoFrame SDR color must resolve absent source colr: "+unknownColorStatus);
+  const secondDL=page.waitForEvent("download");
+  await page.locator("#novaHdSave").click();
+  const secondFile=await (await secondDL).path();
+  const checkSecond=JSON.parse((await run("ffprobe",["-v","error","-show_streams",
+   "-of","json",secondFile],{timeout:10000})).stdout);
+  assert.equal(checkSecond.streams.find(x=>x.codec_type==="video")?.width,160);
+  assert.equal(checkSecond.streams.find(x=>x.codec_type==="video")?.height,120);
+  assert.equal(checkSecond.streams.find(x=>x.codec_type==="audio")?.codec_name,"aac");
   assert.deepEqual(failures,[]);
   assert.deepEqual(external,[]);
   assert.deepEqual(upload,[]);
