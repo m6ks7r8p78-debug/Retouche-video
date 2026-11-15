@@ -29,3 +29,24 @@ jobs:
       - name: Confirm only experimental branch
         run: |
           test "${GITHUB_REF_NAME}" = "chatgpt-nova-h264-preflight-relay-20261115-v1" || test "${GITHUB_EVENT_NAME}" = "pull_request"
+  bframes-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg and FFprobe
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Playwright Chromium
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: Decode and export true H264 B-frames with unchanged AAC under CSP
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --check tests/nova-native-hd-bframes-browser.test.mjs
+          node --test tests/nova-native-hd-bframes-browser.test.mjs
