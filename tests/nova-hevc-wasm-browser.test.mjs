@@ -110,6 +110,13 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
    }
    const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",raw)))
     .map(x=>x.toString(16).padStart(2,"0")).join("");
+   let smallBudgetRefused=false,smallBudgetCallbacks=0;
+   try{
+    await NOVA_HEVC_LAB.decoderFlux(f,{HEVCDecoder,
+     wasmBinaryUrl:"/experiences/vendor/hevc/wasm/hevc-decode.wasm",
+     maxWasmHeapBytes:1024,
+     onFrame:async()=>{smallBudgetCallbacks++}});
+   }catch(error){smallBudgetRefused=/capacité du tas HEVC WASM/i.test(error.message)}
    const streamed=[];
    const stream=await NOVA_HEVC_LAB.decoderFlux(f,{HEVCDecoder,
     wasmBinaryUrl:"/experiences/vendor/hevc/wasm/hevc-decode.wasm",
@@ -125,6 +132,7 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
     }});
    return {digest,frames:r.stamped.length,annexBBytes:r.annexBBytes,
     streamed,streamMetrics:stream,originalPTS,colorSamples,
+    smallBudgetRefused,smallBudgetCallbacks,
     firstPTS:r.stamped[0].ptsUs,lastPTS:r.stamped.at(-1).ptsUs,
     dimensions:[r.info.encodedWidth,r.info.encodedHeight],
     elapsedMs:Math.round(performance.now()-before)};
@@ -149,6 +157,10 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
    "le décodage flux ne doit jamais assembler le bitstream entier");
   assert.ok(actual.streamMetrics.peakFrameBytes<=160*90*3);
   assert.equal(actual.streamMetrics.inbandParameterSets,0);
+  assert.equal(actual.smallBudgetRefused,true,
+   "capacité WASM supérieure à 1024 octets doit être refusée");
+  assert.equal(actual.smallBudgetCallbacks,0,
+   "aucune image livrée si le budget de tas WASM est déjà dépassé");
   assert.ok(actual.streamMetrics.peakDrainedFrames>=1);
   assert.ok(actual.streamMetrics.pipelineElapsedMs>=0);
   assert.equal(actual.streamMetrics.memorySemantics,
