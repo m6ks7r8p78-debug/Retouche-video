@@ -23,6 +23,37 @@ const messages=Object.freeze({
  "analysis-unavailable":"Un module de vérification manque ou a échoué ; aucun résultat favorable.",
  "cancelled":"Précontrôle annulé ; aucune modification du fichier."
 });
+// Les diagnostics détaillés sont issus exclusivement de compteurs techniques
+// bornés. Les autres critères restent non vérifiés en cas de refus précoce.
+function details(report){
+ const reasons=Array.isArray(report?.blockers)?report.blockers:[];
+ const src=report?.source||{},limits=report?.pilotLimits||{};
+ const items=[];
+ if(reasons.includes("coded-pixels-over-limit")){
+  const w=src.width,h=src.height;
+  const dims=Number.isSafeInteger(w)&&Number.isSafeInteger(h)?w+" × "+h+" ; ":"";
+  items.push("Résolution trop élevée : "+dims+
+   "plafond de calcul du moteur HEVC = "+(limits.codedPixelAreaMax||230400)+
+   " pixels codés (640 × 360).");
+ }
+ if(reasons.includes("source-frames-over-limit"))
+  items.push("Trop d'images : "+(Number.isSafeInteger(src.frames)?src.frames+" ; ":"")+
+   "plafond actuel = "+(limits.sourceFramesMax||90)+".");
+ if(reasons.includes("duration-over-limit"))
+  items.push("Durée supérieure à "+((limits.maxDurationMs||12000)/1000)+" secondes.");
+ if(reasons.includes("coded-dimensions-not-even"))
+  items.push("Dimensions encodées impaires non admises par le moteur HEVC.");
+ if(Array.isArray(report?.advisories)&&
+    report.advisories.includes("source-rate-above-output-rate")){
+  const fps=typeof src.estimatedSourceFps==="number"&&
+   Number.isFinite(src.estimatedSourceFps)?src.estimatedSourceFps+" images/s environ":"cadence supérieure";
+  items.push("Attention à la fidélité du mouvement : source estimée à "+fps+
+   ", mais le pilote d'export est limité à 15 images/s.");
+ }
+ if(reasons.length)
+  items.push("Autres vérifications non concluantes ou non exécutées : notamment la couleur, les PTS et l'audio. Aucun export automatique.");
+ return items.length?" "+items.join(" "):"";
+}
 let selected=null,controller=null,generation=0,blobUrl=null;
 function revoke(){
  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null}
@@ -57,7 +88,7 @@ button.addEventListener("click",async()=>{
   const json=NOVA_REAL_PREFLIGHT.serialiser(r);
   blobUrl=URL.createObjectURL(new Blob([json],{type:"application/json"}));
   link.href=blobUrl;link.download="NOVA_precontrole_video_locale.json";link.hidden=false;
-  status.textContent=messages[r.status]||messages["analysis-unavailable"];
+  status.textContent=(messages[r.status]||messages["analysis-unavailable"])+details(r);
  }catch{
   if(id===generation)status.textContent=ctl.signal.aborted?
    messages.cancelled:messages["analysis-unavailable"];
