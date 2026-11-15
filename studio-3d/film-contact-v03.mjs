@@ -38,6 +38,7 @@ function buildSyntheticFilmSceneV03(request,generator){
    return n;
  };
  const actor=idx('film_acteur_pivot'),sh=idx('epaule_droite'),el=idx('coude_droite');
+ const cupTarget=[model.nodes[sh].translation[0]+.02,.8,.54];
  const onTable=idx('tasse_sur_table_groupe'),onHand=idx('tasse_en_main_groupe');
  const channels=model.animations[0].channels;
  const tr=(node,path)=>channels.find(x=>x.node===node&&x.path===path);
@@ -51,9 +52,9 @@ function buildSyntheticFilmSceneV03(request,generator){
  if(!same)throw Error('Horodatages non unifiés dans le rig v0.2.');
 
  // Ramener la tasse en portée pour le bras synthétique, sans déformer l'avant-bras.
- model.nodes[onTable].translation=CUP.slice();
- model.nodes[idx('table_plateau')].translation=[.37,.66,.54];
- model.nodes[idx('table_pied')].translation=[.37,.32,.54];
+ model.nodes[onTable].translation=cupTarget.slice();
+ model.nodes[idx('table_plateau')].translation=[cupTarget[0]+.058,.66,.54];
+ model.nodes[idx('table_pied')].translation=[cupTarget[0]+.058,.32,.54];
 
  const IKtimes=[];
  for(const action of output.timeline){
@@ -67,13 +68,13 @@ function buildSyntheticFilmSceneV03(request,generator){
  for(let i=0;i<times.length;i++){
    if(!IKtimes.some(t=>Math.abs(times[i]-t)<.00001))continue;
    const sit=actorTrack.values[i][1];
-   const solution=reachCup(sit);
+   const solution=reachCup(sit,cupTarget);
    shoulderTrack.values[i]=quat(solution.shoulder);
    elbowTrack.values[i]=quat(solution.elbow);
  }
  // Conserver un seul objet animé, plutôt que deux copies alternativement visibles.
  const cup={
-   name:'tasse_unique_mobile',translation:CUP.slice(),scale:[1,1,1],
+   name:'tasse_unique_mobile',translation:cupTarget.slice(),scale:[1,1,1],
    children:[...(model.nodes[onTable].children||[])]
  };
  const cupId=model.nodes.push(cup)-1;
@@ -85,12 +86,12 @@ function buildSyntheticFilmSceneV03(request,generator){
    const sit=actorTrack.values[i][1];
    const a=rad(shoulderTrack.values[i]),b=rad(elbowTrack.values[i]),sum=a+b;
    return [
-     .312,
+     cupTarget[0],
      sit*(1.51-.41*Math.cos(a)-.51*Math.cos(sum)-.065*Math.sin(sum)),
      -.41*Math.sin(a)-.51*Math.sin(sum)+.065*Math.cos(sum)
    ];
  };
- const positions=times.map((_,i)=>handTrack.values[i][0]>.5?wristPosition(i):CUP.slice());
+ const positions=times.map((_,i)=>handTrack.values[i][0]>.5?wristPosition(i):cupTarget.slice());
  channels.push({node:cupId,path:'translation',times:times.slice(),values:positions});
  handTrack.values=times.map(()=>[.0001,.0001,.0001]);
  tableTrack.values=times.map(()=>[.0001,.0001,.0001]);
