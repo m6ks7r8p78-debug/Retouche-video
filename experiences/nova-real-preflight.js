@@ -16,7 +16,7 @@ const codes=new Set(["ready-for-export-attempt","not-video","file-budget",
  "browser-unavailable","insecure-context","container-unreadable",
  "unsupported-video-codec","hevc-profile-or-timeline-incompatible",
  "resource-budget","audio-not-preservable","analysis-unavailable","cancelled",
- "ready-for-native-hd-attempt"]);
+ "ready-for-native-hd-attempt","native-hd-unavailable"]);
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
 const count=x=>Number.isSafeInteger(x)&&x>=0?x:null;
 const small=x=>finite(x)&&x>=0&&x<=160?Math.round(x*10)/10:null;
@@ -80,7 +80,9 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
      webAssembly:typeof globalThis.WebAssembly==="object"
     });
   if(!env?.secureContext)return finish(r,"insecure-context");
-  if(!env.videoEncoder||!env.videoFrame||!env.webAssembly)
+  // Le chemin HD natif WebCodecs ne dépend pas de WebAssembly.
+  // Vérifier WebAssembly uniquement avant le repli HEVC historique.
+  if(!env.videoEncoder||!env.videoFrame)
    return finish(r,"browser-unavailable");
   const demux=probe||globalThis.NOVA_DEMUX?.analyser;
   if(typeof demux!=="function")return finish(r,"analysis-unavailable");
@@ -97,18 +99,20 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
   r.source.frames=count(info.ns);
   r.source.estimatedSourceFps=approxFps(info.ns,info.durationUs);
   if(r.source.codec==="hevc"){
+   // Ces bornes appartiennent au seul pilote HEVC WebAssembly.
    r.blockers=knownLimits(info);
    if(r.source.estimatedSourceFps!==null&&
        r.source.estimatedSourceFps>MAX_OUTPUT_FPS+0.2)
     r.advisories.push("source-rate-above-output-rate");
   }
-  if(r.source.codec!=="hevc")return finish(r,"unsupported-video-codec");
-  // Ce parcours nouveau prend en charge HD / plus de 90 images sans
-  // présenter les anciennes limites WASM comme des limites universelles.
-  // Il n'est favorable QUE si le décodeur, encodeur et AAC sont vérifiés.
+  if(!["hevc","h264"].includes(r.source.codec))
+   return finish(r,"unsupported-video-codec");
+  // Le moteur HD natif accepte aussi H.264, même lorsque les petites vidéos
+  // n'ont pas dépassé les anciennes limites HEVC WebAssembly.
+  // Ne jamais déclarer une sortie possible avant vérification codec et AAC.
   const hd=globalThis.NOVA_NATIVE_HD;
-  if(hd&&r.blockers.some(x=>x==="coded-pixels-over-limit"||
-                             x==="source-frames-over-limit")){
+  if(hd&&(r.source.codec==="h264"||r.blockers.some(
+   x=>x==="coded-pixels-over-limit"||x==="source-frames-over-limit"))){
    try{
     const p=hd.analyse(info,file.size);
     if(stopped())return finish(r,"cancelled");
@@ -126,11 +130,16 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
       fps:Math.round(p.sourceFps),frames:p.sourceFrames};
      return finish(r,"ready-for-native-hd-attempt");
     }
+    if(r.source.codec==="h264")return finish(r,"audio-not-preservable");
    }catch{
     if(stopped())return finish(r,"cancelled");
     // Aucune promotion HD si les codecs/couleurs/AAC ne sont pas validés.
    }
   }
+  // Il n'existe pas de précontrôle HEVC WASM valable pour une source H.264.
+  // Le code indique une indisponibilité du moteur HD, pas du format lui-même.
+  if(r.source.codec==="h264")return finish(r,"native-hd-unavailable");
+  if(!env.webAssembly)return finish(r,"browser-unavailable");
   const validateFn=validate||globalThis.NOVA_HEVC_RENDER?.metadata;
   if(typeof validateFn!=="function")return finish(r,"analysis-unavailable");
   let meta;
