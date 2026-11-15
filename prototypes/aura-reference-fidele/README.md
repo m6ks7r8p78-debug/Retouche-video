@@ -30,3 +30,19 @@ Les PR #20 et #21 ont été explicitement rejetées, car elles reprenaient une a
 
 ## Procédure de publication
 Ne pas modifier `main`, l'application publiée, la PWA, les consentements, le Directeur IA ou les données privées. Cette étude doit rester en PR brouillon jusqu'à validation visuelle explicite par l'utilisateur, puis intégration progressive et tests Safari / non-régression.
+
+## Continuité UX — sans refonte graphique (15 novembre 2026)
+
+Cette révision prolonge la PR #23 en conservant **exactement** l'accueil de la maquette AURA déjà reconstruite. Les captures Chromium 320×700, 375×812, 390×844, 430×932, 768×1024 et 1024×768 ont été comparées pixel par pixel **avec le HTML de la PR #23 en environnement local identique : zéro pixel différent**. Cela vérifie l'absence de régression visuelle du prototype existant, et ne prétend pas que celui-ci reproduit parfaitement la maquette artistique d'origine.
+
+### Corrections fonctionnelles
+- Photo importée : aperçu **neutre** avant action ; l'original n'est pas retouché en silence. Le bouton central applique seulement des corrections colorimétriques locales (non IA). Test d'export PNG sans correction : pixels identiques sur une image synthétique.
+- Réglages avancés : petit bouton « Réinitialiser » **dans le panneau superposé au média**, et non un nouveau bouton sur l'accueil ; la molette, les onglets et le glisseur restent synchronisés.
+- Projets de session : chaque média importé reste réellement rouvrable depuis Projets/Bibliothèque, avec sa position du comparateur et ses réglages, tant que la page reste ouverte. Historique borné à dix médias en mémoire ; **aucune persistance** après fermeture.
+- Vidéo : ralenti 0,5× à 2× uniquement en lecture ; comparaison **sans faux filtre vidéo**, export vidéo toujours désactivé, commande « Réinitialiser » rétablit 1×.
+- Navigation : un seul onglet actif après réouverture d'un projet.
+
+### Vérifications
+Script reproductible : `check_ux.py` (Chromium, Pillow ; FFmpeg pour vidéo H264 synthétique). Testé localement sur six tailles d'écran : import de deux PNG, comparaison clavier, réglages et remise à zéro, PNG exporté modifié, réouverture du premier projet avec ses paramètres, aucun débordement horizontal ni erreur JS. Test vidéo : lecture, 0,5×, retour 1×, export bloqué. **Safari iPhone physique, VoiceOver, performances sur grands médias non testés.**
+
+Aucun Directeur IA, modèle de restauration, suppression AR, traitement ou export vidéo réel n'est ajouté. `main`, la PWA et retoucheproai.com demeurent inchangés. Ne pas fusionner ni déployer sans validation explicite de l'utilisateur.
