@@ -42,16 +42,17 @@
     "RNE10: 328 stress essais sur anciens groupes; RNE09 laisse passer 164/164 faux alignements sous confiance recalculée malgré 20/41 pertes graves sur LR propre 1px. Garde-fou causal de provenance de sessions, 27 tests synthétiques PASS, aucune promotion.",
     "RNE11: recherche Reddit/OpenCV, capteur indépendant Lucas-Kanade vs Farneback, 23 tests synthétiques locaux PASS, 41 paires historiques de calibration. 1px de décalage synthétique détecté après réglage du seuil sur le même lot (résultats post-hoc, non indépendants). Non déployé.",
     "RNE12: troisième observateur par corrélation de phase; 144 cas nouveaux synthétiques, acceptations erronées 24/74→0/74 ; limite multi-plans 12/12→5/12 ; 26 tests PASS. Validation hors distribution et iPhone manquantes; non promu.",
-    "RNE13: contrôle local 16 régions sur 54 scènes multicouches et 288 scènes synthétiques d'artefacts. 26/26 tests locaux; 22/39 régions à faux mouvement encore acceptées; coût ~101ms/720p CPU hors réseau/flux. NON promu; aucun média utilisé."
+    "RNE13: contrôle local 16 régions sur 54 scènes multicouches et 288 scènes synthétiques d'artefacts. 26/26 tests locaux; 22/39 régions à faux mouvement encore acceptées; coût ~101ms/720p CPU hors réseau/flux. NON promu; aucun média utilisé.",
+    "RNE14: descripteur Census en surcontrôle photo RNE13, 22 tests synthetiques; 288 scènes secondaires éclairage: 95/459 zones justes retrouvées mais 2/309 mauvaises nouvellement acceptées; autre générateur 120 scènes, +36 sous ombre, +7 gamma, aucun gain JPEG+lumière/flou. NON promu."
   ],
   "prochaines_etapes": [
-    "Ne pas promouvoir RNE13: 22 faux supports sur 39 régions de mouvement incorrect multicouches; JPEG et textures répétitives laissent passer des erreurs.",
-    "Étudier la robustesse d'accord photométrique aux changements d'éclairage sans valider un flux incorrect; mesurer faux refus et faux supports par zone.",
-    "Créer jeux synthétiques hors famille (mouvements non rigides, articulations, transparences, flou directionnel, disocclusions et zoom), tests sur flux connus.",
-    "Réutiliser les champs Farneback déjà estimés plutôt que les recalculer, analyser le coût des points LK 720p et optimiser avant toute idée iPhone Safari.",
-    "Ne pas ouvrir les 41 vidéos récentes pour entraîner ou régler des seuils; demander de vraies nouvelles scènes hors distribution pour toute validation.",
-    "Conserver RNE04 et bicubique comme références expérimentales sans nouvelle activation; aucun site retoucheproai.com déployé.",
-    "Contrôler l'exécution distante de la CI Github; PR brouillon, aucun merge sur main."
+    "RNE14 reste seulement un audit de recherche; ne jamais augmenter automatiquement le poids neuronal sur la seule foi d'une similarité Census.",
+    "Conserver comme contre-exemples les 2 fausses acceptations de mouvement sous éclairage et les échecs sous JPEG+lumière, blur, textures périodiques.",
+    "Concevoir une vérification d'ambiguïté réellement multiscale/multipériode sans ajuster directement les seuils au banc déjà observé.",
+    "Créer un contrôle de vérité sur mouvements articulés, occultations, textures répétitives hors distribution et vidéos inédites après gel des paramètres.",
+    "Conserver les 157 anciennes vidéos et les 41 récentes inchangées et hors du présent pipeline; aucun entraînement sur les 41 récentes.",
+    "Évaluer coût réel CPU/GPU mémoire et qualité sur Safari iPhone avant toute activation, et maintenir RNE04 comme référence expérimentale et bicubique comme fallback.",
+    "Vérifier GitHub Actions distant du HEAD; PR #1 reste DRAFT et main intacte."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -62,14 +63,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-15",
     "objets": [
-      "outils/rne/rne13/regional_motion_audit.py",
-      "tests/test_rne13_regional_motion_audit.py",
-      "RETOUCHE_NEURAL_ENGINE_13.md",
+      "outils/rne/rne14/illumination_census.py",
+      "tests/test_rne14_illumination_census.py",
+      "RETOUCHE_NEURAL_ENGINE_14.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "26 tests synthétiques verts, deux bancs procéduraux distincts (54 + 288 scènes), CPU benchmark 192/360/720",
+    "preuve_locale": "22 tests synthétiques passés; développement 144, contrôle 288 graines secondaires, 120 scènes autre générateur et benchmark CPU",
     "statut_ci": "a_verifier",
-    "observations": "aucun média/poids publié, aucune vidéo perso ouverte dans ces tests"
+    "observations": "Aucun média ou poids personnels; RNE14 non promu."
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1484,5 +1485,88 @@
     "model_promoted": false,
     "production_site_deployed": false,
     "main_merged": false
+  },
+  "jalon_neural_engine_14": {
+    "date": "2026-11-15",
+    "status": "experimental lighting-tolerant Census tile audit; not trained, not promoted or deployed",
+    "baseline": "RNE13 tilewise LK+Farneback+raw photometric veto; only its photometric veto may be revised; RNE04 neural model kept unchanged",
+    "method": "8-neighbor rank/census signature, minimum texture contrast, fixed 14px period self-correlation, saturation/inbounds guards; RNE13 audit always recomputed from same frames/flow; manual opt-in research only",
+    "literature": [
+      "https://visionbook.mit.edu/optical_flow.html",
+      "https://www.mia.uni-saarland.de/Publications/demetz-eccv14.pdf",
+      "https://www.mia.uni-saarland.de/Publications/hafner-ssvm13.pdf",
+      "https://link.springer.com/article/10.1007/s42452-021-04227-x"
+    ],
+    "internal_development": {
+      "synthetic_scenes": 144,
+      "lighting_good_newly_supported": 40,
+      "lighting_bad_newly_supported": 0,
+      "warning": "Development scores are post-hoc calibration, not independent validation"
+    },
+    "secondary_same_generator": {
+      "synthetic_scenes": 288,
+      "lighting_gt_good": 459,
+      "lighting_gt_bad": 309,
+      "lighting_good_baseline": 0,
+      "lighting_good_candidate": 95,
+      "lighting_bad_baseline": 0,
+      "lighting_bad_candidate": 2,
+      "blur_good_baseline": 60,
+      "blur_good_candidate": 60,
+      "jpeg_good_baseline": 332,
+      "jpeg_good_candidate": 332,
+      "warning": "Unseen seeds of same image generator, not new human scenes or certified generalization"
+    },
+    "alternate_generator": {
+      "synthetic_scenes": 120,
+      "shadow_gt_good": 226,
+      "shadow_good_baseline": 22,
+      "shadow_good_candidate": 58,
+      "shadow_bad_baseline": 0,
+      "shadow_bad_candidate": 0,
+      "gamma_gt_good": 200,
+      "gamma_good_baseline": 87,
+      "gamma_good_candidate": 94,
+      "gamma_bad_baseline": 0,
+      "gamma_bad_candidate": 0,
+      "jpeg_and_light_improvement": 0,
+      "motion_blur_improvement": 0,
+      "warning": "Alternative procedural family, still artificial; cannot prove real-world robustness"
+    },
+    "local_cpu_ms": {
+      "resolution_192x192": {
+        "rne13": 7.1,
+        "rne14": 8.77
+      },
+      "resolution_640x360": {
+        "rne13": 23.05,
+        "rne14": 34.23
+      },
+      "resolution_1280x720": {
+        "rne13": 79.2,
+        "rne14": 116.67
+      },
+      "outside_scope": "decoder, Farneback initial motion, neural inference, iPhone Safari"
+    },
+    "safety": {
+      "local_tests_passed": 22,
+      "CI_remote_unverified": true,
+      "published_private_media": false,
+      "used_old_157_videos": false,
+      "used_recent_41_videos": false,
+      "trained_models": false,
+      "promoted": false,
+      "site_changed": false,
+      "main_merged": false,
+      "NVIDIA_DLSS5_used": false
+    },
+    "files": [
+      "outils/rne/rne14/illumination_census.py",
+      "tests/test_rne14_illumination_census.py",
+      "RETOUCHE_NEURAL_ENGINE_14.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_lab_archive": "RetoucheProAI_RNE14_Census_Lumiere_Recherche.zip",
+    "conclusion": "Partial lighting recovery but 2 added false supports on synthetic same-generator secondary check. Do not promote; repeated texture detector fixed at 14px is not general."
   }
 }
