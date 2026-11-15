@@ -6,6 +6,7 @@ import cv2
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
 video_file=ROOT/'synthetic_smallmotion_160x120.mp4'
+webm_file=ROOT/'synthetic_smallmotion_160x120.webm'
 temp_file=ROOT/'synthetic_smallmotion_raw.avi'
 w,h=160,120
 rng=np.random.default_rng(103)
@@ -20,8 +21,9 @@ for i in range(45):
     writer.write(cv2.cvtColor(g,cv2.COLOR_GRAY2BGR))
 writer.release()
 subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-y','-i',str(temp_file),'-c:v','libx264','-pix_fmt','yuv420p','-movflags','+faststart',str(video_file)],check=True)
+subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-y','-i',str(temp_file),'-c:v','libvpx','-b:v','300k',str(webm_file)],check=True)
 temp_file.unlink()
-assert video_file.stat().st_size>5000
+assert video_file.stat().st_size>5000 and webm_file.stat().st_size>5000
 results=[]
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path=shutil.which('chromium') or shutil.which('google-chrome') or shutil.which('chromium-browser'),headless=True,args=['--no-sandbox','--autoplay-policy=no-user-gesture-required'])
@@ -36,7 +38,9 @@ with sync_playwright() as p:
         page.add_script_tag(path=str(ROOT/'smallmotion-app-bootstrap.js'))
         page.wait_for_selector('#smallmotion-app-panel', state='attached')
         # input import performed locally by Chromium from synthetic source
-        page.locator('#f').set_input_files(str(video_file))
+        codec=page.evaluate("() => document.createElement('video').canPlayType('video/mp4; codecs=\"avc1.42E01E\"')")
+        actual_file=video_file if codec else webm_file
+        page.locator('#f').set_input_files(str(actual_file))
         assert page.locator('#smallmotion-app-panel').is_visible()
         page.get_by_role('button',name='Analyser localement').click()
         page.wait_for_function("document.querySelector('#smallmotion-app-panel button').disabled === false",timeout=12000)
@@ -50,11 +54,11 @@ with sync_playwright() as p:
         assert not errors,errors
         assert not [u for u in requests if u.startswith('http')],requests
         assert page.locator('#other-ui').inner_text()=='App existante non modifiée'
-        results.append({'width':width,'height':height,'state':evidence['status'],'candidates':len(evidence['candidates']),'ms':evidence['processorMs'],'no_http':True,'no_js_errors':True,'times':evidence['frameTimesSeconds']})
+        results.append({'width':width,'height':height,'state':evidence['status'],'candidates':len(evidence['candidates']),'ms':evidence['processorMs'],'no_http':True,'no_js_errors':True,'codec_tested':'h264' if codec else 'vp8_webm','times':evidence['frameTimesSeconds']})
         # replacing with empty input immediately discards earlier evidence
         page.locator('#f').set_input_files([])
         assert page.evaluate('window.RetoucheMotionLabUI.observe()') is None
         page.close()
     browser.close()
-(ROOT/'results'/'browser_check.json').write_text(json.dumps({'results':results,'syntheticVideoSHA256':hashlib.sha256(video_file.read_bytes()).hexdigest()},indent=2))
+(ROOT/'results'/'browser_check.json').write_text(json.dumps({'results':results,'syntheticH264SHA256':hashlib.sha256(video_file.read_bytes()).hexdigest(),'syntheticWebmSHA256':hashlib.sha256(webm_file.read_bytes()).hexdigest()},indent=2))
 print('browser checks passed')
