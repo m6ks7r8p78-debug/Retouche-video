@@ -511,3 +511,12 @@ Ce contrôle **n'est pas une restauration HDR ni un parseur complet des VUI du b
 - `NOVA_HEVC_LAB.decoderFlux` appelle `feed/drain/flush` du vrai décodeur WASM, livre des images provisoires une par une au callback, vérifie les plans YUV, les PTS et le nombre final d'images ; il ne conserve pas la collection d'images. **Interdiction de publier un export tant que le compte final n'est pas vérifié**.
 - Le banc de preuve teste les assets servis depuis le répertoire local éphémère plutôt que directement `node_modules`. Ce chemin ne dépend d'aucun service de téléchargement côté navigateur, mais reste un outil de test tant que les fichiers ne sont pas effectivement distribués à l'application.
 - **État de ces modifications : en attente du contrôle CI du SHA exact ; ne pas interpréter leur présence comme décodage flux vérifié ni mise en production.**
+
+
+### 0.18 : binaire effectivement embarqué dans GitHub et test hors npm (expérimental)
+
+Un job dédié GitHub Actions a récupéré `@hevcjs/core@1.8.0` avec `--ignore-scripts`, vérifié quatre SHA-256 figés et ajouté dans `chatgpt-studio-nova-v01` les fichiers `experiences/vendor/hevc/{decoder-entry.js,chunk-M6WO4WIK.js,wasm/hevc-decode.js,wasm/hevc-decode.wasm,integrity.json,LICENSE.txt}`. **Commit du fournisseur** : `92ccfabc6e9fe03079c40047756e1c7113e7e262` (auteur github-actions[bot]). Taille WASM : **344 949 octets** ; licence MIT intégrale. **Aucun fichier utilisateur privé n'est inclus**.
+
+La CI standard ne réinstalle plus le paquet HEVC : Chromium et WebKit Linux testent désormais les fichiers binaires/JS **versionnés dans le dépôt**, et le job `hevc-sans-npm` les charge directement sur Node sans dépendance npm pour le décodeur ; un média HEVC synthétique est comparé au YUV décodé par FFmpeg. Cela ne teste pas Safari iPhone physique, n'active pas l'export HEVC pour les utilisateurs, et ne prouve pas l'absence de réseau lors du chargement initial du site.
+
+**Attention :** cette étape CI et son nouveau banc doivent encore être validés sur le SHA exact qui les contient ; ne pas proclamer un test réussi sans journaux verts. La branche expérimentale peut héberger les binaires, sans publication sur `main` ni mise en ligne de `retoucheproai.com`.

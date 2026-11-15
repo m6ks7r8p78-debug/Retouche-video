@@ -48,11 +48,9 @@ jobs:
         with:
           node-version: '22'
       - name: Installer Playwright
-        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0 @hevcjs/core@1.8.0
-      - name: Préparer le décodeur HEVC WASM local depuis npm épinglé
-        run: |
-          node outils/nova-hevc-assets.mjs stage
-          node outils/nova-hevc-assets.mjs verify
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: Contrôler les fichiers HEVC réellement versionnés dans Git
+        run: node outils/nova-hevc-assets.mjs verify
       - name: Préparer FFmpeg pour le test MP4 réel
         run: |
           if ! command -v ffmpeg >/dev/null 2>&1; then
@@ -75,9 +73,8 @@ jobs:
           node-version: '22'
       - name: Installer WebKit et dépendances Linux (navigateur gratuit)
         run: |
-          npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0 @hevcjs/core@1.8.0
+          npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
           npx playwright install --with-deps webkit
-          node outils/nova-hevc-assets.mjs stage
           node outils/nova-hevc-assets.mjs verify
       - name: Vérifier FFmpeg
         run: |
@@ -87,3 +84,21 @@ jobs:
           fi
       - name: Tester le vrai moteur WebKit Linux (ne remplace pas Safari iPhone)
         run: NOVA_HEVC_ENGINE=webkit node --test tests/nova-webkit.test.mjs tests/nova-hevc-wasm-browser.test.mjs
+
+
+  hevc-sans-npm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrôler HEVC WASM du dépôt sans installer npm ni charger de CDN
+        run: |
+          node outils/nova-hevc-assets.mjs verify
+          test -x "$(command -v ffmpeg)"
+      - name: Décoder HEVC Annex B directement depuis Git avec Node WASM et FFmpeg
+        run: node --test tests/nova-hevc-offline.test.mjs
