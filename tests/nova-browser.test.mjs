@@ -430,7 +430,7 @@ async function decodeAudioEvents(filename){
 async function decodeVideoEvents(filename){
  const {stdout}=await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
    "-i",filename,"-map","0:v:0","-vf","scale=8:8,format=gray",
-   "-f","rawvideo","-"],{encoding:null,maxBuffer:8*1024*1024});
+   "-fps_mode","passthrough","-f","rawvideo","-"],{encoding:null,maxBuffer:8*1024*1024});
  const events=impulsionsVideo(stdout,{width:8,height:8,fps:15});
  const probed=await runBinary("ffprobe",["-v","error","-select_streams","v:0",
    "-show_entries","frame=best_effort_timestamp_time","-of","json",filename]);
@@ -478,7 +478,7 @@ test("NOVA 0.8 : le banc FFmpeg valide AAC préservé et détecte +250 ms audio 
 });
 
 
-test("NOVA 1.0 : vrai MP4 AAC + B-frames VFR, copie audio et contrôle A/V",async(t)=>{
+test("NOVA 0.10 : vrai MP4 AAC + B-frames VFR, copie audio et contrôle A/V",async(t)=>{
  const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-av-vfr-b-"));
  const src=path.join(tmp,"vfr-bframe-aac.mp4"),app=server();
  try{
