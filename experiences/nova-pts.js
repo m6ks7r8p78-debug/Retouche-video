@@ -155,7 +155,8 @@ async function creer(file,{signal}={}){
  }
  return Object.freeze({imageA,fermer,info:{width:info.dw,height:info.dh,
    samples:info.ns,codec:info.codec,editMediaTime:info.editMediaTime,
-   firstPTSUs:timeline.premierPTS,lastPTSUs:timeline.dernierPTS},
+   firstPTSUs:timeline.premierPTS,lastPTSUs:timeline.dernierPTS,
+   ptsUs:timeline.nonnegative.map(x=>x.ptsUs)},
    statistiques:()=>({fed:state.fed,decoded:state.decoded,dropped:state.dropped,held:frames.size})});
 }
 return Object.freeze({creer,planifier,choisir});
