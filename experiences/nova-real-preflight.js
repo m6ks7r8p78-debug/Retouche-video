@@ -6,6 +6,12 @@
 var NOVA_REAL_PREFLIGHT=(()=>{
 "use strict";
 const MAX_BYTES=60*1048576;
+// Bornes de NOVA_HEVC_RENDER.metadata : restituées sans les relever.
+const MAX_CODED_PIXELS=640*360, MAX_SOURCE_FRAMES=90, MAX_SECONDS_US=12000000;
+const MAX_OUTPUT_FPS=15;
+const blockingCodes=new Set(["coded-pixels-over-limit","source-frames-over-limit",
+ "duration-over-limit","coded-dimensions-not-even"]);
+const advisoryCodes=new Set(["source-rate-above-output-rate"]);
 const codes=new Set(["ready-for-export-attempt","not-video","file-budget",
  "browser-unavailable","insecure-context","container-unreadable",
  "unsupported-video-codec","hevc-profile-or-timeline-incompatible",
@@ -13,15 +19,32 @@ const codes=new Set(["ready-for-export-attempt","not-video","file-budget",
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
 const count=x=>Number.isSafeInteger(x)&&x>=0?x:null;
 const small=x=>finite(x)&&x>=0&&x<=160?Math.round(x*10)/10:null;
+const approxFps=(n,d)=>Number.isSafeInteger(n)&&n>0&&finite(d)&&d>0?
+ Math.round((n*1000000/d)*10)/10:null;
+function knownLimits(info){
+ const result=[];
+ const w=count(info?.W),h=count(info?.H),n=count(info?.ns),d=info?.durationUs;
+ // Les dimensions de codage (non celles de l'aperçu orienté) gouvernent le coût.
+ if(w!==null&&h!==null&&w*h>MAX_CODED_PIXELS)
+  result.push("coded-pixels-over-limit");
+ if(n!==null&&n>MAX_SOURCE_FRAMES)
+  result.push("source-frames-over-limit");
+ if(finite(d)&&d>MAX_SECONDS_US)
+  result.push("duration-over-limit");
+ if(w!==null&&h!==null&&(w%2||h%2))
+  result.push("coded-dimensions-not-even");
+ return result;
+}
 function source(file){return {
  bytes:count(file?.size),videoCategory:"unverified",
- codec:"unknown",width:null,height:null,durationMs:null,frames:null
+ codec:"unknown",width:null,height:null,durationMs:null,frames:null,
+ estimatedSourceFps:null
 }}
 function state(file){
  return {schema:"retoucheproai.nova.real-preflight.v1",version:1,
   status:"analysis-unavailable",readyForExportAttempt:false,
   source:source(file),audio:"not-tested",estimatedMiB:null,
-  exportProposal:null,
+  exportProposal:null,blockers:[],advisories:[],
   privacy:{mediaUploaded:false,rawMediaInReport:false,filenameInReport:false,
    automaticSharing:false,mediaModified:false},
   limitation:"Précontrôle technique local uniquement : ni preuve de qualité, ni test de lecture finale, ni garantie d'export."};
@@ -70,6 +93,13 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
   r.source.durationMs=finite(info.durationUs)&&info.durationUs>=0?
     Math.round(info.durationUs/1000):null;
   r.source.frames=count(info.ns);
+  r.source.estimatedSourceFps=approxFps(info.ns,info.durationUs);
+  if(r.source.codec==="hevc"){
+   r.blockers=knownLimits(info);
+   if(r.source.estimatedSourceFps!==null&&
+       r.source.estimatedSourceFps>MAX_OUTPUT_FPS+0.2)
+    r.advisories.push("source-rate-above-output-rate");
+  }
   if(r.source.codec!=="hevc")return finish(r,"unsupported-video-codec");
   const validateFn=validate||globalThis.NOVA_HEVC_RENDER?.metadata;
   if(typeof validateFn!=="function")return finish(r,"analysis-unavailable");
@@ -127,9 +157,17 @@ function serialiser(report){
    videoCategory:r.videoCategory==="local-video"?"local-video":"unverified",
    codec:["hevc","h264","other-or-unknown","unknown"].includes(r.codec)?r.codec:"unknown",
    width:count(r.width),height:count(r.height),
-   durationMs:count(r.durationMs),frames:count(r.frames)},
+   durationMs:count(r.durationMs),frames:count(r.frames),
+   estimatedSourceFps:finite(r.estimatedSourceFps)&&r.estimatedSourceFps>0&&
+    r.estimatedSourceFps<1000?Math.round(r.estimatedSourceFps*10)/10:null},
   audio:report.audio==="aac-copy-verified"?"aac-copy-verified":"not-tested",
   estimatedMiB:small(report.estimatedMiB),
+  blockers:Array.isArray(report.blockers)?[...new Set(report.blockers.filter(
+   x=>blockingCodes.has(x)))].slice(0,4):[],
+  advisories:Array.isArray(report.advisories)?[...new Set(report.advisories.filter(
+   x=>advisoryCodes.has(x)))].slice(0,2):[],
+  pilotLimits:{codedPixelAreaMax:MAX_CODED_PIXELS,sourceFramesMax:MAX_SOURCE_FRAMES,
+   maxDurationMs:MAX_SECONDS_US/1000,outputFpsMax:MAX_OUTPUT_FPS},
   exportProposal:p&&[p.width,p.height,p.fps,p.frames].every(Number.isSafeInteger)&&
     p.width>=2&&p.height>=2&&p.width<=640&&p.height<=640&&p.fps===15&&
     p.frames>=1&&p.frames<=180?
