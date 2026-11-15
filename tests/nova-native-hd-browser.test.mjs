@@ -100,9 +100,14 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   });
   assert.ok(probe.packets>=40);
   assert.deepEqual(probe.asc,[17,136]);
-  const aacDL=page.waitForEvent("download");
-  await page.locator("#webkitAacProof").click();
-  const aacPath=await (await aacDL).path();
+  const aacBytes=await page.evaluate(async()=>{
+   const href=document.querySelector("#webkitAacProof").href;
+   const data=await (await fetch(href)).arrayBuffer();
+   return Array.from(new Uint8Array(data));
+  });
+  assert.ok(aacBytes.length>300,"synthetic AAC output too small");
+  const aacPath=path.join(dir,"synthetic-webkit-aac-proof.m4a");
+  await fs.writeFile(aacPath,Buffer.from(aacBytes));
   const aacCheck=JSON.parse((await run("ffprobe",["-v","error","-show_streams",
    "-of","json",aacPath],{timeout:10000})).stdout);
   const aacStream=aacCheck.streams.find(x=>x.codec_type==="audio");
