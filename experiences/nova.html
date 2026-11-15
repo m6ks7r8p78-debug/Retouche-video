@@ -86,7 +86,12 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 #iphoneBenchStatus{font-size:12px;color:#46644f;overflow-wrap:anywhere}
 #iphoneBenchPanel a{display:block;border-radius:12px;padding:12px;margin:8px 0;
  background:#e6f7eb;font-weight:700;font-size:12px;text-align:center}
-#iphoneBenchPanel [hidden]{display:none!important}</style>
+#iphoneBenchPanel [hidden]{display:none!important}#novaRealPreflightPanel{border-top:1px solid var(--line);padding-top:5px}
+#novaRealPreflightRun{margin:8px 0}
+#novaRealPreflightStatus{font-size:12px;color:#46644f;overflow-wrap:anywhere}
+#novaRealPreflightJson{display:block;border-radius:12px;padding:12px;margin:8px 0;background:#e8faee;font-weight:750;text-decoration:none;overflow-wrap:anywhere}
+#novaRealPreflightPanel [hidden]{display:none!important}
+</style>
 </head>
 <body>
 <div class="shell">
@@ -148,6 +153,15 @@ Aucun traitement ne démarre sans appui, aucune modification ni transmission du 
 <button type="button" class="secondary" id="novaMotionRun" disabled>Analyser 2 images sans modifier</button>
 <div id="novaMotionStatus" role="status" aria-live="polite">Importez une courte vidéo compatible pour obtenir un diagnostic local.</div>
 <a id="novaMotionJson" hidden>Enregistrer le diagnostic mouvement JSON local</a>
+</details>
+<details class="sourceAdvanced" id="novaRealPreflightPanel">
+<summary>Précontrôle d'une vidéo réelle · sans export</summary>
+<p>Après sélection d'une vidéo, ce contrôle lit uniquement les métadonnées locales : HEVC SDR BT.709,
+présentation et PTS, budget estimé et possibilité de conserver la piste AAC. Il ne modifie pas
+la vidéo, n'envoie aucun fichier et ne garantit pas un export réussi.</p>
+<button type="button" class="secondary" id="novaRealPreflightRun" disabled>Vérifier cette vidéo sans exporter</button>
+<div id="novaRealPreflightStatus" role="status" aria-live="polite">Choisissez une vidéo locale. Aucun diagnostic ne part sans votre appui.</div>
+<a id="novaRealPreflightJson" hidden>Enregistrer le rapport local de précontrôle</a>
 </details>
 <details class="sourceAdvanced" id="iphoneBenchPanel">
 <summary>Tester sur iPhone Safari · diagnostic local</summary>
@@ -388,5 +402,7 @@ async function sampleVideo(){
 <script src="./vendor/smallmotion/smallmotion-local.js"></script>
 <script src="nova-smallmotion-bridge.js"></script>
 <script src="nova-smallmotion-ui.js"></script>
+<script src="nova-real-preflight.js"></script>
+<script src="nova-real-preflight-ui.js"></script>
 <script src="nova-iphone-lab-ui.js"></script>
 </body></html>
