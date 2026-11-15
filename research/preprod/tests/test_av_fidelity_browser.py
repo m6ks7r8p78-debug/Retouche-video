@@ -44,6 +44,10 @@ def test():
           page.route('**/*',route)
           page.goto(base,wait_until='domcontentloaded',timeout=30000)
           page.wait_for_selector('#retouche-av-audit-panel',state='attached',timeout=24000)
+          assert page.locator('#retouche-av-audit-panel').get_attribute('data-audit-version')=='v2'
+          assert page.evaluate("document.querySelector('#retouche-av-audit-panel').parentElement.id")=='ws'
+          page.wait_for_function("()=>document.querySelector('#retouche-av-audit-panel')?.dataset.auditReady==='true'",timeout=8000)
+          assert page.locator('#retouche-av-audit-panel').is_visible()
           assert page.evaluate('typeof window.RetoucheLocalExportAudit')=='object'
           page.locator('#f').set_input_files({'name':'fixture-original.mp4','mimeType':'video/mp4','buffer':a.read_bytes()})
           page.wait_for_function('''()=>document.querySelector('#smallmotion-app-panel')?.hidden===false''',timeout=12000)
@@ -68,6 +72,22 @@ def test():
           # A new source import must invalidate the previous result (no stale QA).
           page.locator('#f').set_input_files({'name':'new-source.mp4','mimeType':'video/mp4','buffer':a.read_bytes()})
           page.wait_for_function('''()=>window.RetoucheLocalExportAuditUI?.observe()===null''',timeout=10000)
+          # A broken/missing A/V UI script must NEVER make the entire card invisible.
+          broken=context.new_page()
+          broken.route('**/research/preprod/av-fidelity-app.js',lambda route: route.abort())
+          broken.goto(base,wait_until='domcontentloaded',timeout=30000)
+          broken.wait_for_selector('#retouche-av-audit-panel',state='visible',timeout=10000)
+          assert broken.locator('#retouche-av-audit-pick').is_disabled()
+          assert 'module n’est pas disponible' in broken.locator('#retouche-av-audit-status').inner_text()
+          broken.close()
+          # If only the parser fails, the UI must explain that its engine is missing.
+          missing=context.new_page()
+          missing.route('**/research/preprod/av-fidelity-local.js',lambda route: route.abort())
+          missing.goto(base,wait_until='domcontentloaded',timeout=30000)
+          missing.wait_for_selector('#retouche-av-audit-panel',state='visible',timeout=10000)
+          missing.wait_for_function("()=>document.querySelector('#retouche-av-audit-panel')?.dataset.auditReady==='false'",timeout=10000)
+          assert missing.locator('#retouche-av-audit-pick').is_disabled()
+          missing.close()
           assert not errors,errors
           assert not external,external
           out.append({'viewport':[width,height],'appAuditMounted':True,'detectedMissingFrames':True,
