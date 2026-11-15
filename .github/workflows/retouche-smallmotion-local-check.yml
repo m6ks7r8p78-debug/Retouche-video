@@ -1,0 +1,46 @@
+name: Retouche 3D - SmallMotion local-first experiment
+on:
+  push:
+    branches:
+      - lab-3d-smallmotion-local-first
+    paths:
+      - 'research/3d-smallmotion/**'
+      - '.github/workflows/retouche-smallmotion-local-check.yml'
+  pull_request:
+    paths:
+      - 'research/3d-smallmotion/**'
+      - '.github/workflows/retouche-smallmotion-local-check.yml'
+jobs:
+  cpu-local-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONPATH: research/3d-camera-v43:research/3d-multimotion:research/3d-depth-evidence:research/3d-smallmotion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install open-source CPU-only Python requirements
+        run: python -m pip install numpy opencv-python-headless pytest
+      - name: All previous lab tests + SmallMotion
+        run: python -m pytest -q research/3d-camera-v43/tests research/3d-multimotion/tests research/3d-depth-evidence/tests research/3d-smallmotion/tests/test_smallmotion.py
+      - name: Local browser JS algorithm unit tests
+        run: node research/3d-smallmotion/tests/test_smallmotion_local.cjs
+      - name: Recheck browser JS against historical synthetic counterexamples
+        run: python research/3d-smallmotion/js_crosscheck.py
+      - name: Run reproducible synthetic small-motion benchmark
+        run: python research/3d-smallmotion/benchmark_smallmotion.py --seeds 3 --offset 0 --out /tmp/smallmotion-ci.json
+      - name: Regenerate self-contained offline HTML
+        run: python research/3d-smallmotion/build_local_demo.py
+      - name: Archive only public synthetic metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: smallmotion-synthetic-only
+          path: |
+            /tmp/smallmotion-ci.json
+            research/3d-smallmotion/results/browser_crosscheck.json
+          if-no-files-found: error
