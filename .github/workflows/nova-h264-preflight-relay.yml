@@ -25,7 +25,9 @@ jobs:
         run: |
           node --check experiences/nova-real-preflight.js
           node --check experiences/nova-real-preflight-ui.js
-          node --test tests/nova-real-preflight.test.mjs tests/nova-native-hd.test.mjs
+          node --check experiences/nova-zones.js
+          node --check experiences/nova-native-hd.js
+          node --test tests/nova-real-preflight.test.mjs tests/nova-native-hd.test.mjs tests/nova-zones.test.mjs
       - name: Confirm only experimental branch
         run: |
           test "${GITHUB_REF_NAME}" = "chatgpt-nova-h264-preflight-relay-20261115-v1" || test "${GITHUB_EVENT_NAME}" = "pull_request"
