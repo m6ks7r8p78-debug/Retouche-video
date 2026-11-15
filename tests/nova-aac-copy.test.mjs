@@ -17,7 +17,10 @@ function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=
   box("stsc",Buffer.alloc(4),u32(1),u32(1),u32(3),u32(1)),
   box("stsz",Buffer.alloc(4),u32(0),u32(3),u32(4),u32(4),u32(4)),
   box("stco",Buffer.alloc(4),u32(1),u32(wrongOffset??8)),
-  ...(sampleGroup?[box("sgpd",Buffer.alloc(8))]:[]));
+  ...(sampleGroup==="roll"?[
+    box("sgpd",Buffer.from([1,0,0,0]),Buffer.from("roll"),u32(2),u32(1),Buffer.from([0xff,0xff])),
+    box("sbgp",Buffer.alloc(4),Buffer.from("roll"),u32(1),u32(3),u32(1))
+  ]:sampleGroup?[box("sgpd",Buffer.alloc(8))]:[]));
  let edts=Buffer.alloc(0);
  if(edit!=null){
   const elst=Buffer.alloc(20);elst.writeUInt32BE(1,4);elst.writeUInt32BE(3072,8);
@@ -67,4 +70,13 @@ test("NOVA AAC copy : refuse les samples pointant sur moov plutôt que mdat",asy
 });
 test("NOVA AAC copy : refuse les métadonnées de priming en sample groups non transférées",async()=>{
  await assert.rejects(AAC.planifier(fixture({sampleGroup:true}),{durationSeconds:.06}),/groupes d'échantillons AAC/);
+});
+
+test("NOVA AAC copy : recopie le groupe roll=-1 sur un fichier compatible",async()=>{
+ const file=fixture({sampleGroup:"roll"});
+ const plan=await AAC.planifier(file,{durationSeconds:.06});
+ assert.equal(plan.rollDistance,-1);
+ const packets=[];
+ await AAC.copier(file,plan,{addAudioChunkRaw:(buf,type,t,d,meta)=>packets.push([...buf])});
+ assert.equal(packets.length,3);
 });
