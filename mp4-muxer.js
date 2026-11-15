@@ -212,7 +212,9 @@ var Mp4Muxer = (() => {
       0,
       ...tracks.filter((x) => x.samples.length > 0).map((x) => {
         const lastSample = lastPresentedSample(x.samples);
-        return lastSample.presentationTimestamp + lastSample.duration;
+        return x.info.type === "audio" && x.info.editDurationSeconds != null
+          ? x.info.editDurationSeconds
+          : lastSample.presentationTimestamp + lastSample.duration;
       })
     ), GLOBAL_TIMESCALE);
     let nextTrackId = Math.max(...tracks.map((x) => x.id)) + 1;
@@ -243,12 +245,21 @@ var Mp4Muxer = (() => {
   };
   var trak = (track, creationTime) => box("trak", null, [
     tkhd(track, creationTime),
+    track.info.type === "audio" && track.info.editDurationSeconds != null
+      ? box("edts", null, [fullBox("elst", 0, 0, [
+          u32(1),
+          u32(intoTimescale(track.info.editDurationSeconds, GLOBAL_TIMESCALE)),
+          i32(track.info.editMediaTime),
+          fixed_16_16(1)
+        ])]) : null,
     mdia(track, creationTime)
   ]);
   var tkhd = (track, creationTime) => {
     let lastSample = lastPresentedSample(track.samples);
     let durationInGlobalTimescale = intoTimescale(
-      lastSample ? lastSample.presentationTimestamp + lastSample.duration : 0,
+      track.info.type === "audio" && track.info.editDurationSeconds != null
+        ? track.info.editDurationSeconds
+        : lastSample ? lastSample.presentationTimestamp + lastSample.duration : 0,
       GLOBAL_TIMESCALE
     );
     let needsU64 = !isU32(creationTime) || !isU32(durationInGlobalTimescale);
@@ -1485,6 +1496,18 @@ var Mp4Muxer = (() => {
           `Invalid number of audio channels: ${options.audio.numberOfChannels}. Must be a positive integer.`
         );
       }
+      // Extension NOVA : elst simple (même piste AAC, pas de vide, 1x).
+      if (options.audio.editDurationSeconds !== void 0 &&
+          (options.audio.codec !== "aac" ||
+           !Number.isInteger(options.audio.editMediaTime) ||
+           options.audio.editMediaTime < 0 ||
+           options.audio.editMediaTime > 0x7fffffff ||
+           !Number.isFinite(options.audio.editDurationSeconds) ||
+           options.audio.editDurationSeconds <= 0 ||
+           options.audio.editDurationSeconds > 12 ||
+           (options.audio.editMediaTime > 0 && options.audio.rollDistance == null))) {
+        throw new TypeError("Unsupported AAC priming edit list");
+      }
       // Extension NOVA : ne recopier que les groupes AAC roll de distance -1/0.
       if (options.audio.rollDistance !== void 0 && (options.audio.codec !== "aac" ||
           ![-1, 0].includes(options.audio.rollDistance))) {
@@ -1595,6 +1618,8 @@ var Mp4Muxer = (() => {
           numberOfChannels: __privateGet(this, _options).audio.numberOfChannels,
           sampleRate: __privateGet(this, _options).audio.sampleRate,
           rollDistance: __privateGet(this, _options).audio.rollDistance ?? null,
+          editMediaTime: __privateGet(this, _options).audio.editMediaTime ?? 0,
+          editDurationSeconds: __privateGet(this, _options).audio.editDurationSeconds ?? null,
           decoderConfig: null
         },
         timescale: __privateGet(this, _options).audio.sampleRate,
