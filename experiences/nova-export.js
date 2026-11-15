@@ -194,7 +194,22 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     });
   }
   if(signal?.aborted)throw new Error("Export annulé");
-  const audio=await audioDuFichier(file,allowSilent,globalThis.AudioContext||globalThis.webkitAudioContext);
+  // Priorité à la copie exacte de paquets AAC pour les MP4 sans montage
+  // audio complexe. Cette solution fonctionne même sur Chromium/Linux sans
+  // AudioEncoder, et réduit aussi la pression RAM sur iPhone.
+  let audioCopy=null,copyError=null;
+  if(!allowSilent&&globalThis.NOVA_AAC_COPY){
+    try{audioCopy=await NOVA_AAC_COPY.planifier(file,{
+      durationSeconds:timeline.durationSeconds,signal
+    })}catch(e){copyError=e.message||String(e)}
+  }
+  let audio=null;
+  if(!allowSilent&&!audioCopy){
+    try{audio=await audioDuFichier(file,false,globalThis.AudioContext||globalThis.webkitAudioContext)}
+    catch(e){throw new Error(e.message+(copyError?" ; alternative copie AAC non applicable : "+copyError:""))}
+  }
+  const audioMode=audioCopy?"aac-copy":audio?"aac-encode":"silent";
+  onProgress({stage:"audioMode",mode:audioMode});
   let audioCheck=null;
   const audioPaquets=[];
   if(audio){
@@ -203,8 +218,9 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   }
   if(signal?.aborted)throw new Error("Export annulé");
   const target=new Mp4Muxer.ArrayBufferTarget();
+  const audioConfig=audioCopy?{sampleRate:audioCopy.sampleRate,numberOfChannels:audioCopy.channels}:audio?.cfg;
   const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",video:{codec:"avc",width:settings.width,height:settings.height},
-    ...(audio?{audio:{codec:"aac",sampleRate:audio.cfg.sampleRate,numberOfChannels:audio.cfg.numberOfChannels}}:{})});
+    ...(audioConfig?{audio:{codec:"aac",sampleRate:audioConfig.sampleRate,numberOfChannels:audioConfig.numberOfChannels}}:{})});
   videoEnc=new VideoEncoder({output:(chunk,meta)=>{try{muxer.addVideoChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
   videoEnc.configure(config);
   if(audio){
@@ -262,7 +278,11 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    }
    await audioEnc.flush();if(error)throw error;
   }
-  const audioAudit=audio?NOVA_GUARD.auditerPaquetsAAC(audioPaquets,{
+  if(audioCopy){
+    await NOVA_AAC_COPY.copier(file,audioCopy,muxer,{signal,
+      onPacket:packet=>audioPaquets.push(packet)});
+  }
+  const audioAudit=audioConfig?NOVA_GUARD.auditerPaquetsAAC(audioPaquets,{
     durationSeconds:timeline.durationSeconds}):null;
   muxer.finalize();
   const blob=new Blob([target.buffer],{type:"video/mp4"});
@@ -270,7 +290,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   onProgress({stage:"verification",progress:1});
   const validation=await verifierMp4(blob,settings,signal);
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,validation,hasAudio:!!audio,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
+  return {blob,plan:settings,validation,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
   },report:sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
