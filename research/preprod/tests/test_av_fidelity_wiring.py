@@ -11,6 +11,13 @@ for name in assets:
  assert html.count(tag)==1,(name,html.count(tag))
  assert (root/name).is_file(),name
 assert html.index('<script defer src="research/3d-smallmotion/smallmotion-app-bootstrap.js"></script>') < html.index(f'<script defer src="{assets[0]}"></script>') < html.index(f'<script defer src="{assets[1]}"></script>')
+assert html.count('id="retouche-av-audit-panel"')==1, 'Visible audit panel must exist without JavaScript'
+assert html.index('id="drop"') < html.index('id="retouche-av-audit-panel"') < html.index('id="f"'), 'Card must follow drop and SmallMotion mount position'
+assert 'data-audit-version="v2"' in html, 'Explicit visible version marker'
+assert 'id="retouche-av-audit-pick" disabled' in html, 'Fail closed if JS unavailable'
+ui=(root/assets[1]).read_text(encoding='utf8')
+assert "existing=d.getElementById('smallmotion-app-panel')" not in ui, 'Mount must not depend on SmallMotion race'
+assert "panel.dataset.auditReady='true'" in ui, 'The card must advertise readiness'
 sw=(root/'sw.js').read_text(encoding='utf8')
 for name in assets: assert name in sw,name
 app=(root/'app.js').read_text(encoding='utf8')

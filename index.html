@@ -429,6 +429,19 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
       </div>
       <div class="drop-over" aria-hidden="true">Dépose pour importer</div>
     </div>
+    <!-- PREPRODUCTION ONLY: visible without JS so missing audit scripts are detectable on iPhone. -->
+    <section id="retouche-av-audit-panel" aria-label="Contrôle de fidélité export local" data-audit-version="v2"
+      style="margin:12px 0 16px;padding:20px 18px;background:#202125;color:#f4f4f6;border:1px solid #4d5563;border-radius:22px">
+      <strong style="display:block;font-size:17px;line-height:1.45;color:#fff">Contrôle local de fidélité de l’export <small style="font-size:11px;color:#ced3db">v2</small></strong>
+      <p style="font-size:13px;line-height:1.5;margin:10px 0;color:#d4d7dc">Après import, compare la vidéo originale avec le MP4 exporté. Analyse locale des métadonnées, sans envoi ni modification des fichiers.</p>
+      <button type="button" id="retouche-av-audit-pick" disabled
+        style="appearance:none;min-height:44px;padding:10px 14px;background:#373d49;color:#fff;border:1px solid #bec9d9;border-radius:10px;font-weight:700;opacity:1">Comparer mon MP4 exporté</button>
+      <input type="file" id="retouche-av-audit-output" accept=".mp4,.m4v,video/mp4" hidden aria-label="Sélectionner le MP4 exporté">
+      <p id="retouche-av-audit-status" role="status" aria-live="polite"
+        style="font-size:13px;line-height:1.5;color:#ebeff1;margin:12px 0">Module en cours de chargement. Si le bouton reste grisé, le module n’est pas disponible sur ce déploiement.</p>
+      <details id="retouche-av-audit-details"><summary style="cursor:pointer">Détails techniques (sans images)</summary>
+        <pre id="retouche-av-audit-json" style="font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere"></pre></details>
+    </section>
     <input type="file" id="f" accept="video/*" multiple hidden>
     <input type="file" id="fp" accept="image/*" hidden>
     <input type="file" id="fe" accept="image/*" hidden>

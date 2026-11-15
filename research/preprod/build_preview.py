@@ -65,8 +65,8 @@ def build():
     staged_sw=src.replace('const LOURDS=["sr.bin","rnnoise.mjs","modeles/edgetam_encodeur.onnx","modeles/edgetam_decodeur.onnx"]','const LOURDS=[]')
     assert staged_sw!=src, 'Optional model list changed in repo'
     # Isolate preview cache from production and prior installations.
-    staged_sw=staged_sw.replace('const C="retouche-v87"','const C="retouche-v853"')
-    assert 'retouche-v853' in staged_sw
+    staged_sw=staged_sw.replace('const C="retouche-v88"','const C="retouche-v854"')
+    assert 'retouche-v854' in staged_sw
     h=hashlib.sha256()
     for name in names:
         if name=='./':continue
@@ -93,7 +93,7 @@ Do NOT use as production or attach production custom domain.
 ''',encoding='utf8')
     report={'type':'static-preview-same-app','assetCount':len(copied),
       'assetsBytes':sum((OUT/f).stat().st_size for f in copied),
-      'cache':'retouche-v853','fingerprint':fingerprint,
+      'cache':'retouche-v854','fingerprint':fingerprint,
       'noindex':True,'noProductionCNAME':True,'separateHostingRequired':True,
       'noModelWeights':True,'noPrivateVideos':True,'urlPublished':False,
       'assetDigestsSHA256':digests}
