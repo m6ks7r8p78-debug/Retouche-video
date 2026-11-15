@@ -61,6 +61,29 @@ function exigerDebutFidele(audit){
   "PTS source : première image trop tardive ; ne pas inventer une image au début du film");
  return audit;
 }
+function auditerPaquetsAAC(packets,{durationSeconds}={}){
+ if(!Array.isArray(packets)||!packets.length||
+    !Number.isFinite(durationSeconds)||durationSeconds<=0)
+  throw new Error("Piste AAC attendue, mais aucun paquet audio vérifiable");
+ let first=null,last=null,end=null;
+ for(const p of packets){
+  if(!p||!Number.isSafeInteger(p.timestamp)||
+     (p.duration!=null&&(!Number.isSafeInteger(p.duration)||p.duration<=0)))
+   throw new Error("Horodatage AAC invalide");
+  if(last!==null&&p.timestamp<last)
+   throw new Error("Paquets AAC non monotones : export refusé");
+  if(first===null)first=p.timestamp;
+  last=p.timestamp;
+  if(p.duration!=null)end=Math.max(end??-Infinity,p.timestamp+p.duration);
+ }
+ if(first>100000||first< -100000)
+  throw new Error("Départ audio AAC décalé de plus de 100 ms");
+ if(end!==null&&Math.abs(end-durationSeconds*1e6)>200000)
+  throw new Error("Durée AAC encodée incohérente avec la vidéo");
+ return Object.freeze({packets:packets.length,startUs:first,endUs:end,
+  couvertureControlee:end!==null,
+  qualification:"vérification paquets AAC encodés ; synchronisation perceptuelle non validée"});
+}
 function attendreEncodeur(encoder,{maxQueue=4,timeoutMs=12000,signal}={}){
  if(!encoder||!Number.isInteger(maxQueue)||maxQueue<0||
     !Number.isInteger(timeoutMs)||timeoutMs<1)throw new TypeError("Encodeur ou seuil invalide");
@@ -89,6 +112,6 @@ function attendreEncodeur(encoder,{maxQueue=4,timeoutMs=12000,signal}={}){
   drain();
  });
 }
-return Object.freeze({estimerMemoire,exigerBudget,auditerPTS,exigerDebutFidele,attendreEncodeur});
+return Object.freeze({estimerMemoire,exigerBudget,auditerPTS,exigerDebutFidele,auditerPaquetsAAC,attendreEncodeur});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_GUARD;
