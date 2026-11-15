@@ -1,0 +1,2 @@
+"use strict";
+window.CINEMA_P29_SYNTHETIC=Object.freeze({"schema":"retouche-cinema-p29-synthetic-mobile-preview-v1","status":"verified_synthetic_preview_only","source_label":"Démonstration de laboratoire — dessins fictifs","benchmark_cases":9,"cases_color_error_increase":9,"cases_file_larger_no_gain":3,"cases_temporal_pixel_change":9,"cases_audio_preserved":9,"user_video_analyzed":false,"may_modify_or_export_video":false,"physical_iphone_safari_tested":false,"recommendation":null});

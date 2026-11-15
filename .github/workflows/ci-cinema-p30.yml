@@ -144,3 +144,62 @@ jobs:
             studio-cinema/p30/results/browser/
           retention-days: 3
           if-no-files-found: error
+
+  verify-isolated-https-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare seven public static files with original P30 ZIP SHA256
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          root=Path("studio-cinema/p30/https-demo")
+          fingerprints={
+            "index.html":"a272bf76d2a1b47ee0a18c0e3645c1d1fa4fe923e4873b22576e5b64486aac87",
+            "preview.css":"4b402beed17f280af6085601c1eb9def68f5e15bf343edee8e9ea7e1524ac1cf",
+            "preview.js":"8a66b83bbe5ff0fafd70a5938fa0e854b30b12a3af7910c8c3470e2a29b0b59c",
+            "preview-data.js":"698dc958ccee008480db535b78b5e624e96e74afc638ea857199814a0f9c9c3e",
+            "test-iphone.html":"027c5cb7f37618b1170708a61451e9ba06882cc6089d49da7e44f76c80c6b0fb",
+            "iphone-check.css":"52ded189153c615cc68d41d6c77a33f531373f0e39f93f8f13abdd275cedc563",
+            "iphone-check.js":"558e255123a4a30565bef55efcfa6d4d8eab5de2771ed77d3d5737b4d99fa77b",
+          }
+          for name,expected in fingerprints.items():
+            content=(root/name).read_bytes()
+            actual=hashlib.sha256(content).hexdigest()
+            print(name,actual, "MATCH" if actual==expected else "DIFFERENT")
+            assert actual==expected,f"{name} not identical to P30 verified ZIP"
+          print("EXACT seven files matched original P30 synthetic ZIP")
+          PY
+      - name: Independently GET and compare seven external HTTPS demo assets
+        run: |
+          python - <<'PY'
+          import urllib.request, urllib.error, pathlib, time
+          base="https://raw.githack.com/m6ks7r8p78-debug/Retouche-video/chatgpt-cinema-p30-https-preview-20261115/studio-cinema/p30/https-demo/"
+          root=pathlib.Path("studio-cinema/p30/https-demo")
+          for name in ["index.html","preview.css","preview.js","preview-data.js",
+                       "test-iphone.html","iphone-check.css","iphone-check.js"]:
+            last=None
+            for retry in range(4):
+              try:
+                req=urllib.request.Request(base+name,headers={"User-Agent":"CinemaP30LabVerify/1.0"})
+                with urllib.request.urlopen(req,timeout=30) as response:
+                  assert response.status==200
+                  data=response.read()
+                  ctype=response.headers.get("Content-Type","")
+                  assert (name.endswith(".html") and "text/html" in ctype) or (
+                    name.endswith(".js") and ("javascript" in ctype or "ecmascript" in ctype)) or (
+                    name.endswith(".css") and "text/css" in ctype),f"{name} wrong content type {ctype}"
+                  assert data==(root/name).read_bytes(),f"HTTPS content mismatch {name}"
+                  print(name,"HTTPS verified:",len(data),"bytes",ctype)
+                break
+              except Exception as error:
+                last=error
+                if retry==3:raise
+                print(name,"retry",retry+1,str(error))
+                time.sleep(4)
+          print("ALL seven HTTPS public assets served byte-identically to validated synthetic ZIP")
+          PY

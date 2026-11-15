@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; media-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./preview.css">
+<link rel="stylesheet" href="./iphone-check.css">
+<title>Cinema P30 — contrôle manuel iPhone (laboratoire)</title>
+<script defer src="./preview-data.js"></script>
+<script defer src="./iphone-check.js"></script>
+</head>
+<body>
+<main class="shell" id="main">
+  <header class="topbar">
+    <span class="wordmark"><span class="brandmark" aria-hidden="true">✦</span> RETOUCHEPROAI <span class="muted">/ LAB</span></span>
+    <span class="version">CINEMA P30</span>
+  </header>
+  <nav class="top-nav" aria-label="Navigation locale"><a href="./index.html">← Retour à la démonstration</a></nav>
+  <section class="hero" aria-labelledby="title">
+    <p class="eyebrow"><span class="dot" aria-hidden="true"></span> TEST MANUEL — AUCUN MÉDIA</p>
+    <h1 id="title">Vérifier l’affichage sur iPhone.</h1>
+    <p class="lead">Trois observations simples et un rapport local à conserver. Ce test n’analyse ni vidéo ni photo.</p>
+    <div class="notice" role="note"><strong>Pas de certification automatique :</strong> les réponses sont déclarées par la personne qui utilise le téléphone. Aucun essai physique n’est validé tant que le rapport n’a pas été examiné séparément.</div>
+  </section>
+  <section class="panel" aria-labelledby="form-title">
+    <p class="section-kicker">VOTRE OBSERVATION</p>
+    <h2 id="form-title">Vérifications sur ce téléphone</h2>
+    <p class="intro">Ouvre d’abord l’aperçu, vérifie la lisibilité et le bouton « Pourquoi cet avertissement ? », puis reviens ici.</p>
+    <div class="question"><label><input type="checkbox" id="confirm-safari"><span>J’utilise actuellement Safari sur un iPhone physique.</span></label></div>
+    <div class="question"><label><input type="checkbox" id="confirm-readable"><span>Le texte et les cartes sont lisibles et ne débordent pas sur les côtés.</span></label></div>
+    <div class="question"><label><input type="checkbox" id="confirm-disclosure"><span>Le bouton d’explication s’ouvre et se referme correctement.</span></label></div>
+    <button id="run-check" class="primary-action" type="button">Créer mon rapport local</button>
+    <p class="note">Tu peux laisser des cases décochées si un point n’a pas été vérifié. Aucune information n’est envoyée automatiquement.</p>
+  </section>
+  <section class="panel result-panel" aria-labelledby="result-title">
+    <p class="section-kicker">RAPPORT LOCAL</p>
+    <h2 id="result-title">Résultat</h2>
+    <p id="check-status" class="status status-muted" role="status" aria-live="polite">Aucun rapport créé.</p>
+    <div id="report-area" hidden>
+      <p class="note">Ce rapport ne contient ni nom de fichier, ni contenu multimédia, ni adresse IP, ni identifiant d’appareil. Tu décides toi-même si tu le partages.</p>
+      <label class="report-label" for="report-json">Rapport JSON — tu peux sélectionner et copier le texte</label>
+      <textarea id="report-json" rows="12" readonly spellcheck="false" aria-label="Rapport JSON local"></textarea>
+      <div class="actions">
+        <button id="copy-report" type="button" class="secondary-action">Copier le rapport</button>
+        <button id="save-report" type="button" class="secondary-action">Enregistrer en JSON</button>
+      </div>
+      <p id="save-status" role="status" aria-live="polite" class="note"></p>
+    </div>
+  </section>
+  <footer>
+    <p>Test manuel local · preuves synthétiques uniquement · ni export vidéo ni envoi réseau</p>
+    <p>Un résultat positif déclaré ne constitue pas une validation physique indépendante de Safari iPhone.</p>
+  </footer>
+</main>
+</body>
+</html>
