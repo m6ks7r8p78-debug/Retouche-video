@@ -6,14 +6,14 @@
 'use strict';
 const VERSION='retouche-cinema-p18-motion-continuity-v1';
 const PHASES=['approach','contact','inhale','release','pause','exhale'];
-const SOURCES=['synthetic_manual','real_unvalidated'];
+const SOURCES=['synthetic_manual','synthetic_procedural','real_unvalidated'];
 function must(v,m){if(!v)throw new Error(m)}
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const round=x=>Math.round(x*10000)/10000;
 function point(x){must(Array.isArray(x)&&x.length===2&&x.every(v=>finite(v)&&v>=0&&v<=1),'Coordonnees 2D normalisees requises');return x}
 const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 function auditMeasured(input,opts={}){
- must(input&&SOURCES.includes(input.source_type),'Source: synthetic_manual ou real_unvalidated seulement');
+ must(input&&SOURCES.includes(input.source_type),'Source: synthetic_manual, synthetic_procedural ou real_unvalidated seulement');
  must(input.recorded_from_pixels!==true,'Aucun octet image admis dans un audit JSON');
  const samples=input.samples;must(Array.isArray(samples)&&samples.length>=8&&samples.length<=20000,'Entre 8 et 20000 observations requises');
  const threshold=opts.maximum_normalized_speed_per_s??1.1;
@@ -69,7 +69,7 @@ function auditMeasured(input,opts={}){
  if(releaseTime!=null&&inhaleEnd!=null&&releaseTime+.15<inhaleEnd)add('inhale_release_overlap',-1);
  const unique=[...new Set(issues.map(e=>e.code))];const observedDuration=round(samples.at(-1).t-samples[0].t);
  return {schema:VERSION,status:unique.length?'review_required':'candidate_only',source_type:input.source_type,
-   origin:input.source_type==='synthetic_manual'?'synthetic_2d_points':'real_unvalidated_2d_points',
+   origin:input.source_type==='synthetic_manual'?'synthetic_2d_points':input.source_type==='synthetic_procedural'?'synthetic_generated_control_points':'real_unvalidated_2d_points',
    sample_count:samples.length,observed_duration_s:observedDuration,
    measured_sample_rate_hz:round((samples.length-1)/Math.max(observedDuration,.00001)),
    issues,issue_codes:unique,
