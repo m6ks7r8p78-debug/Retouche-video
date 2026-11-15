@@ -10,6 +10,7 @@ const run=$("novaHdRun"),save=$("novaHdSave"),keep=$("novaHdOriginal"),
 if(!run||!save||!keep||!status||!panel)return;
 const label="Essayer le traitement HD sans réduire la vidéo";
 let selected=null,controller=null,outputURL=null,originalURL=null,generation=0,reportURL=null;
+let firstFrameEvidence=null;
 function revoke(){
  if(outputURL){URL.revokeObjectURL(outputURL);outputURL=null}
  if(originalURL){URL.revokeObjectURL(originalURL);originalURL=null}
@@ -18,7 +19,7 @@ function revoke(){
 }
 function reset(){
  generation++;controller?.abort();controller=null;
- revoke();selected=null;run.disabled=true;run.textContent=label;
+ revoke();selected=null;firstFrameEvidence=null;run.disabled=true;run.textContent=label;
  status.textContent="Choisis une vidéo pour essayer le moteur HD natif. Aucun traitement ne démarre automatiquement.";
 }
 window.addEventListener("nova:source-selected",e=>{
@@ -43,6 +44,7 @@ run.addEventListener("click",async()=>{
  save.hidden=true;save.removeAttribute("href");
  if(reportURL){URL.revokeObjectURL(reportURL);reportURL=null}
  if(reportLink){reportLink.hidden=true;reportLink.removeAttribute("href")}
+ firstFrameEvidence=null;
  const my=generation,ctrl=new AbortController(),src=selected;
  controller=ctrl;run.textContent="Annuler l'essai HD";
  status.textContent="Décodage HEVC natif, restauration classique douce et export en cours…";
@@ -50,6 +52,9 @@ run.addEventListener("click",async()=>{
   const out=await NOVA_NATIVE_HD.exporter({file:src,moteur:NOVA_ZONES,
    arbitre:NOVA_DECISION,signal:ctrl.signal,onProgress:p=>{
     if(my!==generation||ctrl.signal.aborted)return;
+    if(p.stage==="native-first-frame-color"&&
+       p.evidence?.schema==="retoucheproai.nova.hd-frame-evidence.v1")
+      firstFrameEvidence=p.evidence;
     if(p.stage==="source")status.textContent="Source : "+p.width+" × "+p.height+
       ", "+p.frames+" images, environ "+p.fps+" i/s. Aucun rééchantillonnage de cadence.";
     if(p.stage==="video")status.textContent="Traitement local HD : "+
@@ -80,7 +85,11 @@ run.addEventListener("click",async()=>{
     const info=await NOVA_DEMUX.analyser(src);
     if(info&&my===generation){
      const report=NOVA_HD_COLOR.report(info);
-     const json=JSON.stringify(report,null,2)+"\n";
+     // Seul le résultat borné de NOVA_HD_COLOR.frameEvidence est inclus,
+     // jamais les octets, horodatages, noms, dimensions exactes ni exceptions.
+     const json=JSON.stringify({...report,
+      firstDecodedFrame:firstFrameEvidence?.schema===
+       "retoucheproai.nova.hd-frame-evidence.v1"?firstFrameEvidence:null},null,2)+"\n";
      reportURL=URL.createObjectURL(new Blob([json],{type:"application/json"}));
      reportLink.href=reportURL;
      reportLink.download="NOVA_diagnostic_couleur_local.json";
