@@ -183,6 +183,17 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     avc:{format:"avc"},latencyMode:"quality"};
   if(!(await VideoEncoder.isConfigSupported(config)).supported)throw new Error("H.264 non disponible pour ce pilote");
   onProgress({stage:"audio",progress:0});
+  // decodeAudioData fournit du PCM mais n'expose pas les edits/offsets
+  // des pistes MP4. Auditer ces temps avant le réencodage.
+  let audioSourceAudit=null;
+  if(!allowSilent){
+    if(!globalThis.NOVA_AVSYNC)
+      throw new Error("Contrôle de synchronisation audio source indisponible");
+    audioSourceAudit=NOVA_AVSYNC.verifier(await NOVA_AVSYNC.analyser(file),{
+      videoStartUs:sourcePTS?.info.firstPTSUs??0,durationSeconds:timeline.durationSeconds
+    });
+  }
+  if(signal?.aborted)throw new Error("Export annulé");
   const audio=await audioDuFichier(file,allowSilent,globalThis.AudioContext||globalThis.webkitAudioContext);
   let audioCheck=null;
   const audioPaquets=[];
@@ -259,7 +270,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   onProgress({stage:"verification",progress:1});
   const validation=await verifierMp4(blob,settings,signal);
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,validation,hasAudio:!!audio,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
+  return {blob,plan:settings,validation,hasAudio:!!audio,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
   },report:sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
