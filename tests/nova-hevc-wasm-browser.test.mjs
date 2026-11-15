@@ -43,8 +43,11 @@ test("NOVA 0.17 : "+engineName+" décode HEVC MOV via WASM local et égale FFmpe
    "-i",source,"-map","0:v:0","-vsync","0","-pix_fmt","yuv420p",
    "-f","rawvideo","-"],{encoding:null,maxBuffer:8*1024*1024});
   const expected=crypto.createHash("sha256").update(raw).digest("hex");
-  const expectedFrames=raw.length/(160*90*3/2);
+  const frameSize=160*90*3/2;
+  const expectedFrames=raw.length/frameSize;
   assert.ok(Number.isInteger(expectedFrames)&&expectedFrames>=15);
+  const expectedFrameHashes=Array.from({length:expectedFrames},(_,i)=>
+   crypto.createHash("sha256").update(raw.subarray(i*frameSize,(i+1)*frameSize)).digest("hex"));
   await new Promise(ok=>app.listen(0,"127.0.0.1",ok));
   browser=await browserEngine.launch({headless:true,
    ...(!isWebKit&&process.env.CHROME?{executablePath:process.env.CHROME}:{})});
@@ -76,7 +79,21 @@ test("NOVA 0.17 : "+engineName+" décode HEVC MOV via WASM local et égale FFmpe
    }
    const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",raw)))
     .map(x=>x.toString(16).padStart(2,"0")).join("");
+   const streamed=[];
+   const stream=await NOVA_HEVC_LAB.decoderFlux(f,{HEVCDecoder,
+    wasmBinaryUrl:"/experiences/vendor/hevc/wasm/hevc-decode.wasm",
+    onFrame:async({frame,ptsUs,index,provisional})=>{
+     if(!provisional||index!==streamed.length)throw Error("Ordre HEVC flux incorrect");
+     const combined=new Uint8Array(frame.y.length+frame.cb.length+frame.cr.length);
+     let k=0;
+     for(const plane of [frame.y,frame.cb,frame.cr])
+      for(let j=0;j<plane.length;j++)combined[k++]=plane[j];
+     const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",combined)))
+      .map(x=>x.toString(16).padStart(2,"0")).join("");
+     streamed.push({hash,ptsUs});
+    }});
    return {digest,frames:r.stamped.length,annexBBytes:r.annexBBytes,
+    streamed,streamMetrics:stream,
     firstPTS:r.stamped[0].ptsUs,lastPTS:r.stamped.at(-1).ptsUs,
     dimensions:[r.info.encodedWidth,r.info.encodedHeight],
     elapsedMs:Math.round(performance.now()-before)};
@@ -84,6 +101,13 @@ test("NOVA 0.17 : "+engineName+" décode HEVC MOV via WASM local et égale FFmpe
   assert.equal(actual.frames,expectedFrames,"aucune image HEVC manquante ou ajoutée");
   assert.deepEqual(actual.dimensions,[160,90]);
   assert.equal(actual.digest,expected,"WASM doit décoder exactement les pixels de FFmpeg");
+  assert.equal(actual.streamMetrics.frames,expectedFrames);
+  assert.deepEqual(actual.streamed.map(x=>x.hash),expectedFrameHashes,
+   "stream feed/drain/flush doit reproduire chaque image FFmpeg sans accumulation");
+  assert.equal(actual.streamMetrics.annexBBytes,actual.annexBBytes);
+  assert.ok(actual.streamMetrics.peakChunkBytes<actual.annexBBytes,
+   "le décodage flux ne doit jamais assembler le bitstream entier");
+  assert.ok(actual.streamMetrics.peakFrameBytes<=160*90*3);
   assert.deepEqual(errors,[]);
   assert.deepEqual(requests,[],"zéro appel externe pendant l'import et décodage WASM");
   t.diagnostic("HEVC WASM local : "+JSON.stringify(actual));
