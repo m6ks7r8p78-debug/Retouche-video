@@ -137,3 +137,75 @@ test("NOVA WebKit : son MP4 analysé localement et WebCodecs contrôlé sans rep
   });
  }finally{await fs.rm(dir,{recursive:true,force:true})}
 });
+
+
+test("NOVA WebKit : vrai export H.264/AAC quand les deux codecs sont opérationnels",async(t)=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),"nova-webkit-export-"));
+ const source=path.join(dir,"source.mp4");
+ try{
+  await run("ffmpeg",["-hide_banner","-loglevel","error",
+   "-f","lavfi","-i","testsrc2=size=160x90:rate=15:duration=1.2",
+   "-f","lavfi","-i","sine=frequency=640:duration=1.2",
+   "-map","0:v:0","-map","1:a:0",
+   "-c:v","libx264","-bf","0","-pix_fmt","yuv420p",
+   "-c:a","aac","-b:a","128k","-movflags","+faststart",
+   "-shortest","-y",source]);
+  await session(async({page,errors,external})=>{
+   await page.locator("#file").setInputFiles(source);
+   const cap=await page.evaluate(async()=>{
+    const f=document.querySelector("#file").files[0];
+    const info=await NOVA_DEMUX.analyser(f);
+    if(!info)throw Error("Démultiplexeur MP4 source indisponible");
+    const d=typeof VideoDecoder==="function"&&
+     (await VideoDecoder.isConfigSupported({codec:info.codec,
+       description:info.desc,codedWidth:info.W,codedHeight:info.H})).supported;
+    const e=typeof VideoEncoder==="function"&&
+     (await VideoEncoder.isConfigSupported({codec:"avc1.42E01F",
+       width:160,height:90,framerate:15,bitrate:550000,
+       avc:{format:"avc"},latencyMode:"quality"})).supported;
+    const v=document.querySelector("#video");
+    return {decoder:d,encoder:e,codec:info.codec,
+      nativeWidth:v.videoWidth,nativeHeight:v.videoHeight,
+      nativeReadyState:v.readyState};
+   });
+   // Les versions WebKit/Linux peuvent annoncer canPlayType ("probably")
+   // mais ne pas savoir décoder le profil réel. Ne jamais confondre les deux.
+   const canAttempt=cap.decoder&&cap.encoder&&
+    cap.nativeWidth===160&&cap.nativeHeight===90;
+   const ready=await page.locator("#exportVideo").isEnabled();
+   if(!ready){
+    assert.equal(canAttempt,false,
+      "Codec et média utilisables, mais export inexplicablement désactivé");
+    t.diagnostic("WebKit MP4 non chargé sur ce Linux ; aucun export présenté : "+JSON.stringify(cap));
+   }else{
+    await page.locator("#exportVideo").click();
+    await page.waitForFunction(()=>!!document.querySelector("#downloadVideo")?.getAttribute("href")||
+      document.querySelector("#exportStatus").textContent.startsWith("Export refusé"),
+      null,{timeout:90000});
+    const status=await page.locator("#exportStatus").innerText();
+    const href=await page.locator("#downloadVideo").getAttribute("href");
+    if(canAttempt){
+     assert.match(href||"",/^blob:/,"WebKit supporte ce H.264, export attendu : "+status);
+     assert.match(status,/audio AAC original copié/);
+     const pending=page.waitForEvent("download");
+     await page.locator("#downloadVideo").click();
+     const saved=await pending,out=await saved.path();
+     const ff=await run("ffprobe",["-v","error","-show_entries","stream=codec_type,codec_name",
+       "-of","json",out]);
+     const streams=JSON.parse(ff.stdout).streams||[];
+     assert.ok(streams.some(x=>x.codec_type==="video"&&x.codec_name==="h264"));
+     assert.ok(streams.some(x=>x.codec_type==="audio"&&x.codec_name==="aac"));
+     t.diagnostic("WebKit vrai export audiovisuel MP4 H.264/AAC : "+JSON.stringify(cap));
+    }else{
+     assert.equal(href,null,
+      "WebKit incomplet ne doit pas présenter une vidéo exportée avec du son perdu");
+     assert.match(status,/Export refusé/);
+     t.diagnostic("WebKit refuse explicitement codecs manquants : "+JSON.stringify(cap)+
+       " ; "+status);
+    }
+   }
+   assert.deepEqual(errors,[]);
+   assert.deepEqual(external,[]);
+  });
+ }finally{await fs.rm(dir,{recursive:true,force:true})}
+});
