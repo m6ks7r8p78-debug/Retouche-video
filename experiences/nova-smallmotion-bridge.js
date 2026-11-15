@@ -16,7 +16,8 @@ function validFrame(frame){
  return !!frame&&Number.isSafeInteger(frame.width)&&
   Number.isSafeInteger(frame.height)&&frame.width>=64&&frame.height>=64&&
   frame.width<=320&&frame.height<=240&&
-  frame.data instanceof Uint8Array&&frame.data.length===frame.width*frame.height*4;
+  (frame.data instanceof Uint8Array||frame.data instanceof Uint8ClampedArray)&&
+  frame.data.length===frame.width*frame.height*4;
 }
 function invalid(status,dimensions=[0,0],times=[0,0],elapsed=null){
  return Object.freeze({
