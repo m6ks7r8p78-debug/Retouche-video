@@ -137,6 +137,7 @@
         'Import multiple : analyse suspendue pour ne pas désynchroniser le montage.';
     },true);
     cancel.onclick=()=>{reset();status.textContent='Analyse annulée. Vidéo originale inchangée.'};
+    d.addEventListener('visibilitychange',()=>{if(d.visibilityState==='hidden'&&controller){reset();status.textContent='Analyse interrompue : page masquée.'}});
     button.onclick=async()=>{
       if(controller)return;
       const error=eligibility(chosen,{hidden:d.visibilityState==='hidden',framesAPI:typeof d.createElement('video').requestVideoFrameCallback==='function'});
@@ -148,11 +149,21 @@
         const sample=await sampleLocalVideo(chosen,{signal:controller.signal,documentRef:d,maxSize});
         if(run!==nonce)return;
         const captureMs=performance.now()-sampleT0;
-        const t0=performance.now();const result=analyzer(sample.a,sample.b);const elapsed=performance.now()-t0;
+        const runner=root.RetoucheMotionWorkerRunner;
+        if(!runner || typeof runner.run!=='function')throw Error('worker_runner_unavailable');
+        const execution=await runner.run(sample.a,sample.b,{signal:controller.signal,analyzer});
+        if(run!==nonce)return;
+        const result=execution.result,elapsed=execution.elapsedMs;
         const evaluator=root.RetoucheMotionResourceGuard?.assess;
         // Never promote a candidate if the resource evaluator is absent or broken.
-        const resources=typeof evaluator==='function'?evaluator({captureMs,processorMs:elapsed,width:sample.width,height:sample.height,profile,visibility:d.visibilityState}):null;
-        const evidence=resources?observation(result,sample,elapsed,resources):Object.freeze({status:'abstain_resource_guard_unavailable',provenance:SOURCE,action:'no_automatic_change',candidates:[]});
+        const resources=typeof evaluator==='function'?evaluator({captureMs,processorMs:elapsed,width:sample.width,height:sample.height,profile,visibility:d.visibilityState,workerTransferBytes:execution.transferredBytes}):null;
+        let evidence=resources?observation(result,sample,elapsed,resources):Object.freeze({status:'abstain_resource_guard_unavailable',provenance:SOURCE,action:'no_automatic_change',candidates:[]});
+        // Worker-side errors/timeouts cannot be promoted to a genuine detector conclusion.
+        if(execution.processingPath==='worker_timeout'||execution.processingPath==='worker_error')
+          evidence=Object.freeze({...evidence,status:result.status,candidates:[]});
+        evidence=Object.freeze({...evidence,processingPath:execution.processingPath,workerComputeMs:execution.computeMs==null?null:+execution.computeMs.toFixed(2),
+          processingWallMs:+elapsed.toFixed(2),transferredBytes:execution.transferredBytes,
+          fallbackReason:execution.fallbackReason||null});
         if(resources?.nextProfile==='reduced')profile='reduced';
         last=evidence;
         // Local-only advisory data; never forwarded to DIAG/send, storage or export.
