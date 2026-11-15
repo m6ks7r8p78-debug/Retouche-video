@@ -94,9 +94,10 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 #novaHdPanel{border-top:1px solid var(--line);padding-top:5px}
 #novaHdPanel button{margin:8px 0}
 #novaHdStatus{font-size:12px;color:#46644f;overflow-wrap:anywhere}
-#novaHdSave,#novaHdOriginal{display:block;border-radius:12px;padding:12px;margin:8px 0;
+#novaHdSave,#novaHdOriginal,#novaHdColorJson{display:block;border-radius:12px;padding:12px;margin:8px 0;
  text-align:center;background:#e8faee;font-weight:750;text-decoration:none;overflow-wrap:anywhere}
 #novaHdOriginal{background:#f0f1f3}
+#novaHdColorJson{background:#f0f1f3}
 #novaHdPanel [hidden]{display:none!important}
 </style>
 </head>
@@ -172,6 +173,7 @@ neuronale, et le résultat doit être contrôlé visuellement et à l'écoute.</
 <div id="novaHdStatus" role="status" aria-live="polite">Choisis une vidéo pour essayer le moteur HD natif.</div>
 <a id="novaHdSave" hidden>Enregistrer le MP4 HD obtenu</a>
 <a id="novaHdOriginal" hidden>Enregistrer l'original intact (sans retouche)</a>
+<a id="novaHdColorJson" hidden>Enregistrer le diagnostic couleur local (JSON)</a>
 </details>
 <details class="sourceAdvanced" id="novaRealPreflightPanel">
 <summary>Précontrôle d'une vidéo réelle · sans export</summary>
