@@ -54,7 +54,7 @@ test("NOVA 0.26 : couleur ou propriétés audiovisuelles divergentes = refus de 
  const b=S.summary([report(200),report(180,{output:{colorVerified:false}}),report(190)]);
  assert.equal(b.status,"inconsistent-output");
 });
-test("NOVA 0.26 : aucune vidéo personnelle ni champ libre dans le rapport",()=>{
+test("NOVA 0.26 : aucune vidéo personnelle ni champ libre dans le rapport",async()=>{
  const input=[report(180,{secretVideoName:"PRIVÉ_157.mov",userAgent:"iPhone_private"}),report(181),report(182)];
  const s=S.summary(input),json=S.serialize({...s,secretVideoName:"PRIVÉ_157.mov",gps:"coordinates"});
  assert.equal(s.status,"three-synthetic-runs-consistent");
@@ -62,6 +62,6 @@ test("NOVA 0.26 : aucune vidéo personnelle ni champ libre dans le rapport",()=>
  assert.ok(!json.includes("coordinates"));
  assert.ok(!json.includes("iPhone_private"));
  assert.throws(()=>S.summary([{...report(100),sourceKind:"local-user-file"}]),/synthétiques/);
- assert.throws(()=>S.run({execute:async()=>{},runs:4}),/trois essais/);
+ await assert.rejects(S.run({execute:async()=>{},runs:4}),/trois essais/);
  assert.throws(()=>S.serialize({schema:"invalid"}),/non valide/);
 });
