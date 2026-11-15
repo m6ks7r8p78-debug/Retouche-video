@@ -348,7 +348,7 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
    "-f","lavfi","-i",
    "aevalsrc=if(lt(abs(t-0.42)\\,0.03)\\,0.7*sin(2*PI*1000*t)\\,0)+if(lt(abs(t-1.22)\\,0.03)\\,0.7*sin(2*PI*1400*t)\\,0):s=48000:d=2",
    "-c:v","libx264","-pix_fmt","yuv420p","-c:a","aac","-b:a","128k",
-   "-movflags","+faststart","-y",src]);
+   "-movflags","+faststart","-use_editlist","0","-y",src]);
 
   const [sourceAudio,sourceVideo]=await Promise.all([
    decodeAudioEvents(src),decodeVideoEvents(src)
@@ -363,12 +363,7 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
    const page=await browser.newPage({viewport:{width:390,height:844},acceptDownloads:true});
    const errors=[];page.on("pageerror",e=>errors.push(e.message));
    await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
-   const aacAvailable=await page.evaluate(async()=>{
-     if(typeof AudioEncoder==="undefined")return false;
-     try{return (await AudioEncoder.isConfigSupported({
-       codec:"mp4a.40.2",sampleRate:48000,numberOfChannels:1,bitrate:128000
-     })).supported}catch{return false}
-   });
+
    await page.locator("#file").setInputFiles(src);
    await page.waitForFunction(()=>!document.querySelector("#exportVideo").disabled);
    await page.locator("#exportVideo").click();
@@ -377,14 +372,9 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
      null,{timeout:90000});
    const href=await page.locator("#downloadVideo").getAttribute("href");
    const message=await page.locator("#exportStatus").innerText();
-   if(!aacAvailable){
-     assert.equal(href,null,"si AAC n'est pas pris en charge, aucun MP4 muet n'est offert");
-     assert.match(message,/Export refusé/);
-     t.skip("L'encodeur AAC Chromium est absent : refus audio vérifié, synchronisation non mesurable");
-     return;
-   }
-   assert.match(href||"",/^blob:/,"encodeur AAC disponible, export AV attendu : "+message);
-   assert.match(message,/audio AAC réencodé/);
+
+   assert.match(href||"",/^blob:/,"copie AAC sans AudioEncoder attendue : "+message);
+   assert.match(message,/audio AAC original copié/);
    const pending=page.waitForEvent("download");
    await page.locator("#downloadVideo").click();
    const saved=await pending;
