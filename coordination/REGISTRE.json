@@ -21,6 +21,20 @@
       ]
     },
     {
+      "id": "nova-smallmotion-bridge",
+      "label": "Pont NOVA × SmallMotion — diagnostic consultatif 2 images",
+      "branch": "chatgpt-nova-smallmotion-bridge-v1",
+      "pr": 35,
+      "observation": "draft-pr-observed",
+      "interface": "Relais SmallMotion 2D depuis 2 images réduites de vidéo sélectionnée, rapport JSON opt-in sans changement de l'original",
+      "workBoundary": "experiences/nova-smallmotion-*; experiences/vendor/smallmotion/*; tests/nova-smallmotion-*",
+      "validationGap": "25 tests unitaires et 1 navigateur Chromium synthétique réussis au commit ba5bbf7d ; pas de Safari iPhone physique ni fusion au runtime principal",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/35",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43711168899"
+      ]
+    },
+    {
       "id": "smallmotion",
       "label": "SmallMotion / PWA / budgets",
       "branch": "preprod-retoucheproai-local-v1",
@@ -154,6 +168,12 @@
       "from": "design-aura",
       "to": "nova",
       "topic": "exposer le pilote seulement derrière contrôle explicite dans une UI non intrusive",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-smallmotion-bridge",
+      "to": "nova",
+      "topic": "À évaluer en revue : diagnostic deux images 2D consultatif sans décision automatique, passerelle de provenance et rapport local; aucune promotion production.",
       "state": "proposal"
     }
   ],
