@@ -1,0 +1,399 @@
+{
+  "schemaVersion": 1,
+  "indexedAt": "2026-11-15",
+  "repository": "m6ks7r8p78-debug/Retouche-video",
+  "coordinationBranch": "coordination-retoucheproai-v1",
+  "scope": "Index de coordination asynchrone; inventaire vérifié de branches/PR, pas audit du code ni validation de compatibilité",
+  "privacy": "public-metadata-only",
+  "integrationRule": "no-main-change-no-production-deploy-no-private-media",
+  "labs": [
+    {
+      "id": "nova",
+      "label": "NOVA / Safari / HEVC-AAC",
+      "branch": "chatgpt-studio-nova-v01",
+      "pr": 3,
+      "observation": "draft-pr-observed",
+      "interface": "Traitement vidéo local, export, codec, son, profils et essais iPhone",
+      "workBoundary": "experiences/nova-*; tests/nova-*; outils/nova-*",
+      "validationGap": "Safari physique iPhone non certifié par tests CI",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/3"
+      ]
+    },
+    {
+      "id": "nova-smallmotion-bridge",
+      "label": "Pont NOVA × SmallMotion — diagnostic consultatif 2 images",
+      "branch": "chatgpt-nova-smallmotion-bridge-v1",
+      "pr": 35,
+      "observation": "draft-pr-observed",
+      "interface": "Relais SmallMotion 2D depuis 2 images réduites de vidéo sélectionnée, rapport JSON opt-in sans changement de l'original",
+      "workBoundary": "experiences/nova-smallmotion-*; experiences/vendor/smallmotion/*; tests/nova-smallmotion-*",
+      "validationGap": "25 tests unitaires et 1 navigateur Chromium synthétique réussis au commit ba5bbf7d ; pas de Safari iPhone physique ni fusion au runtime principal",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/35",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43711168899"
+      ]
+    },
+    {
+      "id": "nova-https-preview",
+      "label": "NOVA iPhone — paquet HTTPS manuel, mire synthétique SmallMotion",
+      "branch": "chatgpt-nova-iphone-https-package-v1",
+      "pr": 38,
+      "observation": "draft-pr-observed",
+      "interface": "ZIP statique testable sans média privé, deux mires FFmpeg, CSP hash, rapport de diagnostic local et export manuel sur hébergeur distinct",
+      "workBoundary": "outils/build-nova-iphone-preview.mjs; experiences/nova-smallmotion-*; tests/nova-smallmotion-*; tests/nova-iphone-preview.test.mjs; workflow nova-iphone-https-manual",
+      "validationGap": "Tests synthétiques automatisés réussis, aperçu manuel publié sur Cloudflare Pages par l'utilisateur ; lecture image grise et bip AAC du MP4 synthétique confirmée sur iPhone par l'utilisateur. Cela ne valide PAS encore l'import de vidéo réelle ni le module précontrôle #42.",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/38",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43712320533"
+      ]
+    },
+    {
+      "id": "nova-real-preflight",
+      "label": "NOVA — précontrôle lecture seule de vidéos réelles HEVC/AAC",
+      "branch": "chatgpt-nova-real-video-preflight-v1",
+      "pr": 42,
+      "observation": "draft-pr-observed",
+      "interface": "Vérification locale et volontaire avant export : codec, BT.709, PTS, budget, copie audio AAC, JSON borné sans noms de média",
+      "workBoundary": "experiences/nova-real-preflight*; tests/nova-real-preflight*; research/relais/nova-real-preflight*; workflow nova-real-video-preflight",
+      "validationGap": "26 tests unitaires et 1 test navigateur Chromium sous CSP réussis sur mires synthétiques ; aucune vidéo réelle testée sur Safari iPhone, aucun déploiement ni fusion de ce module",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/42",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43716033911"
+      ]
+    },
+    {
+      "id": "nova-hd-color-evidence",
+      "label": "NOVA — récupération de preuve couleur HEVC SPS/VUI et VideoFrame",
+      "branch": "chatgpt-nova-iphone-hd-color-evidence-v1",
+      "pr": 52,
+      "observation": "draft-pr-observed",
+      "interface": "Couleur BT709 SDR vérifiable depuis conteneur, SPS/VUI et trames natives; conservation de protection HDR/P3; rapport local couleur sans média",
+      "workBoundary": "experiences/nova-hd-color.js; tests/nova-hd-color.test.mjs; branche expérimentale et PR #52",
+      "validationGap": "36/36 tests unitaires et 1/1 test navigateur Chromium H264/AAC réussis, y compris colr absent; pas encore testé sur HEVC réel Safari iPhone, aucune fusion ou publication",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/52",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43721591804"
+      ]
+    },
+    {
+      "id": "nova-native-hd",
+      "label": "NOVA — chemin expérimental décodage WebCodecs natif HEVC/H264 HD et AAC",
+      "branch": "chatgpt-nova-iphone-native-fullhd-v1",
+      "pr": 47,
+      "observation": "draft-pr-observed",
+      "interface": "Traitement local de vidéos Full-HD jusqu'à 2,2 Mpix, sans réduction automatique d'images/résolution; codec natif et AAC sous conditions strictes",
+      "workBoundary": "experiences/nova-native-hd*; tests/nova-native-hd*; workflow nova-native-hd",
+      "validationGap": "Tests Chromium H264/AAC synthétiques réussis; sur iPhone réel, le premier export HEVC a refusé pour preuve BT.709 incomplète; branche suppléée par nova-hd-color-evidence",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/47"
+      ]
+    },
+    {
+      "id": "nova-hd-sdr-matrices",
+      "label": "NOVA — compatibilité matrices vidéo SDR et correction WebCodecs native",
+      "branch": "chatgpt-nova-iphone-hd-sdr-matrices-v1",
+      "pr": 57,
+      "observation": "draft-pr-observed",
+      "interface": "Corriger les sources SDR à matrice 5/6/9 sans masquer leur provenance : colr+SPS/VUI+VideoFrame, reconditionnement YUV8 source uniquement si vérifiable, sortie BT709 et AAC",
+      "workBoundary": "experiences/nova-hd-color.js; experiences/nova-native-hd.js; tests/nova-hd-color.test.mjs; tests/nova-native-hd-browser.test.mjs",
+      "validationGap": "41/41 tests unitaires et 1/1 Chromium navigateur synthétique H264/AAC avec matrice BT601 vers sortie BT709 réussis (PSNR RGB seuil >25 dB), ZIP isolé généré; succès sur vidéo HEVC réelle iPhone toujours non prouvé",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/57",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43724274240"
+      ]
+    },
+    {
+      "id": "nova-hd-aac-rescue",
+      "label": "NOVA — compatibilité AAC MPEG-4 et réencodage natif AAC-LC Safari",
+      "branch": "chatgpt-nova-iphone-hd-aac-rescue-v1",
+      "pr": 59,
+      "observation": "draft-pr-observed",
+      "interface": "Copie AAC-LC originale prioritaire, lecture ESDS 03/04/05 et fréquence ASC explicite; recours WebAudio+AudioEncoder AAC-LC local si support annoncé; jamais de son supprimé implicitement",
+      "workBoundary": "experiences/nova-aac-copy.js; experiences/nova-aac-native.js; experiences/nova-native-hd.js; expériences UI; tests AAC; workflow",
+      "validationGap": "62 tests unitaires et 1 vrai test navigateur Chromium H264/AAC synthétique réussis ; recours AAC-LC natif vérifié par mocks uniquement ; HEVC + audio de vidéo personnelle Safari iPhone toujours non certifiés",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/59",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43726569952"
+      ]
+    },
+    {
+      "id": "nova-webkit-aac-esds",
+      "label": "NOVA — correction AudioEncoder WebKit #302253 et AudioSpecificConfig AAC dans MP4",
+      "branch": "chatgpt-nova-safari-aac-esds-webkit-v1",
+      "pr": 64,
+      "observation": "draft-pr-observed",
+      "interface": "Normalise le mauvais ES_Descriptor Safari en vrai ASC AAC-LC avant muxage; validations source taux/canaux/codec, lecture d'une piste AAC réelle et contrôle MP4 final sans export silencieux",
+      "workBoundary": "experiences/nova-aac-native.js; tests/nova-aac-native.test.mjs; tests/nova-native-hd-browser.test.mjs; workflow nova-webkit-aac-esds",
+      "validationGap": "67/67 tests unitaires + 1/1 Chromium navigateur CSP réussis, incluant vrais échantillons AAC synthétiques remuxés en m4a et vérifiés FFprobe; comportement réel sur Safari iPhone physique encore non confirmé",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/64",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43729328127",
+        "https://bugs.webkit.org/show_bug.cgi?id=302253"
+      ]
+    },
+    {
+      "id": "nova-iphone-opaque-sdr",
+      "label": "NOVA — rendu natif SDR HEVC opaque Safari, source 601 / décodeur 709",
+      "branch": "chatgpt-nova-iphone-opaque-frame-sdr-v1",
+      "pr": 70,
+      "observation": "draft-pr-observed",
+      "interface": "Recours expérimental pour VideoFrame.format=null et matrice source BT601 alors que la trame native déclare BT709 ; rendu du décodeur avec avertissement couleur non certifiée, sans changement silencieux ni HDR accepté",
+      "workBoundary": "experiences/nova-hd-color.js; experiences/nova-native-hd.js; experiences/nova-export-ui.js; experiences/nova-native-hd-ui.js; tests SDR/native HD; workflow",
+      "validationGap": "72/72 tests unitaires + 1/1 navigateur Chromium H264/AAC synthétique réussis sur le parcours opaque simulé; véritable HEVC Safari iPhone, fidélité couleurs et synchronisation AAC toujours non vérifiées",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/70",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43731285960"
+      ]
+    },
+    {
+      "id": "nova-safari-frame-format-033",
+      "label": "NOVA 0.33 — formats VideoFrame SDR natifs non copiables sur Safari",
+      "branch": "chatgpt-nova-safari-frame-format-fallback-v1",
+      "pr": 75,
+      "observation": "draft-pr-observed",
+      "interface": "Sur source matrice SDR BT601 / trame Safari bt709, privilégier correction YUV source; si format matériel SDR non copiable, tenter rendu natif avec avertissement de fidélité non certifiée. Version UI et manifeste 0.33 vérifiables.",
+      "workBoundary": "experiences/nova-hd-color.js; experiences/nova.html; outils/build-nova-iphone-preview.mjs; tests/nova-hd-color.test.mjs; tests/nova-native-hd-browser.test.mjs",
+      "validationGap": "76/76 unitaires, 1/1 navigateur Chromium synthétique réussis; réel HEVC Safari iPhone, fidélité colorimétrique et synchronisation audio encore non prouvés",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/75",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43732732121"
+      ]
+    },
+    {
+      "id": "nova-safari-color-diagnostic-034",
+      "label": "NOVA HD 0.34 — décodeur Safari BT.709 vs source BT.601, diagnostic local d'une trame",
+      "branch": "chatgpt-nova-safari-color-evidence-034",
+      "pr": 78,
+      "observation": "draft-pr-observed",
+      "interface": "Sortie SDR native provisoire signalée non certifiée, si source matrix 5/6 et tags connus non HDR; capture privée localisée des enums VideoFrame sur refus",
+      "workBoundary": "experiences/nova-hd-color.js; experiences/nova-export-ui.js; experiences/nova.html; tests/nova-hd-color.test.mjs; tests/nova-native-hd-browser.test.mjs",
+      "validationGap": "81 tests unitaires + 1 navigateur Chromium H264/AAC synthétique réussis sous CSP; l'export de la vidéo HEVC privée sur Safari iPhone n'est pas encore validé et les couleurs doivent être comparées",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/78",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43736820901"
+      ]
+    },
+    {
+      "id": "nova-postexport-quality-035",
+      "label": "NOVA HD 0.35 — bilan post-export MP4/AAC et changements réels de luminosité",
+      "branch": "chatgpt-nova-postexport-quality-035",
+      "pr": 82,
+      "observation": "draft-pr-observed",
+      "interface": "Audit JSON local du MP4 généré, horodatages de piste AAC, cadence/dimensions, bilan échantillonné des modifications lumineuses, sans contenus vidéo ni audio",
+      "workBoundary": "experiences/nova-hd-qa.js; experiences/nova-native-hd.js; experiences/nova-export-ui.js; experiences/nova-native-hd-ui.js; expériences NOVA en test seulement",
+      "validationGap": "85 tests unitaires + 1 navigateur H264/AAC synthétique réussis sur GitHub Actions #43752022072; iPhone Safari HEVC réel validé uniquement sur le moteur 0.34, version 0.35 et rapport QA restent à vérifier physiquement; la couleur et le son ne sont pas certifiés perceptuellement",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/82",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43752022072"
+      ]
+    },
+    {
+      "id": "smallmotion",
+      "label": "SmallMotion / PWA / budgets",
+      "branch": "preprod-retoucheproai-local-v1",
+      "pr": 28,
+      "observation": "draft-pr-observed",
+      "interface": "Mouvement consultatif local, limitations appareil, mise à jour PWA sans risques",
+      "workBoundary": "research/3d-* et composants SmallMotion et préproduction propres au labo",
+      "validationGap": "Préproduction non déployée; essai physique distinct requis",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/28"
+      ]
+    },
+    {
+      "id": "cinema-p20",
+      "label": "Cinema P20 / preuve temporelle",
+      "branch": "chatgpt-cinema-p20-temporal-evidence-20261115",
+      "pr": 32,
+      "observation": "draft-pr-observed",
+      "interface": "Comparaison des comportements P15 aux commandes P19; ne pas assimiler commande et observation",
+      "workBoundary": "research/cinema-* (à confirmer dans la PR)",
+      "validationGap": "Ne pas considérer 60 Hz comme mouvement réel mesuré",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/32"
+      ]
+    },
+    {
+      "id": "cinema-p21",
+      "label": "Cinema P21 / gestes",
+      "branch": "chatgpt-cinema-p21-gesture-layer-20261115",
+      "pr": null,
+      "observation": "branch-observed",
+      "interface": "Prototypes de gestes et interaction temporelle, séparés des observations certifiées",
+      "workBoundary": "Composants et bancs P21 sur sa propre branche",
+      "validationGap": "PR et résultats de tests non vérifiés dans cet index initial",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/tree/chatgpt-cinema-p21-gesture-layer-20261115"
+      ]
+    },
+    {
+      "id": "camera-3d",
+      "label": "3D / caméra / profondeur",
+      "branch": "lab-3d-v43-camera-evidence",
+      "pr": null,
+      "observation": "branch-observed",
+      "interface": "Données de caméra et profondeur expérimentales, reconstruction distincte de vérité terrain",
+      "workBoundary": "research/3d-camera-v43 et laboratoires 3D isolés",
+      "validationGap": "Aucune conclusion sur entraînement ou rendu final sans preuve",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/tree/lab-3d-v43-camera-evidence"
+      ]
+    },
+    {
+      "id": "director",
+      "label": "Directeur IA / arbitrage",
+      "branch": "chatgpt-ai-director-v01",
+      "pr": 1,
+      "observation": "branch-observed",
+      "interface": "Choix des moteurs, fidélité et qualité adaptative",
+      "workBoundary": "Expériences du directeur IA et contrats inter-modules",
+      "validationGap": "Vérifier l'état de PR #1 et les tests avant import",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/tree/chatgpt-ai-director-v01"
+      ]
+    },
+    {
+      "id": "design-aura",
+      "label": "AURA / interface et UX",
+      "branch": "design-aura-native-handoff-v1-20261115",
+      "pr": null,
+      "observation": "branch-observed",
+      "interface": "Interfaces tactiles et parcours grand public à un bouton; direction artistique",
+      "workBoundary": "Prototypes/branches design; pas de réécriture app.js publique sans PR d'intégration",
+      "validationGap": "Comparaison et intégration à l'app non présumées",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/tree/design-aura-native-handoff-v1-20261115"
+      ]
+    },
+    {
+      "id": "restauration",
+      "label": "Restauration / AR / visages",
+      "branch": "main",
+      "pr": null,
+      "observation": "main-observed",
+      "interface": "Restauration naturelle, filtres AR, visages, image et stabilité temporelle",
+      "workBoundary": "Registre F01-F31 et modules de production; expérimenter sur une nouvelle branche",
+      "validationGap": "Les niveaux de validation diffèrent par fonction dans REGISTRE_LIVRAISON_PERMANENT.md",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/blob/main/REGISTRE_LIVRAISON_PERMANENT.md"
+      ]
+    },
+    {
+      "id": "export-x",
+      "label": "Export X / médias",
+      "branch": "main",
+      "pr": null,
+      "observation": "main-observed",
+      "interface": "Préparation/optimisation locale des fichiers puis publication manuelle par l'utilisateur",
+      "workBoundary": "F21 (état à contrôler dans le registre permanent) et futurs tests de profils",
+      "validationGap": "Ne pas promettre une suppression de la compression appliquée par X",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/blob/main/REGISTRE_LIVRAISON_PERMANENT.md"
+      ]
+    }
+  ],
+  "proposedHandoffs": [
+    {
+      "from": "smallmotion",
+      "to": "nova",
+      "topic": "transmettre uniquement budgets appareil et constats de mouvement; aucune modification vidéo automatique",
+      "state": "proposal"
+    },
+    {
+      "from": "cinema-p20",
+      "to": "cinema-p21",
+      "topic": "contrat de traçabilité entre observation de geste et commande 60 Hz",
+      "state": "proposal"
+    },
+    {
+      "from": "camera-3d",
+      "to": "director",
+      "topic": "contrat de niveau de confiance profondeur/reconstruction, refus si incertitude",
+      "state": "proposal"
+    },
+    {
+      "from": "nova",
+      "to": "export-x",
+      "topic": "évaluation des profils d'export avec audit A/V et couleurs, sans publication directe",
+      "state": "proposal"
+    },
+    {
+      "from": "design-aura",
+      "to": "nova",
+      "topic": "exposer le pilote seulement derrière contrôle explicite dans une UI non intrusive",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-smallmotion-bridge",
+      "to": "nova",
+      "topic": "À évaluer en revue : diagnostic deux images 2D consultatif sans décision automatique, passerelle de provenance et rapport local; aucune promotion production.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-https-preview",
+      "to": "nova-smallmotion-bridge",
+      "topic": "ZIP HTTPS manuel, diagnostics SmallMotion synthétiques et locaux sous CSP; ne prétendre ni Safari physique ni déploiement sans action explicite.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-real-preflight",
+      "to": "nova",
+      "topic": "Précontrôle HEVC/AAC et mémoire en lecture seule avant tentative d'export; statut favorable non suffisant pour validation de fidélité, PR #42 non fusionnée.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-hd-color-evidence",
+      "to": "nova",
+      "topic": "Ne pas refuser une vidéo faute de colr complet : combiner SPS/VUI et VideoFrame.colorSpace, garder veto HDR/P3; validation HEVC Safari encore nécessaire avant intégration",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-hd-sdr-matrices",
+      "to": "nova",
+      "topic": "Matrice SDR BT601 5/6 ou BT2020 NCL 9 différente de BT709 : vérification colr+SPS+VideoFrame et correction YUV8 si accessible avant Canvas sRGB/BT709. Ne pas requalifier HDR/P3; tests synthétiques réussis, HEVC Safari non validé.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-hd-aac-rescue",
+      "to": "nova",
+      "topic": "AAC-LC ESDS/ASC robuste + recours AAC natif Safari sous vérification de codecs; ne jamais déduire absence de son d'une ASC non confirmée; iPhone réel et synchro à vérifier, pas de bascule muette.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-webkit-aac-esds",
+      "to": "nova",
+      "topic": "WebKit #302253 : AudioEncoder.decoderConfig.description peut contenir un ESDS complet et non l'ASC; normaliser 03/04/05/06 sans tronquer arbitrairement, vérifier AOT/sampleRate/canaux, tester une vraie piste AAC. Safari iPhone à valider.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-iphone-opaque-sdr",
+      "to": "nova",
+      "topic": "NOVA: gérer VideoFrame.format=null matériel avec source matrice SDR BT601 vs couleur frame BT709, sans renommer les pixels; avertir source non certifiée et demander comparaison visuelle réelle. Ne pas contourner HDR/P3 et ne pas promouvoir avant test physique iPhone.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-safari-frame-format-033",
+      "to": "nova",
+      "topic": "Refus répété source SMPTE170M / décodeur BT709 : ajouter fallback SDR natif quand frame non YUV/copyTo/constructor indisponibles, afficher build 0.33, ne pas certifier couleurs sans comparaison HEVC Safari réelle.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-safari-color-diagnostic-034",
+      "to": "nova",
+      "topic": "Le v0.33 est prouvé installé sur Cloudflare mais refus BT601/709 persiste. NOVA 0.34 avertit lorsque l'affichage SDR du navigateur est utilisé sans garantie de couleur et collecte les enums source/trame dans un JSON local sans image/son. Ne pas certifier HEVC iPhone avant test physique.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-postexport-quality-035",
+      "to": "nova",
+      "topic": "NOVA 0.34 export HD physique vérifié sur iPhone (195 images, 1088×1920, AAC), sans preuve de couleur originale. V0.35 ajoute un bilan après export sur vraie piste MP4/AAC, souligne un écart fin paquet AAC/vidéo de 63 ms sur le MP4 observé; collecte des moyennes de luminance sans pixels. Doit être validé physiquement avant promotion.",
+      "state": "proposal"
+    }
+  ],
+  "statusSemantics": {
+    "draft-pr-observed": "PR brouillon repérée, sans preuve implicite de tests",
+    "branch-observed": "branche repérée, sans preuve implicite de tests",
+    "main-observed": "présence en branche principale, vérifier statut fonctionnel dans registre et code"
+  }
+}
