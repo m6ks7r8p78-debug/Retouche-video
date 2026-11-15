@@ -38,6 +38,8 @@ jobs:
           node tests/sw.test.mjs
       - name: Native browser - actual full app + imported H264/VP8 synthetic video
         run: python research/preprod/tests/test_full_app_smoke.py
+      - name: Actual app demux/remux AAC — MP4 must retain video AND sound
+        run: python research/preprod/tests/test_real_aac_passthrough.py
       - name: Keep preproduction synthetic-only screenshots and diagnostic report
         if: always()
         uses: actions/upload-artifact@v4
@@ -45,5 +47,6 @@ jobs:
           name: retouche-preprod-complete-app-smoke
           path: |
             research/preprod/results/full_app_smoke.json
+            research/preprod/results/aac_passthrough.json
             research/preprod/results/preprod_full_app_*.png
           if-no-files-found: warn
