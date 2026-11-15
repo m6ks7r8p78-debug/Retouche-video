@@ -175,6 +175,20 @@
       ]
     },
     {
+      "id": "nova-postexport-quality-035",
+      "label": "NOVA HD 0.35 — bilan post-export MP4/AAC et changements réels de luminosité",
+      "branch": "chatgpt-nova-postexport-quality-035",
+      "pr": 82,
+      "observation": "draft-pr-observed",
+      "interface": "Audit JSON local du MP4 généré, horodatages de piste AAC, cadence/dimensions, bilan échantillonné des modifications lumineuses, sans contenus vidéo ni audio",
+      "workBoundary": "experiences/nova-hd-qa.js; experiences/nova-native-hd.js; experiences/nova-export-ui.js; experiences/nova-native-hd-ui.js; expériences NOVA en test seulement",
+      "validationGap": "85 tests unitaires + 1 navigateur H264/AAC synthétique réussis sur GitHub Actions #43752022072; iPhone Safari HEVC réel validé uniquement sur le moteur 0.34, version 0.35 et rapport QA restent à vérifier physiquement; la couleur et le son ne sont pas certifiés perceptuellement",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/82",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43752022072"
+      ]
+    },
+    {
       "id": "smallmotion",
       "label": "SmallMotion / PWA / budgets",
       "branch": "preprod-retoucheproai-local-v1",
@@ -368,6 +382,12 @@
       "from": "nova-safari-color-diagnostic-034",
       "to": "nova",
       "topic": "Le v0.33 est prouvé installé sur Cloudflare mais refus BT601/709 persiste. NOVA 0.34 avertit lorsque l'affichage SDR du navigateur est utilisé sans garantie de couleur et collecte les enums source/trame dans un JSON local sans image/son. Ne pas certifier HEVC iPhone avant test physique.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-postexport-quality-035",
+      "to": "nova",
+      "topic": "NOVA 0.34 export HD physique vérifié sur iPhone (195 images, 1088×1920, AAC), sans preuve de couleur originale. V0.35 ajoute un bilan après export sur vraie piste MP4/AAC, souligne un écart fin paquet AAC/vidéo de 63 ms sur le MP4 observé; collecte des moyennes de luminance sans pixels. Doit être validé physiquement avant promotion.",
       "state": "proposal"
     }
   ],
