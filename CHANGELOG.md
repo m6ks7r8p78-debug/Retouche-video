@@ -1,5 +1,26 @@
 # Journal des versions
 
+## v8.1 (15 nov. 2026) — Moteur Cinéma (essai) : restauration vidéo SeedVR2 sur le serveur Kaggle
+- Nouvelle case **« Moteur Cinéma (essai) »** sous « IA rapide sur serveur gratuit (Kaggle) ». Au lieu de Real-ESRGAN
+  (un réseau d'images de 2021, image par image), le serveur utilise **SeedVR2 3B** (ByteDance Seed, ICLR 2026, Apache-2.0) :
+  un modèle de restauration **vidéo** par diffusion en une étape, entraîné sur de vraies vidéos, qui reconstruit textures,
+  contours et visages en tenant compte des images voisines (pas de scintillement image par image).
+- Pourquoi maintenant : la recherche de ChatGPT (moteurs maison RNE 0.1 → 0.20, 14–15 nov.) montre qu'un petit réseau
+  entraîné de zéro sur nos 157 vidéos gagne au mieux +0,3 dB sur l'agrandissement simple, et qu'aucune variante n'a passé
+  ses propres critères. Le saut de qualité ne viendra pas d'un réseau de 13 000 paramètres mais d'un modèle de 3 milliards.
+- Sécurité qualité côté serveur (`serveur-ia/cinema_kaggle.py`) : couleurs recalées sur l'original (LAB), contrôle de
+  structure sur ~32 images (SSIM de luminance contre l'image d'entrée), contrôle des couleurs, du nombre et de l'ordre exact
+  des images, et du temps (session Kaggle de 12 h). **Au moindre doute, repli automatique sur l'IA standard** dans le même
+  calcul ; l'app affiche quel moteur a réellement servi et pourquoi.
+- Deux cartes graphiques : la vidéo est coupée en deux segments avec 8 images de contexte, recollés sans décalage (testé).
+- Le résultat garde exactement le contrat de l'IA standard (une image par image du fichier, taille d'export) : couleurs,
+  mélange avec la version classique, protection des hautes lumières, son et encodage restent ceux de l'app.
+- Sans la case : rien ne change (même script, pas d'Internet pour le calcul — vérifié par test).
+- Tests : `tests/cinema_kaggle_test.py` (5 cas : résultat fidèle accepté avec ordre exact à la jonction des 2 cartes, une
+  carte, images inventées refusées, images manquantes refusées, couleurs déplacées refusées) ; `tests/kaggle_cinema.test.mjs`
+  (2 cas : envoi Cinéma / Standard inchangé). **Pas encore exécuté sur une vraie carte graphique Kaggle** (pas de carte ni de
+  jeton dans l'environnement de Claude) : premier essai réel = le tien.
+
 ## v8.0 (14 nov. 2026) — Changer de format (vertical ↔ horizontal, carré, 4:3, 21:9, sur mesure)
 - Nouvel outil **« Changer de format »** (studio → outils, et bouton « 📐 Changer le format de cette vidéo » dans l'atelier) :
   importer → choisir le format (ou « Auto ») → analyser → prévisualiser (curseur avant/après, scène par scène) → exporter.

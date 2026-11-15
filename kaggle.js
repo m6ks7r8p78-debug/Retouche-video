@@ -87,12 +87,16 @@ var KG = (() => {
     let fin = false;
     try {
       ev("envoi", 0, "Préparation de l’envoi…");
-      const params = new Blob([JSON.stringify(Object.assign({ dn: o.dn, ow: o.ow, oh: o.oh, dw: o.dw, dh: o.dh, images: o.images, version: 1, qp: 16 }, o.rw ? { rw: o.rw, rh: o.rh } : {}, o.gop ? { gop: o.gop } : {}))], { type: "application/json" });
-      const sr = await (await texte("sr.bin")).blob(), py = await (await texte("serveur-ia/ia_serveur.py")).blob(), code = await (await texte("serveur-ia/traitement_kaggle.py")).text();
+      const cine = o.moteur === "cinema";   /* v8.1 : moteur « Cinéma » (SeedVR2, serveur-ia/cinema_kaggle.py), repli automatique sur l'IA standard */
+      const params = new Blob([JSON.stringify(Object.assign({ dn: o.dn, ow: o.ow, oh: o.oh, dw: o.dw, dh: o.dh, images: o.images, version: 1, qp: 16, moteur: cine ? "cinema" : "standard" }, o.rw ? { rw: o.rw, rh: o.rh } : {}, o.gop ? { gop: o.gop } : {}))], { type: "application/json" });
+      const sr = await (await texte("sr.bin")).blob(), py = await (await texte("serveur-ia/ia_serveur.py")).blob(), std = await (await texte("serveur-ia/traitement_kaggle.py")).text();
+      const code = cine ? await (await texte("serveur-ia/cinema_kaggle.py")).text() : std;
       const ext = ((o.file.name || "").match(/\.(mp4|mov|m4v)$/i) || [".mp4"])[0].toLowerCase();
       const files = [], attendus = {};
-      const tot = o.file.size + sr.size + py.size + params.size; let base = 0;
-      for (const [b, n] of [[params, "params.json"], [py, "ia_serveur.py"], [sr, "sr.bin"], [o.file, "video" + ext]]) {
+      const repli = cine ? [[new Blob([std], { type: "text/x-python" }), "traitement_kaggle.py"]] : [];
+      const envois = [[params, "params.json"], [py, "ia_serveur.py"], [sr, "sr.bin"], ...repli, [o.file, "video" + ext]];
+      const tot = envois.reduce((t, [b]) => t + b.size, 0); let base = 0;
+      for (const [b, n] of envois) {
         const tk = await depot(b, n, f => ev("envoi", (base + f * b.size) / tot, "Envoi de la vidéo vers ton espace privé Kaggle… " + Math.round((base + f * b.size) / tot * 100) + " %"));
         base += b.size; files.push({ token: tk }); attendus[n] = b.size;
       }
@@ -111,7 +115,8 @@ var KG = (() => {
       const recus = Object.fromEntries((lf.datasetFiles || []).map(f => [f.name, +f.totalBytes]));
       for (const n in attendus) if (recus[n] !== attendus[n]) throw new Error("envoi incomplet : " + n + " (" + (recus[n] || 0) + " octets reçus sur " + attendus[n] + ")");
       const sk = await api("kernels.KernelsApiService", "SaveKernel", { slug: ref, newTitle: slug.replace(/-/g, " "), text: code, language: "python", kernelType: "script",
-        isPrivate: true, enableGpu: true, enableInternet: false, datasetDataSources: [u + "/" + ds], kernelDataSources: [], competitionDataSources: [], categoryIds: [] });
+        isPrivate: true, enableGpu: true, enableInternet: cine,   /* Cinéma : télécharge SeedVR2 (Hugging Face) ; sans Internet -> repli standard */
+        datasetDataSources: [u + "/" + ds], kernelDataSources: [], competitionDataSources: [], categoryIds: [] });
       if (sk.error) throw new Error("Kaggle : " + sk.error);
       let st = "", t1 = Date.now();
       for (;;) {
@@ -121,7 +126,7 @@ var KG = (() => {
         const min = Math.round((Date.now() - t1) / 60000);
         if (/COMPLETE/i.test(st)) break;
         if (/ERROR|CANCEL/i.test(st)) throw new Error("le calcul a échoué sur Kaggle" + (s.failureMessage ? " : " + s.failureMessage : ""));
-        ev("calcul", 0, (/QUEUED/i.test(st) ? "En attente d’une carte graphique Kaggle…" : "Calcul IA sur les cartes graphiques Kaggle…") + " (" + min + " min)");
+        ev("calcul", 0, (/QUEUED/i.test(st) ? "En attente d’une carte graphique Kaggle…" : (cine ? "Restauration Cinéma (SeedVR2) sur les cartes graphiques Kaggle…" : "Calcul IA sur les cartes graphiques Kaggle…")) + " (" + min + " min)");
       }
       ev("recup", 0, "Récupération du résultat…");
       const info = await recup(u, slug, "info.json");

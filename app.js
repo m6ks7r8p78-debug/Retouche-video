@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v8.0";/* seul endroit où changer le numéro de version */
+const VER="v8.1";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={format:["format-analyse.js","format-directeur.js","format-moteur.js","format-qualite.js","format.js"],effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","recalage.js","visages-video.js"],filtrevideo:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js","recalage.js","visages-video.js","filtre-video.js"],defiltre:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -336,19 +336,21 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     const inf=await demuxVideo(curFile);if(!inf||!inf.ns)throw new Error("IA rapide : vidéo illisible pour l’envoi.");SRX.srcInf=inf;
     const mo=x=>Math.round(x/1048576),reçu=Math.round(ow*oh*inf.ns*0.55*(gop?1.8:1)/1048576);
     if(!(await STUDIO.consent("cloud")))throw new Error("IA rapide non autorisée : rien n’a été envoyé.");
-    if(!confirm("IA rapide sur serveur — envoi de ta vidéo\n\nFournisseur : Kaggle (Google), dans un espace PRIVÉ de ton compte.\nModèle : Real-ESRGAN general v3 (le même que dans l’app).\nBut : calculer la restauration IA de chaque image ("+inf.ns+" images, résultat en "+ow+"×"+oh+").\nConservation : la vidéo et le résultat sont supprimés de Kaggle dès le résultat récupéré, ou en cas d’échec.\nEnvoi : "+mo(curFile.size)+" Mo ; réception : environ "+reçu+" Mo (Wi-Fi conseillé).\n\nEnvoyer maintenant ?"))throw new Error("envoi refusé : rien n’a été envoyé.");
+    const cine=!!($("#o_cine")&&$("#o_cine").checked);
+    if(!confirm("IA rapide sur serveur — envoi de ta vidéo\n\nFournisseur : Kaggle (Google), dans un espace PRIVÉ de ton compte."+(cine?"\nModèle : SeedVR2 3B (ByteDance Seed, Apache-2.0), restauration vidéo « Cinéma » — essai, plus lent ; si son résultat s’écarte de ta vidéo, l’IA standard (Real-ESRGAN) prend le relais automatiquement.":"\nModèle : Real-ESRGAN general v3 (le même que dans l’app).")+"\nBut : calculer la restauration IA de chaque image ("+inf.ns+" images, résultat en "+ow+"×"+oh+").\nConservation : la vidéo et le résultat sont supprimés de Kaggle dès le résultat récupéré, ou en cas d’échec.\nEnvoi : "+mo(curFile.size)+" Mo ; réception : environ "+reçu+" Mo (Wi-Fi conseillé).\n\nEnvoyer maintenant ?"))throw new Error("envoi refusé : rien n’a été envoyé.");
     const stop=setInterval(()=>{if(cancel)KG.annuler()},500);let r;
     const rc=SRX.calc(ow,oh);
-    try{r=await KG.traiter(Object.assign({file:curFile,dw:v.videoWidth,dh:v.videoHeight,ow,oh,dn:+SRX.dn().toFixed(4),images:inf.ns},rc||{},gop?{gop}:{}),(et,f,t)=>{msg(t);const pg=$("#pg");if(pg)pg.value=et==="envoi"?f*.1:et==="recup"?.1+f*.05:pg.value})}
+    try{r=await KG.traiter(Object.assign({moteur:cine?"cinema":"standard",file:curFile,dw:v.videoWidth,dh:v.videoHeight,ow,oh,dn:+SRX.dn().toFixed(4),images:inf.ns},rc||{},gop?{gop}:{}),(et,f,t)=>{msg(t);const pg=$("#pg");if(pg)pg.value=et==="envoi"?f*.1:et==="recup"?.1+f*.05:pg.value})}
     catch(e){const m=(e&&e.message)||String(e);if(cancel||/^annulé$/.test(m))throw new Error("annulé");throw new Error(/^IA rapide/.test(m)?m:"IA rapide : "+m)}
     finally{clearInterval(stop)}
     const ri=await demuxVideo(r.file);
     if(!ri||ri.ns!==inf.ns||ri.dw!==ow||ri.dh!==oh)throw new Error("IA rapide : le résultat reçu ne correspond pas à ta vidéo ("+(ri?ri.ns+" images, "+ri.dw+"×"+ri.dh:"illisible")+").");
     let rr=new SeqReader(r.file,ri);rr.setFps(0);let ouvert=false,dern=-1;
     const c=document.createElement("canvas");c.width=ow;c.height=oh;const x=c.getContext("2d");
-    window.__iaServeur={minutes:r.minutes,images:inf.ns,gpu:r.info&&r.info.gpu,s_par_image:r.info&&r.info.s_par_image,calcul:rc?rc.rw+"x"+rc.rh:"origine"};
+    const mot=(r.info&&r.info.moteur)||"realesrgan";
+    window.__iaServeur={minutes:r.minutes,images:inf.ns,gpu:r.info&&r.info.gpu,s_par_image:r.info&&r.info.s_par_image,calcul:rc?rc.rw+"x"+rc.rh:"origine",moteur:mot,repli:r.info&&r.info.repli,controle:r.info&&r.info.controle};
     try{DIAG.send("ia_serveur_ok",window.__iaServeur)}catch(e){}
-    msg("Résultat IA reçu ("+r.minutes+" min). Assemblage de la vidéo sur le téléphone…");
+    msg((mot==="seedvr2-3b"?"Restauration Cinéma reçue":mot==="realesrgan-repli"?"Cinéma impossible sur cette vidéo ("+String(r.info.repli||"").slice(0,90)+") : IA standard reçue":"Résultat IA reçu")+" ("+r.minutes+" min). Assemblage de la vidéo sur le téléphone…");
     return{
       async image(k){
         if(!ouvert){await rr.open(k);ouvert=true}
@@ -697,7 +699,7 @@ async function stabEnable(on){
    seules « mode rapide », « qualité maximale » et « fluidité » gardent le choix d'une vidéo à l'autre. */
 const pref=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
 const OPT_AFTER={o_stab:e=>stabEnable(e.checked),o_defl:()=>draw(),o_max:()=>{SRX.pc=null;SRX.key="";updateEst();draw()}};
-["o_stab","o_voice","o_defl","o_dust","o_fast","o_max","o_fluid","o_srv"].forEach(id=>{const e=$("#"+id);
+["o_stab","o_voice","o_defl","o_dust","o_fast","o_max","o_fluid","o_srv","o_cine"].forEach(id=>{const e=$("#"+id);
   e.addEventListener("change",()=>{pref(id,e.checked?"1":"0");if(id==="o_max")SRX.autoOff=null;if(OPT_AFTER[id])OPT_AFTER[id](e)})});
 /* v6.0 caméra virtuelle : fiche de l'appareil affichée sous la case, correction appliquée seulement si la case est cochée */
 function camShow(){const b=$("#camf");if(!b||!window.CAM)return;const t=CAM.texte();if(!t){b.hidden=true;return}
@@ -707,6 +709,7 @@ if(window.CAM){$("#o_cam").checked=CAM.actif();$("#o_cam").onchange=e=>{CAM.setA
 $("#o_fast").checked=pref("o_fast")==="1";$("#o_max").checked=(pref("o_max")||"1")==="1";
 /* v4.6 : la case Kaggle est retenue ; par défaut, cochée dès qu'un jeton est enregistré (avant : décochée à chaque ouverture) */
 {const sv=$("#o_srv");if(sv)sv.checked=(pref("o_srv")||(window.KG&&KG.actif()?"1":"0"))==="1"}
+{const ci=$("#o_cine");if(ci)ci.checked=pref("o_cine")==="1"}
 /* ===== Découpe début/fin ===== */
 function trimRange(){const d=v.duration||0;return[$("#t_in").value/1000*d,$("#t_out").value/1000*d]}
 function trimUpdate(src){

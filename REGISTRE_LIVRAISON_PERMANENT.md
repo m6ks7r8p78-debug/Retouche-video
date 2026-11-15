@@ -12,7 +12,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 
 ---
 
-## Tableau de bord (à jour : v8.0, 14/11/2026)
+## Tableau de bord (à jour : v8.1, 15/11/2026)
 
 | | Fonctions |
 |---|---|
@@ -31,6 +31,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 | **Laboratoire** | F15 : EN DÉVELOPPEMENT (+ v7.1 : 74 vrais clips Snapchat privés avec vérité terrain, 359 visages NASA, validation croisée par vidéo) |
 | **Bloquées (dépendance externe)** | F23 serveur de consentement (déploiement + juriste) · F24 collecte pour l'entraînement (juriste) · **F13 en usage commercial** (décision juridique sur la licence des poids) |
 | **Régressions détectées** | aucune introduite par la v6.9. **Échecs déjà présents en v6.8** (trouvés en relançant tout) : `tests/pub.test.mjs` 1 cas (pub indisponible → l’enregistrement ne part pas dans le test), `tests/v3.test.mjs` 3 cas (rendus « équilibre / nuit / jour » de photo sombre) — à expliquer et corriger |
+| **Nouveau v8.1** | **F33 Moteur Cinéma (SeedVR2 sur Kaggle)** : INTÉGRÉ, testé hors carte graphique (7 tests) ; **jamais exécuté sur une vraie carte Kaggle** ; repli automatique sur F04 |
 | **Nouveau v8.0** | **F32 Changer de format (AI Adaptive Video Reframing)** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES ET VIDÉOS DE TEST LIBRES (32 tests, Chromium) ; non validé sur iPhone (WebKit indisponible dans l'environnement de test) |
 
 **Priorité donnée par le propriétaire le 11/11 au soir** : uniquement le retrait des filtres beauté / visage / animaux (cagoule et flou qui cache un visage : exclus, voir F29). **Ancien ordre** : F14 visages en vidéo (Kaggle + local) → F11/F12 filtres beauté et déformations
@@ -326,6 +327,22 @@ Statut : REMPLACÉ par F31 en v7.2 (ancien : INTÉGRÉ NON VALIDÉ).
   conservé (sortie SDR) ; (6) jamais essayé sur iPhone / Safari.
 - **À améliorer ensuite** : intégrer LaMa pour les côtés (mesuré meilleur) ; génération lourde sur le serveur Kaggle gratuit pour
   vertical → horizontal ; essai sur iPhone ; conservation HDR.
+
+### F33 — Moteur Cinéma : restauration vidéo SeedVR2 sur le serveur Kaggle (v8.1) · 15/11
+- **Objectif** : un vrai saut de qualité pour les vieilles vidéos (textures, contours, visages, stabilité), au-delà de
+  Real-ESRGAN image par image et des petits réseaux maison (RNE 0.1–0.20 de ChatGPT : au mieux +0,3 dB sur le bicubique).
+- **Statut** : INTÉGRÉ · testé hors carte graphique · **non exécuté sur une vraie carte Kaggle** · non validé sur iPhone.
+- **Implémenté** : `serveur-ia/cinema_kaggle.py` (installation figée du code SeedVR2, segments sans perte par carte, 3B fp16,
+  blockswap + VAE en tuiles pour 16 Go, couleurs LAB, contrôle structure/couleur/nombre/ordre/temps, repli automatique sur
+  `traitement_kaggle.py`) ; `kaggle.js` (moteur, Internet du calcul seulement pour Cinéma, envoi du script de repli) ;
+  `app.js` / `index.html` (case « Moteur Cinéma (essai) », accord adapté, moteur réellement utilisé affiché et transmis au diagnostic).
+- **Tests 15/11/2026** : `tests/cinema_kaggle_test.py` 5/5 ; `tests/kaggle_cinema.test.mjs` 2/2 ; `tests/sw.test.mjs` 8/8.
+- **Risques connus** : T4/P100 sans bfloat16 → calcul en demi-précision (le code SeedVR2 prévient d'artefacts possibles sur
+  le 3B : c'est ce que le contrôle de structure doit attraper) ; vitesse réelle inconnue (estimée plusieurs minutes de calcul
+  par minute de vidéo) ; Internet du calcul Kaggle requis (compte vérifié par téléphone) ; peut « dessiner » des détails :
+  le mélange avec la version classique de l'app reste appliqué.
+- **Prochaine étape** : premier essai réel sur une vidéo courte (10–20 s), lire `info.json` (moteur, contrôle, s/image),
+  régler taille de travail / blocs échangés ; puis banc A/B (Standard vs Cinéma) sur les 41 vidéos tenues à l'écart.
 
 ## Historique des livraisons (ne jamais effacer)
 
