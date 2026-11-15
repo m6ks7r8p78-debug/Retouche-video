@@ -122,15 +122,27 @@ try:
   # Publishing release two while two active pages are still controlled by v84.
   install_release('v85')
   a.evaluate('async()=>{const reg=await navigator.serviceWorker.getRegistration();await reg.update()}')
-  a.wait_for_function('''async()=>{
-    const reg=await navigator.serviceWorker.getRegistration();
-    return reg.waiting && reg.waiting.state==='installed';
-  }''',timeout=16000)
-  keys=a.evaluate('async()=>await caches.keys()')
-  assert 'retouche-v84' in keys and 'retouche-v85' in keys,keys
-  debug_js='''async()=>{const reg=await navigator.serviceWorker.getRegistration();return {active:reg.active?.state,waiting:reg.waiting?.state||null,installing:reg.installing?.state||null,controller:navigator.serviceWorker.controller?.state||null,caches:await caches.keys(),release:document.documentElement.dataset.release}}'''
-  print('DEBUG_AFTER_WAIT_A',a.evaluate(debug_js),flush=True)
-  print('DEBUG_AFTER_WAIT_B',b.evaluate(debug_js),flush=True)
+  # Chromium can schedule a second installing worker while replacing a waiting
+  # worker during update(). Observe a stable installed/waiting state, not a
+  # single transition snapshot. Old cache must remain intact throughout.
+  state_js='''async()=>{const reg=await navigator.serviceWorker.getRegistration();
+    return {active:reg.active?.state||null,waiting:reg.waiting?.state||null,
+            installing:reg.installing?.state||null,
+            controller:navigator.serviceWorker.controller?.state||null,
+            caches:await caches.keys(),release:document.documentElement.dataset.release}}'''
+  stable=0;state=None
+  for attempt in range(90):
+   state=a.evaluate(state_js)
+   assert 'retouche-v84' in state['caches'],state
+   assert state['controller']=='activated' and state['release']=='84',state
+   stable=stable+1 if state['waiting']=='installed' and not state['installing'] else 0
+   if stable>=3:break
+   time.sleep(0.25)
+  assert stable>=3,('new release never reached stable waiting state',state)
+  bstate=b.evaluate(state_js)
+  assert bstate['release']=='84' and bstate['controller']=='activated',bstate
+  assert bstate['waiting']=='installed' and not bstate['installing'],bstate
+  assert 'retouche-v84' in bstate['caches'] and 'retouche-v85' in bstate['caches'],bstate
   assert a.evaluate('async()=>!!(await navigator.serviceWorker.getRegistration()).waiting')
   for page in [a,b]:
    assert page.evaluate('window.__unsavedEditorState?.unexportedEdits')==7
