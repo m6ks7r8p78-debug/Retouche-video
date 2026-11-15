@@ -144,3 +144,23 @@ WebKit standard : 16 441 pixels de premier plan ; repli 2D : 148 760 pixels. Les
 ### Limites
 Le test WebKit sous Linux **ne certifie pas Safari sur un iPhone réel**, ni les thermiques, l'autonomie, la mémoire du système ou la possibilité de sauvegarder un GLB vers Fichiers sur iOS. Les FPS mesurés par requestAnimationFrame reflètent la cadence de l'animation dans ce navigateur précis, pas la vitesse garantie de traitement d'un film.
 La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune voix, ni reconstruction fidèle de personne ou entraînement des modèles. PR brouillon, aucune modification de main, aucune donnée privée publiée.
+
+
+## Film Studio v0.7 — partage natif iOS facultatif (15 novembre 2026)
+
+### Code développé
+- film-share-v07.mjs : crée uniquement un fichier GLB synthétique vérifié ou un rapport JSON local au schéma autorisé. Contrôle Web Share API via canShare lorsque disponible. Une action explicite de l'utilisateur appelle navigator.share avec un fichier unique ; aucune destination imposée et aucun téléversement direct de l'application. En cas d'annulation, erreur ou absence de support, le téléchargement classique subsiste. Le retour positif de share NE prouve PAS que le fichier est enregistré dans Fichiers.
+- film-ui-v07.mjs et film-studio-v07.html : boutons facultatifs « Partager vers Fichiers… » et « Partager le diagnostic… », disponibles uniquement lorsque le navigateur annonce une capacité de partage. Gestion des erreurs avec messages clairs ; effacement des liens de partage après une demande refusée.
+- film-share-v07.test.mjs : cinq nouveaux tests Node de formats et tailles, schéma privé, canShare, transfert explicite, annulation et échec.
+- film-browser-webkit-v07.test.mjs : simulation contrôlée de navigator.canShare/navigator.share sur vrai WebKit Linux. Vérifie que le clic transmet uniquement un File local de type GLB ou JSON, aucune demande réseau externe de l'application, et qu'un refus ultérieur masque les boutons. Les parcours de rendu WebGL2 et de secours Canvas 2D restent couverts.
+- FILM_STUDIO_IPHONE_QA_V07.md : protocole iPhone Safari manuel avec téléchargement de secours et panneau de partage natif.
+
+### Résultats réellement vérifiés
+- SHA 29844769ad6ef8f4a0c8d79cab6a21f68db30ed1, GitHub Actions run **43751123230** : **50/50 tests Node**, test Chromium WebGL2, test WebKit normal + repli 2D (incluant partage API simulé et diagnostic), paquet HTTPS isolé : **4 jobs sur 4 réussis**.
+- Paquet d’essai statique film-studio-v07-iphone-https-package généré comme artefact GitHub Actions, non déployé. Captures synthétiques de WebKit archivées séparément.
+- Le premier passage du test WebKit a révélé une attente de nom de fichier v0.6 au lieu de v0.7 ; le test a été corrigé puis le run ci-dessus a confirmé le succès.
+
+### Limites inchangées
+- **Aucune preuve de fonctionnement du panneau natif iOS réel**, de la sauvegarde de GLB dans l'application Fichiers, de la mémoire, de la température ou de la fluidité sur appareil Apple. Le test WebKit remplace navigator.share par un faux service contrôlé et ne peut pas attester le système iOS.
+- Toujours pas de film MP4, d'acteur photoréaliste, de dialogue audio, de reconstruction de personne ni de contact des doigts physiquement simulé. Les 157 vidéos privées restent hors de la CI, du paquet et du dépôt public.
+- PR en brouillon, pas de fusion, pas de diffusion publique, pas de déploiement à retoucheproai.com.
