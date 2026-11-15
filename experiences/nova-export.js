@@ -230,7 +230,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
       ...(audioCopy?.editDurationSeconds!=null?{
         editMediaTime:audioCopy.editMediaTime,
         editDurationSeconds:audioCopy.outputEditSeconds,
-        editGapSeconds:audioCopy.outputEditGapSeconds
+        editGapSeconds:audioCopy.outputEditGapSeconds,
+        editListVersion:audioCopy.editListVersion
       }:{})}}:{})});
   videoEnc=new VideoEncoder({output:(chunk,meta)=>{try{muxer.addVideoChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
   videoEnc.configure(config);
