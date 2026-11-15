@@ -1,4 +1,4 @@
-/* NOVA : 20 s H.264/AAC dans UN SEUL MP4 via fenêtres de 6 s.
+/* NOVA : 20 et 24 s H.264/AAC dans UN SEUL MP4 via fenêtres de 6 s.
  * Banc réel Chromium sous CSP, source 100% FFmpeg synthétique.
  * La même piste AAC est copiée une seule fois avec horodatages continus.
  */
@@ -19,15 +19,15 @@ async function ffprobe(file,args=[]){
   {timeout:30000,maxBuffer:8*1024*1024});
  return JSON.parse(stdout);
 }
-test("NOVA 20s H264/AAC : 4 fenêtres, 1 MP4, cadence continue et AAC intégral",async(t)=>{
- const dir=await fs.mkdtemp(path.join(os.tmpdir(),"nova-20s-windowed-"));
+for(const seconds of [20,24])test("NOVA "+seconds+"s H264/AAC : 4 fenêtres, 1 MP4, cadence continue et AAC intégral",async(t)=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),"nova-"+seconds+"s-windowed-"));
  let server=null,browser=null;
  try{
   const input=path.join(dir,"source-longue-synthetique.mp4");
   await run("ffmpeg",[
    "-hide_banner","-loglevel","error","-nostdin",
-   "-f","lavfi","-i","testsrc2=size=320x180:rate=15:duration=20",
-   "-f","lavfi","-i","sine=frequency=660:sample_rate=48000:duration=20",
+   "-f","lavfi","-i","testsrc2=size=320x180:rate=15:duration="+seconds,
+   "-f","lavfi","-i","sine=frequency=660:sample_rate=48000:duration="+seconds,
    "-map","0:v:0","-map","1:a:0",
    "-c:v","libx264","-preset","ultrafast","-threads","2",
    "-bf","0",
@@ -86,8 +86,8 @@ test("NOVA 20s H264/AAC : 4 fenêtres, 1 MP4, cadence continue et AAC intégral"
   const before=JSON.parse(await fs.readFile(await (await preDownload).path(),"utf8"));
   assert.equal(before.status,"ready-for-export-attempt");
   assert.equal(before.source.codec,"h264");
-  assert.equal(before.source.durationMs,20000);
-  assert.deepEqual(before.exportProposal,{width:320,height:180,fps:15,frames:300});
+  assert.equal(before.source.durationMs,seconds*1000);
+  assert.deepEqual(before.exportProposal,{width:320,height:180,fps:15,frames:seconds*15});
   assert.equal(before.pilotLimits.maxDurationMs,24000);
   assert.equal(before.audio,"aac-copy-verified");
   assert.equal(before.privacy.mediaUploaded,false);
@@ -112,7 +112,7 @@ test("NOVA 20s H264/AAC : 4 fenêtres, 1 MP4, cadence continue et AAC intégral"
   assert.match(status,/AAC original copié/);
   const windows=await page.evaluate(()=>window.__nova_test_progress);
   assert.deepEqual(windows.map(w=>[w.index,w.startMs,w.endMs]),[
-   [1,0,6000],[2,6000,12000],[3,12000,18000],[4,18000,20000]
+   [1,0,6000],[2,6000,12000],[3,12000,18000],[4,18000,seconds*1000]
   ]);
   const pending=page.waitForEvent("download");
   await page.locator("#downloadVideo").click();
@@ -126,7 +126,7 @@ test("NOVA 20s H264/AAC : 4 fenêtres, 1 MP4, cadence continue et AAC intégral"
   assert.equal(audio[0].codec_name,"aac");
   assert.deepEqual([video[0].width,video[0].height,video[0].avg_frame_rate],
    [320,180,"15/1"]);
-  assert.ok(Math.abs(Number(video[0].duration)-20)<=.08);
+  assert.ok(Math.abs(Number(video[0].duration)-seconds)<=.08);
   assert.deepEqual([video[0].color_range,video[0].color_primaries,
    video[0].color_transfer,video[0].color_space],[
    "tv","bt709","bt709","bt709"
@@ -135,7 +135,7 @@ test("NOVA 20s H264/AAC : 4 fenêtres, 1 MP4, cadence continue et AAC intégral"
    "-show_frames","-show_entries",
    "frame=best_effort_timestamp_time,key_frame"]);
   const pts=frameInfo.frames.map(x=>Number(x.best_effort_timestamp_time));
-  assert.equal(pts.length,300);
+  assert.equal(pts.length,seconds*15);
   assert.ok(pts.every(Number.isFinite));
   for(let i=1;i<pts.length;i++){
    const gap=pts[i]-pts[i-1];
@@ -143,7 +143,7 @@ test("NOVA 20s H264/AAC : 4 fenêtres, 1 MP4, cadence continue et AAC intégral"
     "Aucune rupture/doublon temporel au rang "+i+" : "+gap);
   }
   assert.equal(pts[0],0);
-  assert.ok(Math.abs(pts.at(-1)-19.933333)<=.002);
+  assert.ok(Math.abs(pts.at(-1)-(seconds-1/15))<=.002);
   const keyframes=frameInfo.frames.map((x,i)=>x.key_frame===1?i:null)
    .filter(x=>x!==null);
   for(const boundary of [0,90,180,270])
@@ -160,10 +160,10 @@ test("NOVA 20s H264/AAC : 4 fenêtres, 1 MP4, cadence continue et AAC intégral"
   assert.deepEqual(targetHashes,sourceHashes.slice(0,targetHashes.length),
    "Copie AAC continue et intégrale, sans recodage aux frontières");
   const audioDuration=Number(audio[0].duration);
-  assert.ok(Number.isFinite(audioDuration)&&Math.abs(audioDuration-20)<.1);
+  assert.ok(Number.isFinite(audioDuration)&&Math.abs(audioDuration-seconds)<.1);
   assert.deepEqual(requests,[],"Aucun média envoyé à l'extérieur");
   assert.deepEqual(errors,[],"Aucune erreur JavaScript non gérée");
-  t.diagnostic("NOVA long 20s : "+JSON.stringify({
+  t.diagnostic("NOVA long "+seconds+"s : "+JSON.stringify({
    windows:windows.length,videoFrames:pts.length,keyframes,
    copiedAACPackets:targetHashes.length,
    audioDuration,videoDuration:Number(video[0].duration),
