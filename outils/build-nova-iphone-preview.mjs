@@ -133,7 +133,7 @@ const home=[
 await fs.writeFile(path.join(out,"index.html"),home);
 manifest.push({path:"index.html",bytes:Buffer.byteLength(home),
  sha256:crypto.createHash("sha256").update(home).digest("hex")});
-const record={kind:"NOVA iPhone HTTPS preview, NOT DEPLOYED",version:"0.24",
+const record={kind:"NOVA iPhone HTTPS preview, NOT DEPLOYED",version:"0.33",
  publication:"none",privateMediaIncluded:false,
  deployment:"manual-only-distinct-host",csp:"sha256-inline-allowlist",files:manifest.sort((a,b)=>a.path.localeCompare(b.path))};
 await fs.writeFile(path.join(out,"asset-manifest.json"),JSON.stringify(record,null,2)+"\n");

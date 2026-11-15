@@ -217,3 +217,47 @@ test("Safari opaque : primaires SDR SMPTE170M et matrice trame BT709, fidélité
  assert.equal(out.proof.colorFidelity,"uncertified-against-source");
  assert.equal(out.frame,f);
 });
+
+test("Safari 0.33 : matrice source 601, trame SDR affichable RGBX sans plan YUV accessible",async()=>{
+ const e=COLOR.metadata({...base,color:{...base.color,matrix:6}});
+ const f={format:"RGBX",colorSpace:{primaries:"bt709",transfer:"bt709",
+  matrix:"bt709",fullRange:false}};
+ const out=await COLOR.imagePourRendu(f,e);
+ assert.equal(out.owned,false);
+ assert.equal(out.frame,f);
+ assert.equal(out.proof.colorFidelity,"uncertified-against-source");
+ assert.match(out.proof.warning,/Comparer les couleurs/);
+});
+test("Safari 0.33 : I420 non copiable, aucun rejet systématique tant que le décodeur atteste du SDR",async()=>{
+ const e=COLOR.metadata({...base,color:{...base.color,matrix:6}});
+ const f={format:"I420",colorSpace:{primaries:"bt709",transfer:"bt709",
+  matrix:"bt709",fullRange:false},codedRect:null};
+ const out=await COLOR.imagePourRendu(f,e);
+ assert.equal(out.proof.method,"native-safari-sdr-bt709-display");
+});
+test("Safari 0.33 : constructeur YUV réétiqueté indisponible, conserver l'affichage natif avec alerte",async()=>{
+ const e=COLOR.metadata({...base,color:{...base.color,matrix:6}});
+ const f={format:"NV12",colorSpace:{primaries:"bt709",transfer:"bt709",
+  matrix:"bt709",fullRange:false},
+  codedWidth:16,codedHeight:16,visibleRect:{x:0,y:0,width:16,height:16},
+  codedRect:{x:0,y:0,width:16,height:16},displayWidth:16,displayHeight:16,
+  timestamp:0,duration:33333,
+  allocationSize:()=>384,copyTo:async()=>[{offset:0,stride:16},{offset:256,stride:16}]};
+ class NotSupported{
+  constructor(){const e=new Error("native YUV construction unavailable");e.name="NotSupportedError";throw e;}
+ }
+ const out=await COLOR.imagePourRendu(f,e,NotSupported);
+ assert.equal(out.proof.sourceMismatch,true);
+ assert.equal(out.owned,false);
+});
+test("Safari 0.33 : I420P10, transfert PQ, primaires P3 ou plage ambiguë ne passent pas en affichage SDR",async()=>{
+ const e=COLOR.metadata({...base,color:{...base.color,matrix:6}});
+ const baseFrame={colorSpace:{primaries:"bt709",transfer:"bt709",
+   matrix:"bt709",fullRange:false}};
+ for(const fr of [
+  {...baseFrame,format:"I420P10"},
+  {format:"RGBX",colorSpace:{...baseFrame.colorSpace,transfer:"pq"}},
+  {format:"I420",colorSpace:{...baseFrame.colorSpace,primaries:"bt2020"}},
+  {format:"I420",colorSpace:{...baseFrame.colorSpace,fullRange:null}}
+ ])await assert.rejects(()=>COLOR.imagePourRendu(fr,e));
+});
