@@ -74,7 +74,9 @@ function restituer(image,options={}){
  }
  // 2. Interpoler les forces des tuiles entre les centres : zéro joint visible.
  const output=new Uint8ClampedArray(src.length);
- const contrib=new Float32Array(w*h);
+ // L'export vidéo n'utilise pas la carte de forces ; éviter 4 octets/pixel
+ // par image sans changer les pixels calculés ni l'interface photo.
+ const contrib=options.includeForces===false?null:new Float32Array(w*h);
  for(let y=0;y<h;y++){
   const ty=y/size-.5,y0=Math.floor(ty),fy=clamp(ty-y0,0,1);
   const r0=clamp(y0,0,rows-1),r1=clamp(y0+1,0,rows-1);
@@ -84,7 +86,7 @@ function restituer(image,options={}){
    const top=strengths[r0*cols+c0]*(1-fx)+strengths[r0*cols+c1]*fx;
    const bot=strengths[r1*cols+c0]*(1-fx)+strengths[r1*cols+c1]*fx;
    const strength=top*(1-fy)+bot*fy,index=(y*w+x)*4;
-   contrib[y*w+x]=strength;
+   if(contrib)contrib[y*w+x]=strength;
    if(strength<.0001){output.set(src.subarray(index,index+4),index);continue}
    lever(src,strength,output,index);
   }
