@@ -12,7 +12,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 
 ---
 
-## Tableau de bord (à jour : v8.1, 15/11/2026)
+## Tableau de bord (à jour : v8.3, 15/11/2026)
 
 | | Fonctions |
 |---|---|
@@ -31,6 +31,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 | **Laboratoire** | F15 : EN DÉVELOPPEMENT (+ v7.1 : 74 vrais clips Snapchat privés avec vérité terrain, 359 visages NASA, validation croisée par vidéo) |
 | **Bloquées (dépendance externe)** | F23 serveur de consentement (déploiement + juriste) · F24 collecte pour l'entraînement (juriste) · **F13 en usage commercial** (décision juridique sur la licence des poids) |
 | **Régressions détectées** | aucune introduite par la v6.9. **Échecs déjà présents en v6.8** (trouvés en relançant tout) : `tests/pub.test.mjs` 1 cas (pub indisponible → l’enregistrement ne part pas dans le test), `tests/v3.test.mjs` 3 cas (rendus « équilibre / nuit / jour » de photo sombre) — à expliquer et corriger |
+| **Nouveau v8.3** | **F34 Fidélité d'abord** : réglage auto sans décalages (ΔE 7,0 → 3,0), épreuve de vérité de l'IA par vidéo, verrou de fidélité (shader), IA par images clés (×3,5–7,5) : INTÉGRÉ, mesuré sur médias de test libres (LPIPS contre vraie image) ; non validé sur iPhone |
 | **Nouveau v8.1** | **F33 Moteur Cinéma (SeedVR2 sur Kaggle)** : INTÉGRÉ, testé hors carte graphique (7 tests) ; **jamais exécuté sur une vraie carte Kaggle** ; repli automatique sur F04 |
 | **Nouveau v8.0** | **F32 Changer de format (AI Adaptive Video Reframing)** : VALIDÉ SUR DONNÉES SYNTHÉTIQUES ET VIDÉOS DE TEST LIBRES (32 tests, Chromium) ; non validé sur iPhone (WebKit indisponible dans l'environnement de test) |
 

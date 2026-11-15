@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v8.2";/* seul endroit où changer le numéro de version */
+const VER="v8.3";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={format:["format-analyse.js","format-directeur.js","format-moteur.js","format-qualite.js","format.js"],effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","recalage.js","visages-video.js"],filtrevideo:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js","recalage.js","visages-video.js","filtre-video.js"],defiltre:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -104,7 +104,7 @@ try{const ex=sessionStorage.getItem("exp");if(ex){sessionStorage.removeItem("exp
   msg("L’export précédent a été interrompu : la mémoire de l’iPhone était saturée. Choisis à nouveau ta vidéo : l’app réglera automatiquement l’export pour qu’il passe.")}}catch(e){}
 
 const VS="attribute vec2 p;varying vec2 uv;void main(){uv=vec2(p.x*.5+.5,.5-p.y*.5);gl_Position=vec4(p,0.,1.);}";
-const FS=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float on,br,co,sa,wa,sp;uniform vec3 tr,gn;uniform float ex,lf,lrow,lrow2,lmx,lnb,hp,gm;uniform sampler2D t0,tl;
+const FS=`precision highp float;varying vec2 uv;uniform sampler2D t;uniform vec2 px;uniform float on,br,co,sa,wa,sp;uniform vec3 tr,gn;uniform float ex,lf,lrow,lrow2,lmx,lnb,hp,gm,fid;uniform vec2 px0;uniform sampler2D t0,tl,tf;
 vec3 lu(vec3 c,float lrow){c=clamp(c,0.,1.)*16.;float b0=floor(c.b);float b1=min(b0+1.,16.);float y=(lrow*17.+c.g+.5)/(lnb*17.);
 return mix(texture2D(tl,vec2((b0*17.+c.r+.5)/289.,y)).rgb,texture2D(tl,vec2((b1*17.+c.r+.5)/289.,y)).rgb,c.b-b0);}
 vec3 cr(vec2 u){vec2 pos=u/px;vec2 c=floor(pos-.5)+.5;vec2 f=pos-c;
@@ -113,8 +113,16 @@ vec2 w12=w1+w2;vec2 t12=px*(c+w2/w12);vec2 t0=px*(c-1.);vec2 t3=px*(c+2.);
 vec3 r=texture2D(t,vec2(t12.x,t0.y)).rgb*(w12.x*w0.y)+texture2D(t,vec2(t0.x,t12.y)).rgb*(w0.x*w12.y)
 +texture2D(t,vec2(t12.x,t12.y)).rgb*(w12.x*w12.y)+texture2D(t,vec2(t3.x,t12.y)).rgb*(w3.x*w12.y)+texture2D(t,vec2(t12.x,t3.y)).rgb*(w12.x*w3.y);
 return r/(w12.x*w0.y+w0.x*w12.y+w12.x*w12.y+w3.x*w12.y+w12.x*w3.y);}
+/* v8.3 verrou de fidélité : la forme et les tons de l'image restent ceux de la vidéo (tf, après réparation des blocs et poussières) ;
+   le traitement (netteté, débruitage, IA) n'apporte que le détail fin, et jamais au-delà de l'enveloppe locale de l'original
+   (pas de halo, pas de reflet ni de tache inventés). Les couleurs voulues (lumière, saturation…) sont appliquées ensuite. */
+vec3 g3(sampler2D s,vec2 u,vec2 q){return(texture2D(s,u)*4.+(texture2D(s,u+vec2(q.x,0.))+texture2D(s,u-vec2(q.x,0.))+texture2D(s,u+vec2(0.,q.y))+texture2D(s,u-vec2(0.,q.y)))*2.
++texture2D(s,u+q)+texture2D(s,u-q)+texture2D(s,u+vec2(q.x,-q.y))+texture2D(s,u+vec2(-q.x,q.y))).rgb/16.;}
+vec3 verrou(vec3 c,vec2 u){vec3 lo=vec3(1.),hi=vec3(0.);
+for(int i=-1;i<=1;i++)for(int j=-1;j<=1;j++){vec3 n=texture2D(tf,u+vec2(float(i),float(j))*px0).rgb;lo=min(lo,n);hi=max(hi,n);}
+vec3 r=g3(tf,u,px0)+(c-g3(t,u,px0));float m=.025+.06*length(hi-lo);return mix(c,clamp(r,lo-m,hi+m),fid);}
 void main(){vec3 c;vec2 uu=(uv-.5)*tr.x+.5+tr.yz;
-if(on>.5){c=cr(uu);if(lf>0.){vec3 q=lu(c,lrow);if(lmx>0.)q=mix(q,lu(c,lrow2),lmx);c=mix(c,q,lf);}vec3 c0=c;c=c*gn*ex;c+=br;c=(c-.5)*co+.5;float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sa);c.r+=wa;c.b-=wa;
+if(on>.5){c=cr(uu);if(fid>0.)c=verrou(c,uu);if(lf>0.){vec3 q=lu(c,lrow);if(lmx>0.)q=mix(q,lu(c,lrow2),lmx);c=mix(c,q,lf);}vec3 c0=c;c=c*gn*ex;c+=br;c=(c-.5)*co+.5;float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sa);c.r+=wa;c.b-=wa;
 /* faible luminosité : relève les ombres et les tons moyens sur la luminance seule (teinte et saturation gardées), le blanc reste blanc */
 /* gain plafonné à ×3 (sinon un pixel presque noir à dominante rouge devenait un aplat rouge), vrais noirs gardés noirs,
    mêlé à un relèvement couleur par couleur pour ne pas sursaturer */
@@ -203,7 +211,7 @@ if(mx(abs(c-med3(c,p,n)))>thr){cnt+=1.;if(abs(float(i))<1.5&&abs(float(j))<1.5)n
 vec3 m0=med3(c0,texture2D(tp,uv).rgb,texture2D(tn,uv).rgb);float d0=mx(abs(c0-m0));
 float k=(mov<.5&&near>.5&&cnt<=40.)?smoothstep(thr*.35,thr*.7,d0):0.;
 gl_FragColor=vec4(mix(c0,m0,k),1.);}`;
-const U={},UB={},UD={},UK={},UL={};let progL=null,texL=null,texL2=null;let progK=null,texK=null,progKM=null,texKM=null;const UKM={};let kmW=0,kmH=0;let DUST={on:false,p:null,n:null};let srIn=false,srOrig=null,texO,dustOnly=false;let tex,tex3,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progB;
+const U={},UB={},UD={},UK={},UL={};let progL=null,texL=null,texL2=null;let progK=null,texK=null,progKM=null,texKM=null;const UKM={};let kmW=0,kmH=0;let DUST={on:false,p:null,n:null};let srIn=false,srOrig=null,texO,texF,dustOnly=false;let tex,tex3,texP,texN,texD,progD,fbo,fw=0,fh=0,prog,progB;
 /* v6.6 : la mise en place du moteur graphique est une fonction, rejouée quand l'iPhone rend le moteur après l'avoir retiré
    (mémoire saturée). Avant, un moteur retiré ne revenait jamais : tous les exports suivants échouaient (« Canvas has no frame »)
    jusqu'à la fermeture de l'app — mesuré dans les diagnostics : 12 exports sur 42, tous sur des vidéos 4K. */
@@ -218,9 +226,9 @@ function glInit(){
   gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0);
   const mt=()=>{const x=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,x);
     [[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE],[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR]].forEach(([a,c])=>gl.texParameteri(gl.TEXTURE_2D,a,c));return x};
-  texL=mt();texL2=mt();texK=mt();texKM=mt();tex=mt();tex3=mt();texP=mt();texN=mt();texD=mt();texO=mt();fbo=gl.createFramebuffer();
+  texL=mt();texL2=mt();texK=mt();texKM=mt();tex=mt();tex3=mt();texP=mt();texN=mt();texD=mt();texO=mt();texF=mt();fbo=gl.createFramebuffer();
   const loc=(g,o,n)=>n.forEach(k=>{o[k]=gl.getUniformLocation(g,k)});
-  loc(progK,UK,["t","tm","px","ph","bs","db"]);loc(progL,UL,["t","px","sc","ca","vg","sig","dk"]);loc(progKM,UKM,["t","px","ph"]);loc(prog,U,["t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex","lf","lrow","lrow2","lmx","lnb","tl","hp","gm"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progD,UD,["t","tp","tn","px","thr"]);
+  loc(progK,UK,["t","tm","px","ph","bs","db"]);loc(progL,UL,["t","px","sc","ca","vg","sig","dk"]);loc(progKM,UKM,["t","px","ph"]);loc(prog,U,["fid","px0","tf","t","px","on","br","co","sa","wa","sp","tr","t0","gn","ex","lf","lrow","lrow2","lmx","lnb","tl","hp","gm"]);loc(progB,UB,["t","px","sh","dn","cs"]);loc(progD,UD,["t","tp","tn","px","thr"]);
 }
 glInit();
 let glLost=false;
@@ -266,7 +274,7 @@ function draw(el){
       const k=tex;tex=texD;texD=k;dustSwap=true;
     }catch(e){gl.activeTexture(gl.TEXTURE0)}
   }
-  let src=tex;
+  let src=tex;const texRef=tex;/* v8.3 référence du verrou de fidélité : la vidéo après réparation (blocs, poussières), avant tout le reste */
   /* v6.0 caméra virtuelle, 1er temps de l'objectif : franges et coins sombres, AVANT le débruitage et le nettoyage des couleurs
      (ce nettoyage recale la couleur sur les contours de la luminance : passé avant, il effaçait une partie des franges et la correction
      dépassait ensuite — mesuré). Appliqué aussi à l'image IA. */
@@ -289,6 +297,12 @@ function draw(el){
   gl.uniform1f(U.hp,window.__hp!=null?window.__hp:PROF.k().hp);gl.uniform1f(U.gm,show?PROF.gamma():1);
   gl.uniform1f(U.ex,show?(exporting?DFG:REC.pv()):1);
   {const on=show&&FLT.tex&&FLT.sel>=0?FLT.f:0;gl.uniform1f(U.lf,on);if(on>0){gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,FLT.tex);gl.uniform1i(U.tl,4);gl.activeTexture(gl.TEXTURE0);gl.uniform1f(U.lrow,FLT.sel);gl.uniform1f(U.lrow2,FLT.sel2>=0?FLT.sel2:FLT.sel);gl.uniform1f(U.lmx,FLT.sel2>=0?FLT.mx:0);gl.uniform1f(U.lnb,FLT.nb)}}
+  /* v8.3 verrou de fidélité (défaut 1) : sur l'image IA, la référence est l'image d'origine (srOrig) à sa propre taille */
+  {const f=show&&!dustOnly?FID.v():0;gl.uniform1f(U.fid,f);
+    if(f>0){gl.activeTexture(gl.TEXTURE6);let rw=w,rh=h;
+      if(srIn&&srOrig){gl.bindTexture(gl.TEXTURE_2D,texF);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srOrig);[rw,rh]=dims(srOrig)}
+      else gl.bindTexture(gl.TEXTURE_2D,texRef);
+      gl.uniform1i(U.tf,6);gl.uniform2f(U.px0,1/rw,1/rh);gl.activeTexture(gl.TEXTURE0)}}
   {const w=show?P.wb:0;gl.uniform3f(U.gn,1+(WBG[0]-1)*w,1+(WBG[1]-1)*w,1+(WBG[2]-1)*w)}
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
   if(dustSwap){const k=tex;tex=texD;texD=k}
@@ -298,6 +312,8 @@ function draw(el){
 /* ===== Qualité maximale : restauration IA (sr.js) =====
    À l'export : chaque image passe par le réseau, puis par les réglages de couleur habituels.
    Dans l'aperçu : calculée quand la vidéo est en pause (ou pour une photo), puis gardée tant que l'image ne change pas. */
+/* v8.3 verrou de fidélité : réglable (0 = désactivé, 1 = plein), retenu sur l'appareil */
+var FID={v(){try{const x=localStorage.getItem("fid");return x==null?1:Math.max(0,Math.min(1,+x))}catch(e){return 1}}};
 var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
   on(){return !SRX.off&&!!window.SR&&$("#o_max").checked&&!(window.MODELS&&MODELS.isOff("sr"))},
   /* force du débruitage du réseau : d'après la réduction du bruit réglée, décalée selon le profil (Naturel garde plus de texture) */
@@ -329,7 +345,9 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
       return ro}
     /* copie immédiate de l'image (avant toute attente) : l'image d'une vidéo change ou est libérée entre-temps, et WebGPU ne lit pas toujours une vidéo directement */
     if(!(el instanceof HTMLCanvasElement)&&!(el instanceof HTMLImageElement)){const [w,h]=dims(el),c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(el,0,0,w,h);el=c}
-    const job=SRX.lock.then(()=>SR.run(el,s,SRX.dn(),onTile,key));SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed)localStorage.setItem("srspd",SR.speed)}catch(e){}return c},
+    /* v8.3 IA par images clés (iak.js) : à l'export d'une vidéo, l'IA n'est calculée que sur les images clés */
+    const ia=()=>SR.run(el,s,SRX.dn(),onTile,key),kk=exporting&&mode==="video"&&window.IAK&&IAK.actif()?"k"+SRX.expId+":"+cv.width+"x"+cv.height:null;
+    const job=SRX.lock.then(()=>kk?IAK.image(el,kk,ia):ia());SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed)localStorage.setItem("srspd",SR.speed)}catch(e){}return c},
   /* IA rapide : envoi à Kaggle, attente, récupération ; renvoie un lecteur d'images {image(rang), fermer()} */
   async lancerServeur(ow,oh,gop){
     if(!KG.actif())throw new Error("IA rapide : ajoute d’abord ton jeton Kaggle dans ⚙️ Paramètres.");
@@ -422,14 +440,52 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
   /* durée de l'IA pour toute la vidéo, d'après la vitesse mesurée sur CE téléphone ; au-delà d'une heure, elle est décochée
      pour cette vidéo (l'iPhone ne peut pas rester des heures au premier plan), avec la marche à suivre pour l'utiliser quand même */
   iaSec(){let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}if(!ms||mode!=="video"||!v.duration)return 0;
-    const [a,b]=trimRange();return (b-a)*(OFPS||30)*(v.videoWidth*v.videoHeight/1e6)*ms/1000},
+    const [a,b]=trimRange();return (b-a)*(OFPS||30)*(v.videoWidth*v.videoHeight/1e6)*ms/1000/(window.IAK&&IAK.actif()?3.5:1)},/* v8.3 : IA par clés (≥ ×3,5 mesuré) */
   videoCheck(){const o=$("#o_max");if(!o||mode!=="video"||!SRX.fits(v))return;const sec=SRX.iaSec();
     if(sec>3600&&o.checked){o.checked=false;SRX.autoOff=curFile;updateEst();
       msg("Qualité maximale (IA) désactivée pour cette vidéo : elle prendrait environ "+(sec>5400?String(Math.round(sec/360)/10).replace(".",",")+" h":Math.round(sec/60)+" min")+" sur ton iPhone. Pour l’utiliser quand même, choisis un extrait court (Réglages → Partie à traiter), puis recoche « Qualité maximale ».")}
     else if(SRX.autoOff&&SRX.autoOff!==curFile&&!o.checked&&(pref("o_max")||"1")==="1"){o.checked=true;SRX.autoOff=null;updateEst()}},
-  preview(){clearTimeout(SRX.pt);if(!SRX.on()||exporting)return;
+  /* v8.3 ÉPREUVE DE VÉRITÉ : la vidéo sert elle-même de vérité. Sur 3 extraits de 256 px (les plus détaillés de 3 images),
+     l'extrait est réduit de moitié, l'IA le reconstruit, et on compare à l'extrait réel (SSIM de luminance), contre un simple
+     agrandissement. Si l'IA ne fait pas mieux que l'agrandissement sur CETTE vidéo, elle est retirée : elle la dénaturerait
+     (mesuré sur 4 vidéos : Real-ESRGAN moins fidèle que l'agrandissement sur toutes) et coûterait des heures pour rien.
+     Coût : 3 petits calculs (~1 s sur iPhone). Méthode reprise du protocole des recherches RNE (dégradation simulée ×2). */
+  async epreuve(els){
+    const S=256,lum=d=>{const o=new Float32Array(d.length/4);for(let i=0;i<o.length;i++)o[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];return o};
+    const ssim=(a,b,w)=>{/* SSIM par fenêtres 8×8 (pas de 4) */let s=0,n=0;const C1=6.5025,C2=58.5225;
+      for(let y=0;y+8<=w;y+=4)for(let x=0;x+8<=w;x+=4){let ma=0,mb=0,va=0,vb=0,c=0;
+        for(let j=0;j<8;j++)for(let i=0;i<8;i++){const k=(y+j)*w+x+i;ma+=a[k];mb+=b[k]}ma/=64;mb/=64;
+        for(let j=0;j<8;j++)for(let i=0;i<8;i++){const k=(y+j)*w+x+i,da=a[k]-ma,db=b[k]-mb;va+=da*da;vb+=db*db;c+=da*db}va/=63;vb/=63;c/=63;
+        s+=((2*ma*mb+C1)*(2*c+C2))/((ma*ma+mb*mb+C1)*(va+vb+C2));n++}return s/n};
+    const mk=(w,h)=>{const c=document.createElement("canvas");c.width=w;c.height=h;return c};
+    let gi=0,gb=0,n=0;
+    for(const el of els){const [w,h]=dims(el);if(w<S||h<S)continue;
+      const full=mk(w,h),fx=full.getContext("2d",{willReadFrequently:true});fx.drawImage(el,0,0,w,h);
+      /* extrait le plus détaillé (variance de la luminance sur une grille 4×4) */
+      let best=null,bv=-1;for(let j=0;j<4;j++)for(let i=0;i<4;i++){const x=Math.round(i*(w-S)/3),y=Math.round(j*(h-S)/3);
+        const L=lum(fx.getImageData(x,y,S,S).data);let m=0;for(const q of L)m+=q;m/=L.length;let v=0;for(const q of L)v+=(q-m)*(q-m);if(v>bv){bv=v;best=[x,y]}}
+      const ref=fx.getImageData(best[0],best[1],S,S),R=lum(ref.data);
+      const pt=mk(S/2,S/2),px=pt.getContext("2d");px.imageSmoothingEnabled=true;px.imageSmoothingQuality="high";px.drawImage(full,best[0],best[1],S,S,0,0,S/2,S/2);
+      const bc=mk(S,S),bx=bc.getContext("2d",{willReadFrequently:true});bx.imageSmoothingEnabled=true;bx.imageSmoothingQuality="high";bx.drawImage(pt,0,0,S,S);
+      const job=SRX.lock.then(()=>SR.run(pt,2,SRX.dn(),null,null));SRX.lock=job.catch(()=>{});const ia=await job,ic=mk(S,S),ix=ic.getContext("2d",{willReadFrequently:true});ix.drawImage(ia,0,0,S,S);
+      gb+=ssim(lum(bx.getImageData(0,0,S,S).data),R,S);gi+=ssim(lum(ix.getImageData(0,0,S,S).data),R,S);n++}
+    if(!n)return null;
+    const r={ia:+(gi/n).toFixed(4),agrandi:+(gb/n).toFixed(4),extraits:n};r.utile=r.ia-r.agrandi>.002;return r},
+  async verifierVideo(file){
+    const o=$("#o_max");if(!o||!o.checked||mode!=="video"||!SRX.on()||!SRX.fits(v)||exporting)return;
+    SRX.ep=true;try{const t=v.currentTime,els=[];
+      for(const f of [.25,.5,.75]){if(curFile!==file||exporting)return;await seekEl(v,Math.min(v.duration-.05,v.duration*f));
+        const [w,h]=dims(v),c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(v,0,0,w,h);els.push(c)}
+      await seekEl(v,t);if(curFile!==file||exporting)return;
+      const r=await SRX.epreuve(els);window.__epreuve=r;if(!r||curFile!==file)return;
+      try{DIAG.send("epreuve_ia",r)}catch(e){}
+      if(!r.utile&&o.checked){o.checked=false;SRX.autoOff=curFile;SRX.pc=null;SRX.key="";updateEst();draw();
+        msg("Épreuve de vérité : sur cette vidéo, l’IA serait moins fidèle qu’un simple agrandissement (ressemblance "+Math.round(r.ia*1000)/10+" % contre "+Math.round(r.agrandi*1000)/10+" %). Elle est retirée : rendu plus fidèle et export bien plus rapide. Tu peux la recocher si tu veux.")}
+      else if(r.utile)msg("Épreuve de vérité : l’IA améliore vraiment cette vidéo (ressemblance "+Math.round(r.ia*1000)/10+" % contre "+Math.round(r.agrandi*1000)/10+" % sans IA). Elle est gardée.")}
+    catch(e){}finally{SRX.ep=false;if(!exporting)try{draw()}catch(e){}}},
+  preview(){clearTimeout(SRX.pt);if(!SRX.on()||exporting||SRX.ep)return;/* v8.3 : pas d’aperçu IA pendant l’épreuve de vérité */
     SRX.pt=setTimeout(async()=>{
-      const el=cur();if(!el||exporting||!show||(mode==="video"&&!v.paused)||!SRX.fits(el))return;
+      const el=cur();if(!el||exporting||SRX.ep||!show||(mode==="video"&&!v.paused)||!SRX.fits(el))return;
       const key=SRX.k();if(SRX.key===key&&SRX.pc)return;SRX.badge(2);
       let c;try{c=await SRX.run(el,cv.width/dims(el)[0],null,SRX.ck())}catch(e){SRX.fail(e);SRX.badge(0);return}
       if(key!==SRX.k()||exporting||(mode==="video"&&!v.paused)){SRX.badge(0);return}
@@ -914,6 +970,7 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
     if(mode!=="video"||exporting)return;
     const my=curFile,t0=v.currentTime,TA=performance.now();let ok=true;REC.stop=false;let done;const pr=new Promise(r=>done=r);REC.pr=pr;
     /* v6.3 : l'analyse s'arrête net dès qu'un export démarre (avant, une étape bloquée faisait attendre l'export sans fin) */
+    if(window.SRX)SRX.ep=true;/* v8.3 : pas d’aperçu IA pendant l’analyse ni l’épreuve de vérité (le calcul attendrait sinon) */
     const halt=()=>curFile!==my||exporting||REC.stop,lim=(p,ms,def)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(def),ms))]);
     $("#rec").hidden=false;$("#rec_t").textContent="Analyse de ta vidéo en cours…";$("#rec_l").textContent="";
     try{
@@ -939,21 +996,22 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
         P.sh=cl("sh",Math.max(.2,Math.min(.8,1-sharp/70))+lsh);           /* image floue → plus de netteté ; déjà nette → presque rien */
         P.dn=cl("dn",Math.max(.1,Math.min(.45,.1+noise*.6))+Math.max(0,ldn)); /* bruit mesuré → réduction proportionnelle */
         const warm=g&&g.length===3?g[2]-g[0]:0;                           /* > 0 : image qui tire vers l'orange ; < 0 : vers le bleu */
-        P.wa=cl("wa",Math.max(-.025,Math.min(.01,-warm*.05)));/* v3.10 : à peine plus froid que l'original (−0,061 puis −0,04 jugés trop bleus) */             /* corrige seulement la dominante réellement présente */
+        P.wa=0;void warm;/* v8.3 : plus de refroidissement automatique : la mesure « monde gris » prend la peau pour une dominante orange et refroidissait tous les visages (mesuré : écart de couleur +1,0) ; la chaleur reste réglable à la main *//* v3.10 : à peine plus froid que l'original (−0,061 puis −0,04 jugés trop bleus) */             /* corrige seulement la dominante réellement présente */
         /* v3.9 : carrés de compression lissés dès 1,08 (avant 1,25) et netteté modérée sur ces vidéos pour ne pas les faire ressortir */
         if(m.blk&&m.blk.r>=1.08){P.db=Math.max(P.db||0,+Math.max(.3,Math.min(1,(m.blk.r-1)/.25)).toFixed(2));DB.ph=[m.blk.px,m.blk.py];
           P.sh=cl("sh",P.sh*Math.max(.55,1-(m.blk.r-1.05)*4))}
         /* v3.12 : contraste baissé seulement si l'analyse l'a relevé (sinon les noirs deviennent gris : mesuré noirs 2 → 10 sur une scène sombre) */
-        P.co=cl("co",P.co-.10*Math.max(0,Math.min(1,(P.co-1)/.15)));if(m.p50<.25&&P.br<0)P.br=0;P.sa=cl("sa",P.sa+.17);P.br=cl("br",m.p50<.25?P.br:P.br-.02);P.cs=cl("cs",P.cs-.05);sync()}
+        P.co=cl("co",P.co-.10*Math.max(0,Math.min(1,(P.co-1)/.15)));if(m.p50<.25&&P.br<0)P.br=0;P.sa=cl("sa",Math.min(P.sa,1.06));/* v8.3 : fini le +17 % de saturation systématique (peau rougie, couleurs dénaturées) */P.br=cl("br",P.br);/* v8.3 : fini l'assombrissement systématique (−0,02) : il dénaturait toutes les vidéos (mesuré : écart de couleur ×2,4) */P.cs=cl("cs",P.cs-.05);sync()}
       if(r.o.bias){for(const k in r.o.bias)P[k]=Math.max(k==="co"||k==="sa"?.8:-.3,Math.min(k==="co"||k==="sa"?1.4:.3,P[k]+r.o.bias[k]));sync()}
       if(r.o.skip)r.it&&r.it.forEach((k,i)=>{const id={dust:"o_dust",defl:"o_defl",stab:"o_stab",voice:"o_voice"}[k];if(id&&r.o.skip[id]){REC.toggle(k,false,r);(r.off=r.off||{})[i]=true}});
       REC.show(r);LEARN.snap();
+      if(!halt()){try{await lim(SRX.verifierVideo(my),60000,null)}catch(e){}}
       /* v6.0 caméra virtuelle : fiche de l'appareil et mesures de l'objectif (6 images), même quand la case est décochée : la fiche s'affiche
          et, avec l'accord « diagnostic », ses nombres aident à régler l'app pour chaque type d'appareil */
       if(window.CAM&&!halt()){try{if(await lim(CAM.analyser(v,my,{bruit:m.noise,blocs:m.blk&&m.blk.r,cancel:halt}),25000,null)&&!halt()){camShow();DIAG.send("camera",CAM.diag())}}catch(e){}}
       try{DIAG.send("analyse",{ms:Math.round(performance.now()-TA),mesures:{bruit:+m.noise.toFixed(2),nettete:Math.round(m.sharp),poussieres:Math.round(m.dust),tremble:m.shake,blocs:m.blk&&+m.blk.r.toFixed(2),dominante:m.gains&&m.gains.map(x=>+x.toFixed(2)),son:m.audio},scint:fl,reco:r.n})}catch(e){}
     }catch(e){ok=false;$("#rec").hidden=true}
-    finally{if(curFile===my&&!exporting){try{await lim(seekEl(v,t0),3500)}catch(e){}draw()}if(REC.pr===pr)REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
+    finally{if(window.SRX)SRX.ep=false;if(curFile===my&&!exporting){try{await lim(seekEl(v,t0),3500)}catch(e){}draw()}if(REC.pr===pr)REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
   }
 };
 
@@ -1694,7 +1752,7 @@ $("#ex").onclick=async()=>{
   if(REC.pr){window.__exStarting=true;msg("Fin de l’analyse, puis l’export démarre…");REC.stop=true;REC.redo=curFile;try{await Promise.race([REC.pr,new Promise(r=>setTimeout(r,4000))])}catch(e){}finally{window.__exStarting=false;REC.pr=null}}
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
   if(SPD.k()!==1&&!window.__plan&&!window.__baMode)return TR.go(SPD.k());
-  exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
+  exporting=true;cancel=false;v.pause();show=1;SRX.expId=(SRX.expId||0)+1;try{IAK.reinit()}catch(e){}try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
   try{const ch=window.__baMode||window.__plan?null:LEARN.record();DIAG.send("export_debut",ch&&Object.keys(ch).length?{ajustements:ch}:{})}catch(e){}
   window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
   $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;$("#dupn").hidden=true;

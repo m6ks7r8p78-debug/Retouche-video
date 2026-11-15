@@ -1,5 +1,26 @@
 # Journal des versions
 
+## v8.3 (15 nov. 2026) — Fidélité d'abord : la vidéo n'est plus dénaturée, l'IA n'est utilisée que si elle aide vraiment
+Constat (capture du propriétaire, vidéo 640×360) : peau rougie, blancs brûlés, contours durs. Mesures :
+- **Réglage automatique** : trois décalages systématiques hérités de la v3.6 dénaturaient TOUTES les vidéos : saturation +17 %,
+  assombrissement −0,02, refroidissement « monde gris » (la peau était prise pour une dominante orange). Écart de couleur à
+  l'original (ΔE Lab) : **7,0 → 3,0**, soit exactement l'écart de la vidéo non retouchée affichée par le navigateur (3,06) ;
+  netteté, débruitage, anti-blocs gardés. Les réglages appris de tes retouches manuelles restent appliqués.
+- **L'IA locale (Real-ESRGAN) dénature** : contre la vraie image (vidéo HD réduite), elle est MOINS fidèle qu'un simple
+  agrandissement — LPIPS 0,120 contre 0,105 (vidéo compressée), 0,093 contre 0,033 (vidéo propre).
+Nouveautés :
+- **Épreuve de vérité** (à chaque vidéo, ~1 s sur iPhone) : 3 extraits sont réduits de moitié, l'IA les reconstruit et on les
+  compare aux vrais extraits. Si l'IA ne fait pas mieux qu'un agrandissement, elle est retirée pour cette vidéo, avec un message
+  chiffré : rendu fidèle et export qui passe de plusieurs heures à quelques minutes. Recochable à la main.
+- **Verrou de fidélité** (dernière étape du rendu, aperçu et export, avec ou sans IA) : la forme et les tons restent ceux de la
+  vidéo ; le traitement n'apporte que le détail fin, jamais hors de l'enveloppe locale de l'original (pas de halo, reflet ou tache
+  inventés). IA + verrou : LPIPS 0,120 → 0,112 (compressée), 0,093 → 0,066 (propre).
+- **IA par images clés** (`iak.js`, export vidéo) : l'IA n'est calculée que sur une image clé ; le détail qu'elle ajoute est
+  déplacé selon le mouvement mesuré vers les images suivantes ; nouvelle clé si le mouvement devient incertain ou toutes les
+  8 images. **3,5 à 7,5 fois moins de calcul IA**, et plus fidèle que l'IA sur chaque image (LPIPS 0,110 contre 0,120 ;
+  0,056 contre 0,093) car le bruit propre à chaque image n'est plus « réinventé ».
+- Tests : `tests/iak.test.mjs` (5), `tests/epreuve.test.mjs` (5) ; banc reproductible `outils/iak/`.
+
 ## v8.2 (15 nov. 2026) — Moteur Cinéma : contrôle qualité v2, issu des recherches RNE de ChatGPT
 - Le contrôle du résultat SeedVR2 reprend les méthodes mises au point par ChatGPT (RNE 0.4 à 0.17) :
   - **par zone** (grille 4×4, RNE 0.13) : une zone inventée ou abîmée est repérée même si l'image entière semble correcte ;
