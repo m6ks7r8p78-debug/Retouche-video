@@ -45,16 +45,16 @@
     "RNE13: contrôle local 16 régions sur 54 scènes multicouches et 288 scènes synthétiques d'artefacts. 26/26 tests locaux; 22/39 régions à faux mouvement encore acceptées; coût ~101ms/720p CPU hors réseau/flux. NON promu; aucun média utilisé.",
     "RNE14: descripteur Census en surcontrôle photo RNE13, 22 tests synthetiques; 288 scènes secondaires éclairage: 95/459 zones justes retrouvées mais 2/309 mauvaises nouvellement acceptées; autre générateur 120 scènes, +36 sous ombre, +7 gamma, aucun gain JPEG+lumière/flou. NON promu.",
     "RNE15: 50 tests synthétiques locaux, 450 scènes appariées. Nouveau garde-fou n'empêche aucun défaut supplémentaire par rapport à RNE14 et refuse 1249 zones correctes en plus. Rejet; nouveau filtre de preuve appariée ajouté.",
-    "RNE16 ANCRE: 9592 paramètres, modèle original CNN double branche entraîné de zéro sur 450 exemples exclusivement synthétiques, 280 étapes. +0,288 dB sur 150 cas synthétiques initiaux après correction confiance 7x7; sur second générateur gelé, 26 pertes >0,5 dB et petit texte en recul. Promotion refusée; 40 tests locaux verts."
+    "RNE16 ANCRE: 9592 paramètres, modèle original CNN double branche entraîné de zéro sur 450 exemples exclusivement synthétiques, 280 étapes. +0,288 dB sur 150 cas synthétiques initiaux après correction confiance 7x7; sur second générateur gelé, 26 pertes >0,5 dB et petit texte en recul. Promotion refusée; 40 tests locaux verts.",
+    "RNE17 AEGIS: 2305-param residual gate trained on 600 private-data-free synthetic scenes; dev 180: 7→0 severe; locked 270: 16→3 severe, mean -0.048dB vs bicubic; learned not better than fixed 0.70 => REJECTED, 41 synthetic tests PASS."
   ],
   "prochaines_etapes": [
-    "Conserver RNE16-ANCRE comme modèle original expérimental non déployé. Garder RNE04 temporel comme référence du laboratoire et bicubique comme repli.",
-    "Corriger hors des bancs existants les forts cas de régression des caractères et spirales, sans entraîner sur les 41 vidéos récentes ni réajuster les paramètres sur les 300 cas synthétiques évalués.",
-    "Introduire une estimation de confiance issue des images réelles, puis valider la protection 7x7, les occultations et les flux avec des ground truths géométriques externes.",
-    "Mesurer le PSNR, la fidélité des textures/visages et la cohérence temporelle sur des vidéos naturellement filmées inédites et des couples originales/filtrées vérifiés; comparer au RNE04 sans réutiliser le jeu de calibration.",
-    "Concevoir un pipeline de requêtes iPhone Safari si et seulement si un appareil réel est testé (mémoire/temps/format/export).",
-    "Conserver media, checkpoints privés, identifiants et images hors de GitHub; ne pas fusionner PR #1 en main ni déployer le site.",
-    "Vérifier la validation GitHub Actions du nouveau HEAD; les 40 tests locaux ne constituent pas une CI distante."
+    "Ne pas promouvoir RNE17 learned gate: 270 synthetic images show it is worse than cheap fixed 0.70 and still below bicubic on text-family images.",
+    "Stop tuning on the same 270 final synthetic cases; freeze that benchmark as previously examined.",
+    "Develop independent true temporal sequence benchmark with motion ground truth and region-level text/faces fidelity, not merely image-level PSNR.",
+    "Any future learned selector must beat both ANCRE and the fixed scalar baseline, not only reduce synthetic severe losses.",
+    "Keep 41 new videos strictly out of training/calibration, and track consent and separation for all prior media.",
+    "No production deployment or main merge; confirm remote GitHub CI and validate real Safari iPhone separately."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -65,19 +65,16 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-15",
     "objets": [
-      "outils/rne/rne16/rne16.py",
-      "outils/rne/rne16/procedural.py",
-      "outils/rne/rne16/train.py",
-      "outils/rne/rne16/stress_frozen.py",
-      "outils/rne/rne16/quality_gate.py",
-      "tests/test_rne16_ancre.py",
-      "tests/test_rne16_quality_gate.py",
-      "RETOUCHE_NEURAL_ENGINE_16.md",
+      "outils/rne/rne17/rne17.py",
+      "outils/rne/rne17/research_limiter.py",
+      "outils/rne/rne17/promotion_gate.py",
+      "tests/test_rne17_gate.py",
+      "RETOUCHE_NEURAL_ENGINE_17.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "40/40 tests, 450 exemples synthétiques entraînement, 150 val + 150 second générateur gelé, pesos privés",
-    "statut_ci": "à vérifier",
-    "observations": "Pas de contenu personnel, pas de média entraîné ou publié; candidat bloqué."
+    "preuve_locale": "41/41 private synthetic tests passed; train/dev/final synthetic + fixed baseline ablation, repeatable code + weights private",
+    "statut_ci": "a_verifier",
+    "observations": "One-shot locked final examined, avoid any further calibration on that set. No private media or trained weights published."
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1741,5 +1738,103 @@
     "production_deployment": false,
     "safari_iphone_tested": false,
     "remote_ci_status": "unverified"
+  },
+  "jalon_neural_engine_17": {
+    "date": "2026-11-15",
+    "codename": "AEGIS",
+    "status": "trained original lightweight residual gate, REJECTED after fixed-baseline ablation; research only",
+    "backbone": "RNE16 ANCRE frozen, synthetic weights remain private",
+    "additional_learned_parameters": 2305,
+    "synthetic_train": {
+      "count": 600,
+      "families": [
+        "microprint",
+        "filaments",
+        "weave"
+      ],
+      "steps": 500,
+      "selected_checkpoint_step": 25
+    },
+    "synthetic_dev": {
+      "count": 180,
+      "ancre_gain_vs_bicubic_db": 0.46389,
+      "aegis_gain_vs_bicubic_db": 0.4859,
+      "severe_losses_ancre": 7,
+      "severe_losses_aegis": 0,
+      "selection_use": "selected checkpoint; not independent"
+    },
+    "synthetic_locked_final": {
+      "count": 270,
+      "predeclared_families": [
+        "diagram",
+        "facade",
+        "foliage"
+      ],
+      "ancre_gain_vs_bicubic_db": -0.11006,
+      "aegis_gain_vs_bicubic_db": -0.04823,
+      "aegis_minus_ancre_db": 0.06184,
+      "bootstrap_exploratory_95pct_db": [
+        0.05371,
+        0.07004
+      ],
+      "ancre_severe_losses": 16,
+      "aegis_severe_losses": 3,
+      "by_family": {
+        "diagram": {
+          "ancre": -0.26877,
+          "aegis": -0.164
+        },
+        "facade": {
+          "ancre": -0.0684,
+          "aegis": 0.00249
+        },
+        "foliage": {
+          "ancre": 0.00699,
+          "aegis": 0.01683
+        }
+      },
+      "synthetic_generator_only": true,
+      "independent_real_world_test": false
+    },
+    "cheap_ablation": {
+      "fixed_strength_from_dev": 0.7,
+      "learned_mean_strength": 0.70049,
+      "learned_mean_spatial_std": 0.000076,
+      "fixed_strength_gain_vs_bicubic_db": -0.04814,
+      "learned_minus_fixed_db": -0.000083,
+      "fixed_severe_losses": 3,
+      "learned_severe_losses": 3,
+      "decision": "Reject learned gate: cheaper scalar is marginally better; neural head not justified"
+    },
+    "privacy": {
+      "old_historic_157_videos_used": false,
+      "new_recent_41_videos_used": false,
+      "personal_media_published": false,
+      "original_people_models_used": false,
+      "trained_weights_uploaded_to_github": false
+    },
+    "local_unit_tests": "41/41 passed, 21 public synthetic tests added to GitHub workflow",
+    "github_files": [
+      "outils/rne/rne17/rne17.py",
+      "outils/rne/rne17/research_limiter.py",
+      "outils/rne/rne17/promotion_gate.py",
+      "tests/test_rne17_gate.py",
+      "RETOUCHE_NEURAL_ENGINE_17.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE17_AEGIS_Laboratoire_Prive.zip",
+    "private_archive_file_count": 18,
+    "source_experiment_scripts_in_private_archive": true,
+    "research_promotion_allowed": false,
+    "site_deployed": false,
+    "main_merged": false,
+    "github_actions_remote_verification": "unconfirmed",
+    "outstanding": [
+      "Real independent video validation",
+      "Fidelity on authentic small face and text",
+      "Temporal flicker under real optical flow",
+      "True AR original-filtered supervision",
+      "iPhone Safari execution"
+    ]
   }
 }
