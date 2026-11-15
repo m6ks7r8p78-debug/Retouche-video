@@ -1,0 +1,46 @@
+name: RetoucheProAI — export A/V fidelity evidence (synthetic-only)
+on:
+  push:
+    branches:
+      - lab-smallmotion-export-fidelity-gate-20261115
+    paths:
+      - 'research/preprod/export_fidelity_gate.py'
+      - 'research/preprod/tests/test_export_fidelity_gate.py'
+      - 'research/preprod/README_EXPORT_FIDELITY.md'
+      - 'research/preprod/relais-2026-11-15-fidelite-av.md'
+      - '.github/workflows/retouche-export-fidelity-evidence.yml'
+  pull_request:
+    paths:
+      - 'research/preprod/export_fidelity_gate.py'
+      - 'research/preprod/tests/test_export_fidelity_gate.py'
+      - '.github/workflows/retouche-export-fidelity-evidence.yml'
+jobs:
+  fidelity-gate-synthetic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free CPU analysis tools
+        run: |
+          python -m pip install numpy
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+      - name: Assert script source compiles
+        run: |
+          python -m py_compile research/preprod/export_fidelity_gate.py
+          python -m py_compile research/preprod/tests/test_export_fidelity_gate.py
+      - name: Test lossless remux and detect missing audio, missing frames, and 80 ms delay
+        run: |
+          mkdir -p research/preprod/results
+          python research/preprod/tests/test_export_fidelity_gate.py | tee research/preprod/results/fidelity_gate_synthetic.json
+      - name: Upload ONLY sanitized synthetic test summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: preprod-export-fidelity-synthetic-only
+          path: research/preprod/results/fidelity_gate_synthetic.json
+          if-no-files-found: error
