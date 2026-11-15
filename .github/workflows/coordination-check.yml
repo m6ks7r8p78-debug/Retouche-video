@@ -1,0 +1,40 @@
+name: Coordination RetoucheProAI - registre public
+on:
+  push:
+    branches:
+      - coordination-retoucheproai-v1
+    paths:
+      - coordination/**
+      - outils/coordination/**
+      - tests/coordination.test.mjs
+      - .github/workflows/coordination-check.yml
+  pull_request:
+    paths:
+      - coordination/**
+      - outils/coordination/**
+      - tests/coordination.test.mjs
+      - .github/workflows/coordination-check.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: coordination-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  protocole:
+    name: Registre, sécurité et tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier syntaxe JavaScript
+        run: |
+          node --check outils/coordination/validate.mjs
+          node --check tests/coordination.test.mjs
+      - name: Vérifier registre, liens et absence de média privé
+        run: node outils/coordination/validate.mjs
+      - name: Tests de non-régression du protocole
+        run: node --test tests/coordination.test.mjs
