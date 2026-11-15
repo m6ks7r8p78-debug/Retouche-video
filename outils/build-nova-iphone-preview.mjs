@@ -11,6 +11,7 @@ import {promisify} from "node:util";
 const execFileAsync=promisify(execFile);
 const root=path.resolve(fileURLToPath(new URL("../",import.meta.url)));
 const out=path.resolve(process.argv[2]||path.join(root,"dist","nova-iphone-preview"));
+const includeHd720Synthetic=process.argv.includes("--with-hd720-6s");
 const experience=path.join(root,"experiences");
 const names=(await fs.readdir(experience)).filter(n=>n==="nova.html"||
  n.startsWith("nova-")&&n.endsWith(".js"));
@@ -104,6 +105,31 @@ manifest.push({path:h264AvFixture,bytes:h264AvBytes.length,
 
 const html=await fs.readFile(path.join(out,"experiences/nova.html"),"utf8");
 const scripts=[...html.matchAll(/<script\s+src="([^"]+)"/g)].map(x=>x[1]);
+// MIRE OPTIONNELLE NON PRIVÉE pour validation Safari manuelle, pas requise
+// pour les tests courts hérités ni pour les autres parcours de la branche.
+if(includeHd720Synthetic){
+ const hdFixture="experiences/nova-hd720-6s-synthetic.mp4";
+ const hdPath=path.join(out,hdFixture);
+ await execFileAsync("ffmpeg",[
+  "-hide_banner","-loglevel","error","-nostdin",
+  "-f","lavfi","-i","testsrc2=size=1280x720:rate=30:duration=6",
+  "-f","lavfi","-i","sine=frequency=900:sample_rate=48000:duration=6",
+  "-map","0:v:0","-map","1:a:0",
+  "-c:v","libx264","-preset","ultrafast","-threads","2","-bf","0",
+  "-x264-params","colorprim=bt709:transfer=bt709:colormatrix=bt709:range=limited",
+  "-pix_fmt","yuv420p","-color_primaries","bt709",
+  "-color_trc","bt709","-colorspace","bt709",
+  "-c:a","aac","-ac","1","-b:a","64k",
+  "-movflags","+faststart+write_colr","-f","mp4","-y",hdPath
+ ],{timeout:90000});
+ const hdBytes=await fs.readFile(hdPath);
+ if(hdBytes.length<10000||hdBytes.length>24*1048576)
+  throw Error("Mire synthétique HD720 trop grande ou incomplète");
+ manifest.push({path:hdFixture,bytes:hdBytes.length,
+  sha256:crypto.createHash("sha256").update(hdBytes).digest("hex"),
+  origin:"ffmpeg-synthetic-hd720-6s-only"});
+}
+
 // Politique de sécurité d'un site statique isolé : hachage exact du seul
 // script inline du laboratoire. Les fichiers personnels ne sont jamais inclus.
 const inlineScripts=[...html.matchAll(/<script(?!\s+src=)[^>]*>([\s\S]*?)<\/script>/g)]
@@ -152,12 +178,17 @@ const home=[
  '<p>Prévisualisation technique isolée, non destinée à la production.',
  'Les vidéos restent traitées dans le navigateur, sans téléversement.</p>',
  '<p>Le test Safari est volontaire et son rapport JSON n’est jamais envoyé automatiquement.</p>',
+ ...(includeHd720Synthetic?[
+  '<p><a download href="./experiences/nova-hd720-6s-synthetic.mp4">Télécharger la mire H.264/AAC 720p de 6 secondes (100 % synthétique)</a></p>',
+  '<p>Sur iPhone : enregistrer la mire dans Fichiers, puis l’importer volontairement dans NOVA ; choisir OPFS et HD720 dans les options avancées.</p>'
+ ]:[]),
  '<p><a href="./experiences/nova.html">Ouvrir le laboratoire NOVA</a></p></main></html>'
 ].join("\n");
 await fs.writeFile(path.join(out,"index.html"),home);
 manifest.push({path:"index.html",bytes:Buffer.byteLength(home),
  sha256:crypto.createHash("sha256").update(home).digest("hex")});
-const record={kind:"NOVA iPhone HTTPS preview, NOT DEPLOYED",version:"0.24",
+const record={kind:"NOVA iPhone HTTPS preview, NOT DEPLOYED",
+ version:includeHd720Synthetic?"0.24-hd720-6s-experimental":"0.24",
  publication:"none",privateMediaIncluded:false,
  deployment:"manual-only-distinct-host",csp:"sha256-inline-allowlist",files:manifest.sort((a,b)=>a.path.localeCompare(b.path))};
 await fs.writeFile(path.join(out,"asset-manifest.json"),JSON.stringify(record,null,2)+"\n");

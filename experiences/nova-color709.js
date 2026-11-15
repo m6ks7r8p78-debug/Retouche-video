@@ -14,7 +14,7 @@ const rgb709=Object.freeze(Array.from({length:256},(_,i)=>{
  return linear<0.018?4.5*linear:1.099*linear**0.45-0.099;
 }));
 function convertir(data,w,h,profile="standard"){
- const pixelLimit=profile==="h264-hd720-opfs-3s"?1280*720:640*360;
+ const pixelLimit=profile==="h264-hd720-opfs-6s"?1280*720:640*360;
  if(!(data instanceof Uint8ClampedArray||data instanceof Uint8Array)||
     !Number.isInteger(w)||!Number.isInteger(h)||w<2||h<2||
     w%2||h%2||w*h>pixelLimit||data.length!==w*h*4)

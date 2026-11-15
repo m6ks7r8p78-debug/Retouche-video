@@ -123,7 +123,7 @@ button.addEventListener("click",async()=>{
  try{
   const r=await NOVA_REAL_PREFLIGHT.inspect({file:chosen,signal:ctl.signal,
    outputProfile:document.getElementById("outputHd720")?.checked?
-    "h264-hd720-opfs-3s":"standard",
+    "h264-hd720-opfs-6s":"standard",
    storageMode:document.getElementById("writeOpfs")?.checked?
     "opfs":"memory"});
   if(id!==generation||ctl.signal.aborted)return;

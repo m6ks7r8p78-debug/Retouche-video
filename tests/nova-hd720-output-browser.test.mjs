@@ -99,7 +99,7 @@ test("NOVA HD720 réel : source 1280x720 -> MP4 1280x720 H264 15fps OPFS, AAC SH
   assert.equal(pre.audio,"aac-copy-verified");
   assert.deepEqual([pre.exportProposal.width,pre.exportProposal.height,
    pre.exportProposal.fps,pre.exportProposal.frames],[1280,720,15,30]);
-  assert.equal(pre.outputProfile,"h264-hd720-opfs-3s");
+  assert.equal(pre.outputProfile,"h264-hd720-opfs-6s");
   assert.equal(pre.pilotLimits.outputSideMax,1280);
   assert.equal(pre.privacy.mediaUploaded,false);
   assert.equal(await page.locator("#downloadVideo").getAttribute("href"),null);
