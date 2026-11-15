@@ -52,3 +52,38 @@ jobs:
           test -x "$CHROME"
           node --check tests/nova-native-hd-bframes-browser.test.mjs
           node --test tests/nova-native-hd-bframes-browser.test.mjs
+  iphone-manual-package:
+    needs:
+      - h264-preflight
+      - bframes-browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Build private-media-free static HTTPS package
+        run: |
+          node outils/build-nova-iphone-preview.mjs
+          test -f dist/nova-iphone-preview/index.html
+          test -f dist/nova-iphone-preview/_headers
+          test -f dist/nova-iphone-preview/experiences/nova-native-hd.js
+          test -f dist/nova-iphone-preview/experiences/nova-real-preflight.js
+          test -f dist/nova-iphone-preview/experiences/nova-zones.js
+          node -e 'const r=require("./dist/nova-iphone-preview/asset-manifest.json"); if(r.publication!=="none"||r.privateMediaIncluded!==false||!r.files.every(x=>!x.path.includes("PRIVATE"))) process.exit(1)'
+          cd dist/nova-iphone-preview
+          zip -q -X -r ../../NOVA_iPhone_HD_Bframes_Precontrole.zip .
+          cd ../..
+          unzip -t NOVA_iPhone_HD_Bframes_Precontrole.zip >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-iPhone-HD-Bframes-HTTPS-manuel
+          path: NOVA_iPhone_HD_Bframes_Precontrole.zip
+          retention-days: 7
+          if-no-files-found: error
