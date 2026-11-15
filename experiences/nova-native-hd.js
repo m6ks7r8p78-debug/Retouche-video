@@ -202,7 +202,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  const ranks=new Map(p.ptsUs.map((time,i)=>[time,i]));
  const decoded=new Map();
  let encoder,decoder,failed=null,sent=0,encoded=0,encodedBytes=0,modified=0,closed=false;
- let confirmedColor=null;
+ let confirmedColor=null,colorsNotSourceVerified=0;
  const started=clock();
  const check=()=>{if(signal?.aborted)fail("annulé");if(failed)throw failed};
  try{
@@ -249,6 +249,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
     try{
      const result=await frameToOutput(frame,info,canvas,moteur,arbitre,durations[next],p.colorEvidence);
      confirmedColor=result.colorProof.method;
+     if(result.colorProof.sourceMismatch)colorsNotSourceVerified++;
      modified+=Number(result.modified);
      try{encoder.encode(result.out,{keyFrame:next===0||next%90===0})}
      finally{result.out.close()}
@@ -310,6 +311,13 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    modifiedFrames:modified,audioMode:audio.mode,
    audioQualification:audio.qualification,outputBytes:blob.size,
    sourceColorEvidence:p.colorEvidence.kind,decodedColorEvidence:confirmedColor,
+   colorFidelity:colorsNotSourceVerified?
+    "native-display-only-not-source-certified":"source-matrix-audited",
+   colorMismatchFrames:colorsNotSourceVerified,
+   colorWarning:colorsNotSourceVerified?
+    "Safari annonce BT.709 pour des trames dont la source dit BT.601. "+
+    "Le MP4 reproduit le rendu natif décodé sans certifier l'identité "+
+    "colorimétrique de la source : comparer l'export à l'original.":null,
    elapsedMs:Math.round(clock()-started),
    disclaimer:"Traitement classique doux, pas de reconstruction neuronale, visuel et audio à vérifier sur iPhone"});
  }finally{
