@@ -1,0 +1,31 @@
+{
+  "results": [
+    {
+      "width": 390,
+      "height": 844,
+      "state": "local_motion_candidate",
+      "candidates": 1,
+      "ms": 40.7,
+      "no_http": true,
+      "no_js_errors": true,
+      "times": [
+        0.0333,
+        0.1667
+      ]
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "state": "local_motion_candidate",
+      "candidates": 1,
+      "ms": 31.9,
+      "no_http": true,
+      "no_js_errors": true,
+      "times": [
+        0.0333,
+        0.1667
+      ]
+    }
+  ],
+  "syntheticVideoSHA256": "a989bc341ef7079b24ec054c6bb15ef2a268e1afea412f5dccb4a5904f8e2694"
+}
