@@ -68,7 +68,7 @@ Un adulte de 18 à 75 ans et plus décrit librement son film en français ou fou
 - film-viewer-v03.mjs lit les vrais blocs JSON/BIN et pistes LINEAR d’un GLB glTF 2.0 **synthétique**. Animation échantillonnée dans les temps source, hiérarchie de matrices de transformation 4×4 conforme au modèle TRS ; rendu **approché** des volumes sphériques sur Canvas 2D, sans bibliothèque ni réseau. Ce n’est **pas** un vrai rendu maillage GPU ou photoréaliste.
 - film-studio-v03.html / film-ui-v03.mjs : champ texte, bouton de création, visualisation sur écran mobile, lecture/pause, frise navigable et pivot tactile, export explicite du GLB. Lorsque le scénario est refusé, le précédent lien d’export est retiré. Aucune photo ou vidéo réelle importée.
 - generateur.js : correction importante du type glTF des canaux de **translation** (VEC3, et non VEC4), sans changement pour rotation VEC4 et scale VEC3.
-- film-contact-v03.mjs : réutilise l’avatar stylisé et son squelette ; remplace les copies visibles de tasse par **une seule tasse** à translation animée ; résout la portée du bras droit par IK analytique plane, adapte le point de saisie aux épaules de l’acteur, échantillonne la trajectoire à 40 Hz et mesure l’écart tasse–ancrage main à 20 Hz. Refus contrôlé si l’écart excède 0,18 m. Il s’agit d’un **point d’ancrage mathématique** : aucune collision, préhension des doigts ou physique réelle démontrée.
+- film-contact-v03.mjs : réutilise l’avatar stylisé et son squelette ; remplace les copies visibles de tasse par **une seule tasse** à translation animée ; résout la portée du bras droit par IK analytique plane, adapte le point de saisie aux épaules de l’acteur, échantillonne la trajectoire à 40 Hz et mesure l’écart tasse–ancrage main à 20 Hz. Refus contrôlé si l’écart excède 0,025 m (25 mm). Il s’agit d’un **point d’ancrage mathématique** : aucune collision, préhension des doigts ou physique réelle démontrée.
 - Le visualiseur supporte les matrices 4×4 et l’échelle non uniforme du torse assis ; cette correction était nécessaire pour éviter un écart artificiel au calcul du point de prise.
 - tests film-viewer-v03.test.mjs, film-ui-v03.test.mjs, film-contact-v03.test.mjs.
 
@@ -84,3 +84,5 @@ Run GitHub Actions 43734295024 : **34 tests Node réussis sur 34**, SHA 05b055ab
 
 ### Prochain contrôle avant toute diffusion
 Effectuer un test navigateur effectif de la page locale, puis inspection visuelle/glTF dans un véritable moteur 3D ; comparer stabilité, doigts/objets, collisions et ressources. Déployer uniquement après revue et validation du chemin iPhone.
+
+**Renforcement des contrôles :** run GitHub Actions 43734491229, 34/34 tests Node réussis sur SHA 4a0b69e30b1f7c764649fa24d256bab055922320 avec seuil d’écart d’ancrage réduit à 25 mm. Ce seuil mesure uniquement la distance à un point de prise mathématique ; il ne certifie pas le contact doigt-tasse.
