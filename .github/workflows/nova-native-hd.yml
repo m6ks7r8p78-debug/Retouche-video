@@ -1,0 +1,74 @@
+name: NOVA native HD iPhone - experimental
+on:
+  push:
+    branches:
+      - chatgpt-nova-iphone-native-fullhd-v1
+  pull_request:
+    branches:
+      - chatgpt-nova-real-video-preflight-v1
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-native-hd-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier le code
+        run: |
+          node --check experiences/nova-native-hd.js
+          node --check experiences/nova-native-hd-ui.js
+          node --check tests/nova-native-hd.test.mjs
+          node --check tests/nova-native-hd-browser.test.mjs
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Suites unitaires HD et précontrôle
+        run: |
+          node --test tests/nova-native-hd.test.mjs tests/nova-real-preflight.test.mjs tests/nova-iphone-preview.test.mjs tests/nova-iphone-report.test.mjs
+      - name: Créer le ZIP de test manuel sans données privées
+        run: |
+          node outils/build-nova-iphone-preview.mjs
+          test -f dist/nova-iphone-preview/experiences/nova-native-hd.js
+          test -f dist/nova-iphone-preview/experiences/nova-native-hd-ui.js
+          cd dist/nova-iphone-preview
+          zip -q -X -r ../../NOVA_iPhone_HD_natif_experimental.zip .
+          cd ../..
+          unzip -t NOVA_iPhone_HD_natif_experimental.zip >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-iPhone-HD-native-static
+          path: NOVA_iPhone_HD_natif_experimental.zip
+          retention-days: 7
+          if-no-files-found: error
+  navigateur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Playwright
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Décodage et export H264/AAC natifs sous CSP Chromium
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test tests/nova-native-hd-browser.test.mjs

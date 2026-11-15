@@ -43,6 +43,41 @@ start.addEventListener("click",async()=>{
  download.hidden=true;
  msg("Vérification des codecs et du son…");
  try{
+  // Director NOVA : une vidéo Full HD ou avec beaucoup d'images ne doit
+  // jamais retomber silencieusement sur le pilote 640×360 / 15 i/s.
+  // Tenter le chemin HD natif PTS + AAC; aucune réduction cachée.
+  let parsed=null;
+  try{parsed=await NOVA_DEMUX.analyser(file)}catch(_){}
+  if(ctl.signal.aborted||generation!==thisGen)return;
+  const useNativeHD=!!parsed&&/^(hvc1|hev1|avc1|avc3)\./.test(parsed.codec||"")&&
+   (parsed.W*parsed.H>640*360||parsed.ns>90);
+  if(useNativeHD){
+   msg("NOVA sélectionne le traitement HD natif pour conserver la résolution et les images d'origine…");
+   const hd=await NOVA_NATIVE_HD.exporter({
+    file,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,signal:ctl.signal,
+    onProgress:step=>{
+     if(ctl.signal.aborted||generation!==thisGen)return;
+     if(step.stage==="source")msg("Traitement HD : "+step.width+" × "+step.height+
+      ", "+step.frames+" images, environ "+step.fps+" i/s.");
+     if(step.stage==="video")msg("Traitement HD : "+step.frame+" / "+step.total+
+      " images ; AAC conservé.");
+     if(step.stage==="complete")msg("Vérification finale du MP4 HD et de son audio…");
+    }
+   });
+   if(ctl.signal.aborted||generation!==thisGen)return;
+   if(blobUrl)URL.revokeObjectURL(blobUrl);
+   blobUrl=URL.createObjectURL(hd.blob);
+   download.href=blobUrl;
+   download.download=(file.name||"video").replace(/\.[^.]+$/,"")+
+    "_NOVA_HD_experimental.mp4";
+   download.hidden=false;
+   msg("MP4 HD disponible : "+hd.originalWidth+" × "+hd.originalHeight+
+    ", "+hd.outputFrames+" / "+hd.sourceFrames+" images, "+
+    hd.sourceFps+" i/s d'origine ; piste AAC copiée. "+
+    hd.modifiedFrames+" images avec corrections locales de lumière. "+
+    "Vérifiez image et son. Pas de reconstruction neuronale.");
+   return;
+  }
   const result=await NOVA_EXPORT.exporter({
    file,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,
    allowSilent:silent.checked,allowApproximate:!!approx?.checked,signal:ctl.signal,

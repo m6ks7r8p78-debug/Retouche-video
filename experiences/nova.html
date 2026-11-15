@@ -91,6 +91,13 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 #novaRealPreflightStatus{font-size:12px;color:#46644f;overflow-wrap:anywhere}
 #novaRealPreflightJson{display:block;border-radius:12px;padding:12px;margin:8px 0;background:#e8faee;font-weight:750;text-decoration:none;overflow-wrap:anywhere}
 #novaRealPreflightPanel [hidden]{display:none!important}
+#novaHdPanel{border-top:1px solid var(--line);padding-top:5px}
+#novaHdPanel button{margin:8px 0}
+#novaHdStatus{font-size:12px;color:#46644f;overflow-wrap:anywhere}
+#novaHdSave,#novaHdOriginal{display:block;border-radius:12px;padding:12px;margin:8px 0;
+ text-align:center;background:#e8faee;font-weight:750;text-decoration:none;overflow-wrap:anywhere}
+#novaHdOriginal{background:#f0f1f3}
+#novaHdPanel [hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -128,8 +135,8 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <section class="card"><small>02 / Le contrôle</small><h2>Preuves, pas promesses.</h2><div id="metrics"><div class="metric"><span>Source</span><strong>—</strong></div><div class="metric"><span>Décision</span><strong>En attente</strong></div></div>
 <button class="secondary" id="save" disabled>Exporter l'aperçu PNG</button>
 <section class="pilot" id="pilotVideo" hidden>
-<strong>Export MP4 court — pilote expérimental</strong>
-<p>12 secondes maximum, 640 pixels, 15 images/seconde. Vérifiez toujours le fichier final.</p>
+<strong>Export MP4 local — NOVA adaptatif (expérimental)</strong>
+<p>Pour les vidéos HD compatibles, NOVA essaie le moteur natif pour conserver la résolution, la cadence et le son d'origine. Le parcours historique 640 pixels / 15 images par seconde reste réservé aux petites sources. Durée pilote : 12 secondes maximum. Vérifiez toujours l'image et le son du fichier final.</p>
 <button class="primary" id="exportVideo" disabled>Exporter un MP4 restauré</button>
 <details class="sourceAdvanced"><summary>Compatibilité des vidéos</summary>
 <p>NOVA utilise les horodatages MP4 natifs. Pour HEVC, le pilote impose un décodage WebAssembly local avec audit de couleur ; l'option approximative ne contourne jamais ces contrôles. Pour certains autres fichiers, un décodage approximatif peut doubler ou manquer des images.</p>
@@ -153,6 +160,18 @@ Aucun traitement ne démarre sans appui, aucune modification ni transmission du 
 <button type="button" class="secondary" id="novaMotionRun" disabled>Analyser 2 images sans modifier</button>
 <div id="novaMotionStatus" role="status" aria-live="polite">Importez une courte vidéo compatible pour obtenir un diagnostic local.</div>
 <a id="novaMotionJson" hidden>Enregistrer le diagnostic mouvement JSON local</a>
+</details>
+<details class="sourceAdvanced" id="novaHdPanel">
+<summary>Essai HD natif — conserver la résolution et le son</summary>
+<p>Nouveau parcours expérimental : décodeur HEVC/H264 natif du navigateur,
+traitement classique doux de la lumière par zones, puis MP4 H.264.
+Il conserve la taille et les PTS de toutes les images et copie l'AAC original
+uniquement si cela est techniquement vérifiable. Ce n'est pas une restauration
+neuronale, et le résultat doit être contrôlé visuellement et à l'écoute.</p>
+<button type="button" class="secondary" id="novaHdRun" disabled>Essayer le traitement HD sans réduire la vidéo</button>
+<div id="novaHdStatus" role="status" aria-live="polite">Choisis une vidéo pour essayer le moteur HD natif.</div>
+<a id="novaHdSave" hidden>Enregistrer le MP4 HD obtenu</a>
+<a id="novaHdOriginal" hidden>Enregistrer l'original intact (sans retouche)</a>
 </details>
 <details class="sourceAdvanced" id="novaRealPreflightPanel">
 <summary>Précontrôle d'une vidéo réelle · sans export</summary>
@@ -402,6 +421,8 @@ async function sampleVideo(){
 <script src="./vendor/smallmotion/smallmotion-local.js"></script>
 <script src="nova-smallmotion-bridge.js"></script>
 <script src="nova-smallmotion-ui.js"></script>
+<script src="nova-native-hd.js"></script>
+<script src="nova-native-hd-ui.js"></script>
 <script src="nova-real-preflight.js"></script>
 <script src="nova-real-preflight-ui.js"></script>
 <script src="nova-iphone-lab-ui.js"></script>
