@@ -29,7 +29,7 @@ Ouvrir le HTML P10 dans Safari. Importer une vidéo autorisée puis l'annoter, e
 ## Reproduire les tests (sans données personnelles)
 
 ```sh
-python -m unittest tests/test_p10_review.py
+python -m unittest discover -s tests -p 'test_p10_review.py'
 node --test tests/test_p10_core.cjs
 ```
 
