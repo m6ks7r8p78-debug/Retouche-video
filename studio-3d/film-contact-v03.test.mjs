@@ -29,7 +29,7 @@ test('mesure des positions de la tasse et du point de prise à 20 Hz',()=>{
  assert.ok(out.contactAudit.sampleCount>35);
  assert.equal(out.contactAudit.actualCollisionVerified,false);
  assert.ok(Number.isFinite(out.contactAudit.maxGapMeters));
- assert.ok(out.contactAudit.maxGapMeters<.18);
+ assert.ok(out.contactAudit.maxGapMeters<.025);
  const scene=readSyntheticGLB(out.glb);
  const cup=index(scene,'tasse_unique_mobile');
  const hand=index(scene,'tasse_en_main_groupe');
