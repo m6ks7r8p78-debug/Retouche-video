@@ -38,10 +38,12 @@ test("NOVA no-op native SDR pipeline: RGB bars stay natural, no exaggerated cont
  let server,browser;
  try{
   const raw=path.join(dir,"ramp.rgb"),sample=path.join(dir,"ramp.mp4");
-  const pixels=Buffer.alloc(W*H*3);
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+  // Rawvideo does NOT repeat a single frame. Supply all 15 frames
+  // explicitly so no missing-frame bug can masquerade as an export defect.
+  const pixels=Buffer.alloc(W*H*3*FPS);
+  for(let frame=0;frame<FPS;frame++)for(let y=0;y<H;y++)for(let x=0;x<W;x++){
    const g=LEVELS[Math.min(LEVELS.length-1,Math.floor(x/(W/LEVELS.length)))];
-   const k=(y*W+x)*3;
+   const k=((frame*H+y)*W+x)*3;
    pixels[k]=pixels[k+1]=pixels[k+2]=g;
   }
   await fs.writeFile(raw,pixels);
