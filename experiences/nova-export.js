@@ -6,10 +6,10 @@
 var NOVA_EXPORT=(()=>{
 "use strict";
 const MAX_SECONDS=12,MAX_LONG_SECONDS=24,MAX_OPFS_SECONDS=48,
- MAX_HD_SECONDS=3,MAX_BYTES=60*1024*1024,MAX_SIDE=640,MAX_HD_SIDE=1280,FPS=15;
+ MAX_HD_SECONDS=6,MAX_BYTES=60*1024*1024,MAX_SIDE=640,MAX_HD_SIDE=1280,FPS=15;
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
 function plan({duration,width,height,bytes,fps=FPS,maxSide=MAX_SIDE,profile}={}){
- const hd720=profile==="h264-hd720-opfs-3s";
+ const hd720=profile==="h264-hd720-opfs-6s";
  const maxSeconds=hd720?MAX_HD_SECONDS:
   profile==="h264-opfs-48s"?MAX_OPFS_SECONDS:
   profile==="h264-windowed-24s"?MAX_LONG_SECONDS:MAX_SECONDS;
@@ -31,7 +31,7 @@ function plan({duration,width,height,bytes,fps=FPS,maxSide=MAX_SIDE,profile}={})
  if(hd720&&(Math.min(outW,outH)<720||Math.max(outW,outH)<1280))
   throw new RangeError("Sortie HD720 incomplète : ne pas étiqueter une sortie basse résolution HD");
  return {width:outW,height:outH,fps,frames:Math.max(1,Math.floor(duration*fps+1e-8)),
-   duration,maxSeconds,outputProfile:hd720?"h264-hd720-opfs-3s":"standard",
+   duration,maxSeconds,outputProfile:hd720?"h264-hd720-opfs-6s":"standard",
    audio:"conserver ou refuser",pilot:true};
 }
 function disposer(media){
@@ -187,15 +187,15 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  // choisi l'OPFS local; le MP4 en RAM et HEVC gardent leurs anciens plafonds.
  if(!["memory","opfs"].includes(storageMode))throw new Error("Mode de stockage MP4 inconnu");
  const useOpfs=storageMode==="opfs";
- if(!["standard","h264-hd720-opfs-3s"].includes(outputProfile))
+ if(!["standard","h264-hd720-opfs-6s"].includes(outputProfile))
   throw new Error("NOVA : profil de sortie inconnu");
- const hd720=outputProfile==="h264-hd720-opfs-3s";
+ const hd720=outputProfile==="h264-hd720-opfs-6s";
  if(hd720&&(!useOpfs||!nativeH264Color709||allowSilent||allowApproximate||
-   !Number.isSafeInteger(probe?.durationUs)||probe.durationUs>3000000||
+   !Number.isSafeInteger(probe?.durationUs)||probe.durationUs>6000000||
    probe.durationUs<1||
    Math.min(probe.dw,probe.dh)<720||
    Math.max(probe.dw,probe.dh)<1280))
-  throw new Error("NOVA HD720 : H.264 BT.709 1280×720+, ≤3 s, AAC et OPFS obligatoires");
+  throw new Error("NOVA HD720 : H.264 BT.709 1280×720+, ≤6 s, AAC et OPFS obligatoires");
  const windowedH264=nativeH264Color709&&
    Number.isSafeInteger(probe?.durationUs)&&probe.durationUs>12000000&&
    probe.durationUs<=(useOpfs?48000000:24000000);
@@ -212,7 +212,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  // de 24 Mio de payloads + MP4 final in-memory.
  const exportMeter=useHevcWasm||windowedH264||hd720?
   NOVA_EXPORT_METER.create({maxEncodedBytes,
-   frameProfile:hd720?"h264-hd720-opfs-3s":"standard"}):null;
+   frameProfile:hd720?"h264-hd720-opfs-6s":"standard"}):null;
  const media=useHevcWasm?null:document.createElement("video");
  if(media){
   media.muted=true;media.playsInline=true;media.preload="auto";
@@ -230,7 +230,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   const sourceWidth=hevcMeta?.width??media.videoWidth;
   const sourceHeight=hevcMeta?.height??media.videoHeight;
   const settings=plan({duration:sourceDuration,width:sourceWidth,height:sourceHeight,
-    bytes:file.size,profile:hd720?"h264-hd720-opfs-3s":
+    bytes:file.size,profile:hd720?"h264-hd720-opfs-6s":
     extendedOpfs?"h264-opfs-48s":
     windowedH264?"h264-windowed-24s":undefined});
   if(!globalThis.NOVA_GUARD)throw new Error("Garde-fous mémoire NOVA indisponibles");
@@ -394,7 +394,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    // Convertir réellement les pixels en YCbCr I420 BT.709 plage limitée.
    const frame=verifiedColorPath?
      NOVA_COLOR709.videoFrame(processed.data,processed.width,processed.height,
-      entry.timestamp,entry.duration,hd720?"h264-hd720-opfs-3s":"standard"):
+      entry.timestamp,entry.duration,hd720?"h264-hd720-opfs-6s":"standard"):
      new VideoFrame(canvas,{timestamp:entry.timestamp,duration:entry.duration});
    try{videoEnc.encode(frame,{keyFrame:entry.keyFrame||forceKeyFrame})}
    finally{frame.close()}
