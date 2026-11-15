@@ -1,0 +1,21 @@
+{
+  "schema": "retouche-smoke-action-v1",
+  "synthetic": true,
+  "subject_id": "fictional_adult_01",
+  "cigarette_id": "prop_01",
+  "eligibility": {
+    "rights_verified": true,
+    "adult_verified": true,
+    "nonsexual_scene_verified": true,
+    "local_training_authorized": true
+  },
+  "frames": [
+    {"t":0.0,"phase":"idle","subject_id":"fictional_adult_01","cigarette_id":"prop_01","mouth":[0.52,0.45],"cigarette_tip":[0.29,0.75],"fingers":[0.32,0.77]},
+    {"t":0.4,"phase":"raise","subject_id":"fictional_adult_01","cigarette_id":"prop_01","mouth":[0.52,0.45],"cigarette_tip":[0.43,0.55],"fingers":[0.45,0.57]},
+    {"t":0.8,"phase":"lip_contact","subject_id":"fictional_adult_01","cigarette_id":"prop_01","mouth":[0.52,0.45],"cigarette_tip":[0.51,0.45],"fingers":[0.47,0.49]},
+    {"t":1.2,"phase":"inhale","subject_id":"fictional_adult_01","cigarette_id":"prop_01","mouth":[0.52,0.45],"cigarette_tip":[0.51,0.45],"fingers":[0.47,0.49]},
+    {"t":1.6,"phase":"lower","subject_id":"fictional_adult_01","cigarette_id":"prop_01","mouth":[0.52,0.45],"cigarette_tip":[0.39,0.63],"fingers":[0.41,0.65]},
+    {"t":2.0,"phase":"exhale","subject_id":"fictional_adult_01","cigarette_id":"prop_01","mouth":[0.52,0.45],"cigarette_tip":[0.31,0.72],"fingers":[0.33,0.73],"smoke_center":[0.53,0.37]},
+    {"t":2.4,"phase":"smoke_drift","subject_id":"fictional_adult_01","cigarette_id":"prop_01","mouth":[0.52,0.45],"cigarette_tip":[0.29,0.73],"fingers":[0.31,0.75],"smoke_center":[0.55,0.26]}
+  ]
+}
