@@ -635,3 +635,85 @@ test("NOVA 0.11 : AAC priming réel FFmpeg, elst et roll conservés de bout en b
   await fs.rm(tmp,{recursive:true,force:true});
  }
 });
+
+test("NOVA 0.11 : cadence VFR + B-frames avec priming AAC elst et roll conservés",async(t)=>{
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-av-vfr-b-"));
+ const src=path.join(tmp,"vfr-bframe-aac.mp4"),app=server();
+ try{
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
+   "-f","lavfi","-i",
+   "color=c=black:s=160x90:r=30:d=2,drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='between(t,0.395,0.465)+between(t,1.195,1.265)'",
+   "-f","lavfi","-i",
+   "aevalsrc=if(lt(abs(t-0.42)\\,0.03)\\,0.7*sin(2*PI*1000*t)\\,0)+if(lt(abs(t-1.22)\\,0.03)\\,0.7*sin(2*PI*1400*t)\\,0):s=48000:d=2",
+   "-map","0:v:0","-map","1:a:0",
+   "-vf","select='not(mod(n,2))+not(mod(n,7))'",
+   "-fps_mode","vfr","-c:v","libx264","-bf","1",
+   "-pix_fmt","yuv420p","-c:a","aac","-b:a","128k",
+   "-movflags","+faststart","-use_editlist","1","-y",src]);
+  const [sourceAudio,sourceVideo]=await Promise.all([decodeAudioEvents(src),decodeVideoEvents(src)]);
+  assert.equal(sourceAudio.length,2);
+  assert.equal(sourceVideo.length,2);
+  await new Promise(r=>app.listen(0,"127.0.0.1",r));
+  const browser=await chromium.launch({headless:true,
+   ...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  try{
+   const page=await browser.newPage({viewport:{width:390,height:844},acceptDownloads:true});
+   const errors=[];page.on("pageerror",e=>errors.push(e.message));
+   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
+   await page.locator("#file").setInputFiles(src);
+   const source=await page.evaluate(async()=>{
+    const f=document.querySelector("#file").files[0],info=await NOVA_DEMUX.analyser(f);
+    if(!info)return null;
+    const pts=NOVA_PTS.planifier(info).nonnegative.map(x=>x.ptsUs);
+    const deltas=pts.slice(1).map((x,i)=>x-pts[i]);
+    return {frames:info.ns,ptsStart:pts[0],
+      bframes:info.ptsUs.some((x,i)=>i>0&&x<info.ptsUs[i-1]),
+      intervals:new Set(deltas).size,
+      sampleAudioMode:(await NOVA_AAC_COPY.planifier(f,{durationSeconds:2})).mode,
+      editMediaTime:(await NOVA_AAC_COPY.planifier(f,{durationSeconds:2})).editMediaTime};
+   });
+   assert.ok(source?.frames>=30,"source échantillonnée");
+   assert.equal(source.bframes,true,"réordonnancement des B-frames réellement présent");
+   assert.ok(source.intervals>=2,"VFR réellement présent");
+   assert.equal(source.sampleAudioMode,"aac-copy");
+   assert.ok(source.editMediaTime>0,"l'amorçage AAC doit être un vrai elst positif");
+   await page.locator("#exportVideo").click();
+   await page.waitForFunction(()=>!!document.querySelector("#downloadVideo")?.getAttribute("href")||
+     document.querySelector("#exportStatus").textContent.startsWith("Export refusé"),
+     null,{timeout:90000});
+   const message=await page.locator("#exportStatus").innerText();
+   const href=await page.locator("#downloadVideo").getAttribute("href");
+   assert.match(href||"",/^blob:/,message);
+   assert.match(message,/audio AAC original copié/);
+   const pending=page.waitForEvent("download");await page.locator("#downloadVideo").click();
+   const saved=await pending,out=await saved.path();
+   const [sourceHashes,outputHashes,outputAudio,outputVideo]=await Promise.all([
+     audioPacketHashes(src),audioPacketHashes(out),decodeAudioEvents(out),decodeVideoEvents(out)
+   ]);
+   assert.ok(outputHashes.length>=50);
+   assert.deepEqual(outputHashes,sourceHashes.slice(0,outputHashes.length),
+     "copie exacte AAC même avec B-frames + VFR + priming");
+   const [oldAudit,newAudit]=await Promise.all([
+     AVSYNC.analyser(new Blob([await fs.readFile(src)])),
+     AVSYNC.analyser(new Blob([await fs.readFile(out)]))
+   ]);
+   assert.equal(newAudit.trimUs,oldAudit.trimUs,
+     "le décalage de préchargement AAC (media_time de elst) doit être conservé");
+   const roll=await audioRollInfo(out);
+   assert.deepEqual(roll,{
+     group:"roll",map:"roll",distance:-1,samples:outputHashes.length,groupIndex:1
+   },"VFR+B : le groupe AAC de préchargement reste représenté");
+   const audit=comparerImpulsions({sourceAudio,sourceVideo,outputAudio,outputVideo,toleranceMs:90});
+   assert.ok(audit.offsetMs<=90,"écart AV ajouté <=90ms malgré VFR");
+   assert.ok(audit.driftMs<=90,"pas de dérive AV sur les 2 impulsions");
+   t.diagnostic("VFR+B AAC avec elst : "+JSON.stringify({frames:source.frames,
+     intervals:source.intervals,packets:outputHashes.length,
+     offsetMs:audit.offsetMs,driftMs:audit.driftMs,sourceVideo,outputVideo}));
+   assert.deepEqual(errors,[]);
+  }finally{await browser.close()}
+ }finally{
+  if(app.listening)await new Promise(r=>app.close(r));
+  await fs.rm(tmp,{recursive:true,force:true});
+ }
+});
+
