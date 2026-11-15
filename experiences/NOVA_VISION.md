@@ -685,3 +685,8 @@ Les choix réutilisés des travaux antérieurs RetoucheProAI / SmallMotion / lab
 ### NOVA 0.23 — Compatibilité des imports Fichiers iOS et suspension Safari
 
 Un fichier MOV/MP4/M4V fourni par le sélecteur Fichiers iOS avec un **MIME vide** est maintenant admis à la sélection locale par son extension (sans enregistrer son nom dans le rapport). Les types MIME renseignés autres que vidéo ne sont pas contournés par l'extension. En cours d'essai, `pagehide` ou `visibilitychange` (page devenue invisible) demande l'annulation du benchmark afin de ne pas prétendre qu'un calcul a été validé après suspension iOS. Ces événements n'impliquent **pas** une preuve de libération immédiate des ressources natives ; le parcours reste expérimental.
+
+
+### NOVA 0.23 — prévisualisation iPhone reproductible sans déploiement
+
+Le script `outils/build-nova-iphone-preview.mjs` prépare un dossier statique, avec manifeste SHA-256 des scripts, décodeur HEVC WASM et licence. Les scripts externes sont interdits et les fichiers MOV/MP4/PNG/JPEG absents. Aucun Service Worker n'est activé pour éviter les mises en cache anciennes rencontrées dans nos travaux SmallMotion/PWA. GitHub Actions archive le bundle sous le nom `nova-iphone-preview` durant sept jours : **du code et des ressources statiques uniquement, aucun média privé**. Cet artefact n'est **pas** un site HTTPS directement ouvrable par Safari ; il doit être placé sur un hébergement de prévisualisation distinct, sans déployer sur `retoucheproai.com`.
