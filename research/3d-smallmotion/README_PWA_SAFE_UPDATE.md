@@ -38,3 +38,7 @@ Le test simule deux générations cohérentes des trois scripts critiques du Wor
 - Le code historique de `demarrage.js` désactive le Service Worker pour certains comptes non Premium : cette expérimentation ne change **pas** les règles de souscription.
 - Pas de transfert de vidéos privées, pas d'entraînement, pas de GPU loué, pas de changement de rendu ou d'export.
 - PR en brouillon, basée sur la PR #24. Ni fusion dans `main`, ni mise en production.
+
+## Résultat GitHub CI vérifié
+
+[GitHub Actions #43699604844](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43699604844) : **succès**. 65 entrées réelles du manifeste précachées sur le runner, ancienne version en attente avec deux clients actifs, travail d'édition simulé conservé, accès au Worker ancien hors réseau, puis migration vers la nouvelle génération après fermeture du dernier client. Aucun test Safari physique n'est inclus.
