@@ -90,7 +90,12 @@ async function planifier(file,{durationSeconds,signal}={},{
  try{
   encoder=new EncoderClass({output:(chunk,meta)=>{
    try{
-    const timestamp=chunk.timestamp,duration=chunk.duration;
+    const timestamp=chunk.timestamp;
+    // WebCodecs autorise EncodedAudioChunk.duration à être null. Pour un
+    // flux AAC-LC brut, chaque access unit couvre 1024 samples ; on le
+    // reconstruit si Safari ne signale pas la durée. La fin est auditée.
+    const duration=chunk.duration==null?
+      Math.round(1024*1e6/pcm.sampleRate):chunk.duration;
     if(!safe(timestamp)||!safe(duration)||!duration||
        timestamp>maxDuration+100000||packets.length>=MAX_CHUNKS)
      error("horodatages ou nombre de paquets AAC invalides");
@@ -126,7 +131,15 @@ async function planifier(file,{durationSeconds,signal}={},{
     numberOfFrames:count,numberOfChannels:pcm.channels,
     timestamp:Math.round(start*1e6/pcm.sampleRate),data});
    try{encoder.encode(chunk)}finally{chunk.close()}
-   if(encoder.encodeQueueSize>8)await new Promise(resolve=>setTimeout(resolve,10));
+   if(encoder.encodeQueueSize>8){
+    const startWait=Date.now();
+    while(encoder.encodeQueueSize>4){
+     if(failed)throw failed;
+     if(signal?.aborted)error("opération annulée");
+     if(Date.now()-startWait>20000)error("encodeur AAC saturé");
+     await new Promise(resolve=>setTimeout(resolve,10));
+    }
+   }
   }
   await encoder.flush();
   if(failed)throw failed;
