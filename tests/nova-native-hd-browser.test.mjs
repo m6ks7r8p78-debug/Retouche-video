@@ -57,6 +57,15 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
    if(!["GET","HEAD"].includes(r.method()))upload.push(r.url());
   });
   await page.goto(base+"/experiences/nova.html");
+  const webkitFixed=await page.evaluate(()=>{
+   const faulty=new Uint8Array([3,128,128,128,34,0,0,0,4,
+    128,128,128,20,64,20,0,24,0,0,0,0,0,0,0,0,0,
+    5,128,128,128,2,17,136,6,128,128,128,1,2]);
+   return Array.from(NOVA_AAC_NATIVE.normalizeDescription(faulty,48000,1));
+  });
+  assert.deepEqual(webkitFixed,[17,136],
+   "Full Safari esds descriptor must normalize to ASC under production CSP");
+
   await page.locator("#novaHdPanel summary").click();
   assert.equal(await page.locator("#novaHdRun").isEnabled(),false);
   await page.locator("#file").setInputFiles(sample);
