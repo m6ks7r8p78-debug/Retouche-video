@@ -54,10 +54,12 @@ async function run(page,label,origin){
  // Test diagnostic réel par rAF : aucune information d'identité ou de prompt.
  await page.locator('#runDiagnostic').click();
  await page.locator('#saveDiagnostic').waitFor({state:'visible',timeout:25000});
- const diagnostic=await page.evaluate(async()=>{
-   const href=document.querySelector('#saveDiagnostic').href;
-   return JSON.parse(await (await fetch(href)).text());
- });
+ const [diagnosticDownload]=await Promise.all([
+   page.waitForEvent('download'),
+   page.locator('#saveDiagnostic').click()
+ ]);
+ assert.match(diagnosticDownload.suggestedFilename(),/diagnostic-v06\.json$/);
+ const diagnostic=JSON.parse(await readFile(await diagnosticDownload.path(),'utf8'));
  assert.equal(diagnostic.schema,'retoucheproai.film-studio.device-diagnostic.v0.6');
  assert.equal(diagnostic.validation.physicalIPhoneCertified,false);
  assert.equal(diagnostic.validation.memoryMeasured,false);
