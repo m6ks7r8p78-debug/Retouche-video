@@ -72,7 +72,10 @@ function diagnosticPublic(d){
 function diagnoseFailure(report,info,diagnose){
  const fn=diagnose||globalThis.NOVA_HEVC_REFUSAL_DIAG?.inspect;
  if(typeof fn!=="function")return;
- try{report.diagnostic=diagnosticPublic(fn(info))}catch{report.diagnostic=null}
+ try{
+  const safe=diagnosticPublic(fn(info));
+  report.diagnostic=safe?{schema:"retoucheproai.nova.hevc-refusal-diagnostic.v1",...safe}:null;
+ }catch{report.diagnostic=null}
 }
 function category(info){
  const c=info?.codec;
