@@ -103,3 +103,16 @@ test("NOVA × SmallMotion : serialisation rejette un rapport trafiqué et toute 
  const invalid={...r,status:"private-file-name.mp4"};
  assert.throws(()=>BRIDGE.serialiser(invalid),/invalide|non reconnu/);
 });
+
+test("NOVA SmallMotion : distingue la mire synthétique du média local sans exposer le nom",()=>{
+ const [a,b]=make(8,{object:true});
+ const report=BRIDGE.analyser(a,b,{engine:ENGINE,synthetic:true,clock:()=>0});
+ assert.equal(report.sourceKind,"synthetic-generated");
+ const data=JSON.parse(BRIDGE.serialiser(report));
+ assert.equal(data.sourceKind,"synthetic-generated");
+ assert.equal(data.action,"no_automatic_change");
+ const local=analyze(a,b);
+ assert.equal(local.sourceKind,"local-user-file");
+ assert.equal(JSON.parse(BRIDGE.serialiser(local)).sourceKind,"local-user-file");
+ assert.throws(()=>BRIDGE.serialiser({...report,sourceKind:"PRIVATE-FILENAME.mov"}),/invalide/);
+});
