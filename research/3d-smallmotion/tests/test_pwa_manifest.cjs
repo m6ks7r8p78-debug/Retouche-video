@@ -7,7 +7,7 @@ const arr=name=>JSON.parse(SRC.match(new RegExp(name+'=(\\[[^\\]]+\\])'))[1]);
 const F=arr('F'),LOURDS=arr('LOURDS'),C=SRC.match(/const C="([^"]+)"/)[1],H=SRC.match(/const H="([^"]+)"/)[1];
 const NAMES=['smallmotion-local.js','smallmotion-resource-guard.js','smallmotion-worker-runner.js','smallmotion-director-local.js','smallmotion-app-bootstrap.js','smallmotion-worker.js'];
 const TARGETS=NAMES.map(n=>'research/3d-smallmotion/'+n);
-assert.equal(C,'retouche-v84','must bump app cache generation to install all modules together');
+assert.equal(C,'retouche-v85','must bump app cache generation to install all modules together');
 assert.equal(new Set(F).size,F.length,'duplicate SW precache paths');
 for(const file of TARGETS){assert(F.includes(file),`SW precache missing: ${file}`);}
 const js=n=>fs.readFileSync(path.join(MODULE,n),'utf8');
