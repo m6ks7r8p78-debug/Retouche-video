@@ -11,6 +11,7 @@ if(!button||!status||!link)return;
 const label="Vérifier cette vidéo sans exporter";
 const messages=Object.freeze({
  "ready-for-export-attempt":"Précontrôle favorable : format HEVC SDR, contraintes de durée et mémoire, et piste AAC vérifiés. Cela permet seulement de tenter un export, sans le garantir.",
+ "ready-for-native-hd-attempt":"Précontrôle HD favorable : décodeur et encodeur natifs compatibles, résolution et cadence d'origine conservées, AAC original vérifié. Vous pouvez tenter l'export HD. Ce n'est pas une garantie de réussite ni une restauration neuronale.",
  "not-video":"Ce fichier n'est pas reconnu comme une vidéo.",
  "file-budget":"Précontrôle refusé : fichier vide, invalide ou supérieur à 60 Mio.",
  "browser-unavailable":"Ce navigateur ne présente pas toutes les fonctions WebCodecs requises.",
