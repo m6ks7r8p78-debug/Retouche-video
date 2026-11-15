@@ -1,4 +1,4 @@
-import sys,json, pathlib
+import sys,json, pathlib, base64
 import cv2
 import numpy as np
 import pytest
@@ -7,12 +7,17 @@ sys.path.insert(0,str(ROOT))
 import p13_face_eye_detector as p
 FIXTURE=ROOT/'examples'/'fictional_adult_frame.jpg'
 
+def load_fiction():
+    if FIXTURE.is_file():return cv2.imread(str(FIXTURE))
+    raw=base64.b64decode((ROOT/'examples'/'fictional_adult_frame.jpg.base64').read_text())
+    return cv2.imdecode(np.frombuffer(raw,dtype=np.uint8),cv2.IMREAD_COLOR)
+
 def test_cascades_present():
     a,b=p.detector_paths();assert a.is_file() and b.is_file()
     a,b=p.load_detectors();assert not a.empty() and not b.empty()
 
 def test_fictional_face_actually_detected():
-    frame=cv2.imread(str(FIXTURE));ans=p.detect_face_eye_rois(frame)
+    frame=load_fiction();ans=p.detect_face_eye_rois(frame)
     assert ans is not None
     assert ans['candidate_detector']=='opencv_haar_cpu'
     assert ans['lips_detected'] is False
@@ -20,7 +25,7 @@ def test_fictional_face_actually_detected():
     assert 0 <= ans['face_box'][0] <=1
 
 def test_eyes_are_independent_candidates():
-    ans=p.detect_face_eye_rois(cv2.imread(str(FIXTURE)))
+    ans=p.detect_face_eye_rois(load_fiction())
     assert 0<=len(ans['eye_candidate_boxes'])<=2
     assert ans['smoking_or_breath_detected'] is False
 
@@ -41,7 +46,7 @@ def test_invalid_window_rejected():
     with pytest.raises(ValueError):p.probe_window_ffmpeg(FIXTURE,-3,2)
 
 def test_video_scan_with_actual_fake_media(tmp_path):
-    img=cv2.imread(str(FIXTURE))
+    img=load_fiction()
     pth=tmp_path/'fiction.avi';out=cv2.VideoWriter(str(pth),cv2.VideoWriter_fourcc(*'MJPG'),10,(img.shape[1],img.shape[0]))
     assert out.isOpened()
     for _ in range(20):out.write(img)
@@ -62,7 +67,7 @@ def test_private_path_traversal_rejected(tmp_path):
     with pytest.raises(ValueError):p.audit(file,tmp_path,tmp_path/'out.json',limit=1)
 
 def test_no_identity_or_anatomical_claims(tmp_path):
-    img=cv2.imread(str(FIXTURE));a=p.detect_face_eye_rois(img)
+    img=load_fiction();a=p.detect_face_eye_rois(img)
     assert a['lips_detected'] is False
     assert a['hands_detected'] is False
     assert a['smoking_or_breath_detected'] is False
