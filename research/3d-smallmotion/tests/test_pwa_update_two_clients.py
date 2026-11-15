@@ -55,7 +55,7 @@ def install_release(name:str):
  else:
   assert name == 'v89'
   sw=BASE_SW.replace('const C="retouche-v88"','const C="retouche-v89"').replace(
-      'const H="PENDING_________"','const H="1234567890abcdef"')
+      'const H="fe44fa76e024d829"','const H="1234567890abcdef"')
   html_version='89'
   for f in REQUIRED:
    path=STAGE/f
