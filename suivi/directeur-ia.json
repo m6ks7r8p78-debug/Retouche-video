@@ -40,15 +40,16 @@
     "RNE08: 19 signaux de qualité sans vérité de référence à l'inférence ; validation 616 exemples historiques, +0,16442 dB vs +0,20554 RNE04, 3 pertes graves restent; 29 tests initiaux + 18 audits de rareté PASS; sélecteur non promu.",
     "RNE09: 246 historic synthetic stress cases, photometric attenuation rejected; stricter confidence-invariant gate refused 164/164 deliberately mismatched histories while preserving 82/82 valid examples. 23 new tests PASS; not deployable.",
     "RNE10: 328 stress essais sur anciens groupes; RNE09 laisse passer 164/164 faux alignements sous confiance recalculée malgré 20/41 pertes graves sur LR propre 1px. Garde-fou causal de provenance de sessions, 27 tests synthétiques PASS, aucune promotion.",
-    "RNE11: recherche Reddit/OpenCV, capteur indépendant Lucas-Kanade vs Farneback, 23 tests synthétiques locaux PASS, 41 paires historiques de calibration. 1px de décalage synthétique détecté après réglage du seuil sur le même lot (résultats post-hoc, non indépendants). Non déployé."
+    "RNE11: recherche Reddit/OpenCV, capteur indépendant Lucas-Kanade vs Farneback, 23 tests synthétiques locaux PASS, 41 paires historiques de calibration. 1px de décalage synthétique détecté après réglage du seuil sur le même lot (résultats post-hoc, non indépendants). Non déployé.",
+    "RNE12: troisième observateur par corrélation de phase; 144 cas nouveaux synthétiques, acceptations erronées 24/74→0/74 ; limite multi-plans 12/12→5/12 ; 26 tests PASS. Validation hors distribution et iPhone manquantes; non promu."
   ],
   "prochaines_etapes": [
-    "Ne pas promouvoir RNE11 à partir des seules 41 paires historiques de calibration; conserver le seuil 0.75 px comme hypothèse de recherche, pas comme critère de qualité certifié.",
-    "Créer un nouveau contrôle de suivi du mouvement sur véritables occultations et scènes rapides avec données de vérité, pour mesurer fausses alertes et erreurs manquées.",
-    "Réutiliser le dense Farneback déjà produit par triad.alignment (ne pas recalculer un flux coûteux en plus), sans fusionner le changement de contrat d'API avant validation.",
-    "Réserver toujours les 41 vidéos récentes hors des entraînements et de la calibration de seuils, maintenir provenance/consentement et aucune publication.",
-    "Réévaluer l'ordre prétraitement/décompression puis upscale et la protection locale des petits visages, uniquement avec validations non destructives et références dignes de confiance.",
-    "Tester la mémoire et latence sur vrai iPhone Safari avant d'autoriser un pipeline automisé; RNE04 reste moteur de recherche principal, bicubique repli."
+    "Préserver tous les 41 envois récents hors de l'entraînement ET de la calibration des nouveaux contrôles RNE; ne pas réutiliser le banc pour régler les seuils.",
+    "Concevoir un contrôle de motion spatial et occlusion local (RNE13) en conservant les 5 erreurs multi-plans RNE12 comme cas de diagnostic, puis évaluer sur d'autres distributions synthétiques/annotées non consultées.",
+    "Ne pas traiter une 'provisional_agreement' RNE12 comme un certificat de qualité: deux flux peuvent être d'accord tout en étant faux, et un test de translation globale n'est pas adapté à un visage/mouvement non rigide.",
+    "Optimiser le coût CPU RNE12 avant tout usage par frame à 720p: 80ms pour le contrôle seul, sur CPU labo, hors décodage et inférence.",
+    "Récupérer un jeu de référence inédit avec mouvement naturel et vérité optique, références avant/après filtre AR vérifiées et garanties de droits.",
+    "Vérifier CI Github réelle et tests Safari iPhone avant toute promotion; RNE04 reste référence expérimentale et bicubique repli."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -57,16 +58,16 @@
     "pas_de_medias_personnels": true
   },
   "jalon_en_attente_ci": {
-    "date": "2026-11-14",
+    "date": "2026-11-15",
     "objets": [
-      "outils/rne/rne11/sparse_motion_audit.py",
-      "tests/test_rne11_sparse_motion_audit.py",
-      "RETOUCHE_NEURAL_ENGINE_11.md",
+      "outils/rne/rne12/phase_motion_guard.py",
+      "tests/test_rne12_phase_motion_guard.py",
+      "RETOUCHE_NEURAL_ENGINE_12.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "23/23 tests de suivi de points et abstention, 41 paires historiques de calibration sur 5 perturbations artificielles, benchmark CPU à trois tailles",
+    "preuve_locale": "26/26 tests synthétiques RNE12, 23 tests RNE11; 288 cas de translation + 54 deux couches, benchmark CPU",
     "statut_ci": "a_verifier",
-    "observations": "CI remote à confirmer, aucune image/vidéo/poids/nom privé publiés."
+    "observations": "Aucune image, vidéo, poids ni nom de média personnel sur GitHub, pas de déploiement."
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1299,5 +1300,91 @@
     "website_deployed": false,
     "main_merged": false,
     "iphone_safari_validated": false
+  },
+  "jalon_neural_engine_12": {
+    "date": "2026-11-15",
+    "status": "third observer (global phase correlation) researched, benchmarked, saved; NOT PROMOTED",
+    "method": "Use RNE11 sparse LK vs dense Farneback first; if provisional, cross-check with independent phase correlation on globally rigid translation. Abstain on uncertain phase, median deviation or excessive spatial outliers.",
+    "thresholds_are_research_heuristics": {
+      "phase_peak_response_min": 0.35,
+      "global_dense_median_error_px_max": 0.75,
+      "fraction_gt2px_max": 0.15,
+      "not_certified_for_natural_motion": true
+    },
+    "procedural_benchmark": {
+      "original_train_corpus_touched": false,
+      "new_41_videos_touched": false,
+      "model_train": false,
+      "weights_changed": false,
+      "calibration": {
+        "seed_start": 100,
+        "instances": 2,
+        "cases": 144,
+        "known_bad": 74,
+        "RNE11_bad_accepted": 24,
+        "RNE12_bad_accepted": 2,
+        "RNE11_good_accepted": 53,
+        "RNE12_good_accepted": 47
+      },
+      "heldout_new_random_seeds": {
+        "seed_start": 5007,
+        "instances": 2,
+        "cases": 144,
+        "known_bad": 74,
+        "RNE11_bad_accepted": 24,
+        "RNE12_bad_accepted": 0,
+        "RNE11_good_accepted": 51,
+        "RNE12_good_accepted": 47,
+        "limitation": "same generation families; not independent real-world distribution"
+      },
+      "moving_foreground_background": {
+        "cases": 54,
+        "known_bad": 12,
+        "RNE11_bad_accepted": 12,
+        "RNE12_bad_accepted": 5,
+        "RNE11_good_accepted": 42,
+        "RNE12_good_accepted": 24,
+        "limitation": "multi-layer occlusion exposes remaining false acceptance and excess conservative fallback"
+      },
+      "gt_definition": "Known horizontal translation, ignore synthetic occluded/border pixels; bad if median EPE>1px OR P90 EPE>2px; cuts classified unreliable"
+    },
+    "timing_CPU_reusing_dense_ms": {
+      "size192x192": {
+        "RNE11": 4.07,
+        "RNE12": 6.15
+      },
+      "size640x360": {
+        "RNE11": 6.54,
+        "RNE12": 20.4
+      },
+      "size1280x720": {
+        "RNE11": 21.61,
+        "RNE12": 79.99
+      },
+      "excluded": [
+        "Farneback computation",
+        "video decode",
+        "neural inference"
+      ],
+      "iphone_measured": false
+    },
+    "tests": "26/26 new RNE12 local tests PASS, 23/23 RNE11 tests rerun PASS; GitHub CPU CI updated but remote not confirmed",
+    "code_public": [
+      "outils/rne/rne12/phase_motion_guard.py",
+      "tests/test_rne12_phase_motion_guard.py",
+      "RETOUCHE_NEURAL_ENGINE_12.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE12_Troisieme_Observateur_Mouvement_Privé.zip",
+    "privacy": {
+      "only_synthetic_procedural_benchmarks": true,
+      "new_41_reserved_excluded": true,
+      "personal_media_published": false,
+      "model_weights_published": false
+    },
+    "model_promotion": false,
+    "production_deployed": false,
+    "main_merged": false,
+    "safari_iphone_tested": false
   }
 }
