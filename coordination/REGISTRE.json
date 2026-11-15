@@ -118,6 +118,21 @@
       ]
     },
     {
+      "id": "nova-webkit-aac-esds",
+      "label": "NOVA — correction AudioEncoder WebKit #302253 et AudioSpecificConfig AAC dans MP4",
+      "branch": "chatgpt-nova-safari-aac-esds-webkit-v1",
+      "pr": 64,
+      "observation": "draft-pr-observed",
+      "interface": "Normalise le mauvais ES_Descriptor Safari en vrai ASC AAC-LC avant muxage; validations source taux/canaux/codec, lecture d'une piste AAC réelle et contrôle MP4 final sans export silencieux",
+      "workBoundary": "experiences/nova-aac-native.js; tests/nova-aac-native.test.mjs; tests/nova-native-hd-browser.test.mjs; workflow nova-webkit-aac-esds",
+      "validationGap": "67/67 tests unitaires + 1/1 Chromium navigateur CSP réussis, incluant vrais échantillons AAC synthétiques remuxés en m4a et vérifiés FFprobe; comportement réel sur Safari iPhone physique encore non confirmé",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/64",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43729328127",
+        "https://bugs.webkit.org/show_bug.cgi?id=302253"
+      ]
+    },
+    {
       "id": "smallmotion",
       "label": "SmallMotion / PWA / budgets",
       "branch": "preprod-retoucheproai-local-v1",
@@ -287,6 +302,12 @@
       "from": "nova-hd-aac-rescue",
       "to": "nova",
       "topic": "AAC-LC ESDS/ASC robuste + recours AAC natif Safari sous vérification de codecs; ne jamais déduire absence de son d'une ASC non confirmée; iPhone réel et synchro à vérifier, pas de bascule muette.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-webkit-aac-esds",
+      "to": "nova",
+      "topic": "WebKit #302253 : AudioEncoder.decoderConfig.description peut contenir un ESDS complet et non l'ASC; normaliser 03/04/05/06 sans tronquer arbitrairement, vérifier AOT/sampleRate/canaux, tester une vraie piste AAC. Safari iPhone à valider.",
       "state": "proposal"
     }
   ],
