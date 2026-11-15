@@ -1,0 +1,9 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RetoucheProAI — essai du pont local (isolé)</title>
+<style>:root{font:16px system-ui,-apple-system;background:#faf9f5;color:#193329}body{margin:0}main{max-width:720px;margin:auto;padding:24px 16px}h1{letter-spacing:-.04em;font-size:clamp(30px,7vw,48px)}p{line-height:1.6}button,input{font:inherit}#pick{min-height:48px;padding:12px 20px;border:0;border-radius:12px;background:#234f41;color:white}#f{display:block;margin:14px 0;max-width:100%}.label{font-size:12px;color:#567166}#smallmotion-app-panel button{font:inherit}</style>
+</head><body><main><p class="label">PROTOCOLE EXPÉRIMENTAL · LOCAL · AUCUN SERVEUR</p><h1>Une vidéo. Deux images. Une hypothèse.</h1><p>Page autonome reprenant les identifiants d’import utilisés par RetoucheProAI. Elle n’active aucun traitement de restauration. Les contenus restent sur cet appareil.</p>
+<button id="pick" type="button" onclick="document.getElementById('f').click()">Choisir une vidéo</button><input id="f" type="file" accept="video/*"><p class="label">Seuls des diagnostics 2D non calibrés sont produits. Pas de diagnostic de geste ou de contact.</p></main>
+<script defer src="smallmotion-local.js"></script>
+<script defer src="smallmotion-director-local.js"></script>
+<script defer src="smallmotion-app-bootstrap.js"></script>
+</body></html>
