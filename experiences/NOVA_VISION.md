@@ -117,3 +117,28 @@ La PR reste en brouillon. Aucun changement de `main` ou de déploiement public.
 Après `muxer.finalize()`, l'export crée une URL Blob locale, charge les métadonnées de sortie dans un élément vidéo muet et contrôle dimensions et durée (tolérance 300 ms). **Le lien de téléchargement n'apparaît qu'après réussite**. Le Blob temporaire de diagnostic est révoqué. Le rapport reste honnête : lecture des métadonnées démontrée, mais pas lecture intégrale, pas qualité perceptuelle ni intégrité du son sur Safari ; la CI FFprobe inspecte séparément les pistes, dont AAC. Un MP4 qui ne s'ouvre pas au moins au niveau métadonnées est refusé.
 
 La première CI 0.4 avait les deux jobs verts : **4/4 tests Chromium** (photo mobile/bureau, aperçu vidéo MP4, export MP4 avec inspection FFprobe) et job unitaire réussi. Le contrôle de lisibilité supplémentaire correspond à un **nouveau commit qui doit être revalidé** avant promotion.
+
+
+## NOVA 0.5 — décodage séquentiel à PTS MP4 natifs
+
+**Capacité effectivement codée**, expérimental, isolé de la publication publique.
+
+### Architecture nouvelle
+
+- `nova-demux.js` extrait les échantillons du flux vidéo MP4 via `stsd`, `stts`, `ctts`, `stsc`, `stsz`, `stco/co64`, `stss`, et prend en compte un `edts/elst` **simple** en temps média pour corriger les PTS. Le code est adapté de la fonction `demuxVideo()` historique de `app.js`. Les structures non reconnues, les tables incohérentes et les montages complexes sont refusés.
+- `nova-pts.js` alimente `VideoDecoder` en **ordre de décodage** des samples, reçoit les images dans leur **ordre de présentation** (y compris B-frames), compare leurs PTS natifs convertis en microsecondes et choisit l'image visible au moment d'export demandé. Il applique la matrice d'orientation du MP4. Il borne le nombre d'images gardées en mémoire.
+- `nova-export.js` s'appuie désormais par défaut sur cette source décodée réellement, non sur `HTMLVideoElement.seek()`. Le traitement `NOVA_ZONES` et le muxage H.264/AAC restent dans le même chemin d'export. **Aucune fusion ni diffusion**.
+- **Mode de compatibilité approximatif** : recherche d'images dans le lecteur HTML uniquement lorsque l'utilisateur coche volontairement l'option avancée. Aucun repli silencieux vers une chronologie infidèle.
+- **Audit du changement de cadence** : nombre d'images source répétées et nombre d'images source sautées lors de la conversion vers une cadence constante à 15 fps. Ces nombres ne constituent pas à eux seuls des défauts : ils peuvent être inévitables lors d'une source à cadence variable ou supérieure à celle de sortie.
+
+### Garde-fous
+
+- Le *pilote* refuse les sources codées au-delà du **Full HD 1920 × 1080** en décodage PTS pour limiter la pression mémoire ; le fichier source n'est jamais modifié.
+- L'export reste à **12 secondes maximum, 60 Mo d'entrée, 640 pixels et 15 fps de sortie**. Il refuse une perte sonore silencieuse, exige une vérification locale des métadonnées MP4 et n'envoie aucun média à un serveur.
+- Certaines structures MP4 (plusieurs entrées d'edit-list, vidéo fragmentée, types de sample non couverts), codecs et colorimétries peuvent ne pas être supportés. Les PTS vidéo sont extraits ; **les horodatages audio originaux, les associations de montage complexes et la conservation HDR ne sont PAS garantis**.
+- Les PTS de la source donnent la chronologie de présentation, **pas** le respect des 30/60 fps initiaux en sortie : NOVA échantillonne toujours à 15 fps dans le pilote et peut donc perdre des images de mouvement.
+- Un test navigateur avec B-frames et edit-list simple est ajouté ; un test de **cadence variable VFR** vérifie les PTS distincts et le MP4 produit. Les résultats de la CI doivent être interprétés séparément de la validation physique sur Safari iPhone, non effectuée.
+
+### Étape après NOVA 0.5
+
+Garantir la qualité colorimétrique et la synchronisation audio sur plusieurs fichiers réellement autorisés ; comparer la cadence temporelle à la source ; intégrer ensuite au pipeline vidéo historique sans casser les profils normal / maximum / X et sans exposer de médias privés dans le dépôt. Ne pas augmenter les limites avant les mesures de mémoire, température, énergie et débit sur iPhone réel.
