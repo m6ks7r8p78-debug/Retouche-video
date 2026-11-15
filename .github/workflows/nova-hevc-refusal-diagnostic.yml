@@ -1,0 +1,68 @@
+name: NOVA - diagnostics causes refus HEVC (labo)
+on:
+  push:
+    branches:
+      - chatgpt-nova-hevc-diagnostic-cause-v1-20261115
+  pull_request:
+    branches:
+      - chatgpt-nova-real-video-preflight-v1
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-hevc-causes-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe du diagnostic et de ses points d'entrée
+        run: |
+          node --check experiences/nova-hevc-refusal-diagnostic.js
+          node --check experiences/nova-real-preflight.js
+          node --check experiences/nova-real-preflight-ui.js
+          node --check tests/nova-hevc-refusal-diagnostic.test.mjs
+      - name: Tests causes HEVC et non-régression du précontrôle
+        run: |
+          node --test tests/nova-hevc-refusal-diagnostic.test.mjs tests/nova-real-preflight.test.mjs
+      - name: Installer FFmpeg pour les seules mires synthétiques
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Construire aperçu HTTPS local sans déployer
+        run: |
+          node outils/build-nova-iphone-preview.mjs
+          test -f dist/nova-iphone-preview/experiences/nova-hevc-refusal-diagnostic.js
+          node --input-type=module -e "import fs from 'node:fs';const s=fs.readFileSync('dist/nova-iphone-preview/experiences/nova.html','utf8');if(!s.includes('src=\"nova-hevc-refusal-diagnostic.js\"'))process.exit(1)"
+      - name: Vérifier absence de publication de média dans cette branche
+        run: |
+          test ! -e coordination/REGISTRE.personnel.json
+          test ! -e experiences/PRIVATE_VIDEO.mov
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Playwright
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: FFmpeg requis pour mires synthétiques
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Chromium — précontrôle existant sous CSP, sans upload
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test tests/nova-real-preflight-browser.test.mjs

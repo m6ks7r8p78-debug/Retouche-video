@@ -12,6 +12,17 @@ const MAX_OUTPUT_FPS=15;
 const blockingCodes=new Set(["coded-pixels-over-limit","source-frames-over-limit",
  "duration-over-limit","coded-dimensions-not-even"]);
 const advisoryCodes=new Set(["source-rate-above-output-rate"]);
+const diagnosticCodes=new Set([
+ "unresolved","not-hevc-pilot","pilot-limit-exceeded","pixel-aspect-unsupported",
+ "color-metadata-unsupported","color-metadata-missing","sps-vui-unverified",
+ "sps-vui-check-unavailable","sps-vui-unsupported","timeline-data-unavailable",
+ "timeline-duplicate-pts","timeline-negative-preroll","timeline-start-nonzero",
+ "timeline-end-inconsistent","timeline-first-keyframe-missing",
+ "timeline-check-unavailable","timeline-check-inconclusive",
+ "independent-checks-inconclusive"
+]);
+const diagnosticStages=new Set(["codec","pilot-limits","presentation","color",
+ "sps-vui","timeline","unknown"]);
 const codes=new Set(["ready-for-export-attempt","not-video","file-budget",
  "browser-unavailable","insecure-context","container-unreadable",
  "unsupported-video-codec","hevc-profile-or-timeline-incompatible",
@@ -44,7 +55,7 @@ function state(file){
  return {schema:"retoucheproai.nova.real-preflight.v1",version:1,
   status:"analysis-unavailable",readyForExportAttempt:false,
   source:source(file),audio:"not-tested",estimatedMiB:null,
-  exportProposal:null,blockers:[],advisories:[],
+  exportProposal:null,blockers:[],advisories:[],diagnostic:null,
   privacy:{mediaUploaded:false,rawMediaInReport:false,filenameInReport:false,
    automaticSharing:false,mediaModified:false},
   limitation:"Précontrôle technique local uniquement : ni preuve de qualité, ni test de lecture finale, ni garantie d'export."};
@@ -52,13 +63,27 @@ function state(file){
 function finish(base,status){
  return Object.freeze({...base,status,readyForExportAttempt:status==="ready-for-export-attempt"});
 }
+function diagnosticPublic(d){
+ if(!d||d.schema!=="retoucheproai.nova.hevc-refusal-diagnostic.v1"||
+    !diagnosticCodes.has(d.code)||!diagnosticStages.has(d.stage))return null;
+ return {code:d.code,stage:d.stage,
+  confidence:d.confidence==="confirmed-by-metadata"?"confirmed-by-metadata":"unverified"};
+}
+function diagnoseFailure(report,info,diagnose){
+ const fn=diagnose||globalThis.NOVA_HEVC_REFUSAL_DIAG?.inspect;
+ if(typeof fn!=="function")return;
+ try{
+  const safe=diagnosticPublic(fn(info));
+  report.diagnostic=safe?{schema:"retoucheproai.nova.hevc-refusal-diagnostic.v1",...safe}:null;
+ }catch{report.diagnostic=null}
+}
 function category(info){
  const c=info?.codec;
  return typeof c==="string"&&/^(hvc1|hev1)\./.test(c)?"hevc":
         typeof c==="string"&&/^avc[13]\./.test(c)?"h264":"other-or-unknown";
 }
 async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
- getEnvironment}={}){
+ getEnvironment,diagnose}={}){
  const r=state(file);
  const stopped=()=>signal?.aborted===true;
  if(stopped())return finish(r,"cancelled");
@@ -105,10 +130,17 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
   if(typeof validateFn!=="function")return finish(r,"analysis-unavailable");
   let meta;
   try{meta=await validateFn(info)}
-  catch{return finish(r,stopped()?"cancelled":"hevc-profile-or-timeline-incompatible")}
+  catch{
+   if(stopped())return finish(r,"cancelled");
+   diagnoseFailure(r,info,diagnose);
+   return finish(r,"hevc-profile-or-timeline-incompatible");
+  }
   if(stopped())return finish(r,"cancelled");
   if(!meta||!finite(meta.durationSeconds)||!Number.isSafeInteger(meta.width)||
-     !Number.isSafeInteger(meta.height))return finish(r,"hevc-profile-or-timeline-incompatible");
+     !Number.isSafeInteger(meta.height)){
+   diagnoseFailure(r,info,diagnose);
+   return finish(r,"hevc-profile-or-timeline-incompatible");
+  }
   const planFn=plan||globalThis.NOVA_EXPORT?.plan;
   const budgetFn=guard||globalThis.NOVA_GUARD?.exigerBudget;
   if(typeof planFn!=="function"||typeof budgetFn!=="function")
@@ -162,6 +194,7 @@ function serialiser(report){
     r.estimatedSourceFps<1000?Math.round(r.estimatedSourceFps*10)/10:null},
   audio:report.audio==="aac-copy-verified"?"aac-copy-verified":"not-tested",
   estimatedMiB:small(report.estimatedMiB),
+  diagnostic:diagnosticPublic(report.diagnostic),
   blockers:Array.isArray(report.blockers)?[...new Set(report.blockers.filter(
    x=>blockingCodes.has(x)))].slice(0,4):[],
   advisories:Array.isArray(report.advisories)?[...new Set(report.advisories.filter(
