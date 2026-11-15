@@ -79,6 +79,7 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 .storyboard{padding:14px;border-radius:20px}#frames{display:flex;overflow-x:auto;padding:3px;scroll-snap-type:x mandatory}
 .frame{flex:0 0 138px;scroll-snap-align:start}.footer{flex-direction:column}.tag{font-size:9px;padding:6px 7px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+.pilot{display:grid;gap:10px;margin-top:12px;padding-top:14px;border-top:1px solid var(--line)}.pilot[hidden]{display:none}.pilot strong{font-size:13px}.pilot label{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.45}.pilot label input{width:20px;height:20px;flex:none;accent-color:#43815b}.pilot a{display:block;padding:12px 14px;text-align:center;background:#e6f7eb;border-radius:14px;font-size:13px;font-weight:750}#exportStatus{font-size:12px;color:#46644f}
 </style>
 </head>
 <body>
@@ -114,7 +115,15 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <div class="option off"><div class="iconCircle">◇</div><div><b>Reconstruction IA · recherche</b><span>Non activée dans ce prototype.</span></div></div>
 <button class="primary" id="run" disabled>Analyser et améliorer</button><div id="status" role="status" aria-live="polite">Importez un média pour commencer.</div></section>
 <section class="card"><small>02 / Le contrôle</small><h2>Preuves, pas promesses.</h2><div id="metrics"><div class="metric"><span>Source</span><strong>—</strong></div><div class="metric"><span>Décision</span><strong>En attente</strong></div></div>
-<button class="secondary" id="save" disabled>Exporter l'aperçu PNG</button><p id="modeReport" style="margin-top:12px">L'export vidéo et les moteurs neuronaux restent dans l'application principale ou le laboratoire de recherche.</p></section>
+<button class="secondary" id="save" disabled>Exporter l'aperçu PNG</button>
+<section class="pilot" id="pilotVideo" hidden>
+<strong>Export MP4 court — pilote expérimental</strong>
+<p>12 secondes maximum, 640 pixels, 15 images/seconde. Vérifiez toujours le fichier final.</p>
+<button class="primary" id="exportVideo" disabled>Exporter un MP4 restauré</button>
+<label><input type="checkbox" id="allowSilent"> J'accepte explicitement un export <b>sans son</b> si je le choisis. Sinon, l'export est interrompu lorsque l'audio ne peut pas être conservé.</label>
+<a id="downloadVideo" hidden>Enregistrer le fichier MP4</a>
+<div id="exportStatus" role="status" aria-live="polite">Aucun export lancé.</div>
+</section><p id="modeReport" style="margin-top:12px">L'export vidéo et les moteurs neuronaux restent dans l'application principale ou le laboratoire de recherche.</p></section>
 </aside>
 </div>
 <footer class="footer"><span>Prototype isolé — n'altère pas la version publiée. Les indications techniques ne prouvent jamais la récupération de détails originaux.</span><a href="../index.html">Retour à RetoucheProAI</a></footer>
@@ -122,6 +131,8 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <script src="nova-decision.js"></script>
 <script src="nova-zones.js"></script>
 <script src="nova-video.js"></script>
+<script src="../mp4-muxer.js"></script>
+<script src="nova-export.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -323,4 +334,5 @@ async function sampleVideo(){
 }
 })();
 </script>
+<script src="nova-export-ui.js"></script>
 </body></html>
