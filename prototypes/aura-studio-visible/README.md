@@ -32,3 +32,24 @@ Exécution : `python tests/smoke.py` (prérequis `playwright`, `Pillow`, Chromiu
 ## Protection GitHub
 
 Projet conservé dans `prototypes/aura-studio-visible/` sur une **branche de conception indépendante** de `main` et dans une **PR en brouillon**. Aucun remplacement de l'interface de production, du PWA, des moteurs, des consentements, ni déploiement. Attendre l'avis esthétique explicite et les tests d'intégration/régression avant fusion ou publication.
+
+---
+
+## Reprise de la maquette retenue — raffinement de la pièce de commande (15 novembre 2026)
+
+**Référence visuelle exacte :** image `retoucheproai_aura_contrôle_premium.png` (maquette AURA approuvée par l'utilisateur). Cette évolution est une amélioration de l'interface de la PR #20, et **n'introduit aucune nouvelle direction graphique**.
+
+Changements réels :
+
+1. Les trois commandes principales ne sont plus trois grosses boîtes séparées : un **seul rail sculpté et plus fin**, avec bouton de traitement central légèrement en relief et touches gauche/droite courbes, laisse davantage de place à la vidéo.
+2. La photo de démonstration reprend le portrait souriant déjà présent dans le concept AURA antérieur. Il ne s'agit pas d'une photo retouchée par l'IA. Contrairement à la capture statique précédente, l'image de démonstration est désormais **un vrai comparateur tactile et clavier** (aperçu colorimétrique CSS illustratif).
+3. Une **molette tactile de précision** apparaît uniquement après import et ouverture du menu avancé. Glissement vertical (doigt/souris), flèches clavier et Home/End : elle commande le même paramètre que le curseur et son export photo. Sur vidéo, elle ajuste seulement la vitesse de lecture de 0,5× à 2×.
+4. Les sorties Automatique/Maximum/Pour X et les projets restent en l'état de la PR #20, sans ajouter de menus visibles à l'accueil.
+
+### Preuves et limites
+
+- Captures du vrai HTML prises dans Chromium à 390, 430 et 768 pixels : `captures/accueil_final_390.png`, `captures/outil_sur_photo_390.png` etc.
+- Tests `tests/smoke.py` de la base et `tests/test_refinement.py` de cette évolution : **6 tailles (320, 375, 390, 430, 768, 1024)**, contrôles tactiles/clavier, correction et export PNG, vidéo MP4 synthétique en lecture seule et molette vitesse.
+- **Pas de Safari iPhone physique testé ; pas de moteur IA connecté ni d'export vidéo.** Rendu colorimétrique local seulement. La vidéo ne reçoit pas de traitement exportable ; la lecture ralentie ne change pas le fichier original.
+- Aucun média personnel ni appareil de l'utilisateur n'a été sollicité. Aucun nouveau consentement, aucune publication, aucun remplacement de `main` ou du site.
+- La finition HTML est une interprétation technique encore à examiner par l'utilisateur : **elle n'est pas déclarée visuellement identique à la maquette**.
