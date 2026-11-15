@@ -261,3 +261,53 @@ test("Safari 0.33 : I420P10, transfert PQ, primaires P3 ou plage ambiguë ne pas
   {format:"I420",colorSpace:{...baseFrame.colorSpace,fullRange:null}}
  ])await assert.rejects(()=>COLOR.imagePourRendu(fr,e));
 });
+
+test("Safari nclc 1/1/6 : plage source inconnue reste une sortie d'AFFICHAGE non certifiée",async()=>{
+ const src={...base,color:{kind:"nclc",primaries:1,transfer:1,matrix:6,fullRange:null}};
+ const evidence=COLOR.metadata(src);
+ assert.equal(evidence.sourceFullRange,null);
+ const opaque={format:null,colorSpace:{primaries:"bt709",transfer:"bt709",
+  matrix:"bt709",fullRange:false}};
+ const result=await COLOR.imagePourRendu(opaque,evidence);
+ assert.equal(result.proof.colorFidelity,"uncertified-against-source");
+ assert.equal(result.proof.sourceRangeVerified,false);
+ assert.match(result.proof.warning,/plage source est non renseignée/i);
+ assert.equal(result.frame,opaque);
+ const details=COLOR.frameEvidence(opaque,evidence);
+ assert.equal(details.schema,"retoucheproai.nova.hd-frame-evidence.v1");
+ assert.equal(details.sourceRange,"not-declared");
+ assert.equal(details.decodedRange,"limited");
+ assert.equal(details.eligibleForUncertifiedSafariDisplay,true);
+ assert.equal(details.sourceMatrix,"smpte170m");
+});
+test("Safari nclx 1/1/6 : plage explicitement contradictoire, HDR et 10 bits restent refusés",async()=>{
+ const src={...base,color:{kind:"nclx",primaries:1,transfer:1,matrix:6,fullRange:false}};
+ const ev=COLOR.metadata(src);
+ const frame={format:null,colorSpace:{primaries:"bt709",transfer:"bt709",
+  matrix:"bt709",fullRange:true}};
+ await assert.rejects(()=>COLOR.imagePourRendu(frame,ev),/couleur/);
+ const diagnosed=COLOR.frameEvidence(frame,ev);
+ assert.equal(diagnosed.declaredRangeConflict,true);
+ assert.equal(diagnosed.eligibleForUncertifiedSafariDisplay,false);
+ const big={format:"I420P10",colorSpace:{...frame.colorSpace,fullRange:false}};
+ await assert.rejects(()=>COLOR.imagePourRendu(big,ev),/couleur/);
+ assert.equal(COLOR.frameEvidence(big,ev).eligibleForUncertifiedSafariDisplay,false);
+ for(const cs of [
+  {primaries:"bt2020",transfer:"hlg",matrix:"bt709",fullRange:false},
+  {primaries:"smpte432",transfer:"bt709",matrix:"bt709",fullRange:false}
+ ])await assert.rejects(()=>COLOR.imagePourRendu({format:null,colorSpace:cs},ev),/couleur/);
+});
+test("Safari: diagnostic VideoFrame ne divulgue ni format arbitraire ni attributs privés",()=>{
+ const ev=COLOR.metadata({...base,color:{kind:"nclc",primaries:1,
+  transfer:1,matrix:6,fullRange:null}});
+ const frame={format:"PRIVATE_FILM.mp4",timestamp:987654321,
+  colorSpace:{primaries:"PRIVATE_IDENT",transfer:"PRIVATE_X",
+   matrix:"PRIVATE_Y",fullRange:"PRIVATE_Z"},
+  secret:"PRIVATE_GPS",copyTo:async()=>{},codedRect:{x:0,y:0,width:999,height:999}};
+ const report=JSON.stringify(COLOR.frameEvidence(frame,ev));
+ assert.ok(!report.includes("PRIVATE"),report);
+ assert.ok(!report.includes("987654321"),report);
+ assert.equal(JSON.parse(report).format,"other");
+ assert.equal(JSON.parse(report).decodedRange,"not-declared");
+ assert.equal(JSON.parse(report).eligibleForUncertifiedSafariDisplay,false);
+});
