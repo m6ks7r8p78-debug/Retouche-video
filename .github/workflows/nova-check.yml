@@ -48,7 +48,7 @@ jobs:
         with:
           node-version: '22'
       - name: Installer Playwright
-        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.55.0 @hevcjs/core@1.8.0
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0 @hevcjs/core@1.8.0
       - name: Préparer le décodeur HEVC WASM local depuis npm épinglé
         run: |
           node outils/nova-hevc-assets.mjs stage
@@ -75,7 +75,7 @@ jobs:
           node-version: '22'
       - name: Installer WebKit et dépendances Linux (navigateur gratuit)
         run: |
-          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.55.0 @hevcjs/core@1.8.0
+          npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0 @hevcjs/core@1.8.0
           npx playwright install --with-deps webkit
           node outils/nova-hevc-assets.mjs stage
           node outils/nova-hevc-assets.mjs verify

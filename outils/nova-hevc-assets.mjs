@@ -13,6 +13,15 @@ const dist=path.join(pkg,"dist");
 const dest=path.join(root,"experiences/vendor/hevc");
 const version="1.8.0",licenseUrl="https://github.com/lid-labs/hevc.js/blob/main/LICENSE";
 const maxFile=2*1024*1024;
+// Empreintes indépendamment figées après la première CI et vérifiées
+// AVANT toute copie dans le répertoire d'assets statiques du laboratoire.
+const PINNED_HASHES=Object.freeze({
+  "chunk-M6WO4WIK.js": "bb1684339a4bac970b81ea141a0e8af8eeb2ab9431506c51f2a2db881d7b6c9a",
+  "decoder-entry.js": "52bc46311a54b7dd3228f1fc1a68257bc9c818ee194c5a7bb5b085ebb5c656e8",
+  "wasm/hevc-decode.js": "12401d76a5063082b9fd1e87ce1069c3ac73d45c2d4e434e32499755b19a99eb",
+  "wasm/hevc-decode.wasm": "450601a71473125e772f01437877eb97abcb3a55332553e205f352f500208a1d"
+});
+
 const sha256=bytes=>crypto.createHash("sha256").update(bytes).digest("hex");
 const isFile=s=>/^[a-zA-Z0-9_-][a-zA-Z0-9_.\/-]*$/.test(s)&&
  !s.split("/").some(x=>x===".."||x===""||x==".");
@@ -42,6 +51,15 @@ async function stage(){
  if(p.name!=="@hevcjs/core"||p.version!==version||p.license!=="MIT")
   throw Error("Version/licence décodeur non approuvées");
  const paths=await stagedFiles();
+ if(paths.length!==Object.keys(PINNED_HASHES).length||
+    paths.some(x=>!Object.hasOwn(PINNED_HASHES,x)))
+  throw Error("Graphe de modules HEVC différent de celui audité");
+ // On contrôle TOUT le lot avant de remplacer le répertoire statique.
+ for(const rel of paths){
+  const file=await fs.readFile(path.join(dist,rel));
+  if(sha256(file)!==PINNED_HASHES[rel])
+   throw Error("Composant npm HEVC modifié malgré version figée : "+rel);
+ }
  await fs.rm(dest,{recursive:true,force:true});
  await fs.mkdir(dest,{recursive:true});
  const records=[];
@@ -73,6 +91,7 @@ async function verify(){
   seen.add(item.path);
   const b=await fs.readFile(path.join(dest,item.path));
   if(item.bytes!==b.byteLength||item.sha256!==sha256(b)||
+     item.sha256!==PINNED_HASHES[item.path]||
      b.byteLength<1||b.byteLength>maxFile)
    throw Error("Intégrité HEVC échouée: "+item.path);
  }
@@ -86,4 +105,4 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
  const result=command==="stage"?await stage():await verify();
  console.log("NOVA_HEVC_INTEGRITY "+JSON.stringify(result));
 }
-export {stage,verify,stagedFiles,deps,sha256};
+export {stage,verify,stagedFiles,deps,sha256,PINNED_HASHES};
