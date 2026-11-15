@@ -166,18 +166,22 @@ for(const inputFPS of [30,60])test(
    // Injection de seuil uniquement via l'API laboratoire, pas de réglage
    // accessible dans l'interface. Refus avant publication de MP4 partiel.
    const beforeHref=await page.locator("#downloadVideo").getAttribute("href");
-   const blocked=await page.evaluate(async()=>{
-    try{
-     const f=document.querySelector("#file").files[0];
-     await NOVA_EXPORT.exporter({file:f,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,
-      allowSilent:true,maxEncodedBytes:1024});
-     return {refused:false};
-    }catch(e){return {refused:true,reason:e.message}}
-   });
-   assert.equal(blocked.refused,true,"le faible budget doit bloquer l'export");
-   assert.match(blocked.reason,/budget export.*(plafond mémoire|MP4 final dépasse)/i);
-   assert.equal(await page.locator("#downloadVideo").getAttribute("href"),beforeHref,
-    "l'échec d'API interne ne publie aucun nouveau MP4");
+   for(const allowSilent of [false,true]){
+    const blocked=await page.evaluate(async({allowSilent})=>{
+     try{
+      const f=document.querySelector("#file").files[0];
+      await NOVA_EXPORT.exporter({file:f,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,
+       allowSilent,maxEncodedBytes:1024});
+      return {refused:false};
+     }catch(e){return {refused:true,reason:e.message}}
+    },{allowSilent});
+    assert.equal(blocked.refused,true,
+     "le faible budget doit bloquer l'export (sans son="+allowSilent+")");
+    assert.match(blocked.reason,/budget export.*(plafond mémoire|MP4 final dépasse)/i);
+    assert.equal(await page.locator("#downloadVideo").getAttribute("href"),beforeHref,
+     "l'échec d'API interne ne publie aucun nouveau MP4");
+    t.diagnostic("NOVA 0.22 refus contrôlé (sans son="+allowSilent+"): "+blocked.reason);
+   }
   }
   t.diagnostic("NOVA HEVC WASM->MP4 + AAC : "+JSON.stringify({
    inputFPS,sourceFrames:pts.length,sourceDurationUs:info.durationUs,
