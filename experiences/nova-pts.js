@@ -17,6 +17,7 @@ function planifier(info){
     !Number.isInteger(info.dw)||info.dw<=0||!Number.isInteger(info.dh)||info.dh<=0)
   throw new TypeError("Table vidéo MP4 invalide");
  if(!info.key[0])throw new Error("Première image clé absente");
+ if(info.W*info.H>1920*1080)throw new Error("Décodage PTS pilote limité aux sources Full HD");
  const sorted=Array.from({length:info.ns},(_,index)=>({index,ptsUs:info.ptsUs[index]}))
    .sort((a,b)=>a.ptsUs-b.ptsUs||a.index-b.index);
  const nonnegative=sorted.filter(x=>x.ptsUs>=0);
@@ -70,20 +71,21 @@ async function creer(file,{signal}={}){
    if(rank<state.target){frame.close();state.dropped++;notify();return}
    const old=frames.get(rank);if(old)old.close();
    frames.set(rank,frame);
+   if(frames.size>10){state.fail=new Error("Mémoire du décodeur saturée");notify();return}
    notify();
   },
   error:e=>{state.fail=e;notify()}
  });
  try{decoder.configure(cfg)}
  catch(e){try{decoder.close()}catch(_){}throw e}
- const sourceCanvas=document.createElement("canvas"),ctx=sourceCanvas.getContext("2d");
- sourceCanvas.width=info.dw;sourceCanvas.height=info.dh;
  async function wait(ms=60){
   if(state.closed)throw new Error("Décodeur fermé");
   if(signal?.aborted)throw new Error("Export annulé");
   await new Promise(resolve=>{
-   const timer=setTimeout(()=>{if(wake===resolve)wake=null;resolve()},ms);
-   wake=()=>{clearTimeout(timer);wake=null;resolve()};
+   let done=false;
+   const finish=()=>{if(done)return;done=true;clearTimeout(timer);if(wake===finish)wake=null;resolve()};
+   const timer=setTimeout(finish,ms);
+   wake=finish;
   });
  }
  async function feed(index){
@@ -112,13 +114,13 @@ async function creer(file,{signal}={}){
    if(Date.now()-started>15000)throw new Error("Décodage source PTS trop lent");
    if(state.fed<info.ns){
     // Limite d'anticipation : moins de RAM et aucun saut vers de futures scènes.
-    const need=Math.max(16,selected.index+16);
-    if(state.fed<Math.min(info.ns,need) && decoder.decodeQueueSize<7){
+    const need=selected.index+8;
+    if(state.fed<Math.min(info.ns,need) && decoder.decodeQueueSize<4){
       await feed(state.fed);
       continue;
     }
     // Quelques échantillons supplémentaires seulement en cas de réordonnancement profond.
-    if(Date.now()-started>1000 && decoder.decodeQueueSize<3){
+    if(Date.now()-started>1000 && decoder.decodeQueueSize<2){
       await feed(state.fed);continue;
     }
     await wait(35);continue;
