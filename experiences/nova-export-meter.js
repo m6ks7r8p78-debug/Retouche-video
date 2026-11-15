@@ -54,6 +54,14 @@ function create({maxEncodedBytes=DEFAULT,clock,readJsHeap}={}){
   if(kind==="video")videoBytes+=bytes;else audioBytes+=bytes;
   observe();
  }
+ let finalMp4Bytes=null;
+ function finalSize(bytes){
+  if(finished||!Number.isSafeInteger(bytes)||bytes<1024)
+   fail("taille du MP4 final invalide");
+  if(bytes>maxEncodedBytes)
+   fail("MP4 final dépasse le plafond mémoire de "+maxEncodedBytes+" octets");
+  finalMp4Bytes=bytes;observe();
+ }
  function frame({queue=0,bufferBytes=0}={}){
   if(finished||!Number.isSafeInteger(queue)||queue<0||queue>1000||
      !Number.isSafeInteger(bufferBytes)||bufferBytes<0||bufferBytes>640*360*16)
@@ -73,13 +81,14 @@ function create({maxEncodedBytes=DEFAULT,clock,readJsHeap}={}){
    stagesMs:Object.freeze(durations),checkpoints:checkpoints.map(x=>({...x})),
    maxEncodedBytes,encodedPayloadBytes:total,
    encodedVideoBytes:videoBytes,encodedAudioBytes:audioBytes,
+   finalMp4Bytes,
    frames,peakVideoEncodeQueue:peakVideoQueue,peakFrameCopyBytes,
    jsHeapStartBytes:jsStart,jsHeapPeakBytes:jsPeak,jsHeapEndBytes:jsEnd,
    qualification:"payload bytes, JS heap (optional); excludes mux overhead, WASM heap and process RSS"
   });
  }
  observe();
- return Object.freeze({stage,add,frame,snapshot});
+ return Object.freeze({stage,add,frame,finalSize,snapshot});
 }
 return Object.freeze({create,DEFAULT_ENCODED_BYTES:DEFAULT});
 })();
