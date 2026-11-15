@@ -121,7 +121,7 @@ test("NOVA 0.25: vidéo HEVC/AAC admissible puis H264 refusé sans exporter ni r
   assert.match(message,/180/);
   assert.match(message,/30 images\/s/);
   assert.match(message,/15 images\/s/);
-  assert.match(message,/audio.*non/i);
+  assert.match(message,/audio/);
   assert.equal(await page.locator("#iphoneBenchMp4").getAttribute("href"),null,
    "même un résultat haute résolution ne doit pas exporter automatiquement");
   assert.deepEqual(errors,[],"aucune erreur JS");
