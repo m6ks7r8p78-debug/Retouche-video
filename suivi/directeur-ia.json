@@ -44,16 +44,17 @@
     "RNE12: troisième observateur par corrélation de phase; 144 cas nouveaux synthétiques, acceptations erronées 24/74→0/74 ; limite multi-plans 12/12→5/12 ; 26 tests PASS. Validation hors distribution et iPhone manquantes; non promu.",
     "RNE13: contrôle local 16 régions sur 54 scènes multicouches et 288 scènes synthétiques d'artefacts. 26/26 tests locaux; 22/39 régions à faux mouvement encore acceptées; coût ~101ms/720p CPU hors réseau/flux. NON promu; aucun média utilisé.",
     "RNE14: descripteur Census en surcontrôle photo RNE13, 22 tests synthetiques; 288 scènes secondaires éclairage: 95/459 zones justes retrouvées mais 2/309 mauvaises nouvellement acceptées; autre générateur 120 scènes, +36 sous ombre, +7 gamma, aucun gain JPEG+lumière/flou. NON promu.",
-    "RNE15: 50 tests synthétiques locaux, 450 scènes appariées. Nouveau garde-fou n'empêche aucun défaut supplémentaire par rapport à RNE14 et refuse 1249 zones correctes en plus. Rejet; nouveau filtre de preuve appariée ajouté."
+    "RNE15: 50 tests synthétiques locaux, 450 scènes appariées. Nouveau garde-fou n'empêche aucun défaut supplémentaire par rapport à RNE14 et refuse 1249 zones correctes en plus. Rejet; nouveau filtre de preuve appariée ajouté.",
+    "RNE16 ANCRE: 9592 paramètres, modèle original CNN double branche entraîné de zéro sur 450 exemples exclusivement synthétiques, 280 étapes. +0,288 dB sur 150 cas synthétiques initiaux après correction confiance 7x7; sur second générateur gelé, 26 pertes >0,5 dB et petit texte en recul. Promotion refusée; 40 tests locaux verts."
   ],
   "prochaines_etapes": [
-    "Ne pas intégrer RNE15: zéro défaut supplémentaire évité et trop de bonnes régions refusées.",
-    "Réutiliser evidence_gate.py pour toute proposition: mesurer une nouvelle amélioration réelle et éviter de rejeter >5% de bonnes zones, avant contrôle humain indépendant.",
-    "Créer un benchmark de vérité géométrique avec articulations, occultations, objets tenus, mélanges de profondeur, mouvements non rigides et données hors-famille.",
-    "Conserver les 41 vidéos récentes réservées et hors calibration/entraînement; ne pas adapter les règles à leur contenu.",
-    "Séparer restauration de pixels visibles et reconstruction hypothétique de pixels occultés, notamment sur visages et mains.",
-    "Tester mémoire, rendu et export sur iPhone Safari réel avant toute activation, RNE04 et bicubique inchangés.",
-    "Vérifier GitHub Actions de la dernière PR, aucun merge ni déploiement."
+    "Conserver RNE16-ANCRE comme modèle original expérimental non déployé. Garder RNE04 temporel comme référence du laboratoire et bicubique comme repli.",
+    "Corriger hors des bancs existants les forts cas de régression des caractères et spirales, sans entraîner sur les 41 vidéos récentes ni réajuster les paramètres sur les 300 cas synthétiques évalués.",
+    "Introduire une estimation de confiance issue des images réelles, puis valider la protection 7x7, les occultations et les flux avec des ground truths géométriques externes.",
+    "Mesurer le PSNR, la fidélité des textures/visages et la cohérence temporelle sur des vidéos naturellement filmées inédites et des couples originales/filtrées vérifiés; comparer au RNE04 sans réutiliser le jeu de calibration.",
+    "Concevoir un pipeline de requêtes iPhone Safari si et seulement si un appareil réel est testé (mémoire/temps/format/export).",
+    "Conserver media, checkpoints privés, identifiants et images hors de GitHub; ne pas fusionner PR #1 en main ni déployer le site.",
+    "Vérifier la validation GitHub Actions du nouveau HEAD; les 40 tests locaux ne constituent pas une CI distante."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -64,14 +65,19 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-15",
     "objets": [
-      "RETOUCHE_NEURAL_ENGINE_15.md",
-      "outils/rne/rne15/evidence_gate.py",
-      "tests/test_rne15_evidence_gate.py",
+      "outils/rne/rne16/rne16.py",
+      "outils/rne/rne16/procedural.py",
+      "outils/rne/rne16/train.py",
+      "outils/rne/rne16/stress_frozen.py",
+      "outils/rne/rne16/quality_gate.py",
+      "tests/test_rne16_ancre.py",
+      "tests/test_rne16_quality_gate.py",
+      "RETOUCHE_NEURAL_ENGINE_16.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "50 tests synthétiques, 450 scènes appariées, aucune donnée personnelle; rejet sans promotion",
-    "statut_ci": "a_verifier",
-    "observations": "source du capteur rejeté et générateurs dans zip privé; rapport + garde-fou selection + tests sur github"
+    "preuve_locale": "40/40 tests, 450 exemples synthétiques entraînement, 150 val + 150 second générateur gelé, pesos privés",
+    "statut_ci": "à vérifier",
+    "observations": "Pas de contenu personnel, pas de média entraîné ou publié; candidat bloqué."
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1655,5 +1661,85 @@
     "neural_weights_updated": false,
     "website_deployed": false,
     "main_merged": false
+  },
+  "jalon_neural_engine_16": {
+    "date": "2026-11-15",
+    "status": "RNE16 ANCRE from-scratch causal gated residual prototype trained; NOT PROMOTED",
+    "original_method": "Two independent compact CNN residual heads, bicubic anchor, spatial-only fallback, temporal optional trusted prior, 7x7 erosion of confidence to block convolution leakage, exact bicubic on protected ROI; 9592 parameters",
+    "source_research": [
+      "DGAF-VSR CVPR2026",
+      "UDA-VSR 2026",
+      "VideoGigaGAN CVPR2025",
+      "BasicVSR++ CVPR2022",
+      "Reddit TopazLabs Nov2026"
+    ],
+    "training": {
+      "source": "pure procedural synthetic 450 LR-HR pairs",
+      "historical_157_videos_used": false,
+      "reserved_41_videos_used": false,
+      "seed": 16,
+      "steps": 280,
+      "from_scratch": true,
+      "all_checkpoint_weights_private": true
+    },
+    "preliminary_first_checkpoint_discarded": true,
+    "after_safety_retraining": {
+      "synthetic_val_150": {
+        "bic_psnr_db": 22.67933,
+        "spatial_psnr_db": 22.8954,
+        "dual_psnr_db": 22.96738,
+        "average_dual_gain_db": 0.28805,
+        "dual_bicubic_wins": 121,
+        "dual_spatial_wins": 113,
+        "severe_regressions": 1
+      }
+    },
+    "second_frozen_generator": {
+      "samples": 150,
+      "model_frozen": true,
+      "spirals": {
+        "gain_db": 0.55704,
+        "losses_gt_half_db": 15
+      },
+      "glyph_mosaic": {
+        "gain_db": -0.01826,
+        "losses_gt_half_db": 11
+      },
+      "woven_noise": {
+        "gain_db": 0.88658,
+        "losses_gt_half_db": 0
+      }
+    },
+    "cpu_synthetic_lr256_to_hr512_median_ms": 37.14,
+    "tests_local": "30+10=40/40 passed",
+    "promotion_gate": {
+      "status": "BLOCKED_RESEARCH_ONLY",
+      "reasons": [
+        "no real original-HR video pairs",
+        "no temporal stability on real naturally moving sequences",
+        "no real iPhone Safari test",
+        "negative mean glyph gain",
+        "26 severe PSNR regressions on second synthetic stress test"
+      ]
+    },
+    "code_public": [
+      "outils/rne/rne16/rne16.py",
+      "outils/rne/rne16/procedural.py",
+      "outils/rne/rne16/train.py",
+      "outils/rne/rne16/stress_frozen.py",
+      "outils/rne/rne16/quality_gate.py",
+      "tests/test_rne16_ancre.py",
+      "tests/test_rne16_quality_gate.py",
+      "RETOUCHE_NEURAL_ENGINE_16.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "local_archive": "RetoucheProAI_RNE16_ANCRE_Modele_Original_Privé.zip",
+    "local_archive_sha256": "fd65c77d7ec9ea8df2b1aabe1d6777866e9503a5b87a379176f2f9928bcfbdef",
+    "archive_contains_personal_media": false,
+    "weights_uploaded_to_github": false,
+    "main_modified": false,
+    "production_deployment": false,
+    "safari_iphone_tested": false,
+    "remote_ci_status": "unverified"
   }
 }
