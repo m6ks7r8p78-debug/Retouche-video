@@ -38,7 +38,7 @@ function ascFromEsds(b,esds,sampleRate,channels){
  }
  fail("AAC-LC ou paramètres ASC non confirmés");
 }
-function extract(b,sizeLimit){
+function extract(b,sizeLimit,mdatRanges){
  const root=boites(b,0,b.byteLength),tracks=root.filter(x=>x.type==="trak");
  if(tracks.length>16)fail("trop de pistes");
  const v=dv(b),found=[];
@@ -57,6 +57,11 @@ function extract(b,sizeLimit){
   const timescale=v.getUint32(mdhd.start+(version===1?20:12));
   if(!safe(timescale)||!timescale)fail("timescale invalide");
   const stbl=need(b,need(b,mdia,"minf"),"stbl"),tables=kids(b,stbl);
+  // Les sample groups AAC peuvent porter les règles d'amorçage (roll/prol).
+  // Le muxer pilote ne copie pas encore ces groupes : refus explicite
+  // pour éviter de présenter un son décalé sur Safari/iPhone.
+  if(tables.some(x=>x.type==="sgpd"||x.type==="sbgp"))
+   fail("groupes d'échantillons AAC/priming non conservés par le muxer");
   const stsd=select(tables,"stsd"),stsz=select(tables,"stsz"),stsc=select(tables,"stsc"),
     stts=select(tables,"stts"),stco=select(tables,"stco")||select(tables,"co64");
   if(!stsd||!stsz||!stsc||!stts||!stco)fail("index audio incomplet");
@@ -90,7 +95,8 @@ function extract(b,sizeLimit){
    let off=offsets[c];
    for(let n=0;n<maps[k].per&&index<count;n++){
     const len=sizes[index++];
-    if(!safe(off)||!safe(len)||!len||off+len>sizeLimit)
+    if(!safe(off)||!safe(len)||!len||!safe(off+len)||off+len>sizeLimit||
+       !mdatRanges.some(([start,end])=>off>=start&&off+len<=end))
      fail("segment AAC en dehors du fichier");
     packetOffsets.push({offset:off,size:len});off+=len;
    }
@@ -117,8 +123,10 @@ function extract(b,sizeLimit){
 async function planifier(file,{durationSeconds,signal}={}){
  if(!file||typeof file.slice!=="function"||!safe(file.size)||
   !Number.isFinite(durationSeconds)||durationSeconds<=0)fail("source ou durée invalide");
- let off=0,media=null;
+ let off=0,media=null,boxes=0;
+ const mdatRanges=[];
  while(off+8<=file.size){
+  if(++boxes>2048)fail("trop de boîtes MP4 de premier niveau");
   if(signal?.aborted)fail("export annulé");
   const d=new DataView(await file.slice(off,Math.min(off+16,file.size)).arrayBuffer());
   if(d.byteLength<8)fail("fichier incomplet");
@@ -126,16 +134,18 @@ async function planifier(file,{durationSeconds,signal}={}){
   else if(!size)size=file.size-off;
   if(!safe(size)||size<head||off+size>file.size)fail("taille de boîte source invalide");
   const type=String.fromCharCode(d.getUint8(4),d.getUint8(5),d.getUint8(6),d.getUint8(7));
+  if(type==="mdat")mdatRanges.push([off+head,off+size]);
   if(type==="moov"){
+   if(media)fail("index moov multiple non pris en charge");
    if(size-head>MAX_MOOV)fail("index MP4 trop volumineux");
    media=new Uint8Array(await file.slice(off+head,off+size).arrayBuffer());
    if(media.length!==size-head)fail("index MP4 tronqué");
-   break;
   }
   off+=size;
  }
  if(!media)fail("index MP4 absent");
- const parsed=extract(media,file.size),outputEnd=Math.round(durationSeconds*1e6);
+ if(!mdatRanges.length)fail("boîte mdat source absente");
+ const parsed=extract(media,file.size,mdatRanges),outputEnd=Math.round(durationSeconds*1e6);
  // Ne pas recréer les edits de priming : ce chemin ne traite que les pistes
  // déjà alignées à zéro, afin de conserver des unités AAC réellement inchangées.
  const packets=parsed.packets.filter(p=>p.timestamp<outputEnd);
