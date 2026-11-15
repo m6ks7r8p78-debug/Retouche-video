@@ -104,6 +104,22 @@ async function create({signal,storage,maxPendingBytes=MAX_PENDING,maxFileBytes=M
   snapshot:()=>Object.freeze({mode:"opfs-local-stream",pendingBytes,
    peakPendingBytes,writeCount,highestOffset:highWater,finished,removed})});
 }
-return Object.freeze({supported,create});
+// Vérification active (non lecture des médias) : une seule écriture de
+// 1 octet zéro, puis abort/suppression du fichier temporaire aléatoire.
+// Une API exposée sans permission ou sans quota ne suffit PAS pour 48 s.
+async function probe({signal,storage,muxer,random}={}){
+ let sink=null;
+ try{
+  if(signal?.aborted)return false;
+  sink=await create({signal,storage,muxer,random});
+  sink.target.options.onData(new Uint8Array(1),0);
+  await sink.drain();
+  return !signal?.aborted;
+ }catch{return false}
+ finally{
+  if(sink)await sink.release();
+ }
+}
+return Object.freeze({supported,create,probe});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_OPFS_STREAM;

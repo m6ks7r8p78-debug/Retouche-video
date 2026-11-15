@@ -18,7 +18,8 @@ const messages=Object.freeze({
  "container-unreadable":"MOV/MP4 non analysable par le parseur local expérimental.",
  "unsupported-video-codec":"Ce chemin expérimental ne prend pas en charge le codec analysé.",
  "h264-unsafe-metadata":"H.264 : les métadonnées de présentation ne permettent pas encore un export fidèle.",
- "h264-pilot-limit":"H.264 : la vidéo dépasse une limite du pilote (durée 24 s, résolution source 1080p ou nombre d'images).",
+ "h264-pilot-limit":"H.264 : limites expérimentales dépassées (48 s avec OPFS, source 1080p ou nombre d'images trop élevé).",
+ "h264-opfs-unavailable":"H.264 de 24 à 48 s : stockage local OPFS non disponible sur ce navigateur. Export refusé.",
  "h264-unsafe-color":"H.264 : colorimétrie SDR BT.709 non confirmée ; conversion automatique refusée.",
  "h264-timeline-incompatible":"H.264 : horodatages ou image initiale incompatibles avec le chemin PTS natif.",
  "h264-decoder-unavailable":"H.264 : le décodeur WebCodecs natif n'est pas disponible ici.",
@@ -77,6 +78,8 @@ function details(report){
   items.push("Attention à la fidélité du mouvement : source estimée à "+fps+
    ", mais le pilote d'export est limité à 15 images/s.");
  }
+ if(Array.isArray(report?.advisories)&&report.advisories.includes("h264-opfs-required"))
+  items.push("Pour plus de 24 secondes, cochez l'écriture progressive locale OPFS avant d'exporter. Aucun téléversement.");
  if(reasons.length)
   items.push("Autres vérifications non concluantes ou non exécutées : notamment la couleur, les PTS et l'audio. Aucun export automatique.");
  const diag=report?.diagnostic;

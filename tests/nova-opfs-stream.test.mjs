@@ -94,3 +94,18 @@ test("OPFS : API absente et limite de fichier >24 MiB refusées",async()=>{
   maxFileBytes:25*1048576}),/limites/);
  assert.equal(env.all.size,0);
 });
+
+test("OPFS : sonde réelle d'un octet, fermeture/suppression, erreur et annulation",async()=>{
+ const valid=storage();
+ assert.equal(await OPFS.probe({storage:valid.store,muxer,random}),true);
+ assert.equal(valid.calls.length,1);
+ assert.equal(valid.calls[0].bytes,1);
+ assert.equal(valid.all.size,0,"aucun résidu de sonde OPFS");
+ const broken=storage({failWrite:true});
+ assert.equal(await OPFS.probe({storage:broken.store,muxer,random}),false);
+ assert.equal(broken.all.size,0,"la sonde échouée est supprimée");
+ const ctl=new AbortController();ctl.abort();
+ const cancelled=storage();
+ assert.equal(await OPFS.probe({signal:ctl.signal,storage:cancelled.store,muxer,random}),false);
+ assert.equal(cancelled.all.size,0);
+});

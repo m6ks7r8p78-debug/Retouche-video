@@ -10,7 +10,8 @@ const allowed=new Set([
  "ready-for-export-attempt","h264-unsafe-metadata","h264-pilot-limit",
  "h264-unsafe-color","h264-timeline-incompatible",
  "h264-decoder-unavailable","h264-encoder-unavailable",
- "resource-budget","audio-not-preservable","analysis-unavailable","cancelled"
+ "resource-budget","audio-not-preservable","analysis-unavailable","cancelled",
+ "h264-opfs-unavailable"
 ]);
 const result=(status,{proposal=null,estimatedMiB=null,audio="not-tested",sourceFps=null}={})=>
  Object.freeze({
@@ -33,7 +34,8 @@ function colorSafe(info,checkColor){
  try{return fn(info)?.verified===true}catch{return false}
 }
 async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
- avsyncAnalyze,avsyncVerify,checkDecoder,checkEncoder,sourceAudit,checkColor}={}){
+ avsyncAnalyze,avsyncVerify,checkDecoder,checkEncoder,sourceAudit,checkColor,
+ checkOpfs}={}){
  const stop=()=>signal?.aborted===true;
  if(stop())return result("cancelled");
  try{
@@ -45,8 +47,16 @@ async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
   if(!safe(w)||!safe(h)||!safe(n)||!safe(d)||
      !safe(info.dw)||!safe(info.dh))
     return result("h264-unsafe-metadata");
-  if(w%2||h%2||w*h>1920*1080||n>5000||d>24000000)
+  if(w%2||h%2||w*h>1920*1080||n>5000||d>48000000)
     return result("h264-pilot-limit");
+  // Le précontrôle >24s ne doit jamais approuver un navigateur incapable
+  // d'ouvrir la sortie OPFS. Une source H.264 sans couleur fiable reste refusée.
+  if(d>24000000){
+   const available=checkOpfs||(()=>globalThis.NOVA_OPFS_STREAM?.probe?.({signal}));
+   let ok=false;
+   try{ok=(await available())===true}catch{}
+   if(!ok)return result("h264-opfs-unavailable");
+  }
   if(info.pixelAspect?.h!==undefined&&
      (!safe(info.pixelAspect.h)||!safe(info.pixelAspect.v)||
       info.pixelAspect.h!==info.pixelAspect.v))
@@ -71,10 +81,11 @@ async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
     return result("h264-timeline-incompatible");
    const durationSeconds=d/1e6;
    settings=planFn({duration:durationSeconds,width:info.dw,height:info.dh,
-    bytes:file.size,profile:d>12000000?"h264-windowed-24s":undefined});
+    bytes:file.size,profile:d>24000000?"h264-opfs-48s":
+     d>12000000?"h264-windowed-24s":undefined});
    if(!Number.isSafeInteger(settings.fps)||settings.fps!==15||
       !safe(settings.width)||!safe(settings.height)||!safe(settings.frames)||
-      settings.frames>(d>12000000?360:180))
+      settings.frames>(d>24000000?720:d>12000000?360:180))
     return result("h264-pilot-limit");
    const timeAudit=checkTime({
     ptsUs:timed.nonnegative.map(p=>p.ptsUs),durationSeconds,fps:settings.fps

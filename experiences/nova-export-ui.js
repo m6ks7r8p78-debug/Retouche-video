@@ -40,7 +40,7 @@ function choisir(f){
   msg("Cet appareil ne prend pas en charge l'encodeur vidéo nécessaire.");return;
  }
  start.disabled=false;
- msg("Pilote prêt. HEVC : 12 s maximum ; H.264 SDR vérifié : jusqu'à 24 s par fenêtres. Audio conservé par défaut, sinon export refusé.");
+ msg("Pilote prêt. HEVC : 12 s ; H.264 SDR vérifié : 24 s en mémoire, jusqu'à 48 s avec OPFS choisi explicitement. Audio conservé par défaut, sinon refus.");
 }
 fileInput.addEventListener("change",e=>choisir(e.target.files?.[0]));
 if(drop)drop.addEventListener("drop",e=>{if(e.dataTransfer?.files?.[0])choisir(e.dataTransfer.files[0])});

@@ -88,7 +88,9 @@ for(const seconds of [20,24])test("NOVA "+seconds+"s H264/AAC : 4 fenêtres, 1 M
   assert.equal(before.source.codec,"h264");
   assert.equal(before.source.durationMs,seconds*1000);
   assert.deepEqual(before.exportProposal,{width:320,height:180,fps:15,frames:seconds*15});
-  assert.equal(before.pilotLimits.maxDurationMs,24000);
+  assert.equal(before.pilotLimits.maxDurationMs,48000);
+  assert.equal(before.advisories.includes("h264-opfs-required"),false,
+   "Les vidéos 20/24 s ne nécessitent pas OPFS");
   assert.equal(before.audio,"aac-copy-verified");
   assert.equal(before.privacy.mediaUploaded,false);
   assert.equal(await page.locator("#downloadVideo").getAttribute("href"),null,

@@ -60,7 +60,7 @@ test("H264 : couleurs imprécises ou HDR et aspect non carré refusés",async()=
 test("H264 : limites du pilote, mais non confusion 640x360 HEVC/1080p H264",async()=>{
  for(const info of [
   {...goodInfo,W:1922,H:1080},{...goodInfo,ns:5001},
-  {...goodInfo,durationUs:24100000},{...goodInfo,W:161}]){
+  {...goodInfo,durationUs:48100000},{...goodInfo,W:161}]){
   assert.equal((await inspect({info})).status,"h264-pilot-limit");
  }
  const r=await inspect({info:{...goodInfo,W:1280,H:720}});
@@ -131,4 +131,30 @@ test("H264 : rapport public ne transfère pas de champs injectés ou d'exception
  assert.equal(r.status,"ready-for-export-attempt");
  assert.ok(!json.includes("PRIVATE_"));
  assert.deepEqual(JSON.parse(json).exportProposal,proposal);
+});
+
+test("H264 >24s : OPFS indisponible = refus avant tous les décodages",async()=>{
+ let decoded=0;
+ const x=await inspect({info:{...goodInfo,durationUs:36000000,ns:540},
+  checkOpfs:()=>false,
+  checkDecoder:()=>{decoded++;return {supported:true}}});
+ assert.equal(x.status,"h264-opfs-unavailable");
+ assert.equal(x.readyForExportAttempt,false);
+ assert.equal(decoded,0);
+});
+test("H264 OPFS 48s : précontrôle accepte le profil explicite 720 images",async()=>{
+ const x=await inspect({info:{...goodInfo,durationUs:48000000,ns:720},
+  checkOpfs:()=>true,
+  ptsPlan:()=>({nonnegative:[{ptsUs:0}]}),
+  sourceAudit:()=>({debutFidele:true}),
+  plan:({duration,profile})=>{
+   assert.equal(duration,48);
+   assert.equal(profile,"h264-opfs-48s");
+   return {width:160,height:90,fps:15,frames:720}
+  },
+  audioPlan:async()=>({mode:"aac-copy",packets:[{timestamp:0,duration:21333}]})
+ });
+ assert.equal(x.status,"ready-for-export-attempt");
+ assert.equal(x.proposal.frames,720);
+ assert.equal(x.audio,"aac-copy-verified");
 });
