@@ -147,3 +147,47 @@ test("NOVA 0.26 : rejet VUI ou PTS avec source petite : pas de fausse raison con
  assert.deepEqual(r.blockers,[]);
  assert.deepEqual(r.advisories,[]);
 });
+
+test("NOVA Directeur HD : vidéo iPhone 1088×1920 195 images testée sur moteur natif, pas rejetée comme trop grande",async()=>{
+ const original=globalThis.NOVA_NATIVE_HD;
+ let requests=0;
+ globalThis.NOVA_NATIVE_HD={
+  analyse:(info,bytes)=>{
+   assert.equal(info.ns,195);assert.equal(bytes,6800000);
+   return {width:1088,height:1920,sourceFrames:195,sourceFps:30,
+    durationSeconds:6.5};
+  },
+  configDecoder:async()=>{requests++;return {codec:"hvc1"}},
+  configEncoder:async()=>{requests++;return {codec:"avc1"}}
+ };
+ try{
+  const iphone={...track,codec:"hvc1.1.6.L120",W:1920,H:1088,dw:1088,dh:1920,
+   ns:195,durationUs:6500000};
+  const {report,outputBlob}=await run({
+   probeFile:async()=>iphone,validateSource:()=>{throw Error("old WASM must not run")},
+   exporter:async()=>{throw Error("preflight cannot export")}});
+  // executer() est le banc synthétique historique, pas le précontrôle.
+  assert.equal(report.result,"refused");
+  assert.equal(outputBlob,null);
+  const PREFLIGHT=(await import("../experiences/nova-real-preflight.js")).default;
+  const result=await PREFLIGHT.inspect({
+   file:input,getEnvironment:()=>env,probe:async()=>iphone,
+   audioPlan:async()=>({mode:"aac-copy",packets:[{}]})
+  });
+  assert.equal(result.status,"ready-for-native-hd-attempt");
+  assert.equal(result.readyForExportAttempt,true);
+  assert.equal(result.audio,"aac-copy-verified");
+  assert.equal(result.exportProposal.width,1088);
+  assert.equal(result.exportProposal.height,1920);
+  assert.equal(result.exportProposal.frames,195);
+  assert.deepEqual(result.blockers,[]);
+  assert.equal(requests,2);
+  const json=JSON.parse(PREFLIGHT.serialiser(result));
+  assert.equal(json.exportProposal.fps,30);
+  assert.equal(json.source.estimatedSourceFps,30);
+  assert.ok(!JSON.stringify(json).includes(input.name));
+ }finally{
+  if(original===undefined)delete globalThis.NOVA_NATIVE_HD;
+  else globalThis.NOVA_NATIVE_HD=original;
+ }
+});
