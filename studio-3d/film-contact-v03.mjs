@@ -107,6 +107,22 @@ function buildSyntheticFilmSceneV03(request,generator){
  const fineTimes=[...new Set([...times,...extra])].sort((a,b)=>a-b);
  const positions=fineTimes.map(t=>sampleTrack(handTrack,t)[0]>.5?wristAt(t):cupTarget.slice());
  channels.push({node:cupId,path:'translation',times:fineTimes,values:positions});
+ // Inclinaison progressive du récipient pendant le geste de boire : géométrie
+ // synthétique uniquement, non synchronisée avec une vraie bouche ou des lèvres.
+ const smooth=t=>{const v=clamp(t,0,1);return v*v*(3-2*v);};
+ const tiltAt=t=>{
+   let angle=0;
+   for(const action of output.timeline){
+     if(action.intent!=='boire')continue;
+     const up=smooth((t-(action.start+1.08))/.55);
+     const down=1-smooth((t-(action.start+2.14))/.62);
+     angle=Math.max(angle,.26*up*down);
+   }
+   return angle;
+ };
+ channels.push({node:cupId,path:'rotation',times:fineTimes,
+   values:fineTimes.map(t=>quat(tiltAt(t)))});
+
  handTrack.values=times.map(()=>[.0001,.0001,.0001]);
  tableTrack.values=times.map(()=>[.0001,.0001,.0001]);
  model.animations[0].name='film_scene_v03';
