@@ -1,0 +1,599 @@
+{
+  "schema_version": "cinema-p2-render-v01",
+  "project_kind": "render_plan_only",
+  "created_by": "Retouche Cinema Director P2",
+  "source_mode": "text",
+  "reference_note": "Description textuelle fictive",
+  "model_engine": "not_connected",
+  "rendered_video": null,
+  "total_duration_seconds": 120,
+  "format": "16:9",
+  "consent": {
+    "project_rights_confirmed": true,
+    "remote_transfer_approved": false,
+    "training_allowed": false,
+    "reference_media_included": false,
+    "requires_explicit_activation": true
+  },
+  "shots": [
+    {
+      "id": "shot_01",
+      "duration_seconds": 40,
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": []
+    },
+    {
+      "id": "shot_02",
+      "duration_seconds": 40,
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": [
+        "tasse"
+      ]
+    },
+    {
+      "id": "shot_03",
+      "duration_seconds": 40,
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": [
+        "tasse"
+      ]
+    }
+  ],
+  "characters": [
+    {
+      "id": "character_01",
+      "description": "femme adulte aux cheveux bruns",
+      "fictional": true
+    }
+  ],
+  "objects": [
+    {
+      "id": "tasse",
+      "label": "tasse"
+    }
+  ],
+  "clips": [
+    {
+      "clip_id": "shot_01_part_01",
+      "shot_id": "shot_01",
+      "part": 1,
+      "parts": 8,
+      "sequence": 1,
+      "start_seconds": 0,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 2135057204,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : rue. Cadrage : Plan d’ensemble.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : Une femme brune marche dans une rue.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [],
+        "previous_clip_id": null
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_01_part_02",
+      "shot_id": "shot_01",
+      "part": 2,
+      "parts": 8,
+      "sequence": 2,
+      "start_seconds": 5,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 2015546857,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : rue. Cadrage : Plan d’ensemble.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : Une femme brune marche dans une rue.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [],
+        "previous_clip_id": "shot_01_part_01"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_01_part_03",
+      "shot_id": "shot_01",
+      "part": 3,
+      "parts": 8,
+      "sequence": 3,
+      "start_seconds": 10,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 301787306,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : rue. Cadrage : Plan d’ensemble.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : Une femme brune marche dans une rue.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [],
+        "previous_clip_id": "shot_01_part_02"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_01_part_04",
+      "shot_id": "shot_01",
+      "part": 4,
+      "parts": 8,
+      "sequence": 4,
+      "start_seconds": 15,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 796562617,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : rue. Cadrage : Plan d’ensemble.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : Une femme brune marche dans une rue.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [],
+        "previous_clip_id": "shot_01_part_03"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_01_part_05",
+      "shot_id": "shot_01",
+      "part": 5,
+      "parts": 8,
+      "sequence": 5,
+      "start_seconds": 20,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 2116478606,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : rue. Cadrage : Plan d’ensemble.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : Une femme brune marche dans une rue.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [],
+        "previous_clip_id": "shot_01_part_04"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_01_part_06",
+      "shot_id": "shot_01",
+      "part": 6,
+      "parts": 8,
+      "sequence": 6,
+      "start_seconds": 25,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 1571309701,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : rue. Cadrage : Plan d’ensemble.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : Une femme brune marche dans une rue.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [],
+        "previous_clip_id": "shot_01_part_05"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_01_part_07",
+      "shot_id": "shot_01",
+      "part": 7,
+      "parts": 8,
+      "sequence": 7,
+      "start_seconds": 30,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 593619350,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : rue. Cadrage : Plan d’ensemble.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : Une femme brune marche dans une rue.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [],
+        "previous_clip_id": "shot_01_part_06"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_01_part_08",
+      "shot_id": "shot_01",
+      "part": 8,
+      "parts": 8,
+      "sequence": 8,
+      "start_seconds": 35,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 1482028195,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : rue. Cadrage : Plan d’ensemble.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : Une femme brune marche dans une rue.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [],
+        "previous_clip_id": "shot_01_part_07"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_02_part_01",
+      "shot_id": "shot_02",
+      "part": 1,
+      "parts": 8,
+      "sequence": 9,
+      "start_seconds": 40,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 819992959,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle entre dans un café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_01_part_08"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_02_part_02",
+      "shot_id": "shot_02",
+      "part": 2,
+      "parts": 8,
+      "sequence": 10,
+      "start_seconds": 45,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 671965800,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle entre dans un café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_02_part_01"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_02_part_03",
+      "shot_id": "shot_02",
+      "part": 3,
+      "parts": 8,
+      "sequence": 11,
+      "start_seconds": 50,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 210749193,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle entre dans un café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_02_part_02"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_02_part_04",
+      "shot_id": "shot_02",
+      "part": 4,
+      "parts": 8,
+      "sequence": 12,
+      "start_seconds": 55,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 960685178,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle entre dans un café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_02_part_03"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_02_part_05",
+      "shot_id": "shot_02",
+      "part": 5,
+      "parts": 8,
+      "sequence": 13,
+      "start_seconds": 60,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 20353485,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle entre dans un café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_02_part_04"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_02_part_06",
+      "shot_id": "shot_02",
+      "part": 6,
+      "parts": 8,
+      "sequence": 14,
+      "start_seconds": 65,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 1408943222,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle entre dans un café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_02_part_05"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_02_part_07",
+      "shot_id": "shot_02",
+      "part": 7,
+      "parts": 8,
+      "sequence": 15,
+      "start_seconds": 70,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 863356933,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle entre dans un café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_02_part_06"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_02_part_08",
+      "shot_id": "shot_02",
+      "part": 8,
+      "parts": 8,
+      "sequence": 16,
+      "start_seconds": 75,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 1608625558,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle entre dans un café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_02_part_07"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_03_part_01",
+      "shot_id": "shot_03",
+      "part": 1,
+      "parts": 8,
+      "sequence": 17,
+      "start_seconds": 80,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 1974324830,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle boit une tasse de café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_02_part_08"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_03_part_02",
+      "shot_id": "shot_03",
+      "part": 2,
+      "parts": 8,
+      "sequence": 18,
+      "start_seconds": 85,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 1515499153,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle boit une tasse de café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_03_part_01"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_03_part_03",
+      "shot_id": "shot_03",
+      "part": 3,
+      "parts": 8,
+      "sequence": 19,
+      "start_seconds": 90,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 946913368,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle boit une tasse de café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_03_part_02"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_03_part_04",
+      "shot_id": "shot_03",
+      "part": 4,
+      "parts": 8,
+      "sequence": 20,
+      "start_seconds": 95,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 1078144585,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle boit une tasse de café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_03_part_03"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_03_part_05",
+      "shot_id": "shot_03",
+      "part": 5,
+      "parts": 8,
+      "sequence": 21,
+      "start_seconds": 100,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 996085642,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle boit une tasse de café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_03_part_04"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_03_part_06",
+      "shot_id": "shot_03",
+      "part": 6,
+      "parts": 8,
+      "sequence": 22,
+      "start_seconds": 105,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 135735243,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle boit une tasse de café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_03_part_05"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_03_part_07",
+      "shot_id": "shot_03",
+      "part": 7,
+      "parts": 8,
+      "sequence": 23,
+      "start_seconds": 110,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 364137794,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle boit une tasse de café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_03_part_06"
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_03_part_08",
+      "shot_id": "shot_03",
+      "part": 8,
+      "parts": 8,
+      "sequence": 24,
+      "start_seconds": 115,
+      "duration_seconds": 5,
+      "format": "16:9",
+      "seed": 955736295,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte aux cheveux bruns.\nAction à filmer : elle boit une tasse de café.\nObjets à conserver entre les plans : tasse.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": "shot_03_part_07"
+      },
+      "status": "not_submitted",
+      "output": null
+    }
+  ]
+}
