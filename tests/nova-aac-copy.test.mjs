@@ -4,7 +4,7 @@ import AAC from "../experiences/nova-aac-copy.js";
 
 const u32=n=>{const b=Buffer.alloc(4);b.writeUInt32BE(n>>>0);return b};
 const box=(type,...parts)=>{const bytes=Buffer.concat(parts),h=Buffer.alloc(8);h.writeUInt32BE(bytes.length+8,0);h.write(type,4);return Buffer.concat([h,bytes])};
-function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=null,sampleGroup=false,packetCount=3,editDurationMs=null,leadingEmptyMs=0}={}){
+function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=null,sampleGroup=false,packetCount=3,editDurationMs=null,leadingEmptyMs=0,editListVersion=0,rawEditMedia=null,rawEditDuration=null}={}){
  const esds=box("esds",Buffer.alloc(4),Buffer.from([5,2,0x11,0x90]));
  const entry=Buffer.alloc(36);entry.writeUInt32BE(36+esds.length,0);entry.write(sampleType,4);
  entry.writeUInt16BE(2,24);entry.writeUInt32BE(rate*65536>>>0,32);
@@ -23,15 +23,25 @@ function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=
   ]:sampleGroup?[box("sgpd",Buffer.alloc(8))]:[]));
  let edts=Buffer.alloc(0);
  if(edit!=null||leadingEmptyMs>0){
-  const size=leadingEmptyMs>0?32:20;
-  const elst=Buffer.alloc(size);elst.writeUInt32BE(leadingEmptyMs>0?2:1,4);
-  const at=leadingEmptyMs>0?20:8;
-  if(leadingEmptyMs>0){
-   elst.writeUInt32BE(leadingEmptyMs,8);elst.writeInt32BE(-1,12);
-   elst.writeInt32BE(65536,16);
-  }
-  elst.writeUInt32BE(editDurationMs??(edit>0?43:64),at);
-  elst.writeInt32BE(edit??0,at+4);elst.writeInt32BE(65536,at+8);
+  const count=leadingEmptyMs>0?2:1,step=editListVersion===1?20:12;
+  const elst=Buffer.alloc(8+count*step);
+  elst[0]=editListVersion;
+  elst.writeUInt32BE(count,4);
+  const write=(i,duration,media)=>{
+   const at=8+i*step;
+   if(editListVersion===1){
+     elst.writeBigUInt64BE(BigInt(duration),at);
+     elst.writeBigInt64BE(BigInt(media),at+8);
+     elst.writeInt32BE(65536,at+16);
+   }else{
+     elst.writeUInt32BE(Number(duration),at);
+     elst.writeInt32BE(Number(media),at+4);
+     elst.writeInt32BE(65536,at+8);
+   }
+  };
+  if(leadingEmptyMs>0)write(0,leadingEmptyMs,-1);
+  write(count-1,rawEditDuration??(editDurationMs??(edit>0?43:64)),
+    rawEditMedia??(edit??0));
   edts=box("edts",box("elst",elst));
  }
  const mdat=box("mdat",Buffer.from(Array.from({length:packetCount*4},(_,i)=>i+1)));
@@ -154,4 +164,36 @@ test("NOVA AAC copy : refuse vide seul, espace de 501 ms, 3 éditions",async()=>
   {durationSeconds:.58}),/500 ms/);
  const f=fixture({edit:1024,packetCount:5,sampleGroup:"roll",leadingEmptyMs:250,editDurationMs:84});
  await assert.rejects(AAC.planifier(f,{durationSeconds:.50}),/insuffisante/);
+});
+
+test("NOVA 0.13 : version 1 AAC conserve les edits 64 bits simples sans reconversion",async()=>{
+ const f=fixture({edit:1024,editListVersion:1,leadingEmptyMs:250,
+   packetCount:5,editDurationMs:84,sampleGroup:"roll"});
+ const p=await AAC.planifier(f,{durationSeconds:.334});
+ assert.equal(p.editListVersion,1);
+ assert.equal(p.leadingEmptyTicks,250);
+ assert.equal(p.editMediaTime,1024);
+ assert.equal(p.rollDistance,-1);
+ assert.equal(p.outputEditGapSeconds,.25);
+ assert.equal(p.outputEditSeconds,.084);
+ assert.equal(p.packets.length,5);
+});
+test("NOVA 0.13 : version 1 sans vide ni amorçage fonctionne aussi",async()=>{
+ const f=fixture({edit:0,editListVersion:1,editDurationMs:64});
+ const p=await AAC.planifier(f,{durationSeconds:.06});
+ assert.equal(p.editListVersion,1);
+ assert.equal(p.editMediaTime,0);
+ assert.equal(p.outputEditGapSeconds,0);
+ assert.equal(p.packets.length,3);
+});
+test("NOVA 0.13 : version 1 rejette les grands entiers et le media_time négatif",async()=>{
+ await assert.rejects(AAC.planifier(fixture({edit:0,editListVersion:1,
+   rawEditMedia:9007199254740993n}),{durationSeconds:.06}),
+   /64 bits non représentable/);
+ await assert.rejects(AAC.planifier(fixture({edit:0,editListVersion:1,
+   rawEditDuration:9007199254740993n}),{durationSeconds:.06}),
+   /64 bits non représentable/);
+ await assert.rejects(AAC.planifier(fixture({edit:0,editListVersion:1,
+   rawEditMedia:-2n}),{durationSeconds:.06}),
+   /média négative/);
 });
