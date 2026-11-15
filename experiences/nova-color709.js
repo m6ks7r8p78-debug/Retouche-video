@@ -13,11 +13,12 @@ const rgb709=Object.freeze(Array.from({length:256},(_,i)=>{
  const c=i/255,linear=c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4;
  return linear<0.018?4.5*linear:1.099*linear**0.45-0.099;
 }));
-function convertir(data,w,h){
+function convertir(data,w,h,profile="standard"){
+ const pixelLimit=profile==="h264-hd720-opfs-3s"?1280*720:640*360;
  if(!(data instanceof Uint8ClampedArray||data instanceof Uint8Array)||
     !Number.isInteger(w)||!Number.isInteger(h)||w<2||h<2||
-    w%2||h%2||w*h>640*360||data.length!==w*h*4)
-  fail("RGBA 8 bits, dimensions paires et budget 640×360 requis");
+    w%2||h%2||w*h>pixelLimit||data.length!==w*h*4)
+  fail("RGBA 8 bits, dimensions paires et budget du profil couleur dépassé");
  const n=w*h,nChroma=n/4,out=new Uint8Array(n+nChroma*2);
  let cbPos=n,crPos=n+nChroma;
  for(let row=0;row<h;row+=2)for(let col=0;col<w;col+=2){
@@ -36,11 +37,11 @@ function convertir(data,w,h){
  }
  return out;
 }
-function videoFrame(data,w,h,timestamp,duration){
+function videoFrame(data,w,h,timestamp,duration,profile="standard"){
  if(typeof VideoFrame!=="function")fail("VideoFrame absent sur cet appareil");
  if(!Number.isSafeInteger(timestamp)||!Number.isSafeInteger(duration)||duration<1)
   fail("horodatage CFR invalide");
- const bytes=convertir(data,w,h);
+ const bytes=convertir(data,w,h,profile);
  const frame=new VideoFrame(bytes,{
   format:"I420",codedWidth:w,codedHeight:h,timestamp,duration,
   colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false}
