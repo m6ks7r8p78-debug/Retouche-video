@@ -126,7 +126,12 @@
     const cancel=d.createElement('button');cancel.type='button';cancel.textContent='Annuler';cancel.hidden=true;cancel.style.cssText='min-height:44px;margin-left:8px';panel.append(cancel);
     const status=d.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.style.cssText='font-size:12px;line-height:1.5';panel.append(status);
     const detail=d.createElement('details');const summary=d.createElement('summary');summary.textContent='Diagnostic de l’analyse (sans images)';const pre=d.createElement('pre');pre.style.cssText='font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere';detail.append(summary,pre);panel.append(detail);
-    pick.parentNode.insertBefore(panel,pick.nextSibling);
+    // The import buttons live in a horizontal .drop-acts row; never insert
+    // the advisory panel into it (on iPhone it shrinks both original actions).
+    // Place the panel directly below the complete drop zone.
+    const drop=d.getElementById('drop');
+    if(drop?.parentNode)drop.parentNode.insertBefore(panel,drop.nextSibling);
+    else pick.parentNode.parentNode.insertBefore(panel,pick.parentNode.nextSibling);
     let chosen=null,controller=null,last=null,nonce=0,profile='full';
     const reset=()=>{nonce++;if(controller)controller.abort();controller=null;button.disabled=false;cancel.hidden=true;last=null;pre.textContent='';};
     input.addEventListener('change',e=>{
