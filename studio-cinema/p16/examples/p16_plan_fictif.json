@@ -1,0 +1,182 @@
+{
+  "schema": "retouche-cinema-p16-presence-v1",
+  "kind": "fictional_actor_direction",
+  "project_status": "storyboard_only",
+  "fictional_adult": true,
+  "source_video_used": false,
+  "model_executed": false,
+  "rendered_frames": 0,
+  "fps_requested": 60,
+  "generated_unique_frames": 0,
+  "scene": "smoking",
+  "duration_s": 12,
+  "artistic_intent": {
+    "sensualite": 5,
+    "dominance": 4,
+    "elegance": 4,
+    "charme": 3,
+    "mystere": 2
+  },
+  "beats": [
+    {
+      "id": "establish",
+      "start_s": 0,
+      "end_s": 1.92,
+      "layer": "corps",
+      "direction": "Installer l’équilibre du corps. Conserver des micro-mouvements respiratoires, sans arrêt sur image.",
+      "cues": [
+        "steady_posture",
+        "shoulders_relax"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "hand_path",
+      "start_s": 1.68,
+      "end_s": 4.32,
+      "layer": "main",
+      "direction": "Déplacer la cigarette vers les lèvres dans une trajectoire continue : doigts, poignet et coude restent liés.",
+      "cues": [
+        "hand_travel",
+        "precise_hands"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "acting_dominance",
+      "start_s": 1.92,
+      "end_s": 7.68,
+      "layer": "direction_dominance",
+      "direction": "Assurance sans agressivité : posture stable, gestes maîtrisés, contact visuel assumé. Intensité forte, tout en gardant de petits changements vivants.",
+      "cues": [
+        "steady_posture",
+        "gaze_hold",
+        "chin_raise",
+        "precise_hands"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "acting_sensualite",
+      "start_s": 2.76,
+      "end_s": 6.72,
+      "layer": "direction_sensualite",
+      "direction": "Regard posé, paupières détendues, bouche souple : ne pas figer les yeux. Intensité forte, tout en gardant de petits changements vivants.",
+      "cues": [
+        "gaze_hold",
+        "eyes_soft",
+        "mouth_soft",
+        "slow_blink"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "acting_elegance",
+      "start_s": 3.12,
+      "end_s": 8.88,
+      "layer": "direction_elegance",
+      "direction": "Moins d’emphase, davantage de précision et de fluidité du geste. Intensité forte, tout en gardant de petits changements vivants.",
+      "cues": [
+        "precise_hands",
+        "shoulders_relax",
+        "subtle_smile",
+        "chin_raise"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "acting_mystere",
+      "start_s": 3.24,
+      "end_s": 6.96,
+      "layer": "direction_mystere",
+      "direction": "Laisser une courte hésitation et une variation dans la direction du regard. Jeu retenu, sans pose exagérée.",
+      "cues": [
+        "gaze_away",
+        "gaze_return",
+        "head_tilt",
+        "stillness"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "lip_contact",
+      "start_s": 4.32,
+      "end_s": 5.52,
+      "layer": "objet",
+      "direction": "Le filtre touche les lèvres ; l’ouverture s’ajuste progressivement sans traverser l’objet.",
+      "cues": [
+        "mouth_contact",
+        "mouth_soft"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "inhale",
+      "start_s": 5.52,
+      "end_s": 8.04,
+      "layer": "respiration",
+      "direction": "Conserver le contact. Faire évoluer subtilement lèvres et joues ; respiration perceptible si elle est visible ou audible, sans fumée expirée.",
+      "cues": [
+        "mouth_contact",
+        "inhale_lips",
+        "breath_sound"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "acting_charme",
+      "start_s": 6.96,
+      "end_s": 10.44,
+      "layer": "direction_charme",
+      "direction": "Créer un échange vivant : petits retours de regard, sourire discret, micro-variation. Jeu retenu, sans pose exagérée.",
+      "cues": [
+        "gaze_return",
+        "subtle_smile",
+        "mouth_soft",
+        "slow_blink"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "release",
+      "start_s": 8.04,
+      "end_s": 9.12,
+      "layer": "main",
+      "direction": "Desserrer la bouche et éloigner progressivement la cigarette sans saut de position.",
+      "cues": [
+        "hand_travel",
+        "mouth_soft"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "transition",
+      "start_s": 9.12,
+      "end_s": 9.96,
+      "layer": "visage",
+      "direction": "Conserver un léger temps de transition variable, sans imposer une longue pause universelle.",
+      "cues": [
+        "stillness"
+      ],
+      "status": "planned_not_rendered"
+    },
+    {
+      "id": "exhale",
+      "start_s": 9.96,
+      "end_s": 12,
+      "layer": "fumée",
+      "direction": "Expirer : démarrer la fumée à la bouche, puis suivre sa dispersion. Le son peut suivre la sortie d’air, pas la précéder automatiquement.",
+      "cues": [
+        "smoke_mouth",
+        "breath_sound"
+      ],
+      "status": "planned_not_rendered"
+    }
+  ],
+  "notes": [
+    "Les directions se superposent ; synchroniser main, lèvres, regard et respiration dans le moteur vidéo.",
+    "Les effets sensuel, dominant ou séduisant sont des objectifs artistiques, pas des intentions vérifiées chez les références réelles.",
+    "60 images encodées/s ne prouvent pas 60 poses originales/s."
+  ]
+}
+
