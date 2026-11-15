@@ -143,7 +143,14 @@ function verifyFrame(frame,evidence){
  */
 function renduNatifOpaque(frame,evidence){
  const p=frame?.colorSpace||{};
- if(!evidence?.confirmed||![5,6].includes(evidence.sourceMatrix)||
+ // Colr/SPS peuvent ne préciser que la matrice BT.601, sans primaires
+ // ni transfert. Safari fournit parfois toute l'information SDR décodée.
+ // Dans ce cas, l'export reproduit l'affichage Safari mais n'est PAS
+ // qualifié comme conversion fidèle des métadonnées de la source.
+ const nativeFullySpecified=VIDEO_PRIMARIES.has(p.primaries)&&
+  VIDEO_XFER.has(p.transfer)&&p.matrix==="bt709"&&
+  typeof p.fullRange==="boolean";
+ if(!nativeFullySpecified||![5,6].includes(evidence?.sourceMatrix)||
     !["bt470bg","smpte170m"].includes(evidence.expectedMatrix)||
     !VIDEO_PRIMARIES.has(p.primaries)||
     (evidence.expectedPrimaries&&p.primaries!==evidence.expectedPrimaries)||
