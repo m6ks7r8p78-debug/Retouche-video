@@ -740,9 +740,10 @@ test("NOVA 0.12 : retard audio de 250 ms conserve elst vide, AAC et sync AV",asy
    decodeAudioEvents(src),decodeVideoEvents(src)
   ]);
   assert.equal(meta.edits,2,"FFmpeg doit produire deux edits AAC");
-  assert.ok(meta.delayUs>=240000&&meta.delayUs<=270000,
-   "véritable délai initial AAC ~250ms : "+JSON.stringify(meta));
-  assert.ok(copy.outputEditGapSeconds>.24&&copy.outputEditGapSeconds<.27);
+  assert.ok(meta.delayUs>=200000&&meta.delayUs<=270000,
+   "FFmpeg peut quantifier le délai initial sur une frontière AAC : "+JSON.stringify(meta));
+  assert.ok(Math.abs(copy.outputEditGapSeconds*1e6-meta.delayUs)<=1,
+   "le plan doit reprendre exactement le délai de présentation réellement écrit");
   assert.ok(copy.editMediaTime>0);
   assert.equal(copy.rollDistance,-1);
   assert.deepEqual([a0.length,v0.length],[2,2]);
