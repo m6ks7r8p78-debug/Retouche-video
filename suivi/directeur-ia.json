@@ -50,16 +50,16 @@
     "RNE18 OBSERVABLE3D: 3D synthetic view evidence atlas; UV observed 21.1%/47.1%/76.0% with 1/4/10 views, 24% unknown left. Calibrated camera and geometry are provided by simulator; 47 tests PASS, 8 independent procedural textures exposed forged UV calibration. NOT a human 3D reconstruction.",
     "RNE19 OBSERVABLE ARTICULE: simulateur 3D synthétique de 11 pièces, contact géométrique main-objet, profondeur/occlusion, 2 GLB, atlas partiels, 50 nouveaux tests + 47 regressions RNE18 PASS. Générique GitHub sans médias privés, aucune reconstruction réelle.",
     "RNE20: inversion d'un mannequin synthétique connu à partir d'images; 16 contrôles gelés, erreur caméra 0,7421° et articulation 5,1231°. 26 tests PASS. Contact indéterminé 12/16, pas de relâché identifié. GLB issu d'une pose estimée; aucun humain réel reconstruit.",
-    "RNE21 ANCRAGE: nouvelle inversion synthétique à 10 fiduciaux sur 5 vues, 42 tests locaux, 42 séquences comparatives et 36 séquences de contrôle d'abstention, cinq GLB de démonstration. Les longueurs multi-vues restent moins justes que l'inversion indépendante; non promu."
+    "RNE21 ANCRAGE: nouvelle inversion synthétique à 10 fiduciaux sur 5 vues, 42 tests locaux, 42 séquences comparatives et 36 séquences de contrôle d'abstention, cinq GLB de démonstration. Les longueurs multi-vues restent moins justes que l'inversion indépendante; non promu.",
+    "RNE22: MASKFIT silhouettes synthétiques sans marqueurs, perspective relative f/d inconnue, deux solveurs évalués sur 27+27+18+24 séquences synthétiques. 43 tests locaux; 3D réelle non validée et certains résultats faux malgré bonne silhouette. Non promu."
   ],
   "prochaines_etapes": [
-    "Ne pas présenter les fiduciaux artificiels comme une détection réelle de corps humain. Tester l'inversion à partir de silhouettes/rendus SANS pastilles ni pose cachée, avec variations de géométrie et d'appareil.",
-    "Prototyper un vrai modèle caméra perspective avec intrinsics et distorsion inconnus. Évaluer identifiabilité échelle/profondeur; ne jamais inventer de mètres depuis des pixels sans ancre métrique.",
-    "Ajouter plusieurs articulations et estimations contact relâché/tenu fondées sur références géométriques; conserver les hypothèses non décidables.",
-    "Conserver l'ajustement image par image comme baseline forte : RNE21 partagé est moins précis sur longueur, ne pas déployer malgré phase améliorée.",
-    "Vérifier CI GitHub distante et licence de toute future architecture externe; n'utiliser aucun poids personnel ni média privé sur dépôt.",
-    "Maintenir 157 vidéos historiques et 41 récentes strictement hors de ce laboratoire synthétique; aucun entraînement ni calibration sur 41 nouvelles.",
-    "Préparer un contrôle avec sources réellement hors générateur (autre moteur graphique / vidéos synthétiques sous une autre caméra) avant toute prétention de généralisation ou test iPhone."
+    "Ne pas promouvoir RNE22 sur le score de silhouette seul; erreur angulaire importante sous décalage du centre optique et forte occultation.",
+    "Construire un détecteur réel de silhouettes et une estimation d'articulations sans marqueurs, sous arrière-plan complexe et membres masqués, sans prétendre inférer une forme non observée.",
+    "Évaluer ensuite sur une famille de formes/renderer complètement indépendante et conserver plusieurs solutions caméra/pose avant toute preuve de reconstruction.",
+    "Ne pas assimiler le rapport focale/distance à une focalisation ou une échelle physique identifiée; conserver l'incertitude explicite.",
+    "Préserver les 41 vidéos récentes hors apprentissage/calibration; aucune publication de médias privés.",
+    "Valider GitHub Actions distant et Safari iPhone si une version candidate passe le contrôle; garder la branche principale et retoucheproai.com inchangés."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -70,18 +70,15 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-15",
     "objets": [
-      "outils/rne/rne21/anchorage.py",
-      "outils/rne/rne21/evidence_audit.py",
-      "outils/rne/rne21/locked_evaluation.py",
-      "outils/rne/rne21/audit_frozen.py",
-      "outils/rne/rne21/export_inverse_glb.py",
-      "tests/test_rne21_anchorage.py",
-      "tests/test_rne21_evidence_audit.py",
-      "RETOUCHE_NEURAL_ENGINE_21.md",
+      "outils/rne/rne22/markerless_perspective.py",
+      "outils/rne/rne22/evaluate_locked.py",
+      "tests/test_rne22_markerless.py",
+      "RETOUCHE_NEURAL_ENGINE_22.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "42 tests locaux et CI miroir réussis; 42 + 36 cas synthétiques évalués avec rapports anonymes; 5 GLBs rechargés",
-    "statut_ci": "a_verifier"
+    "preuve_locale": "43 tests synthetiques + validation dans arborescence CI, images synthetiques uniquement",
+    "statut_ci": "a_verifier",
+    "observations": "commit version experimentale, aucune donnée personnelle publiée, pas de déploiement"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -2198,5 +2195,77 @@
     "no_production_deployment": true,
     "main_merged": false,
     "iphone_safari_tested": false
+  },
+  "jalon_neural_engine_22": {
+    "date": "2026-11-15",
+    "status": "MASKFIT synthetic markerless silhouettes and relative perspective inversion; NOT PROMOTED",
+    "prior": "RNE0.21 fit 2D coloured synthetic fiducials with orthographic camera. RNE0.22 fits grayscale silhouettes only, using known toy skeleton and unknown camera magnification.",
+    "approach": "Robust two-sided Chamfer with shared relative lengths plus per-frame yaw/arm phase. Perspective only f/d ratio estimated, focal and depth individually not identified. Secondary prototype additionally fits a shared optical-center shift.",
+    "evaluation": {
+      "development": {
+        "sequences": 27,
+        "images": 81,
+        "shape_error_clean_single": 0.0608,
+        "shape_error_clean_multiview": 0.0557,
+        "angle_error_clean_single_deg": 2.2387,
+        "angle_error_clean_multiview_deg": 3.0903
+      },
+      "locked_same_renderer_family": {
+        "sequences": 27,
+        "images": 81,
+        "clean_shape_error_single": 0.0716,
+        "clean_shape_error_multi": 0.0543,
+        "appearance_shift_shape_error_single": 0.0593,
+        "appearance_shift_shape_error_multi": 0.0386,
+        "partial_missing_shape_error_single": 0.0841,
+        "partial_missing_shape_error_multi": 0.0386,
+        "clean_angular_error_single_deg": 1.9748,
+        "clean_angular_error_multi_deg": 1.5251
+      },
+      "stress_renderer_mismatch": {
+        "sequences": 18,
+        "thick_silhouette_angle_deg": 5.098,
+        "shifted_principal_point_angle_deg": 28.483,
+        "heavy_occlusion_angle_deg": 11.843,
+        "false_provisional_statuses_on_mismatched_camera": "5/6",
+        "conclusion": "Reprojection score is NOT a certificate of 3D correctness"
+      },
+      "camera_center_new_seeds": {
+        "sequences": 24,
+        "clean_standard_shape": 0.0638,
+        "clean_centered_shape": 0.0757,
+        "translated_standard_shape": 0.2939,
+        "translated_centered_shape": 0.0955,
+        "shift_injected_pixels": [
+          8,
+          -5
+        ],
+        "estimated_mean_shift_pixels": [
+          8.01,
+          -5.089
+        ],
+        "conclusion": "Additional camera parameters correct some out-of-model inputs but harm already-correct centered inputs; NOT promoted."
+      }
+    },
+    "tests": "43/43 local synthetic and repository-structure mirror tests passed; GitHub Actions remote unverified",
+    "public_files": [
+      "outils/rne/rne22/markerless_perspective.py",
+      "outils/rne/rne22/evaluate_locked.py",
+      "tests/test_rne22_markerless.py",
+      "RETOUCHE_NEURAL_ENGINE_22.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE22_MASKFIT_Reconstruction_Sans_Reperes_Synthetique.zip",
+    "privacy": {
+      "historical_157_used": false,
+      "recent_41_used": false,
+      "weights_uploaded": false,
+      "private_media_uploaded": false
+    },
+    "quality_gate": "RESEARCH ONLY; synthetic toy model, missing real-image segmentation, non-identifiable focal/distance/metric scale, camera-center and occlusion failures",
+    "website_deployed": false,
+    "main_merged": false,
+    "iphone_safari_validated": false,
+    "neural_model_trained": false
   }
 }
