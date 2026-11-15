@@ -1,5 +1,5 @@
 const t=require('node:test'),assert=require('node:assert/strict');
-const {buildProject}=require('../p1-for-tests.js');const {makeRenderManifest,validateRenderManifest}=require('../p2-for-tests.js');
+const {buildProject}=require('../../p2/cinema-director-p1-core.js');const {makeRenderManifest,validateRenderManifest}=require('../../p2/cinema-render-plan.js');
 const {buildDialoguePlan,validateDialoguePlan}=require('../dialogue-plan.js');
 function sample(){const p=buildProject({description:'Une femme adulte entre dans un café. Puis elle téléphone à une amie. Film de 6 secondes.',mode:'text'});p.shots=p.shots.slice(0,2);p.shots.forEach(s=>{s.duration_seconds=3});p.shots[0].dialogue='Bonjour.';p.shots[1].dialogue='Allô.';const m=makeRenderManifest(p);return {p,m}}
 t('P3 validate normal text-only dialogue plan',()=>{const {p,m}=sample();const d=buildDialoguePlan(p,m);assert.equal(d.lines.length,2);assert.ok(validateDialoguePlan(d,m));assert.equal(d.lines[0].speaker_id,'character_01');assert.equal(d.consent.voice_cloning_allowed,false)});
