@@ -1,0 +1,70 @@
+name: Cinema P30 — public HTTPS read-only synthetic preview verification
+on:
+  push:
+    paths:
+      - 'studio-cinema/p30/https-demo/**'
+      - '.github/workflows/ci-cinema-p30-https-preview.yml'
+  workflow_dispatch:
+jobs:
+  verify-separate-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify hosted site bytes match the 7 verified files in Cinema P30 ZIP
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
+          root=Path('studio-cinema/p30/https-demo')
+          expected={
+            'index.html':'a272bf76d2a1b47ee0a18c0e3645c1d1fa4fe923e4873b22576e5b64486aac87',
+            'iphone-check.css':'52ded189153c615cc68d41d6c77a33f531373f0e39f93f8f13abdd275cedc563',
+            'iphone-check.js':'558e255123a4a30565bef55efcfa6d4d8eab5de2771ed77d3d5737b4d99fa77b',
+            'preview-data.js':'698dc958ccee008480db535b78b5e624e96e74afc638ea857199814a0f9c9c3e',
+            'preview.css':'4b402beed17f280af6085601c1eb9def68f5e15bf343edee8e9ea7e1524ac1cf',
+            'preview.js':'8a66b83bbe5ff0fafd70a5938fa0e854b30b12a3af7910c8c3470e2a29b0b59c',
+            'test-iphone.html':'027c5cb7f37618b1170708a61451e9ba06882cc6089d49da7e44f76c80c6b0fb',
+          }
+          for name,digest in expected.items():
+              result=hashlib.sha256((root/name).read_bytes()).hexdigest()
+              print(name, 'MATCH' if result==digest else 'MISMATCH',result)
+              assert result==digest, f'{name} differs from verified synthetic ZIP'
+          page=(root/'index.html').read_text()
+          test=(root/'test-iphone.html').read_text()
+          assert 'connect-src \'none\'' in page and 'media-src \'none\'' in page
+          assert 'connect-src \'none\'' in test and 'media-src \'none\'' in test
+          assert 'href="./test-iphone.html"' in page
+          print('Seven hosted files byte-identical to original verified ZIP; zero user media')
+          PY
+      - name: Probe actual free HTTPS proxy serving GitHub experimental branch
+        run: |
+          set -eu
+          ORIGIN='https://raw.githack.com/m6ks7r8p78-debug/Retouche-video/chatgpt-cinema-p30-https-preview-20261115/studio-cinema/p30/https-demo'
+          for FILE in index.html preview.js preview.css preview-data.js test-iphone.html iphone-check.js iphone-check.css; do
+            echo "Probing HTTPS $FILE"
+            curl --location --fail --silent --show-error --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 10 --max-time 40 \
+              --output "/tmp/p30-$(basename "$FILE")" --dump-header "/tmp/p30-headers-$(basename "$FILE")" \
+              "$ORIGIN/$FILE"
+            python - "$FILE" <<'PY'
+          import sys
+          from pathlib import Path
+          import hashlib
+          f=sys.argv[1]
+          original=Path('studio-cinema/p30/https-demo')/f
+          served=Path('/tmp')/('p30-'+f)
+          assert original.read_bytes()==served.read_bytes(), f+' HTTPS payload differs from GitHub source'
+          headers=Path('/tmp')/('p30-headers-'+f)
+          print(f,served.stat().st_size,'bytes, verified',hashlib.sha256(served.read_bytes()).hexdigest())
+          PY
+          done
+      - name: Publish strict verification result in run logs only
+        run: |
+          echo 'P30 HTTPS experimental content matches the original synthetic ZIP.'
+          echo 'This CI HTTPS fetch does not equal a physical iPhone Safari session.'
+          echo 'Proxy browser HTML confirmation may still appear, depending on request headers.'
