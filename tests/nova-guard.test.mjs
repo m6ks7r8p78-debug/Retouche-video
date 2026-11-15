@@ -90,3 +90,12 @@ test("NOVA 0.6 : saturation et annulation échouent explicitement",async()=>{
  e.state="closed";
  await assert.rejects(GUARD.attendreEncodeur(e),/fermé/);
 });
+
+test("NOVA 0.12 : audit des paquets AAC ne confond pas édition vide et paquet audio",()=>{
+ const data=[{timestamp:0,duration:20000},{timestamp:1752000,duration:20000}];
+ assert.throws(()=>GUARD.auditerPaquetsAAC(data,{durationSeconds:2}),/Durée AAC/);
+ const audited=GUARD.auditerPaquetsAAC(data,{durationSeconds:2,leadingGapSeconds:.228});
+ assert.equal(audited.leadingGapUs,228000);
+ assert.equal(audited.endUs,1772000);
+ assert.throws(()=>GUARD.auditerPaquetsAAC(data,{durationSeconds:2,leadingGapSeconds:.6}),/aucun paquet/);
+});
