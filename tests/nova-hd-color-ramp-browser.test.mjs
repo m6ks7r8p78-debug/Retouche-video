@@ -109,9 +109,14 @@ test("NOVA no-op native SDR pipeline: RGB bars stay natural, no exaggerated cont
   assert.deepEqual([result.width,result.height,result.frames,result.modifiedFrames],
    [W,H,FPS,0]);
   assert.ok(["aac-copy","aac-native-encode"].includes(result.audioMode));
-  const dl=page.waitForEvent("download");
-  await page.locator("#novaRampResult").click();
-  const outfile=await (await dl).path();
+  // Read the synthetic Blob directly from the same HTTPS-origin context:
+  // browser download events differ by provider and aren't the color subject.
+  const syntheticBytes=await page.evaluate(async()=>{
+   const url=document.querySelector("#novaRampResult").href;
+   return Array.from(new Uint8Array(await (await fetch(url)).arrayBuffer()));
+  });
+  const outfile=path.join(dir,"nova-ramp-noop.mp4");
+  await fs.writeFile(outfile,Buffer.from(syntheticBytes));
   const actual=levels(await decodeRgb(outfile));
   const differences=actual.map((v,i)=>Number((v-pre[i]).toFixed(2)));
   const maxDiff=Math.max(...differences.map(Math.abs));
