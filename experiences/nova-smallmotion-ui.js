@@ -5,29 +5,55 @@
 (()=>{
 "use strict";
 const $=id=>document.getElementById(id);
-const start=$("novaMotionRun"),status=$("novaMotionStatus"),
- report=$("novaMotionJson");
-if(!start||!status||!report)return;
-let selected=null,controller=null,version=0,url=null;
+const start=$("novaMotionRun"),syntheticButton=$("novaMotionSynthetic"),
+ status=$("novaMotionStatus"),report=$("novaMotionJson");
+if(!start||!status||!report||!syntheticButton)return;
+let selected=null,syntheticSource=false,controller=null,loading=null,version=0,url=null;
 function clear(){
  version++;
  controller?.abort();controller=null;
- selected=null;start.disabled=true;start.textContent="Analyser 2 images sans modifier";
+ loading?.abort();loading=null;
+ selected=null;syntheticSource=false;start.disabled=true;start.textContent="Analyser 2 images sans modifier";
  if(url){URL.revokeObjectURL(url);url=null}
  report.hidden=true;report.removeAttribute("href");
  status.textContent="Importez une courte vidéo compatible pour obtenir un diagnostic local.";
 }
-function updateFile(f){
+function updateFile(f,synthetic=false){
  clear();
  if(!f||!NOVA_IPHONE_REPORT.videoFile(f))return;
  if(!Number.isSafeInteger(f.size)||f.size<1||f.size>60*1048576){
   status.textContent="Pilote de mouvement limité aux fichiers vidéo de 60 Mio maximum.";
   return;
  }
- selected=f;start.disabled=false;
+ selected=f;syntheticSource=synthetic===true;start.disabled=false;
  status.textContent="Prêt. Aucune analyse avant votre appui, aucun envoi ou export automatique.";
 }
 window.addEventListener("nova:source-selected",e=>updateFile(e.detail?.file));
+syntheticButton.addEventListener("click",async()=>{
+ clear();const token=version,ctrl=new AbortController();loading=ctrl;
+ syntheticButton.disabled=true;
+ status.textContent="Chargement de la mire de mouvement H.264 synthétique depuis ce même site…";
+ try{
+  const response=await fetch("./nova-smallmotion-synthetic.mp4",{
+   signal:ctrl.signal,cache:"no-store",mode:"same-origin"
+  });
+  if(!response.ok)throw Error("Mire de test absente");
+  const blob=await response.blob();
+  if(ctrl.signal.aborted||token!==version)return;
+  if(blob.size<1000||blob.size>250000||!blob.type.startsWith("video/"))
+   throw Error("Fichier synthétique non conforme");
+  const file=new File([blob],"NOVA_mire_synthetique_H264.mp4",{type:"video/mp4"});
+  updateFile(file,true);
+  status.textContent="Mire synthétique prête : lancement explicite du diagnostic local…";
+  start.click();
+ }catch{
+  if(!ctrl.signal.aborted&&token===version)
+   status.textContent="Mire de test indisponible : aucun fichier personnel demandé, aucun envoi.";
+ }finally{
+  if(loading===ctrl)loading=null;
+  syntheticButton.disabled=false;
+ }
+});
 window.addEventListener("pagehide",()=>controller?.abort());
 document.addEventListener("visibilitychange",()=>{if(document.hidden)controller?.abort()});
 function waitFor(video,event,signal,ms=12000){
@@ -91,14 +117,14 @@ async function sample(file,signal){
 start.addEventListener("click",async()=>{
  if(controller){controller.abort();status.textContent="Annulation en cours…";return}
  if(!selected)return;
- const ctrl=new AbortController(),id=version,chosen=selected;
+ const ctrl=new AbortController(),id=version,chosen=selected,isSynthetic=syntheticSource;
  controller=ctrl;start.textContent="Annuler l'analyse";report.hidden=true;
  if(url){URL.revokeObjectURL(url);url=null}
  status.textContent="Extraction locale des deux images ; aucune restauration lancée…";
  try{
   const {a,b,times}=await sample(chosen,ctrl.signal);
   if(id!==version||ctrl.signal.aborted)return;
-  const result=NOVA_SMALLMOTION.analyser(a,b,{frameTimesSeconds:times,signal:ctrl.signal});
+  const result=NOVA_SMALLMOTION.analyser(a,b,{frameTimesSeconds:times,signal:ctrl.signal,synthetic:isSynthetic});
   if(id!==version||ctrl.signal.aborted)return;
   const json=NOVA_SMALLMOTION.serialiser(result);
   url=URL.createObjectURL(new Blob([json],{type:"application/json"}));
