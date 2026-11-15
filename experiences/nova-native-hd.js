@@ -131,7 +131,9 @@ function frameToOutput(frame,info,canvas,moteur,arbitre,duration){
  ctx.drawImage(frame,0,0,info.W,info.H);
  ctx.setTransform(1,0,0,1,0,0);
  const img=ctx.getImageData(0,0,w,h);
- const restored=moteur.restituer(img,{size:256,arbitre});
+ // Le rapport force-par-pixel n'est pas utilisé par l'export MP4 ;
+ // on économise 4 octets/pixel/image pour éviter la pression mémoire iOS.
+ const restored=moteur.restituer(img,{size:256,arbitre,includeForces:false});
  if(!restored?.data||restored.data.length!==img.data.length||
     !restored?.bilan)fail("restauration classique invalide");
  return {out:rgba709(restored.data,w,h,frame.timestamp,duration),
