@@ -76,3 +76,9 @@ En perspective, les profondeurs distinctes des articulations fournissent parfois
 ## Prochain obstacle
 
 Développer l’extraction **réelle** des silhouettes et des articulations, au milieu d’un fond complexe et de membres occultés, sans pastilles et sans connaître au préalable un corps simplifié. Évaluer un modèle multi-hypothèses caméra/pose sur des rendus d’une **autre famille de géométrie** avant de passer aux vidéos personnelles autorisées, en gardant un protocole indépendant et des attentes réalistes.
+
+## Trois poses GLB supplémentaires
+
+`export_synthetic_glb.py` prend les **images synthétiques monochromes** de démonstration, en estime les proportions relatives et les trois angles d'articulation avec MASKFIT puis applique les paramètres retrouvés à la **géométrie préexistante** du mannequin. Il exporte et relit `demo_glb/RNE22_pose_01..03_toy_synthetique.glb` (9 maillages par pose). La géométrie n'a pas été découverte dans l'image : ce sont uniquement une pose et deux proportions relatives ajustées depuis les pixels. Ces fichiers ne sont pas des personnes réelles ni des reconstructions corporelles fidèles.
+
+Les 43 tests existants ont été réexécutés dans une arborescence CI locale correspondant aux chemins des modules GitHub. La CI GitHub distante n'est pas confirmée.
