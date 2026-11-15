@@ -137,27 +137,35 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  if(typeof VideoEncoder==="undefined"||typeof VideoFrame==="undefined"||typeof Mp4Muxer==="undefined")
    throw new Error("WebCodecs ou muxer MP4 indisponible sur cet appareil");
  if(signal?.aborted)throw new Error("Export annulé");
- // Diagnostic HEVC avant le lecteur HTML : canPlayType et les métadonnées
- // ne prouvent pas que VideoDecoder peut extraire les vraies images.
- // Aucun téléchargement externe ni repli WASM non validé.
+ // HEVC local est désormais disponible dans la branche expérimentale,
+ // mais UNIQUEMENT pour les sources SDR BT.709 explicitement marquées.
+ let probe=null,useHevcWasm=false;
  if(globalThis.NOVA_DEMUX&&typeof NOVA_DEMUX.analyser==="function"){
-  const probe=await NOVA_DEMUX.analyser(file);
+  probe=await NOVA_DEMUX.analyser(file);
   if(probe)NOVA_DEMUX.exigerPresentationFidele(probe);
-  if(!allowApproximate&&typeof VideoDecoder==="function"&&
-     probe&&/^(hvc1|hev1)\./.test(probe.codec)){
-   let supported=false;
-   try{supported=!!(await VideoDecoder.isConfigSupported({
-    codec:probe.codec,description:probe.desc,
-    codedWidth:probe.W,codedHeight:probe.H
-   })).supported}catch(_){}
-   if(!supported)throw new Error("HEVC/H.265 indisponible dans WebCodecs sur cet appareil. Aucun décodeur local alternatif n'est encore intégré ni validé ; export refusé sans perte silencieuse.");
+  if(probe&&/^(hvc1|hev1)\./.test(probe.codec)){
+   let nativeSupported=false;
+   if(typeof VideoDecoder==="function")try{
+    nativeSupported=!!(await VideoDecoder.isConfigSupported({
+     codec:probe.codec,description:probe.desc,codedWidth:probe.W,codedHeight:probe.H
+    })).supported;
+   }catch(_){}
+   useHevcWasm=!nativeSupported;
+   if(useHevcWasm){
+    if(!globalThis.NOVA_HEVC_RENDER)
+     throw new Error("Décodeur local HEVC WASM absent : export refusé");
+    NOVA_HEVC_RENDER.metadata(probe); // couleur/PTS/tailles vérifiés AVANT export
+   }
   }
  }
- const media=document.createElement("video");
- media.muted=true;media.playsInline=true;media.preload="auto";
- media.style.cssText="position:fixed;left:-20px;top:0;width:2px;height:2px;opacity:0;pointer-events:none";
- document.body.append(media);
- const url=URL.createObjectURL(file),canvas=document.createElement("canvas"),ctx=canvas.getContext("2d",{willReadFrequently:true});
+ const media=useHevcWasm?null:document.createElement("video");
+ if(media){
+  media.muted=true;media.playsInline=true;media.preload="auto";
+  media.style.cssText="position:fixed;left:-20px;top:0;width:2px;height:2px;opacity:0;pointer-events:none";
+  document.body.append(media);
+ }
+ const url=media?URL.createObjectURL(file):null;
+ const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d",{willReadFrequently:true});
  let videoEnc=null,audioEnc=null,trans=null,sourcePTS=null,error=null,sourceMode="pts";
  try{
   media.src=url;await pret(media);
