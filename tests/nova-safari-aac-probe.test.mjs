@@ -149,7 +149,7 @@ test("all code and HTML are local only, no microphone or media import",()=>{
  const core=fs.readFileSync(path.join(folder,"core.js"),"utf8");
  assert.match(html,/connect-src 'none'/);
  assert.match(html,/media-src 'none'/);
- assert.match(html,/aucun.*micro/i);
+ assert.match(html,/ni ton micro/i);
  assert.doesNotMatch(html,/<input\b|<video\b|<form\b/);
  assert.doesNotMatch(ui,/\bfetch\s*\(|XMLHttpRequest|indexedDB|localStorage|sessionStorage|mediaDevices|getUserMedia/);
  assert.doesNotMatch(core,/\bfetch\s*\(|XMLHttpRequest|indexedDB|localStorage|sessionStorage|mediaDevices|getUserMedia/);
