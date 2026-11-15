@@ -261,7 +261,7 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   },null,{timeout:100000});
   const opaqueStatus=await page.locator("#novaHdStatus").textContent();
   assert.match(opaqueStatus,/MP4 HD exporté/,opaqueStatus);
-  assert.match(opaqueStatus,/ATTENTION COULEURS.*BT.601.*BT.709/,
+  assert.match(opaqueStatus,/ATTENTION COULEURS.*BT.709.*BT.601/,
    "Native Safari color mismatch must remain visible");
   const opaqueDL=page.waitForEvent("download");
   await page.locator("#novaHdSave").click();
