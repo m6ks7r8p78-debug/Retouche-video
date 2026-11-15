@@ -21,7 +21,7 @@ function plan({duration,width,height,bytes,fps=FPS,maxSide=MAX_SIDE,profile}={})
  if(!finite(bytes)||bytes<1||bytes>MAX_BYTES)throw new RangeError("Fichier limité à 60 Mo pour ce pilote");
  if(!finite(fps)||fps<5||fps>FPS)throw new RangeError("Cadence pilote limitée à 15 images/s");
  if(!finite(maxSide)||maxSide<96||maxSide>MAX_SIDE)
-  throw new RangeError("Choix de résolution pilote invalide");
+  throw new RangeError("Sortie pilote limitée à 640 px pour le choix maxSide");
  if(hd720&&(Math.min(width,height)<720||Math.max(width,height)<1280))
   throw new RangeError("NOVA HD720 : source au moins 1280 × 720 exigée, aucun agrandissement artificiel");
  const factor=Math.min(1,sideCap/Math.max(width,height));
