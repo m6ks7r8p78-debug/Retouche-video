@@ -26,6 +26,9 @@ test("NOVA HD : 30 B/P/I images H264 réordonnées décodées et exportées avec
    "-f","lavfi","-i","testsrc2=size=160x120:rate=15:duration=2",
    "-f","lavfi","-i","sine=frequency=440:sample_rate=48000:duration=2",
    "-map","0:v:0","-map","1:a:0",
+   // testsrc2 n'annonce pas toujours primaires et transfert BT.709.
+   // setparams fixe les métadonnées de trame AVANT le muxage colr/nclx.
+   "-vf","setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709",
    "-c:v","libx264","-pix_fmt","yuv420p","-bf","2","-g","15",
    "-x264-params","b-adapt=0:open-gop=0","-preset","medium","-threads","1",
    "-color_primaries","bt709","-color_trc","bt709","-colorspace","bt709",
@@ -75,12 +78,17 @@ test("NOVA HD : 30 B/P/I images H264 réordonnées décodées et exportées avec
     firstKey:info?.key?.[0],
     dtsPtsReordered:info?.ptsUs?.some((v,i,a)=>i>0&&v<a[i-1]),
     firstPresentationUs:Math.min(...info.ptsUs),
-    durationUs:info?.durationUs};
+    color:info?.color,durationUs:info?.durationUs};
   });
   assert.equal(timing.samples,30);
   assert.equal(timing.firstKey,true);
   assert.equal(timing.dtsPtsReordered,true,"fixture must expose PTS reordering");
   assert.equal(timing.firstPresentationUs,0,"B-frame elst must preserve start");
+  assert.equal(timing.color?.kind,"nclx");
+  assert.equal(timing.color?.primaries,1,"fixture must signal BT.709 primaries in MP4");
+  assert.equal(timing.color?.transfer,1,"fixture must signal BT.709 transfer in MP4");
+  assert.equal(timing.color?.matrix,1,"fixture must signal BT.709 matrix in MP4");
+  assert.equal(timing.color?.fullRange,false);
   await page.locator("#novaHdRun").click();
   await page.waitForFunction(()=>{
    const status=document.querySelector("#novaHdStatus")?.textContent||"";
