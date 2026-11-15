@@ -29,7 +29,7 @@ function analyserOrientation(W,H,m){
  // Les translations tkhd ne sont pas de simples décorations : refuser
  // tout décalage non canonique, sinon l'export pourrait recadrer la vidéo.
  // Zéro (matrices anciennes) ou le décalage normalisé exact sont admis.
- const tx=-minx,ty=-miny;
+ const tx=minx===0?0:-minx,ty=miny===0?0:-miny;
  if(!(near(m[6],0)||near(m[6],tx))||
     !(near(m[7],0)||near(m[7],ty)))return null;
  return Object.freeze({mat:[A,B,C,D,tx,ty],dw,dh,
