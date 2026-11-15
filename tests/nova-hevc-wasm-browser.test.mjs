@@ -54,13 +54,15 @@ test("NOVA 0.17 : Chromium décode HEVC MOV via WASM local et égale FFmpeg YUV"
   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
   await page.addScriptTag({url:"/experiences/nova-hevc-annexb.js"});
   await page.addScriptTag({url:"/experiences/nova-hevc-lab.js"});
+  // Le glue Emscripten actuel expose HEVCDecoderModule en global, pas
+  // un export ES module. Chargement local explicite, sans CDN.
+  await page.addScriptTag({url:"/node_modules/@hevcjs/core/dist/wasm/hevc-decode.js"});
   await page.locator("#file").setInputFiles(source);
   const actual=await page.evaluate(async()=>{
    const HEVCDecoder=(await import("/node_modules/@hevcjs/core/dist/decoder-entry.js")).HEVCDecoder;
    const f=document.querySelector("#file").files[0];
    const before=performance.now();
    const r=await NOVA_HEVC_LAB.decoder(f,{HEVCDecoder,
-    wasmUrl:"/node_modules/@hevcjs/core/dist/wasm/hevc-decode.js",
     wasmBinaryUrl:"/node_modules/@hevcjs/core/dist/wasm/hevc-decode.wasm"});
    const total=r.stamped.reduce((n,x)=>n+x.frame.y.length+x.frame.cb.length+x.frame.cr.length,0);
    const raw=new Uint8Array(total);let pos=0;
