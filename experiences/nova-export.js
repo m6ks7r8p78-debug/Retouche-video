@@ -221,7 +221,11 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   const audioConfig=audioCopy?{sampleRate:audioCopy.sampleRate,numberOfChannels:audioCopy.channels}:audio?.cfg;
   const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",video:{codec:"avc",width:settings.width,height:settings.height},
     ...(audioConfig?{audio:{codec:"aac",sampleRate:audioConfig.sampleRate,numberOfChannels:audioConfig.numberOfChannels,
-      ...(audioCopy?.rollDistance!=null?{rollDistance:audioCopy.rollDistance}:{})}}:{})});
+      ...(audioCopy?.rollDistance!=null?{rollDistance:audioCopy.rollDistance}:{}),
+      ...(audioCopy?.editDurationSeconds!=null?{
+        editMediaTime:audioCopy.editMediaTime,
+        editDurationSeconds:audioCopy.outputEditSeconds
+      }:{})}}:{})});
   videoEnc=new VideoEncoder({output:(chunk,meta)=>{try{muxer.addVideoChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
   videoEnc.configure(config);
   if(audio){
