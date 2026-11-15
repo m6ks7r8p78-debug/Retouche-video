@@ -65,7 +65,7 @@ function report(state,{out=null,phase="none",errorCode="none",manuallyObserved={
   manuallyObserved.video_visible===true&&
   manuallyObserved.audio_audible===true;
  return Object.freeze({
-  schema:SCHEMA,status:checked?statuses.reviewed:state,
+  schema:SCHEMA,status:state===statuses.reviewed&&!checked?statuses.assembled:state,
   proof_kind:"local_real_source_browser_run_user_supplied_report",
   source_selected_voluntarily:true,
   source_name_included:false,source_bytes_included:false,
