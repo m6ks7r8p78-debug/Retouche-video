@@ -337,3 +337,35 @@ L'extension ciblée du `mp4-muxer.js` insère une véritable boîte `edts/elst` 
 5. Toutes les limites de la version pilote restent en place : **12 secondes**, **60 Mo**, **sortie 640 px à 15 i/s**, décodage PTS source Full HD maximum ; pas de restauration neuronale 4K/8K démontrée.
 
 La PR #3 doit rester **DRAFT**, aucun déploiement sur `retoucheproai.com`, pas de fusion sur `main`, aucune publication des médias privés.
+
+
+## NOVA 0.12 — préservation d'un début de piste AAC volontairement différé (15 novembre 2026)
+
+### Problème résolu dans le pilote progressif
+
+NOVA 0.11 savait conserver l'amorçage AAC `elst media_time > 0`, mais laissait de côté les fichiers dont la piste audio commence volontairement plus tard que la vidéo. Les fichiers MP4 peuvent représenter ce décalage par **deux entrées `elst`** : une édition vide initiale (`media_time=-1`), puis une édition normale de la piste audio. Supprimer cette entrée provoque un décalage audible, même lorsque les octets AAC sont intégralement conservés.
+
+### Développement intégré dans la branche expérimentale
+
+- `nova-aac-copy.js` accepte **exactement une édition média**, ou **une édition vide initiale suivie d'une unique édition média** (version 0, vitesse 1x, aucun montage complexe). La durée vide est plafonnée à **500 ms**. Le décalage est lu à l'échelle temporelle du film et n'est pas inventé à partir des PTS des paquets AAC.
+- `mp4-muxer.js` écrit l'`edts/elst` à **deux entrées pour la piste audio** ; les durées `tkhd` et `mvhd` comprennent le temps vide initial. Ce mode exige un **MP4 progressif**, et refuse explicitement `fastStart="fragmented"` pour ce cas. Le début AAC `media_time` et l'éventuel `sgpd/sbgp roll` restent conservés.
+- `nova-export.js` demande le plan de copie AAC avant de permettre un décalage audio supérieur à 80 ms ; si le plan est incompatible, l'audit audio refuse toujours le décalage au lieu de le supprimer pendant `decodeAudioData`.
+- `nova-avsync.js` expose le mode d'audit `allowLeadingGap` uniquement lorsque le chemin de copie a vérifié le montage ; plafond 500 ms et contrôle du premier PTS vidéo.
+- `nova-guard.js` compare la durée des paquets AAC à **durée film − durée vide**, et non à la durée totale du film : le silence initial ne devient jamais un paquet AAC artificiel.
+- `tests/nova-aac-copy.test.mjs`, `tests/nova-avsync.test.mjs` et `tests/nova-guard.test.mjs` vérifient les bornes, le décodage des métadonnées, les refus de gaps excessifs, l'impossibilité d'allonger un montage audio et l'absence de repli silencieux.
+
+### Preuve sur un vrai fichier MP4 et limites
+
+Le test Chromium crée un MP4 **H.264 + AAC avec un décalage initial demandé à FFmpeg de 250 ms**. FFmpeg a inscrit une édition vide de **228 ms** dans le fichier ; NOVA conserve **228 ms**, valeur **réellement encodée**, au lieu de forcer 250 ms. Le test compare la structure de piste AAC, ses **84 empreintes de paquets sans changement**, et deux repères sonores/visuels avant/après. Les événements audio sont également analysés par FFmpeg avec `aresample=async=1:first_pts=0`, qui rétablit le silence initial dans le PCM pour mesurer la chronologie présentée. Sur ce banc : **0 ms d'offset ajouté et 0 ms de dérive mesurée**, à la résolution de la mesure.
+
+**Run vérifié du code `ec9d58ed683764a384ada5b6de3fc705e245ebec` :** [GitHub Actions 43687777882](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43687777882), **82/82 tests unitaires, 13/13 tests navigateur Chromium, aucun échec ni test ignoré**.
+
+**Limite importante documentée :** les lecteurs Chromium, Safari et Firefox ne traitent pas tous les *empty edits* de la même façon dans certains scénarios **Media Source Extensions (MSE)**. La preuve actuelle concerne **un MP4 progressif lu/décodé par FFmpeg et produit par le navigateur Chromium**, pas tous les pipelines MSE et pas le Safari physique d'un iPhone. Voir [W3C Media Source Extensions issue #377](https://github.com/w3c/media-source/issues/377) et [FFmpeg `mov.c` edit-list handling](https://chromium.googlesource.com/chromium/third_party/ffmpeg/+/refs/heads/master/libavformat/mov.c).
+
+Les garde-fous du pilote restent inchangés : 12 secondes, 60 Mo source, 640 px/15 fps export. Les sources AAC avec plus de deux éditions, silence de début >500 ms ou montage non déterministe restent refusées. Aucune mesure Safari iPhone physique, aucune fusion/déploiement, aucun média privé publié.
+
+### Prochaines expériences prioritaires
+
+1. Répéter le banc sur les variantes d'edit-list version 1 et les délais plus courts qui se quantifient à une unité AAC.
+2. Tester les différences de lecture iPhone Safari progressive vs MSE, sans déployer la PR et sans publier de médias privés.
+3. Isoler les fausses alertes de décalage sur des vidéos iPhone HEVC/VFR et instrumenter la mémoire et l'énergie réelles.
