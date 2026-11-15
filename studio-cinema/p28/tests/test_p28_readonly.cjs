@@ -7,7 +7,7 @@ const {
  SCHEMA,STATUS,projectNova,projectQuality,projectCinema,makeHandoff,formatFrench,cli
 }=require("../src/p28_readonly_bridge.cjs");
 
-const ROOT=path.resolve(__dirname,"../../../..");
+const ROOT=path.resolve(__dirname,"../../..");
 const source1=path.resolve(ROOT,"studio-cinema/p25/results/proof/p25_crf_matrix_synthetic_report.json");
 const source2=path.resolve(ROOT,"studio-cinema/p26/results/proof/p26_second_generation_synthetic_report.json");
 const load=()=>[
