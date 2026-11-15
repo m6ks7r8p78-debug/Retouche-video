@@ -25,8 +25,9 @@ jobs:
         run: |
           node --check experiences/nova-export.js
           node --check experiences/nova-h264-path.js
+          node --check experiences/nova-avc-vui.js
           node --check tests/nova-hd720-color-av-browser.test.mjs
-          node --test tests/nova-export.test.mjs tests/nova-h264-path.test.mjs tests/nova-hevc-refusal-diagnostic.test.mjs tests/nova-real-preflight.test.mjs
+          node --test tests/nova-avc-vui.test.mjs tests/nova-export.test.mjs tests/nova-h264-path.test.mjs tests/nova-hevc-refusal-diagnostic.test.mjs tests/nova-real-preflight.test.mjs
   browser:
     runs-on: ubuntu-latest
     timeout-minutes: 20
