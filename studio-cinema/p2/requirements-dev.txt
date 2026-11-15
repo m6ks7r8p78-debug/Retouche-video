@@ -1,0 +1,4 @@
+requests>=2.31,<3
+pytest>=8,<10
+# ffmpeg/ffprobe must be installed on the host
+
