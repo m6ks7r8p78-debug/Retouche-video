@@ -36,7 +36,7 @@ function safeReport(r){
  assert.equal(r.audio_samples_or_chunks_in_report,false);
  assert.equal(r.report_shared_automatically,false);
  const s=JSON.stringify(r);
- for(const unsafe of ["PRIVATE_PERSON_X","PRIVATE_FILE_BYTES","samples","Float32Array",
+ for(const unsafe of ["PRIVATE_PERSON_X","PRIVATE_FILE_BYTES",'"samples":',"Float32Array",
                         "ArrayBuffer","stacktrace","error_message"])
   assert.ok(!s.includes(unsafe),unsafe);
 }
