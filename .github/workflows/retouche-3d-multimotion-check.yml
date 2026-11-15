@@ -1,0 +1,42 @@
+name: Retouche 3D - multi-motion evidence (experimental)
+on:
+  push:
+    branches:
+      - lab-3d-multimotion-evidence
+    paths:
+      - 'research/3d-multimotion/**'
+      - '.github/workflows/retouche-3d-multimotion-check.yml'
+  pull_request:
+    paths:
+      - 'research/3d-multimotion/**'
+      - '.github/workflows/retouche-3d-multimotion-check.yml'
+jobs:
+  synthetic-cpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free CPU-only tools
+        run: python -m pip install numpy opencv-python-headless pytest
+      - name: Preserve CameraGuard v4.3 regression and test new hypotheses
+        run: python -m pytest -q research/3d-camera-v43/tests research/3d-multimotion/tests
+      - name: Repeat synthetic benchmark
+        run: python research/3d-multimotion/benchmark_multimotion.py --seeds 3 --out research/3d-multimotion/results/ci_benchmark.json
+      - name: Compare with previous 2D guard on matching pixels
+        run: python research/3d-multimotion/compare_v43_multimotion.py --seeds 3 --out research/3d-multimotion/results/ci_compare.json
+      - name: Probe OpenCV MAGSAC++ without extra installation
+        run: python research/3d-multimotion/probe_estimators.py > research/3d-multimotion/results/ci_probe.json
+      - name: Generate fully offline synthetic viewer
+        run: python research/3d-multimotion/build_demo.py
+      - name: Publish synthetic-only evidence as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: multimotion-synthetic-evidence
+          path: |
+            research/3d-multimotion/results/ci_benchmark.json
+            research/3d-multimotion/results/ci_compare.json
+            research/3d-multimotion/results/ci_probe.json
+          if-no-files-found: error

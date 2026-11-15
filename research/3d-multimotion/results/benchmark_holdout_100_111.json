@@ -1,0 +1,834 @@
+{
+  "schema": "retouche-multimotion-synthetic-1",
+  "seeds": [
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111
+  ],
+  "warning": "SIMULATED two 2D planes, not physical real video accuracy; model has no hand/object classes.",
+  "cases": {
+    "two_depths": {
+      "statuses": {
+        "repeated_two_motion_evidence": 12
+      },
+      "pair_counts": {
+        "two": 120,
+        "one": 0,
+        "unresolved": 0
+      },
+      "mean_time_ms": 104.1,
+      "p95_time_ms": 156.7,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 101,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 102,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 103,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 104,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 105,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 106,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 107,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 108,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 109,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 110,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 111,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        }
+      ]
+    },
+    "two_depths_rotated": {
+      "statuses": {
+        "repeated_two_motion_evidence": 12
+      },
+      "pair_counts": {
+        "two": 120,
+        "one": 0,
+        "unresolved": 0
+      },
+      "mean_time_ms": 102.0,
+      "p95_time_ms": 132.5,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 101,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 102,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 103,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 104,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 105,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 106,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 107,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 108,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 109,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 110,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 111,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        }
+      ]
+    },
+    "two_depths_low_delta": {
+      "statuses": {
+        "single_dominant_evidence": 12
+      },
+      "pair_counts": {
+        "two": 0,
+        "one": 120,
+        "unresolved": 0
+      },
+      "mean_time_ms": 70.3,
+      "p95_time_ms": 75.2,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 101,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 102,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 103,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 104,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 105,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 106,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 107,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 108,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 109,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 110,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 111,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        }
+      ]
+    },
+    "two_depths_mimic": {
+      "statuses": {
+        "repeated_two_motion_evidence": 12
+      },
+      "pair_counts": {
+        "two": 120,
+        "one": 0,
+        "unresolved": 0
+      },
+      "mean_time_ms": 88.9,
+      "p95_time_ms": 95.8,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 101,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 102,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 103,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 104,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 105,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 106,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 107,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 108,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 109,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 110,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 111,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        }
+      ]
+    },
+    "two_depths_compressed": {
+      "statuses": {
+        "repeated_two_motion_evidence": 12
+      },
+      "pair_counts": {
+        "two": 120,
+        "one": 0,
+        "unresolved": 0
+      },
+      "mean_time_ms": 87.2,
+      "p95_time_ms": 89.4,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 101,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 102,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 103,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 104,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 105,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 106,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 107,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 108,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 109,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 110,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 111,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        }
+      ]
+    },
+    "two_depths_cut": {
+      "statuses": {
+        "abstain_temporal_gap": 12
+      },
+      "pair_counts": {
+        "two": 108,
+        "one": 0,
+        "unresolved": 12
+      },
+      "mean_time_ms": 100.8,
+      "p95_time_ms": 103.6,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 101,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 102,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 103,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 104,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 105,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 106,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 107,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 108,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 109,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 110,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        },
+        {
+          "seed": 111,
+          "status": "abstain_temporal_gap",
+          "two_pairs": 9
+        }
+      ]
+    },
+    "single_plane": {
+      "statuses": {
+        "single_dominant_evidence": 12
+      },
+      "pair_counts": {
+        "two": 0,
+        "one": 120,
+        "unresolved": 0
+      },
+      "mean_time_ms": 80.3,
+      "p95_time_ms": 92.3,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 101,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 102,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 103,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 104,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 105,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 106,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 107,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 108,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 109,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 110,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 111,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        }
+      ]
+    },
+    "local_object": {
+      "statuses": {
+        "single_dominant_evidence": 12
+      },
+      "pair_counts": {
+        "two": 0,
+        "one": 120,
+        "unresolved": 0
+      },
+      "mean_time_ms": 98.6,
+      "p95_time_ms": 123.9,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 101,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 102,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 103,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 104,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 105,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 106,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 107,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 108,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 109,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 110,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 111,
+          "status": "single_dominant_evidence",
+          "two_pairs": 0
+        }
+      ]
+    },
+    "broad_object": {
+      "statuses": {
+        "repeated_two_motion_evidence": 12
+      },
+      "pair_counts": {
+        "two": 120,
+        "one": 0,
+        "unresolved": 0
+      },
+      "mean_time_ms": 102.7,
+      "p95_time_ms": 104.7,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 101,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 102,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 103,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 104,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 105,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 106,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 107,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 108,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 109,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 110,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 111,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        }
+      ]
+    },
+    "blank": {
+      "statuses": {
+        "abstain_insufficient_evidence": 12
+      },
+      "pair_counts": {
+        "two": 0,
+        "one": 0,
+        "unresolved": 120
+      },
+      "mean_time_ms": 8.1,
+      "p95_time_ms": 9.8,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 101,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 102,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 103,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 104,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 105,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 106,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 107,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 108,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 109,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 110,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        },
+        {
+          "seed": 111,
+          "status": "abstain_insufficient_evidence",
+          "two_pairs": 0
+        }
+      ]
+    },
+    "occlusion": {
+      "statuses": {
+        "repeated_two_motion_evidence": 12
+      },
+      "pair_counts": {
+        "two": 120,
+        "one": 0,
+        "unresolved": 0
+      },
+      "mean_time_ms": 143.3,
+      "p95_time_ms": 194.2,
+      "runs": [
+        {
+          "seed": 100,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 101,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 102,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 103,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 104,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 105,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 106,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 107,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 108,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 109,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 110,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        },
+        {
+          "seed": 111,
+          "status": "repeated_two_motion_evidence",
+          "two_pairs": 10
+        }
+      ]
+    }
+  }
+}

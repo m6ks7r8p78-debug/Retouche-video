@@ -1,0 +1,35 @@
+{
+  "status": "measured",
+  "opencv": "4.13.0",
+  "protocol": "single frame pair index=3->4; no accuracy label",
+  "by_case": {
+    "two_depths": {
+      "runs": 12,
+      "affine_mean_inliers": 396.7,
+      "magsac_mean_inliers": 554.7,
+      "affine_median_ms": 0.395,
+      "magsac_median_ms": 1.447
+    },
+    "two_depths_rotated": {
+      "runs": 12,
+      "affine_mean_inliers": 374.8,
+      "magsac_mean_inliers": 569.8,
+      "affine_median_ms": 0.378,
+      "magsac_median_ms": 1.174
+    },
+    "single_plane": {
+      "runs": 12,
+      "affine_mean_inliers": 650,
+      "magsac_mean_inliers": 650,
+      "affine_median_ms": 0.363,
+      "magsac_median_ms": 0.62
+    },
+    "broad_object": {
+      "runs": 12,
+      "affine_mean_inliers": 422.4,
+      "magsac_mean_inliers": 420.9,
+      "affine_median_ms": 0.375,
+      "magsac_median_ms": 1.642
+    }
+  }
+}

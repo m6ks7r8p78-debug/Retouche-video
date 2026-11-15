@@ -1,0 +1,115 @@
+{
+  "schema": "retouche-head-to-head-2d-evidence",
+  "warning": "Different tasks: v4.3 outputs motion regions or abstains; new layer reports competing hypotheses. Not accuracy metrics.",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "cases": {
+    "two_depths": {
+      "v43_status_counts": {
+        "abstain_competing_motion": 11,
+        "abstain_weak_consensus": 1
+      },
+      "multimotion_status_counts": {
+        "repeated_two_motion_evidence": 12
+      },
+      "v43_mean_ms": 7.5,
+      "multi_mean_ms": 90.3
+    },
+    "two_depths_rotated": {
+      "v43_status_counts": {
+        "abstain_competing_motion": 9,
+        "abstain_weak_consensus": 3
+      },
+      "multimotion_status_counts": {
+        "repeated_two_motion_evidence": 12
+      },
+      "v43_mean_ms": 8.0,
+      "multi_mean_ms": 103.9
+    },
+    "two_depths_low_delta": {
+      "v43_status_counts": {
+        "processed_unvalidated": 12
+      },
+      "multimotion_status_counts": {
+        "single_dominant_evidence": 12
+      },
+      "v43_mean_ms": 117.3,
+      "multi_mean_ms": 80.3
+    },
+    "two_depths_cut": {
+      "v43_status_counts": {
+        "abstain_competing_motion": 11,
+        "abstain_weak_consensus": 1
+      },
+      "multimotion_status_counts": {
+        "abstain_temporal_gap": 12
+      },
+      "v43_mean_ms": 7.5,
+      "multi_mean_ms": 102.4
+    },
+    "single_plane": {
+      "v43_status_counts": {
+        "processed_unvalidated": 12
+      },
+      "multimotion_status_counts": {
+        "single_dominant_evidence": 12
+      },
+      "v43_mean_ms": 122.1,
+      "multi_mean_ms": 80.6
+    },
+    "local_object": {
+      "v43_status_counts": {
+        "processed_unvalidated": 12
+      },
+      "multimotion_status_counts": {
+        "single_dominant_evidence": 12
+      },
+      "v43_mean_ms": 119.6,
+      "multi_mean_ms": 71.2
+    },
+    "broad_object": {
+      "v43_status_counts": {
+        "abstain_competing_motion": 1,
+        "abstain_weak_consensus": 11
+      },
+      "multimotion_status_counts": {
+        "repeated_two_motion_evidence": 12
+      },
+      "v43_mean_ms": 6.4,
+      "multi_mean_ms": 87.8
+    },
+    "blank": {
+      "v43_status_counts": {
+        "abstain_low_texture": 12
+      },
+      "multimotion_status_counts": {
+        "abstain_insufficient_evidence": 12
+      },
+      "v43_mean_ms": 0.7,
+      "multi_mean_ms": 6.2
+    },
+    "occlusion": {
+      "v43_status_counts": {
+        "abstain_competing_motion": 11,
+        "abstain_weak_consensus": 1
+      },
+      "multimotion_status_counts": {
+        "repeated_two_motion_evidence": 12
+      },
+      "v43_mean_ms": 8.2,
+      "multi_mean_ms": 107.3
+    }
+  }
+}
