@@ -47,7 +47,7 @@
     const tongueXY=visible?[round(mouthX+.006*lick-.002*retract),round(mouthY+.008*tongue)]:null;
     return {
       p21_lower_lip_fold:round(.006*bite),p21_lower_lip_bite:bite>=.07,
-      p21_lower_lip_lick:lick>=.07,p21_lip_lick_strength:round(lick),
+      p21_lip_lick_lower:lick>=.07,p21_lip_lick_strength:round(lick),
       p21_tongue_visible:visible,p21_tongue_extension:round(.008*tongue),
       p21_tongue_retract:retract>=.07,p21_tongue_retract_strength:round(retract),
       p21_tongue_tip_xy:tongueXY,
@@ -89,10 +89,10 @@
       }
       for(const label of Object.keys(LABELS)) if(f['p21_'+label]===true)bounds[label]++;
       if(f.p21_lower_lip_bite&&f.phase!=='pause')errors.push({frame:i,code:'bite_outside_pause'});
-      if((f.p21_lower_lip_lick||f.p21_tongue_visible||f.p21_tongue_retract)&&f.phase!=='smoke_drift')errors.push({frame:i,code:'tongue_outside_drft'});
-      if(f.lip_contact&&(f.p21_lower_lip_bite||f.p21_lower_lip_lick||f.p21_tongue_visible))
+      if((f.p21_lip_lick_lower||f.p21_tongue_visible||f.p21_tongue_retract)&&f.phase!=='smoke_drift')errors.push({frame:i,code:'tongue_outside_drft'});
+      if(f.lip_contact&&(f.p21_lower_lip_bite||f.p21_lip_lick_lower||f.p21_tongue_visible))
         errors.push({frame:i,code:'incompatible_lip_contact'});
-      if(f.mouth_smoke&&(f.p21_lower_lip_bite||f.p21_lower_lip_lick||f.p21_tongue_visible))
+      if(f.mouth_smoke&&(f.p21_lower_lip_bite||f.p21_lip_lick_lower||f.p21_tongue_visible))
         errors.push({frame:i,code:'incompatible_smoke_phase'});
       if(i>0&&Array.isArray(f.p21_tongue_tip_xy)&&Array.isArray(g.frames[i-1].p21_tongue_tip_xy)){
         const a=f.p21_tongue_tip_xy,b=g.frames[i-1].p21_tongue_tip_xy;
