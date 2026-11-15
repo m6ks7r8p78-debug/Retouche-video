@@ -291,7 +291,12 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
    const processed=await trans.traiter(pixels);
    ctx.putImageData(new ImageData(processed.data,processed.width,processed.height),0,0);
-   const frame=new VideoFrame(canvas,{timestamp:entry.timestamp,duration:entry.duration});
+   // Le Canvas sRGB ne doit pas être déclaré BT.709 par simple boîte colr.
+   // Convertir réellement les pixels en YCbCr I420 BT.709 plage limitée.
+   const frame=useHevcWasm?
+     NOVA_COLOR709.videoFrame(processed.data,processed.width,processed.height,
+      entry.timestamp,entry.duration):
+     new VideoFrame(canvas,{timestamp:entry.timestamp,duration:entry.duration});
    try{videoEnc.encode(frame,{keyFrame:entry.keyFrame})}finally{frame.close()}
    if(videoEnc.encodeQueueSize>5)await NOVA_GUARD.attendreEncodeur(videoEnc,{maxQueue:3,signal});
    if(error)throw error;

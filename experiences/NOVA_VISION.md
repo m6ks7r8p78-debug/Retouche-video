@@ -578,3 +578,12 @@ Un nouveau test `tests/nova-hevc-export-browser.test.mjs` fabrique une véritabl
 Un nouveau module `nova-hevc-vui.js` extrait SPS à partir de `hvcC` et parcourt les paramètres HEVC (RBSP, Exp-Golomb, sous-couches, RPS, VUI) sous des limites strictes. L'audit exige un signal explicite **8 bits / 4:2:0, BT.709 primaires 1, transfert 1, matrice 1, plage vidéo limitée**, puis confronte ces valeurs à la boîte `colr` du MOV. Une divergence, un SPS tronqué, un champ inconnu ou une pleine plage entraîne un refus. Cela évite d'interpréter aveuglément un `nclc` dépourvu d'indicateur de plage complète. Les fonctions sont indépendantes du décodage et ne chargent aucun média privé.
 
 Le banc `tests/nova-hevc-vui-browser.test.mjs` génère avec FFmpeg deux vrais MOV HEVC BT.709, l'un à plage limitée et l'autre à plage complète, compare la lecture du SPS à FFprobe et vérifie le refus du cas pleine plage ainsi que des contradictions `colr` / VUI. **Ne pas prétendre à une CI réussie avant vérification du SHA exact.** Les VUI complexes ou non reconnues restent refusées, pas déduites. La colorimétrie du MP4 de sortie sera auditée séparément.
+
+
+### NOVA 0.20 — incohérence des couleurs encodées trouvée par FFprobe et correctif pixel
+
+Le premier audit du MP4 a révélé que la VideoFrame créée directement depuis le Canvas était traitée par Chromium comme **sRGB pleine plage**, malgré la boîte de conteneur `nclx` BT.709 limitée : FFprobe indiquait `color_range=pc` et `color_transfer=iec61966-2-1`. L'ajout d'une simple étiquette `colr` ne corrige pas ces pixels et le nouveau test avait donc échoué.
+
+`nova-color709.js` convertit réellement le RGBA du Canvas sRGB en plans **YCbCr I420 BT.709 plage limitée**, en appliquant sRGB → lumière linéaire → OETF BT.709 puis les coefficients YCbCr et sous-échantillonnage 4:2:0. Le H.264 reçoit une `VideoFrame` portant les paramètres BT.709 et plage limitée. Cette conversion ne concerne que le chemin HEVC WASM et reste bornée à 640×360 pixels. Trois nouveaux tests unitaires vérifient des pixels noir/blanc/gris/couleurs et les refus de données invalides.
+
+**À vérifier en CI :** les VUI H.264 détectés par FFprobe doivent maintenant annoncer `tv/bt709/bt709/bt709`, et les tests de synchronisation AAC doivent rester verts. Aucune affirmation de réussite avant la CI du commit exact.
