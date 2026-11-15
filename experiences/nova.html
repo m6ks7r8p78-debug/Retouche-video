@@ -30,6 +30,9 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 .viewer{height:clamp(340px,48vw,690px);position:relative;display:grid;place-items:center;isolation:isolate}
 .viewer canvas,.viewer video{position:absolute;width:100%;height:100%;object-fit:contain}
 .viewer #after{clip-path:inset(0 50% 0 0)}
+.viewer #zonesOverlay{pointer-events:none;z-index:7}
+.maskBar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 18px 14px;background:#111b17;color:#b1c4b7;font-size:11px}
+.maskToggle{padding:7px 11px;background:#22392b;border:1px solid #497455;border-radius:12px;color:#c8ffd8;font-size:12px;font-weight:750}
 #split{position:absolute;inset:0 auto 0 50%;width:2px;background:#d4ffdf;pointer-events:none;z-index:5;box-shadow:0 0 0 1px #0009}
 #split:after{content:"↔";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:grid;place-items:center;background:var(--mint);color:#0e2619;width:44px;height:44px;border-radius:100%;box-shadow:0 8px 20px #0008;font-size:21px}
 #empty{max-width:370px;padding:25px;text-align:center;color:#dbe4dd;z-index:3}#empty strong{display:block;font-size:25px;letter-spacing:-.04em}
@@ -92,16 +95,18 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <div class="stageTop"><span class="live"><span class="dot"></span><strong id="filename">Aucun média chargé</strong></span><span id="typeLabel">APERÇU PRIVÉ</span></div>
 <div class="viewer" id="viewer">
 <canvas id="before" hidden aria-label="Image d'origine"></canvas><canvas id="after" hidden aria-label="Proposition restaurée"></canvas>
+<canvas id="zonesOverlay" hidden aria-label="Carte des régions adaptées"></canvas>
 <video id="video" playsinline preload="metadata" controls hidden aria-label="Vidéo importée"></video>
 <div id="split" hidden></div><span class="labelOnCanvas" id="labBefore" hidden>ORIGINAL</span><span class="labelOnCanvas afterLab" id="labAfter" hidden>PROPOSITION</span>
 <div id="empty"><div class="symbol">▧</div><strong>Déposez votre média ici.</strong><p>Photo ou vidéo locale. Rien n'est envoyé à un serveur par ce prototype.</p></div>
 </div>
 <div class="viewerControls"><label for="compare">AVANT</label><input id="compare" type="range" min="0" max="100" value="50" disabled aria-label="Glisser pour comparer avant et après"><label for="compare">APRÈS</label></div>
+<div class="maskBar"><span id="zoneInfo">Comparaison originale, sans reconstruction</span><button id="showZones" class="maskToggle" type="button" hidden aria-pressed="false">Voir les zones</button></div>
 </div>
 <section class="storyboard"><div class="storyTop"><h2>La bande intelligente</h2><span id="sceneCount">En attente d'un média</span></div><div id="frames"><p class="emptyFrames">Les instants prélevés apparaîtront ici. Aucune reconnaissance de personne ni détection AR n'est activée.</p></div></section>
 </main>
 <aside class="side">
-<section class="card"><small>01 / Le directeur</small><h2>Un bouton.<br>Plusieurs hypothèses.</h2><p>Le moteur cherche une correction mesurable, puis conserve l'original si le gain ne justifie pas le risque.</p>
+<section class="card"><small>01 / Le directeur</small><h2>Une image.<br>Des décisions locales.</h2><p>NOVA Mosaïque examine les régions et corrige doucement les ombres seulement lorsque les mesures l'autorisent.</p>
 <div class="option"><div class="iconCircle">◎</div><div><b>Fidélité d'abord</b><span>Modifications limitées, réversibles dans l'aperçu.</span></div></div>
 <div class="option off"><div class="iconCircle">◇</div><div><b>Reconstruction IA · recherche</b><span>Non activée dans ce prototype.</span></div></div>
 <button class="primary" id="run" disabled>Analyser et améliorer</button><div id="status" role="status" aria-live="polite">Importez un média pour commencer.</div></section>
@@ -112,6 +117,7 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <footer class="footer"><span>Prototype isolé — n'altère pas la version publiée. Les indications techniques ne prouvent jamais la récupération de détails originaux.</span><a href="../index.html">Retour à RetoucheProAI</a></footer>
 </div>
 <script src="nova-decision.js"></script>
+<script src="nova-zones.js"></script>
 <script>
 (()=>{
 "use strict";
@@ -124,6 +130,7 @@ const setStatus=t=>txt(status,t);
 function reset(){
   frameSeq++;source=null;lastModified=null;save.disabled=true;run.disabled=true;
   before.hidden=after.hidden=video.hidden=true;$("#split").hidden=true;$("#labBefore").hidden=$("#labAfter").hidden=true;
+  $("#zonesOverlay").hidden=true;$("#showZones").hidden=true;$("#showZones").setAttribute("aria-pressed","false");txt($("#zoneInfo"),"Comparaison originale, sans reconstruction");
   $("#empty").hidden=false;$("#compare").disabled=true;frames.replaceChildren();
   txt($("#sceneCount"),"En attente");metrics.replaceChildren();video.pause();video.removeAttribute("src");video.load();
   if(objectURL){URL.revokeObjectURL(objectURL);objectURL=null}
@@ -156,6 +163,20 @@ function traiter(src,mode){
 function ecart(a,b){let sum=0,count=0;const step=Math.max(4,Math.floor(a.data.length/200000/4)*4);for(let i=0;i<a.data.length;i+=step){sum+=Math.abs(a.data[i]-b.data[i]);count++}return sum/Math.max(1,count)/255}
 function drawOutput(imgData,target){target.width=imgData.width;target.height=imgData.height;target.getContext("2d").putImageData(imgData,0,0)}
 function compareAt(v){after.style.clipPath="inset(0 "+(100-v)+"% 0 0)";$("#split").style.left=v+"%"}
+function drawZoneOverlay(zones){
+ const canvas=$("#zonesOverlay");canvas.width=before.width;canvas.height=before.height;
+ const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);
+ for(const z of zones)if(z.action!=="original"){
+  ctx.fillStyle="rgba(100,255,145,.14)";ctx.fillRect(z.x,z.y,z.width,z.height);
+  ctx.strokeStyle="rgba(160,255,185,.65)";ctx.lineWidth=Math.max(.6,canvas.width/1500);
+  ctx.strokeRect(z.x+.5,z.y+.5,z.width-1,z.height-1);
+ }
+}
+$("#showZones").addEventListener("click",()=>{
+ const button=$("#showZones"),show=button.getAttribute("aria-pressed")!=="true";
+ button.setAttribute("aria-pressed",String(show));button.textContent=show?"Masquer les zones":"Voir les zones";
+ $("#zonesOverlay").hidden=!show;
+});
 $("#compare").addEventListener("input",e=>compareAt(+e.target.value));
 async function importer(f){
   reset();if(!f)return;latestFile=f;objectURL=URL.createObjectURL(f);
@@ -197,18 +218,22 @@ run.addEventListener("click",async()=>{
  try{
   if(kind==="photo"){
    const cx=before.getContext("2d",{willReadFrequently:true}),img=cx.getImageData(0,0,before.width,before.height);
-   const orig=mesure(img),candidates=["naturel","detail"].map(id=>{const data=traiter(img,id);return {id,data,mesures:mesure(data),ecart:ecart(img,data)}});
-   const decision=NOVA_DECISION.arbitrer(orig,candidates.map(c=>({id:c.id,mesures:c.mesures,ecart:c.ecart,prouvable:true,confiance:.8})));
-   const selected=candidates.find(x=>x.id===decision.choisi);
-   lastModified=selected?.data||img;drawOutput(lastModified,after);before.hidden=after.hidden=false;
+   const orig=mesure(img);
+   const spatial=NOVA_ZONES.restituer(img,{size:128,arbitre:NOVA_DECISION});
+   lastModified=new ImageData(spatial.data,spatial.width,spatial.height);
+   drawOutput(lastModified,after);before.hidden=after.hidden=false;
    $("#compare").disabled=false;compareAt(50);save.disabled=false;metrics.replaceChildren();
+   drawZoneOverlay(spatial.zones);
+   const bilan=spatial.bilan,show=$("#showZones");
+   show.hidden=bilan.modifiees===0;show.textContent="Voir les zones";show.setAttribute("aria-pressed","false");
+   $("#zonesOverlay").hidden=true;
    meta("Luminance moyenne",fmt(orig.luminance));meta("Zones très claires",fmt(orig.ecretage));
-   meta("Contraste local (proxy)",fmt(orig.contours));
-   meta("Décision technique",selected?selected.id==="naturel"?"Éclaircissement prudent":"Accentuation légère":"Original conservé");
-   meta("Hypothèses écartées",String(decision.candidats.filter(c=>!c.eligible).length));
-   const details=decision.candidats.map(c=>c.id+" : "+(c.eligible?"admissible":c.alertes.join(", "))).join(" · ");
-   txt($("#modeReport"),"Analyse : "+details+".\nValidation visuelle nécessaire. Export = aperçu PNG de "+before.width+" × "+before.height+".");
-   setStatus(selected?"Prévisualisation créée. Le contrôle reste indicatif ; vérifiez avant/après.":"L'original est conservé : aucun gain prudent suffisamment démontré.");
+   meta("Régions inspectées",String(bilan.total));
+   meta("Régions adaptées",String(bilan.modifiees));
+   meta("Régions intactes",String(bilan.conservees));
+   txt($("#zoneInfo"),bilan.modifiees+" / "+bilan.total+" régions adaptées · original conservé ailleurs");
+   txt($("#modeReport"),"NOVA Mosaïque v0.2 : éclaircissement local non génératif, interpolé entre régions. Analyse régionale par proxies. Export = aperçu PNG de "+before.width+" × "+before.height+". Aucun vrai détail perdu n'est reconstitué. Contrôle humain obligatoire.");
+   setStatus(bilan.intervention?"Mosaïque calculée. Affichez les zones pour vérifier où NOVA est intervenu.":"Aucune région adaptée : l'original reste inchangé.");
   } else await sampleVideo();
  } catch(err){setStatus("Analyse interrompue : "+(err?.message||"erreur inconnue"))}
  finally{run.disabled=false}
