@@ -1,0 +1,31 @@
+name: NOVA H264 native preflight relay (experimental)
+on:
+  push:
+    branches:
+      - chatgpt-nova-h264-preflight-relay-20261115-v1
+  pull_request:
+    branches:
+      - chatgpt-nova-iphone-native-fullhd-v1
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-h264-preflight-relay-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  h264-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax and test compatibility, audio and privacy
+        run: |
+          node --check experiences/nova-real-preflight.js
+          node --check experiences/nova-real-preflight-ui.js
+          node --test tests/nova-real-preflight.test.mjs tests/nova-native-hd.test.mjs
+      - name: Confirm only experimental branch
+        run: |
+          test "${GITHUB_REF_NAME}" = "chatgpt-nova-h264-preflight-relay-20261115-v1" || test "${GITHUB_EVENT_NAME}" = "pull_request"
