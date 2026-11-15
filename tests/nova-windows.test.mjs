@@ -88,7 +88,7 @@ test("Précontrôle local H264 20s sérialise 300 images, HEVC reste 12s",async(
  assert.equal(report.sourceEngine,"webcodecs-h264-native-pts");
  const data=JSON.parse(PREFLIGHT.serialiser(report));
  assert.equal(data.exportProposal.frames,300);
- assert.equal(data.pilotLimits.maxDurationMs,24000);
+ assert.equal(data.pilotLimits.maxDurationMs,48000);
  assert.equal(data.pilotLimits.outputSideMax,640);
  assert.equal(data.privacy.mediaUploaded,false);
  assert.equal(data.privacy.mediaModified,false);
