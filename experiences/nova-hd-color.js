@@ -87,6 +87,7 @@ function metadata(info){
   sourceFullRange:typeof s?.fullRange==="boolean"?s.fullRange:
    typeof c?.fullRange==="boolean"?c.fullRange:null,
   sourceMatrix,sourcePrimaries,
+  sourceTransferCode:known(s?.transfer)?s.transfer:known(c?.transfer)?c.transfer:null,
   expectedMatrix:sourceMatrix===null?null:SDR_MATRICES.get(sourceMatrix),
   expectedPrimaries:sourcePrimaries===null?null:SDR_PRIMARIES.get(sourcePrimaries),
   processing:"native VideoFrame -> color-managed Canvas sRGB -> I420 BT.709"});
@@ -131,6 +132,56 @@ function verifyFrame(frame,evidence){
   matrixConversion:convertedMatrix,
   processing:"browser color-managed Canvas sRGB to BT709 limited; verify visual fidelity"});
 }
+// Certains décodeurs Chrome retournent une trame YUV de matrice "bt709"
+// alors que le MOV et le SPS spécifient BT.601. Ne PAS ignorer cette
+// contradiction : recoller une preuve couleur sur les échantillons YUV bruts,
+// en ne manipulant pas la vidéo privée en dehors du navigateur.
+// Ce parcours expérimental est interdit aux images opaques/RGB/HDR, et
+// dispose d'un bilan distinct pour un contrôle perceptuel ultérieur.
+async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFrame){
+ try{
+  const proof=verifyFrame(frame,evidence);
+  return {frame,owned:false,proof};
+ }catch(e){
+  const p=frame?.colorSpace||{};
+  const expected=evidence?.expectedMatrix;
+  const acceptableMismatch=expected&&SDR_MATRICES.has(evidence.sourceMatrix)&&
+   p.matrix==="bt709"&&!matrixEquivalent(p.matrix,expected)&&
+   VIDEO_PRIMARIES.has(p.primaries)&&VIDEO_XFER.has(p.transfer)&&
+   (!evidence.expectedPrimaries||p.primaries===evidence.expectedPrimaries)&&
+   (evidence.sourceFullRange===null||evidence.sourceFullRange===p.fullRange);
+  if(!acceptableMismatch||!["I420","NV12"].includes(frame.format)||
+     !VideoFrameClass||typeof frame.allocationSize!=="function"||
+     typeof frame.copyTo!=="function")throw e;
+  const originalRect=frame.codedRect;
+  if(!originalRect)throw e;
+  const options={rect:originalRect};
+  const size=frame.allocationSize(options);
+  if(!Number.isSafeInteger(size)||size<1||size>12*1048576)throw e;
+  const data=new Uint8Array(size);
+  const layout=await frame.copyTo(data,options);
+  const transfer=evidence.sourceTransferCode===6?"smpte170m":
+   evidence.sourceTransferCode===13?"iec61966-2-1":
+    evidence.sourceTransferCode===1?"bt709":p.transfer;
+  let corrected;
+  try{
+   corrected=new VideoFrameClass(data,{format:frame.format,
+    codedWidth:frame.codedWidth,codedHeight:frame.codedHeight,
+    visibleRect:frame.visibleRect,
+    displayWidth:frame.displayWidth,displayHeight:frame.displayHeight,
+    layout,timestamp:frame.timestamp,...(frame.duration!=null?{duration:frame.duration}:{}),
+    colorSpace:{primaries:evidence.expectedPrimaries||p.primaries,
+      transfer,matrix:expected,
+      fullRange:evidence.sourceFullRange??p.fullRange}
+   });
+   const v=verifyFrame(corrected,evidence);
+   return {frame:corrected,owned:true,proof:Object.freeze({...v,
+    method:"raw-yuv-source-matrix-correction",decoderReportedMatrix:p.matrix,
+    sourceMatrix:expected,
+    limitation:"Correction de métadonnées YUV sur trame 8 bits brute ; vérifier la fidélité visuelle avec l'original."})};
+  }catch(error){try{corrected?.close()}catch{}throw error}
+ }
+}
 function report(info){
  const c=recognized(info?.color)?info.color:null;
  const fields=x=>x?{primaries:Number.isInteger(x.primaries)?x.primaries:null,
@@ -152,6 +203,6 @@ function report(info){
   explanation:"Informations techniques locales seulement. L'absence de colr ne prouve ni SDR ni HDR. Aucun média transmis."
  });
 }
-return Object.freeze({metadata,verifyFrame,report});
+return Object.freeze({metadata,verifyFrame,imagePourRendu,report});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_HD_COLOR;
