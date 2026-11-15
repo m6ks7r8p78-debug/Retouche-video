@@ -4,7 +4,7 @@ const C="retouche-v86",F=["./","index.html","app.js","atelier.js","analyse.js","
 const LOURDS=["sr.bin","rnnoise.mjs","modeles/edgetam_encodeur.onnx","modeles/edgetam_decodeur.onnx"];
 /* empreinte de tous les fichiers ci-dessus : recalculée par « node tests/sw.test.mjs --maj » à chaque version. Comme elle change dès
    qu'un fichier change, le téléphone voit toujours qu'une nouvelle version existe (test : tests/sw.test.mjs). */
-const H="PENDING_________";
+const H="9b3586a6271e8c09";
 /* Mise à jour prudente : NE PAS forcer skipWaiting. Les pages (video/projets)
    gardent leur version jusqu a fermeture de tous les clients de l ancien SW. */
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F.map(u=>new Request(u,{cache:"reload"})))))});
