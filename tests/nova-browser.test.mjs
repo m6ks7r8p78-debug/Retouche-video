@@ -347,7 +347,7 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
    "color=c=black:s=160x90:r=15:d=2,drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='between(t,0.395,0.465)+between(t,1.195,1.265)'",
    "-f","lavfi","-i",
    "aevalsrc=if(lt(abs(t-0.42)\\,0.03)\\,0.7*sin(2*PI*1000*t)\\,0)+if(lt(abs(t-1.22)\\,0.03)\\,0.7*sin(2*PI*1400*t)\\,0):s=48000:d=2",
-   "-c:v","libx264","-pix_fmt","yuv420p","-c:a","aac","-b:a","128k",
+   "-c:v","libx264","-bf","0","-pix_fmt","yuv420p","-c:a","aac","-b:a","128k",
    "-movflags","+faststart","-use_editlist","0","-y",src]);
 
   const [sourceAudio,sourceVideo]=await Promise.all([
