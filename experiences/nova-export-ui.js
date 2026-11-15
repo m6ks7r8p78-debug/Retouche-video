@@ -31,7 +31,7 @@ function choisir(f){
   msg("Cet appareil ne prend pas en charge l'encodeur vidéo nécessaire.");return;
  }
  start.disabled=false;
- msg("Pilote prêt. La vidéo doit durer 12 secondes ou moins. Audio conservé par défaut, sinon export refusé.");
+ msg("Pilote prêt. HEVC : 12 s maximum ; H.264 SDR vérifié : jusqu'à 24 s par fenêtres. Audio conservé par défaut, sinon export refusé.");
 }
 fileInput.addEventListener("change",e=>choisir(e.target.files?.[0]));
 if(drop)drop.addEventListener("drop",e=>{if(e.dataTransfer?.files?.[0])choisir(e.dataTransfer.files[0])});
@@ -53,6 +53,9 @@ start.addEventListener("click",async()=>{
      "HEVC WASM local : "+step.frames+" images source BT.709 SDR analysées par PTS…":step.mode==="pts"?
      "Décodage vidéo selon les PTS MP4 natifs ("+step.frames+" images source)":
      "Mode compatibilité approximatif choisi : les images peuvent être dupliquées.");
+    if(step.stage==="window")msg("Traitement local de la fenêtre "+step.index+
+     "/"+step.total+" ("+(step.startMs/1000).toFixed(1)+"–"+
+     (step.endMs/1000).toFixed(1)+" s), piste audio continue…");
     if(step.stage==="audio")msg("Vérification de la piste audio d’origine…");
     if(step.stage==="audioMode")msg(step.mode==="aac-copy"?"AAC original conservé sans réencodage (MP4 compatible) : audio inchangé…":step.mode==="aac-encode"?"Piste audio réencodée après validation de la source…":"Export sans son demandé explicitement…");
     if(step.stage==="video")msg("Encodage MP4 : "+Math.round(step.progress*100)+" % ("+step.frame+"/"+step.total+" images)");
@@ -95,7 +98,9 @@ start.addEventListener("click",async()=>{
   download.href=blobUrl;
   download.download=(file.name||"video").replace(/\.[^.]+$/,"")+"_NOVA_pilote.mp4";
   download.hidden=false;
-  msg("MP4 prêt : "+result.plan.width+" × "+result.plan.height+", "+
+  msg("MP4 prêt"+(result.windowPlan?
+    " ("+result.windowPlan.count+" fenêtres vidéo, une piste AAC continue)":"")+
+    " : "+result.plan.width+" × "+result.plan.height+", "+
     (result.audioMode==="aac-copy"?"audio AAC original copié":result.audioMode==="aac-encode"?"audio AAC réencodé":"sans son, selon votre choix")+
     ", "+(result.sourceMode==="hevc-wasm"?"HEVC WASM local à PTS source":result.sourceMode==="pts"?"PTS natifs":"recherche approximative") +
     ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Métadonnées contrôlées : "+result.validation.width+" × "+result.validation.height+", "+result.validation.duration.toFixed(2)+" s."+ (result.trace?" Cadence : "+result.trace.repetitions+" répétitions et "+result.trace.sautsDeSource+" images source sautées lors de la conversion.":"")+" Vérifiez l’image et le son.");
