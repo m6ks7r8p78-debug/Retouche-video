@@ -7,7 +7,7 @@ const src=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 const C=src.match(/const C="([^"]+)"/)[1];
 const F=JSON.parse(src.match(/F=(\[[^\]]+\])/)[1]);
 const must=['smallmotion-local.js','smallmotion-resource-guard.js','smallmotion-worker-runner.js','smallmotion-director-local.js','smallmotion-app-bootstrap.js','smallmotion-worker.js'].map(n=>'research/3d-smallmotion/'+n);
-assert.equal(C,'retouche-v83');
+assert.equal(C,'retouche-v84');
 for (const n of must)assert.ok(F.includes(n),'offline manifest missing: '+n);
 assert.equal(new Set(F).size,F.length,'duplicate cache entries');
 let checks=0,failOnce=false,skip=0,claimed=0,offline=false;
@@ -31,7 +31,8 @@ async function event(type,q){let promise;const e={request:q,waitUntil:p=>{promis
  // Failed atomic addAll does not activate the new SW or delete the old.
  failOnce=true;await assert.rejects(event('install'),/asset_http_404/);checks++;
  assert.equal(skip,0);assert.ok(records.has('retouche-v82'));checks++;
- await event('install');assert.equal(skip,1);checks++;
+ await event('install');assert.equal(skip,0);checks++;
+ assert.equal(records.has('retouche-v82'),true,'old clients must retain old cache while new SW waits');checks++;
  for(const asset of must)assert.equal(records.get(C).get(asset),'cached:'+asset);checks+=must.length;
  await event('activate');assert.equal(claimed,1);checks++;
  assert.equal(records.has('retouche-v82'),false);checks++;
