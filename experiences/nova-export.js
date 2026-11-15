@@ -168,12 +168,15 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d",{willReadFrequently:true});
  let videoEnc=null,audioEnc=null,trans=null,sourcePTS=null,error=null,sourceMode="pts";
  try{
-  media.src=url;await pret(media);
-  const sourceDuration=media.duration;
-  const settings=plan({duration:sourceDuration,width:media.videoWidth,height:media.videoHeight,bytes:file.size});
+  if(media){media.src=url;await pret(media)}
+  const hevcMeta=useHevcWasm?NOVA_HEVC_RENDER.metadata(probe):null;
+  const sourceDuration=hevcMeta?.durationSeconds??media.duration;
+  const sourceWidth=hevcMeta?.width??media.videoWidth;
+  const sourceHeight=hevcMeta?.height??media.videoHeight;
+  const settings=plan({duration:sourceDuration,width:sourceWidth,height:sourceHeight,bytes:file.size});
   if(!globalThis.NOVA_GUARD)throw new Error("Garde-fous mémoire NOVA indisponibles");
   const budget=NOVA_GUARD.exigerBudget({sourceBytes:file.size,
-    sourceWidth:media.videoWidth,sourceHeight:media.videoHeight,
+    sourceWidth,sourceHeight,
     outputWidth:settings.width,outputHeight:settings.height,
     durationSeconds:sourceDuration,withAudio:!allowSilent});
   onProgress({stage:"budget",estimatedMiB:budget.mebibytes,limitMiB:budget.limitMiB});
