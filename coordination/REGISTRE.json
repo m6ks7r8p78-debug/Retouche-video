@@ -147,6 +147,20 @@
       ]
     },
     {
+      "id": "nova-safari-frame-format-033",
+      "label": "NOVA 0.33 — formats VideoFrame SDR natifs non copiables sur Safari",
+      "branch": "chatgpt-nova-safari-frame-format-fallback-v1",
+      "pr": 75,
+      "observation": "draft-pr-observed",
+      "interface": "Sur source matrice SDR BT601 / trame Safari bt709, privilégier correction YUV source; si format matériel SDR non copiable, tenter rendu natif avec avertissement de fidélité non certifiée. Version UI et manifeste 0.33 vérifiables.",
+      "workBoundary": "experiences/nova-hd-color.js; experiences/nova.html; outils/build-nova-iphone-preview.mjs; tests/nova-hd-color.test.mjs; tests/nova-native-hd-browser.test.mjs",
+      "validationGap": "76/76 unitaires, 1/1 navigateur Chromium synthétique réussis; réel HEVC Safari iPhone, fidélité colorimétrique et synchronisation audio encore non prouvés",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/75",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43732732121"
+      ]
+    },
+    {
       "id": "smallmotion",
       "label": "SmallMotion / PWA / budgets",
       "branch": "preprod-retoucheproai-local-v1",
@@ -328,6 +342,12 @@
       "from": "nova-iphone-opaque-sdr",
       "to": "nova",
       "topic": "NOVA: gérer VideoFrame.format=null matériel avec source matrice SDR BT601 vs couleur frame BT709, sans renommer les pixels; avertir source non certifiée et demander comparaison visuelle réelle. Ne pas contourner HDR/P3 et ne pas promouvoir avant test physique iPhone.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-safari-frame-format-033",
+      "to": "nova",
+      "topic": "Refus répété source SMPTE170M / décodeur BT709 : ajouter fallback SDR natif quand frame non YUV/copyTo/constructor indisponibles, afficher build 0.33, ne pas certifier couleurs sans comparaison HEVC Safari réelle.",
       "state": "proposal"
     }
   ],
