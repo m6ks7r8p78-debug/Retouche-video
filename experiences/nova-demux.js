@@ -75,6 +75,15 @@ async function analyser(file){
     const mediaTicks=buf[mh.s]===1?Number(dv.getBigUint64(mh.s+24)):dv.getUint32(mh.s+16);
     const th=find(trak.s,trak.e,["tkhd"])[0];
     if(!th||![0,1].includes(buf[th.s]))return null;
+    // La durée présentée est celle de tkhd en unités de mvhd.
+    // mdhd est la durée du média *avant* edit list ; soustraire
+    // editMediaTime à mdhd raccourcit à tort les MOV avec B-frames.
+    const mvhd=find(0,buf.length,["mvhd"])[0];
+    if(!mvhd||![0,1].includes(buf[mvhd.s]))return null;
+    const movieTs=dv.getUint32(mvhd.s+(buf[mvhd.s]===1?20:12));
+    const trTicks=buf[th.s]===1?Number(dv.getBigUint64(th.s+28)):dv.getUint32(th.s+20);
+    if(!Number.isSafeInteger(trTicks)||trTicks<1||!movieTs)return null;
+    const trackDurationUs=Math.round(trTicks*1000000/movieTs);
     const mo=th.s+(buf[th.s]===1?52:40),mt=[];
     if(mo+36>th.e)return null;
     for(let i=0;i<9;i++)mt.push(dv.getInt32(mo+i*4)/(i%3===2?1073741824:65536));
@@ -152,8 +161,12 @@ async function analyser(file){
       if(!editSupported||editMediaTime<0||!Number.isSafeInteger(editMediaTime))return null;
     }
     if(ns<1||ns>5000||!Number.isFinite(ts)||ts<=0||dv.getUint32(stsd.s+4)!==1)return null;
-    const durationUs=Number.isSafeInteger(mediaTicks)&&mediaTicks>editMediaTime&&ts>0?
-      Math.round((mediaTicks-editMediaTime)*1000000/ts):null;
+    // Durée réelle de la piste dans le film, après elst.
+    // Le temps de média mdhd reste contrôlé, mais n'est pas
+    // substitué à la durée du film.
+    const durationUs=Number.isSafeInteger(mediaTicks)&&mediaTicks>0&&ts>0&&
+      Number.isSafeInteger(trackDurationUs)&&trackDurationUs>0?
+      trackDurationUs:null;
     const ptsUs=new Array(ns);
     for(let i=0;i<ns;i++){
       if(!Number.isSafeInteger(so[i])||!Number.isSafeInteger(sz[i])||sz[i]<=0||
