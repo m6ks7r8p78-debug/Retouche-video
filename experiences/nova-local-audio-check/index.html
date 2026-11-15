@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; media-src blob:; img-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./style.css">
+<title>NOVA — vérifier le son de ma vidéo localement</title>
+<script defer src="../nova-aac-native.js"></script>
+<script defer src="./core.js"></script>
+<script defer src="./ui.js"></script>
+</head>
+<body>
+<main>
+<header><strong>✦ RETOUCHEPROAI / NOVA</strong><span>LAB AUDIO</span></header>
+<section class="intro">
+<p class="eyebrow">ÉTAPE SUIVANTE — SAFARI IPHONE</p>
+<h1>Vérifier le son de ma vidéo.</h1>
+<p>Le premier test a montré que Safari sait encoder un son artificiel en AAC. Vérifions maintenant si le navigateur peut <strong>décoder et réencoder localement le son de ta propre vidéo</strong>.</p>
+<div class="notice"><strong>Confidentialité :</strong> le fichier reste dans Safari. Aucun fichier, son, vidéo ou rapport n'est envoyé par la page. Le fournisseur du site voit seulement les requêtes de chargement du site. Ton original n'est pas modifié.</div>
+</section>
+<section class="card" aria-labelledby="step">
+<p class="kicker">AUCUN EXPORT VIDÉO</p>
+<h2 id="step">Essai audio local</h2>
+<p>Choisis une courte vidéo (12 secondes maximum, 16 Mio maximum). La piste audio sera décodée puis réencodée en mémoire, sans créer de nouveau fichier MP4.</p>
+<label class="file-picker" for="local-video"><span>Choisir une vidéo sur mon iPhone</span>
+<input type="file" id="local-video" accept="video/*,.mp4,.mov" aria-describedby="file-note">
+</label>
+<p id="file-note" class="quiet">Tu dois sélectionner une vidéo volontairement. Aucun test ne commence à la sélection.</p>
+<button id="start" type="button" disabled>Tester le son localement</button>
+<button id="cancel" type="button" class="secondary" hidden>Annuler le test</button>
+<p id="status" class="status" role="status" aria-live="polite">Aucun fichier sélectionné.</p>
+<div id="result" hidden>
+ <p id="summary" class="summary"></p>
+ <label for="json">Rapport technique sans nom de fichier ni données audio :</label>
+ <textarea id="json" rows="14" readonly spellcheck="false"></textarea>
+ <button id="copy" class="secondary" type="button">Copier le rapport</button>
+ <p id="copy-status" class="status" role="status" aria-live="polite"></p>
+</div>
+</section>
+<section class="caveats">
+<h2>Ce que nous saurons après ce test</h2>
+<p>Un résultat positif montrera que Safari peut décoder la piste audio locale et produire des paquets AAC-LC avec le moteur expérimental NOVA. <strong>Il ne démontrera pas encore que la vidéo et le son ont été réunis correctement dans un MP4 final.</strong></p>
+<p>Si Safari refuse le décodage, nous garderons la vidéo originale intacte et utiliserons le code d'erreur général du rapport pour choisir une méthode alternative.</p>
+</section>
+<footer>Test expérimental · aucun téléversement · original inchangé · pas de validation HEVC/HDR/4K</footer>
+</main>
+</body>
+</html>
