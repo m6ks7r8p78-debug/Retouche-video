@@ -520,3 +520,24 @@ Un job dédié GitHub Actions a récupéré `@hevcjs/core@1.8.0` avec `--ignore-
 La CI standard ne réinstalle plus le paquet HEVC : Chromium et WebKit Linux testent désormais les fichiers binaires/JS **versionnés dans le dépôt**, et le job `hevc-sans-npm` les charge directement sur Node sans dépendance npm pour le décodeur ; un média HEVC synthétique est comparé au YUV décodé par FFmpeg. Cela ne teste pas Safari iPhone physique, n'active pas l'export HEVC pour les utilisateurs, et ne prouve pas l'absence de réseau lors du chargement initial du site.
 
 **Attention :** cette étape CI et son nouveau banc doivent encore être validés sur le SHA exact qui les contient ; ne pas proclamer un test réussi sans journaux verts. La branche expérimentale peut héberger les binaires, sans publication sur `main` ni mise en ligne de `retoucheproai.com`.
+
+
+
+### Bilan final NOVA 0.18 — HEVC WASM réellement embarqué et horodatage VFR (15 novembre 2026)
+
+**Code certifié :** `0807d17402be0648d5a6cb048ae5edb321615434`. **CI :** [GitHub Actions 43698350705](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43698350705) ; **quatre jobs verts, 127/127 tests réussis, zéro échec, zéro ignoré** : 99 unitaires, 22 Chromium, 5 WebKit Linux, 1 décodeur HEVC sans installation npm.
+
+**Binaire réellement enregistré** : [commit de vendor `92ccfabc`](https://github.com/m6ks7r8p78-debug/Retouche-video/commit/92ccfabc6e9fe03079c40047756e1c7113e7e262). Le dossier `experiences/vendor/hevc/` contient 4 fichiers de code et binaires, `integrity.json` et `LICENSE.txt` complet, tous dans la branche **expérimentale**. Le binaire `hevc-decode.wasm` pèse 344 949 octets, SHA-256 `450601a71473125e772f01437877eb97abcb3a55332553e205f352f500208a1d`. Les trois autres empreintes sont inscrites de manière indépendante dans `outils/nova-hevc-assets.mjs` ; un binaire différent ou un fichier altéré est refusé. Téléchargement npm uniquement pour recréer le paquet audité dans un job dédié, jamais pour charger le décodeur dans les tests navigateur.
+
+**Décodage sans npm** : le job `hevc-sans-npm` utilise uniquement le décodeur embarqué dans Git et `locateFile` Emscripten pour lire le binaire par le système de fichiers Node. **18 images HEVC 160×90 bit-identiques** au décodage FFmpeg d'une vidéo synthétique. Aucun chargement CDN ni installation npm du décodeur, mais l'outil indépendant FFmpeg est installé sur le runner si nécessaire.
+
+**Pipeline incrémental** : `nova-hevc-annexb.js` fournit `flux()` avec échantillons en ordre de décodage, garde-fous de budget par paquet (2 Mio) et global (16 Mio), maximum 90 échantillons au pilote. `nova-hevc-lab.js` fournit `decoderFlux()` qui utilise `feed/drain/flush` et remet chaque image au callback puis vérifie le total et les PTS avant de déclarer la séquence valide. Les images émises avant cette vérification sont **provisoires**.
+
+**Preuves pixel/PTS indépendantes (Chromium ET WebKit Linux)** :
+- MOV HEVC CFR 15 i/s / B-frames : **18 images** ; toutes les images YUV correspondent une par une à FFmpeg. Flux Annex B total **17 727 octets**, paquet maximal **2 413 octets**, plans YUV temporaires maximum **43 200 octets** (métrique de données métier, pas pic réel de RAM navigateur).
+- MOV HEVC VFR à partir d'une acquisition **30 i/s** / B-frames avec edit list QuickTime : **27 images** ; chaque image décodée est identique à FFmpeg et chaque PTS de présentation diffère au plus de **2 µs** de FFprobe, dans les deux moteurs. Annex B total **20 295 octets**, paquet maximal **2 055 octets**.
+- Le générateur VFR sans `elst` cohérente a d'abord été refusé par le garde-fou `Preroll/décalage PTS HEVC non couvert`. Ce refus est maintenu ; le cas valide a été corrigé au niveau du MOV synthétique en écrivant explicitement la liste de montage.
+
+**Ce qui n'est toujours PAS certifié** : la consommation totale de mémoire (y compris le tas WebAssembly), la vitesse/thermique de l'iPhone, Safari iOS physique, l'export MP4 complet à partir de ce décodeur, les couleurs HDR/P3, la vidéo HEVC 4K/8K, la synchronisation AAC avec le pipeline HEVC, ni la prise en charge de tous les fichiers HEVC du monde réel. Le site public `main` n'a pas été modifié, la PR #3 reste en brouillon, aucune vidéo privée n'est utilisée.
+
+**Note de traçabilité :** ce paragraphe crée un nouveau commit documentaire ; celui-ci doit recevoir sa propre CI verte avant d'être annoncé comme dernier SHA certifié.
