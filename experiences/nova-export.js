@@ -184,7 +184,14 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   const timeline=NOVA_TIMELINE.calculer(sourceDuration,settings.fps);
   if(timeline.count!==settings.frames)throw new Error("Incohérence du plan temporel");
   let sourceAudit=null;
-  if(!allowApproximate){
+  if(useHevcWasm){
+    sourceMode="hevc-wasm";
+    sourcePTS={info:{...hevcMeta,samples:probe.ns},fermer(){}};
+    sourceAudit=NOVA_GUARD.exigerDebutFidele(NOVA_GUARD.auditerPTS({
+      ptsUs:hevcMeta.ptsUs,durationSeconds:sourceDuration,fps:settings.fps
+    }));
+    onProgress({stage:"source",mode:"hevc-wasm",codec:probe.codec,frames:probe.ns});
+  }else if(!allowApproximate){
     if(!globalThis.NOVA_PTS)throw new Error("Décodeur MP4 PTS indisponible");
     try{
       sourcePTS=await NOVA_PTS.creer(file,{signal});
@@ -193,8 +200,6 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
       sourceAudit=NOVA_GUARD.exigerDebutFidele(NOVA_GUARD.auditerPTS({
         ptsUs:sourcePTS.info.ptsUs,durationSeconds:sourceDuration,fps:settings.fps
       }));
-      // Le lecteur HTML n'est plus nécessaire au parcours PTS : libère son
-      // décodeur / son tampon avant de lancer le décodage audio et le muxage.
       disposer(media);URL.revokeObjectURL(url);
       onProgress({stage:"source",mode:"pts",codec:sourcePTS.info.codec,frames:sourcePTS.info.samples});
     }catch(e){
