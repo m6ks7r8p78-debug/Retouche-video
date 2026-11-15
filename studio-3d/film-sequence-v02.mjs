@@ -10,7 +10,6 @@ const TINY = 0.0001;
 const round = n => Math.round(n * 10000) / 10000;
 const rotX = a => [Math.sin(a / 2), 0, 0, Math.cos(a / 2)];
 const rotZ = a => [0, 0, Math.sin(a / 2), Math.cos(a / 2)];
-const same = (a, b) => a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < 1e-8);
 
 function buildSyntheticFilmSequence(request, generator) {
   const project = planFilm(request);
@@ -36,7 +35,7 @@ function buildSyntheticFilmSequence(request, generator) {
     return blocked('Impossible de poser une tasse qui n’a pas été prise dans le scénario.');
   }
   if ((selected.includes('boire') || selected.includes('poser_objet')) &&
-      !/\b(caf[eé]|tasse|th[eé]|cup|coffee|tea)\b/i.test(project.originalPrompt)) {
+      !/\b(cafe|tasse|the|cup|coffee|tea)\b/.test(project.originalPrompt.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())) {
     return blocked('Une tasse ou une boisson doit être explicitement mentionnée.');
   }
   if (selected.includes('boire') && selected.includes('poser_objet') &&
