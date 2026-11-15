@@ -7,6 +7,7 @@
 'use strict';
 const DEFAULT_WORKER='research/3d-smallmotion/smallmotion-worker.js';
 const MAX_MS=1800;
+const BUILD='smallmotion-pwa-bundle-v1';
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const aborted=()=>{const e=new Error('Analyse annulée');e.name='AbortError';return e;};
 let serial=0;
@@ -48,6 +49,8 @@ async function run(a,b,{signal,analyzer,workerURL=(root.RetoucheMotionWorkerURL|
     worker.onmessage=e=>{
       const msg=e?.data;if(!msg||msg.id!==id)return;
       const ms=performance.now()-t0;
+      // Fail closed on any mixed script generation: stale worker, stale detector, or missing build marker.
+      if(msg.build!==BUILD||msg.error==='detector_version_mismatch'){finish({result:abstention('abstain_worker_version_mismatch'),elapsedMs:ms,computeMs:null,processingPath:'worker_version_mismatch',transferredBytes:a.width*a.height*8});return;}
       if(!msg.ok||!msg.result){finish({result:abstention('abstain_worker_error'),elapsedMs:ms,computeMs:null,processingPath:'worker_error',transferredBytes:a.width*a.height*8});return;}
       finish({result:msg.result,elapsedMs:ms,computeMs:finite(msg.computeMs)?msg.computeMs:null,
         processingPath:'worker',transferredBytes:a.width*a.height*8});
@@ -59,7 +62,7 @@ async function run(a,b,{signal,analyzer,workerURL=(root.RetoucheMotionWorkerURL|
     catch(_){if(settled)return;settled=true;cleanup();cpuFallback('worker_transfer_failed').then(resolve,reject);}
   });
 }
-const api=Object.freeze({run,valid,DEFAULT_WORKER});
+const api=Object.freeze({run,valid,DEFAULT_WORKER,BUILD});
 root.RetoucheMotionWorkerRunner=api;
 if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

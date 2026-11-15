@@ -1,0 +1,70 @@
+name: Retouche 3D — SmallMotion PWA Offline (experimental)
+on:
+  push:
+    branches:
+      - lab-3d-smallmotion-pwa-offline-v1
+    paths:
+      - 'sw.js'
+      - 'index.html'
+      - 'research/3d-smallmotion/**'
+      - '.github/workflows/retouche-smallmotion-pwa-offline.yml'
+  pull_request:
+    paths:
+      - 'sw.js'
+      - 'index.html'
+      - 'research/3d-smallmotion/**'
+      - '.github/workflows/retouche-smallmotion-pwa-offline.yml'
+jobs:
+  offline-same-origin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    env:
+      PYTHONPATH: research/3d-camera-v43:research/3d-multimotion:research/3d-depth-evidence:research/3d-smallmotion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify preinstalled SW manifest SHA against ALL real repo resources
+        run: |
+          node tests/sw.test.mjs --maj
+          grep -o 'const H="[^"]*"' sw.js
+          git diff --exit-code -- sw.js
+          node tests/sw.test.mjs
+          node research/3d-smallmotion/tests/test_pwa_manifest.cjs
+      - name: Install CPU-only test and browser dependencies
+        run: python -m pip install numpy opencv-python-headless pytest playwright
+      - name: Ensure Chromium, FFmpeg and self-hosted localhost test facilities
+        run: |
+          if ! command -v ffmpeg >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y ffmpeg; fi
+          if ! command -v chromium >/dev/null && ! command -v google-chrome >/dev/null && ! command -v chromium-browser >/dev/null; then python -m playwright install --with-deps chromium; fi
+      - name: Service Worker atomic install, scoped caches and offline fetch
+        run: node research/3d-smallmotion/tests/test_sw_atomic.cjs
+      - name: Worker version mismatch, cancellation, importScripts and parity
+        run: |
+          node research/3d-smallmotion/tests/test_worker_runner.cjs
+          node research/3d-smallmotion/tests/test_worker_import.cjs
+          node research/3d-smallmotion/tests/test_resource_guard.cjs
+          node research/3d-smallmotion/tests/test_director_local.cjs
+      - name: Existing 139 Python regressions
+        run: python -m pytest -q research/3d-camera-v43/tests research/3d-multimotion/tests research/3d-depth-evidence/tests research/3d-smallmotion/tests/test_smallmotion.py
+      - name: Existing Chromium Web Worker and offline blob diagnostic
+        run: |
+          python research/3d-smallmotion/tests/browser_check.py
+          python research/3d-smallmotion/build_worker_iphone_diagnostic.py
+          python research/3d-smallmotion/tests/test_worker_offline.py
+          python research/3d-smallmotion/tests/test_worker_browser.py
+      - name: REAL Chromium Service Worker — online install → offline restart and stale-code rejection
+        run: python research/3d-smallmotion/tests/test_pwa_offline.py
+      - name: Store synthetic-only offline evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: smallmotion-pwa-offline-synthetic
+          path: |
+            research/3d-smallmotion/results/pwa_offline_chromium.json
+            research/3d-smallmotion/results/browser_check.json
+            research/3d-smallmotion/results/worker_browser_check.json
+          if-no-files-found: error
