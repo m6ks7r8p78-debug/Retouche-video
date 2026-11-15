@@ -213,7 +213,7 @@ var Mp4Muxer = (() => {
       ...tracks.filter((x) => x.samples.length > 0).map((x) => {
         const lastSample = lastPresentedSample(x.samples);
         return x.info.type === "audio" && x.info.editDurationSeconds != null
-          ? x.info.editDurationSeconds
+          ? x.info.editDurationSeconds + (x.info.editGapSeconds ?? 0)
           : lastSample.presentationTimestamp + lastSample.duration;
       })
     ), GLOBAL_TIMESCALE);
@@ -247,7 +247,11 @@ var Mp4Muxer = (() => {
     tkhd(track, creationTime),
     track.info.type === "audio" && track.info.editDurationSeconds != null
       ? box("edts", null, [fullBox("elst", 0, 0, [
-          u32(1),
+          u32(track.info.editGapSeconds > 0 ? 2 : 1),
+          track.info.editGapSeconds > 0 ? [
+            u32(intoTimescale(track.info.editGapSeconds, GLOBAL_TIMESCALE)),
+            i32(-1), fixed_16_16(1)
+          ] : [],
           u32(intoTimescale(track.info.editDurationSeconds, GLOBAL_TIMESCALE)),
           i32(track.info.editMediaTime),
           fixed_16_16(1)
@@ -258,7 +262,7 @@ var Mp4Muxer = (() => {
     let lastSample = lastPresentedSample(track.samples);
     let durationInGlobalTimescale = intoTimescale(
       track.info.type === "audio" && track.info.editDurationSeconds != null
-        ? track.info.editDurationSeconds
+        ? track.info.editDurationSeconds + (track.info.editGapSeconds ?? 0)
         : lastSample ? lastSample.presentationTimestamp + lastSample.duration : 0,
       GLOBAL_TIMESCALE
     );
@@ -1508,6 +1512,15 @@ var Mp4Muxer = (() => {
            (options.audio.editMediaTime > 0 && options.audio.rollDistance == null))) {
         throw new TypeError("Unsupported AAC priming edit list");
       }
+      // Extension NOVA : vide de début (max 500 ms) + unique segment
+      // média. Seulement MP4 progressif ; MSE a des divergences connues.
+      if (options.audio.editGapSeconds !== void 0 &&
+          (options.audio.editDurationSeconds === void 0 ||
+           !Number.isFinite(options.audio.editGapSeconds) ||
+           options.audio.editGapSeconds < 0 || options.audio.editGapSeconds > 0.5 ||
+           options.fastStart === "fragmented")) {
+        throw new TypeError("Unsupported AAC leading empty edit");
+      }
       // Extension NOVA : ne recopier que les groupes AAC roll de distance -1/0.
       if (options.audio.rollDistance !== void 0 && (options.audio.codec !== "aac" ||
           ![-1, 0].includes(options.audio.rollDistance))) {
@@ -1620,6 +1633,7 @@ var Mp4Muxer = (() => {
           rollDistance: __privateGet(this, _options).audio.rollDistance ?? null,
           editMediaTime: __privateGet(this, _options).audio.editMediaTime ?? 0,
           editDurationSeconds: __privateGet(this, _options).audio.editDurationSeconds ?? null,
+          editGapSeconds: __privateGet(this, _options).audio.editGapSeconds ?? 0,
           decoderConfig: null
         },
         timescale: __privateGet(this, _options).audio.sampleRate,
