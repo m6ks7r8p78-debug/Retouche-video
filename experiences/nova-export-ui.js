@@ -46,7 +46,8 @@ start.addEventListener("click",async()=>{
     if(step.stage==="source")msg(step.mode==="pts"?
      "Décodage vidéo selon les PTS MP4 natifs ("+step.frames+" images source)":
      "Mode compatibilité approximatif choisi : les images peuvent être dupliquées.");
-    if(step.stage==="audio")msg("Décodage et validation de la piste audio…");
+    if(step.stage==="audio")msg("Vérification de la piste audio d’origine…");
+    if(step.stage==="audioMode")msg(step.mode==="aac-copy"?"AAC original conservé sans réencodage (MP4 compatible) : audio inchangé…":step.mode==="aac-encode"?"Piste audio réencodée après validation de la source…":"Export sans son demandé explicitement…");
     if(step.stage==="video")msg("Encodage MP4 : "+Math.round(step.progress*100)+" % ("+step.frame+"/"+step.total+" images)");
     if(step.stage==="verification")msg("MP4 assemblé : contrôle de lisibilité et de durée sur cet appareil…");
     if(step.stage==="fini")msg("MP4 lisible selon les métadonnées locales. Vérifiez l'image et le son avant partage.");
@@ -59,7 +60,7 @@ start.addEventListener("click",async()=>{
   download.download=(file.name||"video").replace(/\.[^.]+$/,"")+"_NOVA_pilote.mp4";
   download.hidden=false;
   msg("MP4 prêt : "+result.plan.width+" × "+result.plan.height+", "+
-    (result.hasAudio?"audio AAC réencodé":"sans son, selon votre choix")+
+    (result.audioMode==="aac-copy"?"audio AAC original copié":result.audioMode==="aac-encode"?"audio AAC réencodé":"sans son, selon votre choix")+
     ", "+(result.sourceMode==="pts"?"PTS natifs":"recherche approximative") +
     ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Métadonnées contrôlées : "+result.validation.width+" × "+result.validation.height+", "+result.validation.duration.toFixed(2)+" s."+ (result.trace?" Cadence : "+result.trace.repetitions+" répétitions et "+result.trace.sautsDeSource+" images source sautées lors de la conversion.":"")+" Vérifiez l’image et le son.");
  }catch(err){
