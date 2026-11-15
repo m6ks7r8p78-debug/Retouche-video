@@ -202,3 +202,16 @@ test("Safari opaque : matrice source BT2020 NCL ou gamut P3 ne peuvent pas empru
   colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false}},ev),
   /non certifiable/);
 });
+
+test("Safari opaque : primaires SDR SMPTE170M et matrice trame BT709, fidélité signalée non certifiée",async()=>{
+ const info={...base,color:{kind:"nclx",primaries:6,transfer:6,
+  matrix:6,fullRange:false}};
+ const ev=COLOR.metadata(info);
+ assert.equal(ev.expectedPrimaries,"smpte170m");
+ const f={format:null,colorSpace:{primaries:"smpte170m",transfer:"smpte170m",
+  matrix:"bt709",fullRange:false}};
+ const out=await COLOR.imagePourRendu(f,ev);
+ assert.equal(out.proof.sourceMismatch,true);
+ assert.equal(out.proof.colorFidelity,"uncertified-against-source");
+ assert.equal(out.frame,f);
+});
