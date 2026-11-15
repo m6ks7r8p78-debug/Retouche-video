@@ -19,9 +19,9 @@ function validFrame(frame){
   (frame.data instanceof Uint8Array||frame.data instanceof Uint8ClampedArray)&&
   frame.data.length===frame.width*frame.height*4;
 }
-function invalid(status,dimensions=[0,0],times=[0,0],elapsed=null){
+function invalid(status,dimensions=[0,0],times=[0,0],elapsed=null,sourceKind="local-user-file"){
  return Object.freeze({
-  version:1,provenance:"smallmotion_local_2frame_v1",status,
+  version:1,provenance:"smallmotion_local_2frame_v1",status,sourceKind,
   action:"no_automatic_change",confidence:"not_calibrated",
   method:"local_2d_block_matching",frames:2,
   frameTimesSeconds:times,analysisDimensions:dimensions,
@@ -36,46 +36,48 @@ function frameTimes(value){
     value[1]<=value[0])throw new TypeError("Deux temps d'image croissants (0 à 12 s) requis");
  return value.map(x=>Math.round(x*10000)/10000);
 }
-function analyser(a,b,{engine,frameTimesSeconds=[0,0.1167],clock,signal}={}){
+function analyser(a,b,{engine,frameTimesSeconds=[0,0.1167],clock,signal,synthetic=false}={}){
  const times=frameTimes(frameTimesSeconds);
  if(!validFrame(a)||!validFrame(b)||a.width!==b.width||a.height!==b.height)
   throw new TypeError("Deux images RGBA locales 64..320 × 64..240 identiques requises");
  const dim=[a.width,a.height];
- if(signal?.aborted)return invalid("cancelled",dim,times);
+ const sourceKind=synthetic===true?"synthetic-generated":"local-user-file";
+ const abstain=(status,elapsed=null)=>invalid(status,dim,times,elapsed,sourceKind);
+ if(signal?.aborted)return abstain("cancelled");
  const provider=engine||globalThis.RetoucheLocalMotion;
  if(!provider||typeof provider.analyze!=="function")
-  return invalid("abstain_engine_unavailable",dim,times);
+  return abstain("abstain_engine_unavailable");
  const now=typeof clock==="function"?clock:()=>performance.now();
  const t0=now();
  let result;
  try{result=provider.analyze(a,b)}catch{
-  return invalid("abstain_engine_error",dim,times);
+  return abstain("abstain_engine_error");
  }
  const t1=now(),elapsed=Number.isFinite(t1-t0)&&t1>=t0?
   Math.min(60000,Math.round(t1-t0)):null;
- if(signal?.aborted)return invalid("cancelled",dim,times,elapsed);
+ if(signal?.aborted)return abstain("cancelled",elapsed);
  if(!result||!statuses.has(result.status))
-  return invalid("abstain_unverified_result",dim,times,elapsed);
+  return abstain("abstain_unverified_result",elapsed);
  const source=result.candidates;
  if(!Array.isArray(source)||source.length>4)
-  return invalid("abstain_invalid_regions",dim,times,elapsed);
+  return abstain("abstain_invalid_regions",elapsed);
  const candidates=[];
  for(const c of source){
   const box=c?.box;
   if(!Array.isArray(box)||box.length!==4||
      !box.every(Number.isSafeInteger)||!Number.isSafeInteger(c.support)||
-     c.support<3)return invalid("abstain_invalid_regions",dim,times,elapsed);
+     c.support<3)return abstain("abstain_invalid_regions",elapsed);
   const [x,y,w,h]=box;
   if(x<0||y<0||w<10||h<10||x+w>a.width||y+h>a.height||
     w*h>a.width*a.height*.17)
-   return invalid("abstain_invalid_regions",dim,times,elapsed);
+   return abstain("abstain_invalid_regions",elapsed);
   candidates.push({box:[x,y,w,h],support:c.support});
  }
  if(result.status!=="local_motion_candidate"&&candidates.length||
     result.status==="local_motion_candidate"&&!candidates.length)
-  return invalid("abstain_invalid_regions",dim,times,elapsed);
+  return abstain("abstain_invalid_regions",elapsed);
  return Object.freeze({
-  ...invalid(result.status,dim,times,elapsed),
+  ...abstain(result.status,elapsed),
   candidates
  });
 }
@@ -86,6 +88,7 @@ function serialiser(report){
  // Copy only whitelisted technical fields; never serialize arbitrary input objects.
  const safe={
   version:report.version,provenance:report.provenance,status:report.status,
+  sourceKind:report.sourceKind,
   action:report.action,confidence:report.confidence,method:report.method,
   frames:report.frames,frameTimesSeconds:report.frameTimesSeconds,
   analysisDimensions:Array.isArray(report.analysisDimensions)?[...report.analysisDimensions]:null,
@@ -104,7 +107,7 @@ function validReport(x){
  if(!statuses.has(x?.status)&&!reportStatuses.has(x?.status))return false;
  if(x?.method!=="local_2d_block_matching")return false;
  if(x?.status==="local_motion_candidate"?!x.candidates?.length:x?.candidates?.length!==0)return false;
- if(x?.version!==1||!Array.isArray(d)||d.length!==2||
+ if(x?.version!==1||!["local-user-file","synthetic-generated"].includes(x?.sourceKind)||!Array.isArray(d)||d.length!==2||
     !d.every(Number.isSafeInteger)||d[0]<64||d[1]<64||d[0]>320||d[1]>240||
     !Array.isArray(t)||t.length!==2||!t.every(Number.isFinite)||
     t[0]<0||t[1]>12||t[1]<=t[0]||
