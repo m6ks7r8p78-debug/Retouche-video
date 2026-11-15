@@ -1,0 +1,47 @@
+name: RetoucheProAI — full application preproduction integration
+on:
+  push:
+    branches:
+      - preprod-retoucheproai-local-v1
+    paths:
+      - 'research/preprod/**'
+      - 'index.html'
+      - 'app.js'
+      - 'research/3d-smallmotion/**'
+      - '.github/workflows/retouche-preprod-fullapp.yml'
+  pull_request:
+    paths:
+      - 'research/preprod/**'
+      - 'index.html'
+      - 'app.js'
+      - 'research/3d-smallmotion/**'
+      - '.github/workflows/retouche-preprod-fullapp.yml'
+jobs:
+  full-app-local-first:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Playwright and existing local browser or Chromium
+        run: |
+          python -m pip install playwright
+          if ! command -v chromium >/dev/null && ! command -v google-chrome >/dev/null && ! command -v chromium-browser >/dev/null; then python -m playwright install --with-deps chromium; fi
+          if ! command -v ffmpeg >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y ffmpeg; fi
+      - name: Audit actual index.html / original app.js, worker and offline assets
+        run: |
+          python research/preprod/tests/test_preprod_wiring.py
+          node tests/sw.test.mjs
+      - name: Native browser - actual full app + imported H264/VP8 synthetic video
+        run: python research/preprod/tests/test_full_app_smoke.py
+      - name: Keep preproduction synthetic-only screenshots and diagnostic report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: retouche-preprod-complete-app-smoke
+          path: |
+            research/preprod/results/full_app_smoke.json
+            research/preprod/results/preprod_full_app_*.png
+          if-no-files-found: warn
