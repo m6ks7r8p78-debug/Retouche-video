@@ -185,6 +185,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  if(useOpfs&&(!windowedH264||allowSilent||allowApproximate||
     !globalThis.NOVA_OPFS_STREAM?.supported()))
   throw new Error("Écriture OPFS réservée au H.264 SDR >12–48 s vérifié avec copie AAC");
+ if(useOpfs&&!(await NOVA_OPFS_STREAM.probe({signal})))
+  throw new Error("Écriture OPFS refusée : accès réel au stockage privé indisponible");
  // Garde-fou optionnel interne : l'interface ne peut pas relever la limite
  // de 24 Mio de payloads + MP4 final in-memory.
  const exportMeter=useHevcWasm||windowedH264?
