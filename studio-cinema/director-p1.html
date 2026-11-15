@@ -253,6 +253,7 @@ button,textarea,input,select{font:inherit}button{cursor:pointer}button:focus-vis
       card.append(head,input,foot);root.append(card);
     });
   }
+  function reconcileProps(){if(!project)return;const existing=new Map(project.props.map(p=>[p.id,p]));const all=[...new Set(project.shots.flatMap(s=>s.prop_ids||[]))];project.props=all.map(id=>existing.get(id)||{id,label:id,owner_character_id:'character_01',continuity_note:'À garder cohérent entre les plans'});renderProps();}
   function renderProps(){const root=$('props');root.replaceChildren();
     if(!project.props.length){const p=document.createElement('p');p.className='soft';p.textContent='Aucun objet récurrent reconnu pour le moment.';root.append(p);return;}
     for(const item of project.props){const chip=document.createElement('span');chip.className='property-chip';safeText(chip,item.label+' · suivi');root.append(chip);}
@@ -268,7 +269,7 @@ button,textarea,input,select{font:inherit}button{cursor:pointer}button:focus-vis
       top.append(no,type,controls);
       const actionLabel=document.createElement('label');actionLabel.className='field-label';actionLabel.textContent='Action';
       const textarea=document.createElement('textarea');textarea.rows=2;textarea.maxLength=700;textarea.value=s.action;textarea.setAttribute('aria-label','Action du plan '+(i+1));
-      textarea.addEventListener('change',()=>{s.action=textarea.value.trim();s.prop_ids=D.detectProps(s.action);renderWarnings();draw();});
+      textarea.addEventListener('change',()=>{s.action=textarea.value.trim();s.prop_ids=D.detectProps(s.action);reconcileProps();renderWarnings();draw();});
       const detail=document.createElement('div');detail.className='detail-grid';
       const location=document.createElement('input');location.type='text';location.maxLength=100;location.value=s.location;location.setAttribute('aria-label','Lieu du plan '+(i+1));location.addEventListener('change',()=>{s.location=location.value;renderWarnings();draw();});
       const len=document.createElement('input');len.type='number';len.min=1;len.max=120;len.value=s.duration_seconds;len.setAttribute('aria-label','Durée du plan '+(i+1)+' en secondes');len.addEventListener('change',()=>{s.duration_seconds=Math.max(1,Math.min(120,Math.round(Number(len.value)||1)));len.value=s.duration_seconds;updateTiming();});
@@ -287,7 +288,7 @@ button,textarea,input,select{font:inherit}button{cursor:pointer}button:focus-vis
     renderWarnings();draw();
   }
   function move(i,delta){const j=i+delta;if(j<0||j>=project.shots.length)return;const x=project.shots[i];project.shots[i]=project.shots[j];project.shots[j]=x;renderShots();}
-  function remove(i){if(project.shots.length<2){notice('Le projet doit contenir au moins un plan.',true);return;}project.shots.splice(i,1);renderShots();}
+  function remove(i){if(project.shots.length<2){notice('Le projet doit contenir au moins un plan.',true);return;}project.shots.splice(i,1);reconcileProps();renderShots();}
   $('add-shot').addEventListener('click',()=>{
     if(!project)return;if(project.shots.length>=D.MAX_SHOTS){notice('Maximum '+D.MAX_SHOTS+' plans dans ce prototype.',true);return;}
     const prev=project.shots.at(-1);
@@ -369,11 +370,11 @@ button,textarea,input,select{font:inherit}button{cursor:pointer}button:focus-vis
     if(playSeconds>=animaticLength()){playSeconds=animaticLength();running=false;safeText($('play'),'▶ Lire l’animatique');if(recording&&mediaRecorder?.state==='recording')mediaRecorder.stop();}
     drawAt(playSeconds);if(running)rafId=requestAnimationFrame(animationTick);
   }
-  function play(){if(!project)return;if(running){running=false;cancelAnimationFrame(rafId);safeText($('play'),'▶ Reprendre');return;}
+  function play(){if(!project)return;if(recording){notice('L’enregistrement de l’animatique est en cours.');return;}if(running){running=false;cancelAnimationFrame(rafId);safeText($('play'),'▶ Reprendre');return;}
     if(playSeconds>=animaticLength())playSeconds=0;running=true;lastTick=0;safeText($('play'),'Ⅱ Pause');rafId=requestAnimationFrame(animationTick);
   }
   $('play').addEventListener('click',play);$('restart').addEventListener('click',()=>{running=false;cancelAnimationFrame(rafId);playSeconds=0;draw();safeText($('play'),'▶ Lire l’animatique');});
-  $('seek').addEventListener('input',()=>{playSeconds=Number($('seek').value);lastTick=0;draw();});
+  $('seek').addEventListener('input',()=>{if(recording)return;playSeconds=Number($('seek').value);lastTick=0;draw();});
   function downloadJson(){if(!project)return;const clean=D.validateImported(project);
     // Force explicit state; no media bytes, reference URLs, weights, or server upload.
     const blob=new Blob([JSON.stringify(clean,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='retouche-cinema-director-p1.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);notice('Projet JSON enregistré sans inclure la photo ni la vidéo.');
