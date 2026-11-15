@@ -1,4 +1,4 @@
-# NOVA 0.23 — Procédure Safari iPhone physique
+# NOVA 0.24 — Procédure Safari iPhone physique
 
 **Statut : laboratoire empaqueté et testé automatiquement ; aucun essai sur un iPhone réel certifié.** Aucun déploiement de production.
 
@@ -9,16 +9,21 @@ Le script `node outils/build-nova-iphone-preview.mjs` construit `dist/nova-iphon
 ## Essai sur un futur aperçu HTTPS séparé
 
 1. Ouvrir dans **Safari sur iPhone** un site de prévisualisation HTTPS isolé qui héberge cet artefact. Le site public `retoucheproai.com` ne doit pas servir à ce test avant validation.
-2. **Essai sans vidéo personnelle recommandé en premier :** déplier le diagnostic et appuyer sur « Tester Safari sans vidéo personnelle ». Le clip de 1 seconde, 160×90, contient une image grise et un bip AAC entièrement synthétiques. Le téléchargement est local au même site, uniquement après appui. Vérifier le MP4/rapport si le codec est disponible ; un refus explicite reste valide.\n3. Ensuite, importer un **court MOV HEVC SDR BT.709 limité** : 12 secondes, 60 Mio maximum, 90 images HEVC source et 640×360 pixels pour le pilote WebAssembly. Ne pas commencer par HDR/P3/4K. Le navigateur traite le média localement.
+2. **Essai sans vidéo personnelle recommandé en premier :** déplier le diagnostic et appuyer sur « Tester Safari sans vidéo personnelle ». Le clip de 1 seconde, 160×90, contient une image grise et un bip AAC entièrement synthétiques. Le téléchargement est local au même site, uniquement après appui. Vérifier le MP4/rapport si le codec est disponible ; un refus explicite reste valide.
+3. Ensuite, importer un **court MOV HEVC SDR BT.709 limité** : 12 secondes, 60 Mio maximum, 90 images HEVC source et 640×360 pixels pour le pilote WebAssembly. Ne pas commencer par HDR/P3/4K. Le navigateur traite le média localement.
 4. Déplier « Tester sur iPhone Safari · diagnostic local » et appuyer sur « Tester Safari sur cette vidéo ». Le son est conservé par défaut ; un refus est un résultat de diagnostic légitime.
 5. Après succès, si vous le souhaitez, enregistrer et écouter/visionner le MP4. **Enregistrer le rapport JSON** pour examiner les observations : aucun nom de fichier, contenu de vidéo, GPS, userAgent ou upload automatique.
 6. Recommencer éventuellement en Safari puis depuis la PWA « Ajouter à l'écran d'accueil », en évitant de mettre le test en arrière-plan (cela demande l'annulation).
 7. Comparer le résultat, les codecs disponibles, les durées par phase, le nombre d'images, la capacité du tas WASM et le tas JS facultatif. Ce ne sont **pas** des mesures de RAM totale/RSS, batterie ou température.
 
+## Liaison avec les autres laboratoires
+
+Le [centre de coordination GitHub](https://github.com/m6ks7r8p78-debug/Retouche-video/blob/coordination-retoucheproai-v1/coordination/README.md) centralise les pointeurs NOVA, SmallMotion, 3D, Cinema et Directeur IA. Une conversation doit le consulter explicitement à chaque reprise ; aucune synchronisation inter-chat n'est automatique. Les découvertes NOVA sont relayées via la PR #3 sans fusion ni déploiement.
+
 ## Points encore non validés
 
 Il faut un aperçu HTTPS réellement hébergé séparément **et** une exécution physique iPhone. Le code GitHub et les essais WebKit Linux ne remplacent pas ces étapes. La sortie reste à 15 images/s, HEVC 8 bits BT.709 uniquement.
-\nLe rapport contient `sourceKind = synthetic-generated` pour l’essai sans média privé et `local-user-file` pour une vidéo choisie. Le clip synthétique n’est pas un substitut à un essai avec une vraie vidéo iPhone.\n
+Le rapport contient `sourceKind = synthetic-generated` pour l’essai sans média privé et `local-user-file` pour une vidéo choisie. Le clip synthétique n’est pas un substitut à un essai avec une vraie vidéo iPhone.
 
 ### Vérification indépendante de l'archive
 
