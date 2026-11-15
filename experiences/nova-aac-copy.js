@@ -76,18 +76,23 @@ function extract(b,sizeLimit,mdatRanges){
   if(hdlr.start+12>hdlr.end)fail("hdlr tronqué");
   if(four(b,hdlr.start+8)!=="soun")continue;
   const edits=select(kids(b,select(kids(b,tr),"edts")),"elst");
-  let editMediaTime=0,editMovieDuration=null,leadingEmptyTicks=0;
+  let editMediaTime=0,editMovieDuration=null,leadingEmptyTicks=0,editListVersion=0;
   if(edits){
-   // Support conservateur : une édition média seule OU exactement
-   // [édition vide -1, édition média]. Pas de boucle / vitesse / concat.
+   // Une seule édition média ou [vide -1, média]. Version 1 emploie
+   // uint64/int64 : ne convertir en Number QUE si la valeur est sûre.
    const version=b[edits.start],count=v.getUint32(edits.start+4);
-   if(version!==0||(count!==1&&count!==2)||
-      edits.start+8+count*12>edits.end)
+   const step=version===1?20:12;
+   if((version!==0&&version!==1)||(count!==1&&count!==2)||
+      edits.start+8+count*step>edits.end)
     fail("montage AAC trop complexe pour copier les échantillons");
    const read=(i)=>{
-     const p=edits.start+8+i*12,seg=v.getUint32(p),media=v.getInt32(p+4),
-       rate=v.getInt32(p+8);
-     if(!seg||rate!==65536)fail("édition AAC invalide ou vitesse différente de 1");
+     const p=edits.start+8+i*step,seg=version===1?
+       Number(v.getBigUint64(p)):v.getUint32(p),
+       media=version===1?Number(v.getBigInt64(p+8)):v.getInt32(p+4),
+       rate=v.getInt32(p+(version===1?16:8));
+     if(!Number.isSafeInteger(seg)||seg<=0||
+       !Number.isSafeInteger(media)||rate!==65536)
+      fail("édition AAC 64 bits non représentable ou vitesse différente de 1");
      return {seg,media};
    };
    const first=read(0),last=count===2?read(1):first;
@@ -97,6 +102,7 @@ function extract(b,sizeLimit,mdatRanges){
    }
    if(last.media<0)fail("édition AAC média négative");
    editMovieDuration=last.seg;editMediaTime=last.media;
+   editListVersion=version;
   }
   const mdhd=need(b,mdia,"mdhd");
   const version=b[mdhd.start];if(version!==0&&version!==1)fail("mdhd inconnu");
@@ -177,7 +183,7 @@ function extract(b,sizeLimit,mdatRanges){
    fail("montage AAC sortant de la durée audio encodée");
   found.push({sampleRate,channels,asc,packets,rollDistance,
     editMediaTime,editDurationSeconds,movieTimescale,
-    leadingEmptyTicks,leadingEmptySeconds});
+    leadingEmptyTicks,leadingEmptySeconds,editListVersion});
  }
  if(found.length!==1)fail(found.length?"pistes AAC multiples":"piste AAC absente");
  return found[0];
