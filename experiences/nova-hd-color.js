@@ -145,8 +145,9 @@ function renduNatifOpaque(frame,evidence){
  const p=frame?.colorSpace||{};
  if(!evidence?.confirmed||![5,6].includes(evidence.sourceMatrix)||
     !["bt470bg","smpte170m"].includes(evidence.expectedMatrix)||
-    evidence.expectedPrimaries!=="bt709"||
-    p.primaries!=="bt709"||p.matrix!=="bt709"||
+    !VIDEO_PRIMARIES.has(p.primaries)||
+    (evidence.expectedPrimaries&&p.primaries!==evidence.expectedPrimaries)||
+    p.matrix!=="bt709"||
     !VIDEO_XFER.has(p.transfer)||
     typeof p.fullRange!=="boolean"||
     p.fullRange!==evidence.sourceFullRange)
