@@ -66,7 +66,7 @@ function phaseFailure(e,phase){
   return CODES.decode;
  }
  if(phase==="aac_capability")return CODES.unsupported;
- if(/ASC|AudioSpecificConfig|ES_Descriptor|description AAC|DecoderConfig|configuration AAC|codec AAC Safari/i.test(msg))
+ if(/ASC|AudioSpecificConfig|ES_Descriptor|descripteur MPEG-4|description AAC|DecoderConfig|configuration AAC|codec AAC Safari/i.test(msg))
   return CODES.descriptor;
  if(/durée audio|horodatages|non alignée|non continus|couverture audio/.test(msg))
   return CODES.timing;
