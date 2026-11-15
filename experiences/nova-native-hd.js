@@ -158,10 +158,33 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  const encCfg=await configEncoder(p,Encoder);
  const audioPlan=checkAudio||globalThis.NOVA_AAC_COPY?.planifier;
  if(typeof audioPlan!=="function")fail("analyseur AAC manquant");
- // Politique obligatoire : conserver le son, sinon ne pas exporter.
- const audio=await audioPlan(file,{durationSeconds:p.durationSeconds,signal});
- if(!audio||audio.mode!=="aac-copy"||!audio.packets?.length)
-  fail("AAC original non conservable, export HD refusé");
+ // Conserver l'AAC sans réencodage lorsque l'ASC + la chronologie
+ // le permettent. Si non, essayer le codec AAC-LC NATIF avec approbation
+ // isConfigSupported; jamais créer une exportation muette.
+ let audio=null,copyError=null;
+ try{audio=await audioPlan(file,{durationSeconds:p.durationSeconds,signal})}
+ catch(e){copyError=e}
+ if(signal?.aborted)fail("annulé");
+ if(audio?.mode!=="aac-copy"||!audio.packets?.length){
+  const native=globalThis.NOVA_AAC_NATIVE;
+  if(!native?.planifier)
+   fail("copie AAC non validée ; recours AAC natif absent");
+  try{
+   onProgress({stage:"audio",message:"Copie AAC indisponible ; réencodage AAC-LC natif local…"});
+   audio=await native.planifier(file,{durationSeconds:p.durationSeconds,signal});
+  }catch(e){
+   if(signal?.aborted)fail("annulé");
+   // Ce message ne contient ni nom de fichier, ni octet ni donnée personnelle.
+   fail("copie AAC non validée ("+
+     (copyError?.message?.startsWith("Copie AAC prudente :")?
+      copyError.message.slice(21):"profil ou chronologie")+
+     ") ; "+(e?.message?.startsWith("Audio natif NOVA :")?
+      e.message:"AAC natif non disponible"));
+  }
+ }
+ if(!["aac-copy","aac-native-encode"].includes(audio?.mode)||
+    !audio?.packets?.length)
+  fail("aucune piste AAC conservable ou réencodable : export refusé");
  if(signal?.aborted)fail("annulé");
  const Muxer=globalThis.Mp4Muxer;
  if(!Muxer?.Muxer||!Muxer?.ArrayBufferTarget)fail("muxeur MP4 local indisponible");
@@ -251,7 +274,10 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
   await encoder.flush();check();
   if(encoded!==p.sourceFrames)fail("nombre d'images H.264 différent de la source");
   const packets=[];
-  await globalThis.NOVA_AAC_COPY.copier(file,audio,muxer,{signal,
+  const copyAudio=audio.mode==="aac-copy"?
+    globalThis.NOVA_AAC_COPY:globalThis.NOVA_AAC_NATIVE;
+  if(!copyAudio?.copier)fail("écriture AAC indisponible");
+  await copyAudio.copier(file,audio,muxer,{signal,
    onPacket:v=>packets.push(v)});
   globalThis.NOVA_GUARD.auditerPaquetsAAC(packets,{
    durationSeconds:p.durationSeconds,leadingGapSeconds:audio.outputEditGapSeconds??0});
@@ -267,12 +293,22 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
   if(!c||c.kind!=="nclx"||c.primaries!==1||c.transfer!==1||
     c.matrix!==1||c.fullRange!==false)
    fail("MP4 final : colorimétrie BT.709 non confirmée");
+  // Le fait d'avoir reçu des chunks AAC ne prouve pas que le MP4 final
+  // comporte une piste audio correctement indexée. Relire le MP4 généré
+  // avec notre parseur indépendant et refuser un fichier sans audio.
+  let outputAudio;
+  try{outputAudio=await globalThis.NOVA_AAC_COPY.planifier(blob,{
+   durationSeconds:p.durationSeconds,signal})}
+  catch{fail("piste audio AAC du MP4 final non vérifiable")}
+  if(!outputAudio?.packets?.length)
+   fail("piste audio AAC absente du MP4 final");
   onProgress({stage:"complete",progress:1});
   return Object.freeze({blob,mode:"native-hd-classical",
    originalWidth:p.width,originalHeight:p.height,
    sourceFrames:p.sourceFrames,outputFrames:checkOut.ns,
    durationSeconds:p.durationSeconds,sourceFps:p.sourceFps,
-   modifiedFrames:modified,audioMode:"aac-copy",outputBytes:blob.size,
+   modifiedFrames:modified,audioMode:audio.mode,
+   audioQualification:audio.qualification,outputBytes:blob.size,
    sourceColorEvidence:p.colorEvidence.kind,decodedColorEvidence:confirmedColor,
    elapsedMs:Math.round(clock()-started),
    disclaimer:"Traitement classique doux, pas de reconstruction neuronale, visuel et audio à vérifier sur iPhone"});

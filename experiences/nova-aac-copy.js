@@ -25,18 +25,80 @@ function boites(b,start,end){
 function select(a,type){return a.find(x=>x.type===type)||null}
 function kids(b,p){return p?boites(b,p.start,p.end):[]}
 function need(b,p,type){const q=select(kids(b,p),type);if(!q)fail("table "+type+" absente");return q}
-function ascFromEsds(b,esds,sampleRate,channels){
- if(!esds||esds.end-esds.start<8)fail("configuration AAC esds absente");
- const rates=[96000,88200,64000,48000,44100,32000,24000,22050,16000,12000,11025,8000,7350];
- for(let o=esds.start+4;o<esds.end-3;o++){
-  if(b[o]!==5)continue;
-  let p=o+1,len=0,x,tries=0;
-  do{if(p>=esds.end)break;x=b[p++];len=(len<<7)|(x&127);tries++}while(x&128&&tries<4);
-  if(tries>4||!safe(len)||len<2||len>6||p+len>esds.end)continue;
-  const asc=b.slice(p,p+len),kind=asc[0]>>3,index=((asc[0]&7)<<1)|(asc[1]>>7),c=(asc[1]>>3)&15;
-  if(kind===2&&rates[index]===sampleRate&&c===channels)return asc;
+/* MPEG-4 descriptors (ISO/IEC 14496-1) : lire les tailles à
+ * sept bits, et parcourir 03 ES -> 04 DecoderConfig -> 05 DSI.
+ * Le balayage heuristique de chaque octet == 05 pouvait prendre un autre
+ * champ pour une ASC ou rater des échantillons ASC valides (24-bit Hz).
+ */
+function descriptor(b,o,end){
+ if(o>=end)fail("descripteur ESDS tronqué");
+ const tag=b[o++];let len=0,term=false;
+ for(let i=0;i<4;i++){
+  if(o>=end)fail("taille ESDS tronquée");
+  const c=b[o++];len=(len<<7)|(c&0x7f);
+  if(!(c&0x80)){term=true;break}
  }
- fail("AAC-LC ou paramètres ASC non confirmés");
+ if(!term||!safe(len)||o+len>end)fail("longueur ESDS invalide");
+ return Object.freeze({tag,start:o,end:o+len,next:o+len});
+}
+function dsiFromEsds(b,esds){
+ if(!esds||esds.end-esds.start<8)fail("configuration AAC esds absente");
+ const begin=esds.start+4,end=esds.end;
+ let pos=begin,es;
+ try{es=descriptor(b,pos,end)}catch{fail("descripteur initial ESDS invalide")}
+ if(es.tag===5&&es.next===end)return b.slice(es.start,es.end); // ancien fixture DSI direct
+ if(es.tag!==3||es.next!==end)fail("ES_Descriptor AAC absent ou ambigu");
+ pos=es.start;
+ if(pos+3>es.end)fail("en-tête ES_Descriptor tronqué");
+ pos+=2;
+ const flags=b[pos++];
+ if(flags&0x80)pos+=2; // streamDependenceFlag
+ if(flags&0x40){if(pos>=es.end)fail("URL ESDS tronquée");pos+=1+b[pos]}
+ if(flags&0x20)pos+=2; // OCRstreamFlag
+ if(pos>=es.end)fail("DecoderConfig absent");
+ const cfg=descriptor(b,pos,es.end);
+ if(cfg.tag!==4||cfg.start+13>cfg.end||b[cfg.start]!==0x40)
+  fail("DecoderConfig AAC MPEG-4 invalide");
+ if((b[cfg.start+1]>>2)!==5)
+  fail("DecoderConfig non audio");
+ pos=cfg.start+13;
+ const dsi=descriptor(b,pos,cfg.end);
+ if(dsi.tag!==5||dsi.end!==cfg.end)
+  fail("AudioSpecificConfig DSI absente ou suivie de données ambiguës");
+ // SLConfig 0x06 optionnel dans l'ES_Descriptor, sans l'utiliser pour
+ // fabriquer une durée ni modifier les paquets.
+ if(cfg.next<es.end){
+  const sl=descriptor(b,cfg.next,es.end);
+  if(sl.tag!==6||sl.next!==es.end)fail("SLConfig inconnu ou multiple");
+ }
+ return b.slice(dsi.start,dsi.end);
+}
+function lireASC(asc){
+ if(!(asc instanceof Uint8Array)||asc.length<2||asc.length>32)
+  fail("AudioSpecificConfig AAC absente ou trop longue");
+ let off=0;
+ function bits(n){
+  if(off+n>asc.length*8)fail("ASC tronquée");
+  let v=0;for(let i=0;i<n;i++,off++)
+   v=(v<<1)|((asc[off>>3]>>(7-(off&7)))&1);
+  return v;
+ }
+ let aot=bits(5);
+ if(aot===31)aot=32+bits(6);
+ const index=bits(4);
+ const rates=[96000,88200,64000,48000,44100,32000,24000,
+  22050,16000,12000,11025,8000,7350];
+ const sampleRate=index===15?bits(24):rates[index];
+ const channels=bits(4);
+ if(!sampleRate||sampleRate>192000)fail("fréquence ASC inconnue");
+ return Object.freeze({aot,sampleRate,channels,index});
+}
+function ascFromEsds(b,esds,sampleRate,channels){
+ const asc=dsiFromEsds(b,esds),cfg=lireASC(asc);
+ if(cfg.aot!==2)fail("profil AAC non LC (AOT "+cfg.aot+") : transcodage requis");
+ if(cfg.sampleRate!==sampleRate||cfg.channels!==channels)
+  fail("fréquence ou canaux ASC différents de la piste MP4");
+ return asc;
 }
 /* ISO-BMFF : préchargement AAC indiqué par sgpd/sbgp de type "roll".
  * Ne transférer que le cas entièrement explicite : un groupe par piste,
