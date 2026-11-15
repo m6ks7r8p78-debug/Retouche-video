@@ -87,7 +87,7 @@ start.addEventListener("click",async()=>{
    file,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,
    allowSilent:silent.checked,allowApproximate:!!approx?.checked,signal:ctl.signal,
    storageMode:opfs?.checked?"opfs":"memory",
-   outputProfile:hd720?.checked?"h264-hd720-opfs-3s":"standard",
+   outputProfile:hd720?.checked?"h264-hd720-opfs-6s":"standard",
    onProgress:step=>{
     if(generation!==thisGen)return;
     lastStage=step.stage;
