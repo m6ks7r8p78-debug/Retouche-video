@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:; media-src blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Retouche Cinema — Atelier de présence P16</title>
+<style>
+:root{--bg:#121311;--panel:#20211e;--line:#383a33;--ink:#f2f0e9;--muted:#c0bdb0;--dim:#999789;--warm:#ddaf83;--green:#9eb9a5;--rose:#e1c1ad;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,'Helvetica Neue',sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--warm);outline-offset:3px}a{color:var(--warm)}
+.shell{max-width:1150px;margin:auto;padding:20px clamp(15px,4vw,34px) 65px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:13px;border-bottom:1px solid var(--line)}
+.mark{font-size:13px;font-weight:650;letter-spacing:.15em;color:var(--warm)}.status{font-size:12px;border:1px solid var(--line);padding:4px 9px;border-radius:40px;color:var(--muted)}h1{font:400 clamp(36px,6vw,65px)/1.03 Georgia,serif;letter-spacing:-.035em;margin:21px 0 9px;max-width:810px}.lede{color:var(--muted);max-width:730px;margin:0 0 22px}
+.tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);margin-bottom:21px;padding-bottom:10px}.tab{border:1px solid transparent;color:var(--muted);background:none;border-radius:20px;padding:11px 18px}.tab[aria-selected="true"]{background:var(--warm);color:#171611;font-weight:650}
+.layout{display:grid;grid-template-columns:minmax(280px,.82fr) minmax(300px,1.18fr);gap:18px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:19px;margin-bottom:15px}.panel h2{font:400 23px/1.2 Georgia,serif;margin:0 0 14px}.eyebrow{font-size:11px;text-transform:uppercase;color:var(--warm);letter-spacing:.12em;font-weight:700;margin:0 0 8px}.small{font-size:12px;color:var(--muted)}.row{display:flex;justify-content:space-between;gap:12px;align-items:center}.help{font-size:12px;color:var(--dim);margin-top:5px}
+label{display:block;color:var(--muted);font-size:13px;margin-bottom:5px}select,input[type="number"],textarea,input[type="file"]{width:100%;background:#151612;border:1px solid #5e6058;border-radius:9px;padding:10px;color:var(--ink);min-height:42px}textarea{min-height:70px;resize:vertical}.field{margin:0 0 15px}.sliderline{display:grid;grid-template-columns:1fr 50px;gap:9px;align-items:center;margin:10px 0}.sliderline label{margin:0}input[type="range"]{width:100%;accent-color:var(--warm);min-height:30px}output{font-weight:650;color:var(--warm);text-align:right}
+.btn{background:var(--warm);border:0;color:#171611;border-radius:11px;padding:12px 14px;font-weight:700;min-height:45px}.btn.secondary{background:transparent;border:1px solid #68675e;color:var(--ink)}.btn:disabled{opacity:.4;cursor:not-allowed}.actions{display:flex;gap:9px;flex-wrap:wrap}.actions button{flex:1}.beat{position:relative;border-left:2px solid var(--warm);padding:0 0 15px 15px;margin:12px 0}.beat:last-child{padding-bottom:0}.beat strong{font-size:14px}.beat .time{font:12px ui-monospace,monospace;color:var(--warm)}.beat p{font-size:13px;margin:5px 0;color:var(--muted)}.pill{display:inline-block;border:1px solid #5c5d54;padding:2px 7px;border-radius:15px;margin:3px 3px 0 0;font-size:11px;color:var(--muted)}.empty{border:1px dashed #62645a;color:var(--muted);padding:25px;border-radius:13px;text-align:center}.footer{font-size:12px;color:var(--dim);border-top:1px solid var(--line);padding-top:16px;margin-top:25px}.hidden{display:none!important}
+video{width:100%;max-height:340px;background:#000;border-radius:10px;display:block;margin-bottom:10px}.poster{height:120px;display:grid;place-content:center;text-align:center;background:linear-gradient(135deg,#22231e,#333025);color:var(--muted);border-radius:10px;margin-bottom:12px}.note{padding:12px;border-left:2px solid var(--green);background:#272b25;color:var(--muted);font-size:13px}.warning{border-color:#caa48e!important;color:#f3cfb9!important}.entry{padding:12px 0;border-bottom:1px solid var(--line);font-size:13px}.entry:last-child{border:0}.entry strong{color:var(--ink)}.entry span{color:var(--dim)}.two{display:grid;grid-template-columns:1fr 1fr;gap:9px}.tag{background:#31332d;padding:4px 8px;border-radius:14px;display:inline-block;font-size:11px;color:var(--rose)}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.shell{padding:15px 14px 50px}.tabs{position:relative}.tab{flex:1;padding:12px 10px;font-size:13px}.panel{padding:16px}h1{margin-top:19px}.actions{flex-direction:column}.actions button{width:100%}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body><div class="shell">
+<div class="topbar"><div class="mark">RETOUCHE / CINEMA</div><div class="status">P16 · Studio de présence · Hors ligne</div></div>
+<h1>Le mouvement. Et ce qu’il dégage.</h1>
+<p class="lede">Regard langoureux, charme, autorité, élégance : compose une véritable direction d’acteur, puis compare les gestes observés dans tes références autorisées.</p>
+<div class="tabs" role="tablist" aria-label="Mode de travail"><button type="button" role="tab" class="tab" aria-controls="director" aria-selected="true" id="tab-director">01 · Diriger</button><button type="button" role="tab" class="tab" aria-controls="observer" aria-selected="false" id="tab-observer">02 · Observer</button></div>
+<section id="director" role="tabpanel" aria-labelledby="tab-director"><div class="layout"><div>
+<div class="panel"><p class="eyebrow">Personnage fictif adulte</p><h2>Choisis sa présence.</h2><div class="field"><label for="scene">Situation</label><select id="scene"></select></div><div class="field"><label for="duration">Durée du plan (secondes)</label><input id="duration" type="number" min="6" max="60" step="1" value="12"></div><div id="sliders"></div><button class="btn" id="create" type="button" style="width:100%">Composer le jeu de scène</button></div>
+<div class="panel"><p class="eyebrow">Précision</p><div class="note">Le moteur produit des instructions détaillées pour un acteur fictif, pas une vidéo. Il ne « devine » ni les émotions internes d’une personne réelle ni la réaction de tous les spectateurs.</div></div>
+</div><div><div class="panel"><div class="row"><div><p class="eyebrow">Réalisation</p><h2>Le découpage du jeu.</h2></div><span class="tag" id="beatcount">Non généré</span></div><div id="beats" class="empty">Choisis les nuances et compose une première direction de jeu.</div><div class="actions" style="margin-top:16px"><button type="button" id="export-plan" class="btn secondary" disabled>Exporter le plan JSON</button><button type="button" id="copy-prompt" class="btn secondary" disabled>Copier les instructions</button></div></div></div></div></section>
+<section id="observer" role="tabpanel" aria-labelledby="tab-observer" class="hidden"><div class="layout"><div>
+<div class="panel"><p class="eyebrow">Étude locale</p><h2>Observe sans interpréter trop tôt.</h2><div class="field"><label for="video-file">Vidéo adulte autorisée, ouverte seulement sur cet appareil</label><input id="video-file" type="file" accept="video/*"></div><div class="poster" id="videoplace">Aucun média importé</div><video id="player" controls playsinline class="hidden" preload="metadata"></video><div class="row"><button class="btn secondary" type="button" id="prev-frame">− 0,1 s</button><span id="time" class="small">0,00 s</span><button class="btn secondary" type="button" id="next-frame">+ 0,1 s</button></div></div>
+<div class="panel"><p class="eyebrow">Repère observable</p><div class="field"><label for="cue">Geste ou expression constaté</label><select id="cue"></select></div><div class="two"><div class="field"><label for="start">Début (s)</label><input type="number" id="start" min="0" step="0.05" value="0"></div><div class="field"><label for="end">Fin (s)</label><input type="number" id="end" min="0.05" step="0.05" value="0.5"></div></div><div class="two"><div class="field"><label for="evidence">Ce qui est observable</label><select id="evidence"><option value="visible">Visible</option><option value="audible">Audible</option><option value="uncertain">Incertain</option><option value="not_visible">Non visible</option></select></div><div class="field"><label for="reviewer">Relecteur</label><select id="reviewer"><option>A</option><option>B</option></select></div></div><div class="field"><label for="notes">Notes factuelles</label><textarea id="notes" placeholder="Ex. Fixe la caméra, puis détourne brièvement les yeux avant de revenir."></textarea></div><button id="add-observation" type="button" class="btn" style="width:100%">Ajouter l'observation</button></div>
+</div><div>
+<div class="panel"><p class="eyebrow">Ressenti du spectateur</p><h2>Mesure séparée.</h2><p class="small">Chaque relecteur peut noter l'impression qu'il ressent sur une dimension artistique. Ce n'est pas une mesure universelle de l'excitation ni une preuve d'intention de la personne filmée.</p><div class="two"><div class="field"><label for="rating-dimension">Dimension ressentie</label><select id="rating-dimension"></select></div><div class="field"><label for="rating-reviewer">Relecteur</label><select id="rating-reviewer"><option>A</option><option>B</option></select></div></div><div class="field"><label for="rating">Intensité ressentie (0–5)</label><div class="row"><input type="range" id="rating" min="0" max="5" step="1" value="3"><output id="rating-value">3</output></div></div><button id="add-rating" type="button" class="btn secondary">Enregistrer mon impression</button><div class="help">Un bon résultat nécessite ensuite plusieurs personnes indépendantes, pas seulement A et B sélectionnés par la même personne.</div></div>
+<div class="panel"><div class="row"><h2>Journal d'analyse.</h2><span class="tag" id="entry-count">0 événements</span></div><div id="entries" class="empty">Charge une vidéo et ajoute des événements observables.</div><div class="actions" style="margin-top:15px"><button type="button" class="btn secondary" id="compare">Comparer les avis A/B</button><button type="button" class="btn" id="export-review" disabled>Exporter les observations privées</button></div><div id="comparison" class="help"></div></div></div></div></section>
+<div id="live" role="status" aria-live="polite" class="small" style="margin-top:10px"></div><div class="footer">Retouche Cinema P16 · État expérimental · Aucun rendu vidéo génératif ou entraînement neuronal ici. Les vidéos restent dans le navigateur ; les exports d'annotations contiennent des noms et horodatages privés et doivent être protégés. Personnages fictifs adultes uniquement pour la génération.</div>
+</div>
+<script>
+/* Retouche Cinema AI — P16: directed screen presence + observed gestures.
+ * Pure deterministic planner & human annotation data contract, no ML/identity inference.
+ * CommonJS and browser. Fictional adult scene synthesis is storyboard JSON only.
+ */
+(function(root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.RetouchePresenceP16 = api;
+})(typeof self !== 'undefined' ? self : globalThis, function () {
+'use strict';
+const VERSION = 'retouche-cinema-p16-presence-v1';
+const SCENES = Object.freeze({
+  smoking: {label:'Une bouffée de cigarette', object:'cigarette', verb:'tenir, porter aux lèvres, inspirer, retirer, expirer'},
+  coffee: {label:'Boire un café', object:'tasse', verb:'approcher la tasse, boire, reposer'},
+  conversation: {label:'Conversation', object:'aucun', verb:'écouter, répondre, marquer une pause'},
+  walk: {label:'Marche', object:'aucun', verb:'se déplacer et croiser le regard de la caméra'}
+});
+const INTENTS = Object.freeze({
+  sensualite: {label:'Regard langoureux / sensualité', short:'Langueur', cues:['gaze_hold','eyes_soft','mouth_soft','slow_blink'], note:'Regard posé, paupières détendues, bouche souple : ne pas figer les yeux.'},
+  dominance: {label:'Autorité / présence dominante', short:'Autorité', cues:['steady_posture','gaze_hold','chin_raise','precise_hands'], note:'Assurance sans agressivité : posture stable, gestes maîtrisés, contact visuel assumé.'},
+  elegance: {label:'Classe / élégance', short:'Élégance', cues:['precise_hands','shoulders_relax','subtle_smile','chin_raise'], note:'Moins d’emphase, davantage de précision et de fluidité du geste.'},
+  charme: {label:'Charme / complicité caméra', short:'Charme', cues:['gaze_return','subtle_smile','mouth_soft','slow_blink'], note:'Créer un échange vivant : petits retours de regard, sourire discret, micro-variation.'},
+  mystere: {label:'Mystère / réserve', short:'Mystère', cues:['gaze_away','gaze_return','head_tilt','stillness'], note:'Laisser une courte hésitation et une variation dans la direction du regard.'}
+});
+const CUES = Object.freeze({
+  gaze_hold: {label:'Regard soutenu vers la caméra', domain:'yeux'},
+  gaze_away: {label:'Regard qui s’éloigne', domain:'yeux'},
+  gaze_return: {label:'Retour du regard vers la caméra', domain:'yeux'},
+  eyes_soft: {label:'Paupières légèrement détendues', domain:'yeux'},
+  slow_blink: {label:'Clignement naturel et lent', domain:'yeux'},
+  chin_raise: {label:'Léger relèvement du menton', domain:'tête'},
+  head_tilt: {label:'Inclinaison subtile de la tête', domain:'tête'},
+  subtle_smile: {label:'Début de sourire discret', domain:'visage'},
+  mouth_soft: {label:'Lèvres relâchées', domain:'lèvres'},
+  lip_press: {label:'Lèvres brièvement pressées', domain:'lèvres'},
+  lip_lick: {label:'Langue qui humidifie brièvement les lèvres', domain:'lèvres'},
+  lip_bite: {label:'Mordillement discret des lèvres', domain:'lèvres'},
+  precise_hands: {label:'Doigts et poignet précis', domain:'main'},
+  hand_travel: {label:'Trajectoire continue de la main', domain:'main'},
+  steady_posture: {label:'Posture assurée', domain:'corps'},
+  shoulders_relax: {label:'Épaules détendues', domain:'corps'},
+  stillness: {label:'Pause vivante, non figée', domain:'corps'},
+  mouth_contact: {label:'Contact du filtre avec les lèvres', domain:'objet'},
+  inhale_lips: {label:'Aspiration visible aux lèvres (candidat)', domain:'respiration'},
+  breath_sound: {label:'Respiration audible (candidat)', domain:'audio'},
+  smoke_mouth: {label:'Fumée apparaissant à la bouche', domain:'fumée'}
+});
+const CUE_IDS = Object.freeze(Object.keys(CUES));
+const LEVELS = Object.freeze(Object.keys(INTENTS));
+const OBSERVATION_EVIDENCE = Object.freeze(['visible','audible','uncertain','not_visible']);
+const REPORT_IMPACT = Object.freeze(['non_evalue','faible','modere','fort']);
+function num(x,n) {if(typeof x!=='number'||!Number.isFinite(x))throw new Error('Valeur numérique invalide: '+n);return x;}
+function bounds(v, min, max, name) {num(v,name);if(v<min||v>max)throw new Error(name+' hors limites');return v;}
+function round(v){return Number(v.toFixed(3));}
+function validateSpec(input){
+  if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Spécification manquante');
+  if(input.fictional_adult!==true)throw new Error('La direction générée est réservée aux personnages adultes fictifs');
+  if(!Object.prototype.hasOwnProperty.call(SCENES,input.scene))throw new Error('Scène inconnue');
+  const duration_s=bounds(input.duration_s,6,60,'duration_s');
+  const strengths={};for(const k of LEVELS)strengths[k]=bounds(input.strengths?.[k]??0,0,5,k);
+  return {fictional_adult:true,scene:input.scene,duration_s,strengths};
+}
+function buildPlan(input) {
+  const spec=validateSpec(input);const d=spec.duration_s,beats=[], guard=new Set();
+  function beat(id,p1,p2,channel,text,cues) {
+    if(guard.has(id))throw new Error('Duplicate beat');guard.add(id);
+    const start=round(d*p1),end=round(d*p2);
+    if(end<=start)throw new Error('Zero-length beat');
+    beats.push({id,start_s:start,end_s:end,layer:channel,direction:text,cues:cues.slice(),status:'planned_not_rendered'});
+  }
+  beat('establish',0,.16,'corps','Installer l’équilibre du corps. Conserver des micro-mouvements respiratoires, sans arrêt sur image.',['steady_posture','shoulders_relax']);
+  if(spec.scene==='smoking'){
+    beat('hand_path',.14,.36,'main','Déplacer la cigarette vers les lèvres dans une trajectoire continue : doigts, poignet et coude restent liés.',['hand_travel','precise_hands']);
+    beat('lip_contact',.36,.46,'objet','Le filtre touche les lèvres ; l’ouverture s’ajuste progressivement sans traverser l’objet.',['mouth_contact','mouth_soft']);
+    beat('inhale',.46,.67,'respiration','Conserver le contact. Faire évoluer subtilement lèvres et joues ; respiration perceptible si elle est visible ou audible, sans fumée expirée.',['mouth_contact','inhale_lips','breath_sound']);
+    beat('release',.67,.76,'main','Desserrer la bouche et éloigner progressivement la cigarette sans saut de position.',['hand_travel','mouth_soft']);
+    beat('transition',.76,.83,'visage','Conserver un léger temps de transition variable, sans imposer une longue pause universelle.',['stillness']);
+    beat('exhale',.83,1,'fumée','Expirer : démarrer la fumée à la bouche, puis suivre sa dispersion. Le son peut suivre la sortie d’air, pas la précéder automatiquement.',['smoke_mouth','breath_sound']);
+  } else if(spec.scene==='coffee') {
+    beat('reach',.16,.4,'main','Prendre la tasse avec une prise stable et porter l’objet à la bouche.',['hand_travel','precise_hands']);
+    beat('drink',.4,.69,'visage','Incliner la tasse et adapter les lèvres sans déplacer l’objet instantanément.',['mouth_soft','precise_hands']);
+    beat('lower',.69,1,'main','Reposer la tasse en suivant une trajectoire continue.',['hand_travel','precise_hands']);
+  } else if(spec.scene==='walk') {
+    beat('motion',.16,.82,'corps','Faire avancer corps, jambes et bras avec variations naturelles du rythme.',['steady_posture','precise_hands']);
+    beat('turn',.74,1,'yeux','Laisser le regard revenir vers l’objectif sans rotation brusque de la tête.',['gaze_return','head_tilt']);
+  } else {
+    beat('listen',.16,.52,'visage','Écouter, laisser vivre les yeux et les lèvres en dehors des mots.',['eyes_soft','mouth_soft']);
+    beat('answer',.52,.82,'visage','Parler en liant respiration, articulation et regard.',['mouth_soft','gaze_hold']);
+    beat('response',.82,1,'visage','Terminer la phrase ; laisser une réaction et un changement discret de regard.',['gaze_return','subtle_smile']);
+  }
+  for(const [key,intent] of Object.entries(INTENTS)) {
+    const strength=spec.strengths[key]; if(strength<1)continue;
+    const cueSet=intent.cues;
+    const position={sensualite:[.23,.56],dominance:[.16,.64],elegance:[.26,.74],charme:[.58,.87],mystere:[.27,.58]}[key];
+    beat('acting_'+key,position[0],position[1],'direction_'+key,
+      intent.note + (strength>=4?' Intensité forte, tout en gardant de petits changements vivants.':' Jeu retenu, sans pose exagérée.'),cueSet);
+  }
+  // A held gaze and a glance away are compatible only when their intervals are explicitly distinct.
+  // These overlapping style beats are acting intentions, NOT simultaneous physical proof.
+  beats.sort((a,b)=>a.start_s-b.start_s||a.id.localeCompare(b.id));
+  return {schema:VERSION,kind:'fictional_actor_direction',project_status:'storyboard_only',
+    fictional_adult:true,source_video_used:false,model_executed:false,rendered_frames:0,
+    fps_requested:60,generated_unique_frames:0,scene:spec.scene,duration_s:d,
+    artistic_intent:spec.strengths,beats,
+    notes:['Les directions se superposent ; synchroniser main, lèvres, regard et respiration dans le moteur vidéo.',
+      'Les effets sensuel, dominant ou séduisant sont des objectifs artistiques, pas des intentions vérifiées chez les références réelles.',
+      '60 images encodées/s ne prouvent pas 60 poses originales/s.']};
+}
+function validateObservation(o,maxDuration) {
+  if(!o||typeof o!=='object'||Array.isArray(o))throw new Error('Observation absente');
+  if(!CUES[o.cue])throw new Error('Repère inconnu');
+  bounds(o.start_s,0,maxDuration,'start_s');bounds(o.end_s,0,maxDuration,'end_s');
+  if(o.end_s<=o.start_s)throw new Error('Intervalle invalide');
+  if(!OBSERVATION_EVIDENCE.includes(o.evidence))throw new Error('Nature de la preuve invalide');
+  if(o.cue==='breath_sound'&&o.evidence==='visible')throw new Error('Son ne peut pas être prouvé par image seule');
+  if(o.cue!=='breath_sound'&&o.evidence==='audible')throw new Error('Indice visuel ne peut pas être prouvé par audio seul');
+  if(!['A','B'].includes(o.reviewer))throw new Error('Relecteur invalide');
+  if(o.notes!==undefined&&typeof o.notes!=='string')throw new Error('Notes invalides');
+  return {cue:o.cue,start_s:round(o.start_s),end_s:round(o.end_s),evidence:o.evidence,
+    reviewer:o.reviewer,notes:(o.notes||'').slice(0,400)};
+}
+function validateViewerRating(r){
+  if(!r||typeof r!=='object')throw new Error('Avis invalide');
+  if(!['A','B'].includes(r.reviewer))throw new Error('Relecteur invalide');
+  if(!LEVELS.includes(r.dimension))throw new Error('Dimension artistique inconnue');
+  bounds(r.score,0,5,'score');
+  if(r.assessment!=='subjective_viewer_impression')throw new Error('Une note de présence est une impression de spectateur');
+  return {reviewer:r.reviewer,dimension:r.dimension,score:r.score,
+    assessment:'subjective_viewer_impression',notes:String(r.notes||'').slice(0,400)};
+}
+function validateReview(doc){
+  if(!doc||doc.schema!==VERSION||doc.kind!=='private_manual_review'||doc.allow_network!==false||doc.export_media!==false)throw new Error('Schéma ou confidentialité invalides');
+  if(!doc.source_name||typeof doc.source_name!=='string'||doc.source_name.length>256)throw new Error('Nom de média requis');
+  bounds(doc.duration_s,.1,86400,'duration_s');
+  if(!Array.isArray(doc.observations)||doc.observations.length>10000)throw new Error('Observations invalides');
+  if(!Array.isArray(doc.viewer_ratings)||doc.viewer_ratings.length>1000)throw new Error('Avis invalides');
+  const observations=doc.observations.map(o=>validateObservation(o,doc.duration_s));
+  const viewer_ratings=doc.viewer_ratings.map(validateViewerRating);
+  if(doc.automatic_intent_inference||doc.automatic_arousal_inference||doc.ready_for_training)throw new Error('Attribution automatique d’intention interdite');
+  return {schema:VERSION,kind:'private_manual_review',source_name:doc.source_name,duration_s:doc.duration_s,
+    allow_network:false,export_media:false,observations,viewer_ratings,
+    evidence_type:'human_observations_and_subjective_ratings',
+    reviewed_by_two_independent_people_verified:false,ready_for_training:false,
+    automatic_intent_inference:false,automatic_arousal_inference:false};
+}
+function newReview(sourceName,duration){return validateReview({schema:VERSION,kind:'private_manual_review',source_name:sourceName,duration_s:duration,
+  allow_network:false,export_media:false,observations:[],viewer_ratings:[]});}
+function compareRatings(review){const d=validateReview(review),out=[];
+  for(const dim of LEVELS){const a=d.viewer_ratings.filter(x=>x.dimension===dim&&x.reviewer==='A');
+   const b=d.viewer_ratings.filter(x=>x.dimension===dim&&x.reviewer==='B');
+   if(!a.length||!b.length)continue;
+   const x=a[a.length-1].score,y=b[b.length-1].score;
+   out.push({dimension:dim,first:x,second:y,delta:Math.abs(x-y),consensus:'not_a_fact_about_subject'});
+  }
+  return {ratings:out,independent_reviewers_verified:false,psychological_intention_inferred:false,
+    audience_response_universal:false};
+}
+return {VERSION,SCENES,INTENTS,CUES,CUE_IDS,LEVELS,OBSERVATION_EVIDENCE,REPORT_IMPACT,
+  validateSpec,buildPlan,validateObservation,validateViewerRating,validateReview,newReview,compareRatings};
+});
+
+</script>
+<script>
+'use strict';
+const P=RetouchePresenceP16, $=id=>document.getElementById(id);
+let currentPlan=null, currentReview=null, localURL=null;
+const showMessage=(message,isError=false)=>{$('live').textContent=message;$('live').classList.toggle('warning',isError)};
+function switchTab(active){for(const v of ['director','observer']){const on=v===active;$('tab-'+v).setAttribute('aria-selected',String(on));$(v).classList.toggle('hidden',!on);}showMessage('');}
+$('tab-director').addEventListener('click',()=>switchTab('director'));$('tab-observer').addEventListener('click',()=>switchTab('observer'));
+for(const [id,item] of Object.entries(P.SCENES)){const o=document.createElement('option');o.value=id;o.textContent=item.label;$('scene').append(o)}
+for(const [id,item] of Object.entries(P.INTENTS)){
+ const wrap=document.createElement('div');wrap.className='field';const label=document.createElement('label');label.setAttribute('for','s-'+id);label.textContent=item.label;
+ const line=document.createElement('div');line.className='sliderline';const sl=document.createElement('input');sl.type='range';sl.min=0;sl.max=5;sl.step=1;sl.value={sensualite:4,dominance:3,elegance:4,charme:3,mystere:2}[id];sl.id='s-'+id;
+ const out=document.createElement('output');out.textContent=sl.value;sl.addEventListener('input',()=>out.textContent=sl.value);line.append(sl,out);wrap.append(label,line);$('sliders').append(wrap);
+ const x=document.createElement('option');x.value=id;x.textContent=item.short;$('rating-dimension').append(x)
+}
+for(const [key,item] of Object.entries(P.CUES)){const o=document.createElement('option');o.value=key;o.textContent=item.label;$('cue').append(o)}
+function downloadJSON(obj,name){const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+$('create').addEventListener('click',()=>{try{const strengths=Object.fromEntries(P.LEVELS.map(k=>[k,Number($('s-'+k).value)]));currentPlan=P.buildPlan({fictional_adult:true,scene:$('scene').value,duration_s:Number($('duration').value),strengths});
+ $('beats').className='';$('beats').replaceChildren();for(const beat of currentPlan.beats){const node=document.createElement('article');node.className='beat';const time=document.createElement('div');time.className='time';time.textContent=`${beat.start_s.toFixed(2)}–${beat.end_s.toFixed(2)} s · ${beat.layer}`;const title=document.createElement('strong');title.textContent=beat.id.replaceAll('_',' ');const desc=document.createElement('p');desc.textContent=beat.direction;const labels=document.createElement('div');for(const cue of beat.cues){const tag=document.createElement('span');tag.className='pill';tag.textContent=P.CUES[cue]?.label||cue;labels.append(tag)}node.append(time,title,desc,labels);$('beats').append(node)}
+ $('beatcount').textContent=currentPlan.beats.length+' séquences superposées';$('export-plan').disabled=false;$('copy-prompt').disabled=false;showMessage('Direction créée : aucune vidéo générée.');}catch(e){showMessage(e.message,true)}});
+$('export-plan').addEventListener('click',()=>{if(currentPlan)downloadJSON(currentPlan,'RetoucheCinema_P16_Direction_FICTIVE.json')});
+$('copy-prompt').addEventListener('click',()=>{if(!currentPlan)return;const message=`Personnage adulte fictif. ${P.SCENES[currentPlan.scene].label}, ${currentPlan.duration_s} secondes.\n`+currentPlan.beats.map(x=>`${x.start_s}–${x.end_s}s : ${x.direction}`).join('\n');navigator.clipboard?.writeText(message).then(()=>showMessage('Instructions copiées.')).catch(()=>{showMessage('Copie indisponible ici ; utilise l’export JSON.',true)})||showMessage('Copie indisponible ici ; utilise l’export JSON.',true)});
+$('video-file').addEventListener('change',()=>{const f=$('video-file').files[0];if(!f)return;if(localURL)URL.revokeObjectURL(localURL);localURL=URL.createObjectURL(f);const v=$('player');v.src=localURL;v.classList.remove('hidden');$('videoplace').classList.add('hidden');v.onloadedmetadata=()=>{try{currentReview=P.newReview(f.name,v.duration);$('start').value='0';$('end').value=Math.min(.5,v.duration).toFixed(2);$('export-review').disabled=false;renderReview();showMessage('Vidéo chargée localement ; aucune transmission réseau.')}catch(e){showMessage(e.message,true)}};});
+$('player').addEventListener('timeupdate',()=>{$('time').textContent=$('player').currentTime.toFixed(2)+' s'});
+for(const [id,s] of [['prev-frame',-.1],['next-frame',.1]]){$(id).addEventListener('click',()=>{const v=$('player');if(v.readyState)v.currentTime=Math.max(0,Math.min(v.duration,v.currentTime+s));});}
+$('rating').addEventListener('input',()=>{$('rating-value').textContent=$('rating').value});
+function renderReview(){if(!currentReview)return;const entries=$('entries');entries.className='';entries.replaceChildren();for(const e of currentReview.observations){const div=document.createElement('div');div.className='entry';const st=document.createElement('strong');st.textContent=`${P.CUES[e.cue].label} · ${e.start_s}–${e.end_s} s`;const extra=document.createElement('div');extra.textContent=`${e.reviewer} · ${e.evidence} · ${e.notes||'—'}`;div.append(st,extra);entries.append(div)}for(const r of currentReview.viewer_ratings){const div=document.createElement('div');div.className='entry';div.textContent=`Avis ${r.reviewer} · ${P.INTENTS[r.dimension].short} : ${r.score}/5 (impression subjective)`;entries.append(div)}if(!entries.children.length){entries.className='empty';entries.textContent='Aucune observation.'}$('entry-count').textContent=(currentReview.observations.length+currentReview.viewer_ratings.length)+' entrées';}
+$('add-observation').addEventListener('click',()=>{try{if(!currentReview)throw Error('Choisis d’abord une vidéo.');const x=P.validateObservation({cue:$('cue').value,start_s:Number($('start').value),end_s:Number($('end').value),evidence:$('evidence').value,reviewer:$('reviewer').value,notes:$('notes').value},currentReview.duration_s);currentReview.observations.push(x);P.validateReview(currentReview);renderReview();showMessage('Observation ajoutée localement.')}catch(e){showMessage(e.message,true)}});
+$('add-rating').addEventListener('click',()=>{try{if(!currentReview)throw Error('Choisis d’abord une vidéo.');const r=P.validateViewerRating({reviewer:$('rating-reviewer').value,dimension:$('rating-dimension').value,score:Number($('rating').value),assessment:'subjective_viewer_impression'});currentReview.viewer_ratings.push(r);P.validateReview(currentReview);renderReview();showMessage('Impression subjective enregistrée.')}catch(e){showMessage(e.message,true)}});
+$('compare').addEventListener('click',()=>{try{if(!currentReview)throw Error('Aucune vidéo chargée.');const c=P.compareRatings(currentReview);$('comparison').textContent=c.ratings.length?c.ratings.map(x=>`${P.INTENTS[x.dimension].short} : A=${x.first}, B=${x.second}, écart ${x.delta}/5`).join(' · ')+' — sans preuve d’intention intérieure.':'Il faut une note A et B sur la même dimension pour comparer.';}catch(e){showMessage(e.message,true)}});
+$('export-review').addEventListener('click',()=>{try{if(!currentReview)throw Error('Aucun relevé.');const d=P.validateReview(currentReview);downloadJSON(d,'RetoucheCinema_P16_Observations_PRIVE.json');showMessage('JSON téléchargé : les noms de fichiers et horodatages sont privés.')}catch(e){showMessage(e.message,true)}});
+</script></body></html>
+
