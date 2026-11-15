@@ -21,7 +21,7 @@
     return null;
   }
   const finite = x => typeof x === 'number' && Number.isFinite(x);
-  function observation(result, sample, elapsedMs) {
+  function observation(result, sample, elapsedMs, resources) {
     if (!result || !STATES.has(result.status) || !sample || !Array.isArray(sample.times) ||
         sample.times.length !== 2 || !sample.times.every(finite) ||
         sample.times[1] - sample.times[0] < MIN_DELTA_S - 0.005 ||
@@ -33,7 +33,8 @@
         c.box[0]>=0 && c.box[1]>=0 && c.box[2]>0 && c.box[3]>0 &&
         c.box[0]+c.box[2]<=sample.width && c.box[1]+c.box[3]<=sample.height)
       .map(c=>({box:c.box.map(v=>Math.round(v)),support:Math.max(0,Math.round(c.support||0))}));
-    const status = result.status === 'local_motion_candidate' && !candidates.length ? 'abstain_invalid_evidence':result.status;
+    const detectedStatus = result.status === 'local_motion_candidate' && !candidates.length ? 'abstain_invalid_evidence':result.status;
+    const status = resources && resources.state==='abstain' ? 'abstain_resource_budget':detectedStatus;
     return Object.freeze({
       version:1,provenance:SOURCE,status,
       action:'no_automatic_change',confidence:'not_calibrated',
@@ -42,20 +43,21 @@
       analysisDimensions:[sample.width,sample.height],
       candidates:status==='local_motion_candidate'?candidates:[],
       processorMs:finite(elapsedMs)?+elapsedMs.toFixed(2):null,
+      resourceEvaluation:resources || null,
       limitations:'Hypothèses 2D seulement : aucune preuve de mouvement indépendant, de main, de profondeur, de contact ou de préhension.'
     });
   }
   function makeAbortError() { const e = new Error('Analyse interrompue'); e.name='AbortError';return e; }
-  function measureSize(w,h) {
+  function measureSize(w,h,maxSize=MAX_SIDE) {
     if (!finite(w)||!finite(h)||w<=0||h<=0) return null;
-    const k=Math.min(MAX_SIDE[0]/w,MAX_SIDE[1]/h,1);
+    const k=Math.min(maxSize[0]/w,maxSize[1]/h,1);
     const ww=Math.floor(w*k),hh=Math.floor(h*k);
     if (ww<64 || hh<64) return null;
     return [ww,hh];
   }
   // The callback runs only when the local video's decoded frame is presented.
   // We explicitly reject engines without this API instead of guessing timestamps.
-  function sampleLocalVideo(file, {signal,documentRef,timeoutMs=MAX_ANALYSIS_MS}={}) {
+  function sampleLocalVideo(file, {signal,documentRef,timeoutMs=MAX_ANALYSIS_MS,maxSize=MAX_SIDE}={}) {
     const doc=documentRef || (typeof document!=='undefined'?document:null);
     if (!doc || !doc.createElement) return Promise.reject(Error('Document indisponible'));
     const prelim=eligibility(file,{hidden:doc.visibilityState==='hidden'});
@@ -91,7 +93,7 @@
         if(finished)return;
         const t=meta?.mediaTime;
         if(finite(t) && video.videoWidth>0 && video.videoHeight>0 && (times.length===0 || t-times[0]>=MIN_DELTA_S)){
-          if(!size){size=measureSize(video.videoWidth,video.videoHeight);if(!size){end(Error('aspect_ratio_unsupported'));return}
+          if(!size){size=measureSize(video.videoWidth,video.videoHeight,maxSize);if(!size){end(Error('aspect_ratio_unsupported'));return}
              cv.width=size[0];cv.height=size[1];}
           try{ctx.drawImage(video,0,0,size[0],size[1]);frames.push(ctx.getImageData(0,0,size[0],size[1]));times.push(t)}
           catch(_){end(Error('canvas_read_failed'));return}
@@ -125,10 +127,10 @@
     const status=d.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.style.cssText='font-size:12px;line-height:1.5';panel.append(status);
     const detail=d.createElement('details');const summary=d.createElement('summary');summary.textContent='Diagnostic de l’analyse (sans images)';const pre=d.createElement('pre');pre.style.cssText='font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere';detail.append(summary,pre);panel.append(detail);
     pick.parentNode.insertBefore(panel,pick.nextSibling);
-    let chosen=null,controller=null,last=null,nonce=0;
+    let chosen=null,controller=null,last=null,nonce=0,profile='full';
     const reset=()=>{nonce++;if(controller)controller.abort();controller=null;button.disabled=false;cancel.hidden=true;last=null;pre.textContent='';};
     input.addEventListener('change',e=>{
-      reset();const files=Array.from(e.target.files||[]);
+      reset();profile='full';const files=Array.from(e.target.files||[]);
       // Batch import stays controlled by app; do not silently choose one video.
       chosen=files.length===1?files[0]:null;panel.hidden=files.length===0;button.disabled=!chosen;
       status.textContent=chosen?'Vidéo sélectionnée. Analyse facultative, entièrement locale.':
@@ -141,13 +143,22 @@
       if(error){status.textContent='Analyse non lancée : '+error;return;}
       const run=++nonce;controller=new AbortController();button.disabled=true;cancel.hidden=false;status.textContent='Analyse de deux images sur l’appareil…';
       try{
-        const sample=await sampleLocalVideo(chosen,{signal:controller.signal,documentRef:d});
+        const sampleT0=performance.now();
+        const maxSize=profile==='reduced'?[128,96]:MAX_SIDE;
+        const sample=await sampleLocalVideo(chosen,{signal:controller.signal,documentRef:d,maxSize});
         if(run!==nonce)return;
+        const captureMs=performance.now()-sampleT0;
         const t0=performance.now();const result=analyzer(sample.a,sample.b);const elapsed=performance.now()-t0;
-        const evidence=observation(result,sample,elapsed);last=evidence;
+        const evaluator=root.RetoucheMotionResourceGuard?.assess;
+        // Never promote a candidate if the resource evaluator is absent or broken.
+        const resources=typeof evaluator==='function'?evaluator({captureMs,processorMs:elapsed,width:sample.width,height:sample.height,profile,visibility:d.visibilityState}):null;
+        const evidence=resources?observation(result,sample,elapsed,resources):Object.freeze({status:'abstain_resource_guard_unavailable',provenance:SOURCE,action:'no_automatic_change',candidates:[]});
+        if(resources?.nextProfile==='reduced')profile='reduced';
+        last=evidence;
         // Local-only advisory data; never forwarded to DIAG/send, storage or export.
         pre.textContent=JSON.stringify(evidence,null,2);
-        status.textContent=evidence.status==='local_motion_candidate'
+        // The diagnostic contains timings only; it never includes pixels, file names or paths.
+        status.textContent=evidence.status==='abstain_resource_budget'?'Analyse trop coûteuse ou mesure invalide : aucune conclusion.':evidence.status==='abstain_resource_guard_unavailable'?'Protection de ressources indisponible : aucune conclusion.':evidence.status==='local_motion_candidate'
           ? `${evidence.candidates.length} région(s) de mouvement possible. Aucun geste ni objet identifié.`
           :evidence.status.startsWith('abstain')?'Observations insuffisantes : aucune conclusion automatique.'
           :'Aucun petit mouvement étayé dans ces deux images. Aucun traitement automatique.';
