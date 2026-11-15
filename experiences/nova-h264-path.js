@@ -11,7 +11,7 @@ const allowed=new Set([
  "h264-unsafe-color","h264-timeline-incompatible",
  "h264-decoder-unavailable","h264-encoder-unavailable",
  "resource-budget","audio-not-preservable","analysis-unavailable","cancelled",
- "h264-opfs-unavailable"
+ "h264-opfs-unavailable","h264-hd720-requires-opfs"
 ]);
 const result=(status,{proposal=null,estimatedMiB=null,audio="not-tested",sourceFps=null}={})=>
  Object.freeze({
@@ -35,7 +35,7 @@ function colorSafe(info,checkColor){
 }
 async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
  avsyncAnalyze,avsyncVerify,checkDecoder,checkEncoder,sourceAudit,checkColor,
- checkOpfs}={}){
+ checkOpfs,outputProfile="standard",storageMode="memory"}={}){
  const stop=()=>signal?.aborted===true;
  if(stop())return result("cancelled");
  try{
@@ -44,6 +44,9 @@ async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
      !info||typeof info.codec!=="string"||!/^avc[13]\./.test(info.codec))
     return result("h264-unsafe-metadata");
   const w=info.W,h=info.H,n=info.ns,d=info.durationUs;
+  if(!["standard","h264-hd720-opfs-3s"].includes(outputProfile))
+   return result("analysis-unavailable");
+  const hd720=outputProfile==="h264-hd720-opfs-3s";
   if(!safe(w)||!safe(h)||!safe(n)||!safe(d)||
      !safe(info.dw)||!safe(info.dh))
     return result("h264-unsafe-metadata");
@@ -51,7 +54,11 @@ async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
     return result("h264-pilot-limit");
   // Le précontrôle >24s ne doit jamais approuver un navigateur incapable
   // d'ouvrir la sortie OPFS. Une source H.264 sans couleur fiable reste refusée.
-  if(d>24000000){
+  if(hd720&&(d>3000000||d<1||
+    Math.min(info.dw,info.dh)<720||Math.max(info.dw,info.dh)<1280))
+   return result("h264-pilot-limit");
+  if(hd720&&storageMode!=="opfs")return result("h264-hd720-requires-opfs");
+  if(d>24000000||hd720){
    const available=checkOpfs||(()=>globalThis.NOVA_OPFS_STREAM?.probe?.({signal}));
    let ok=false;
    try{ok=(await available())===true}catch{}
@@ -81,11 +88,13 @@ async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
     return result("h264-timeline-incompatible");
    const durationSeconds=d/1e6;
    settings=planFn({duration:durationSeconds,width:info.dw,height:info.dh,
-    bytes:file.size,profile:d>24000000?"h264-opfs-48s":
+    bytes:file.size,profile:hd720?"h264-hd720-opfs-3s":
+     d>24000000?"h264-opfs-48s":
      d>12000000?"h264-windowed-24s":undefined});
    if(!Number.isSafeInteger(settings.fps)||settings.fps!==15||
       !safe(settings.width)||!safe(settings.height)||!safe(settings.frames)||
-      settings.frames>(d>24000000?720:d>12000000?360:180))
+      settings.frames>(hd720?45:d>24000000?720:d>12000000?360:180)||
+      settings.width*settings.height>(hd720?1280*720:640*640))
     return result("h264-pilot-limit");
    const timeAudit=checkTime({
     ptsUs:timed.nonnegative.map(p=>p.ptsUs),durationSeconds,fps:settings.fps
@@ -113,7 +122,7 @@ async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
   if(supported?.supported!==true)return result("h264-decoder-unavailable");
   const encCfg={codec:"avc1.42E01F",width:settings.width,height:settings.height,
    framerate:settings.fps,
-   bitrate:Math.min(2500000,Math.max(550000,
+   bitrate:hd720?4000000:Math.min(2500000,Math.max(550000,
     settings.width*settings.height*settings.fps*.28)),
    avc:{format:"avc"},latencyMode:"quality"};
   try{supported=await encoder(encCfg)}catch{supported=null}
