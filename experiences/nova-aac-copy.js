@@ -126,7 +126,25 @@ function extract(b,sizeLimit,mdatRanges){
   const channels=v.getUint16(entry+24),sampleRate=v.getUint32(entry+32)>>>16;
   if((channels!==1&&channels!==2)||sampleRate!==timescale)
    fail("canaux ou timescale AAC incompatibles");
-  const asc=ascFromEsds(b,select(boites(b,entry+36,entry+entrySize),"esds"),sampleRate,channels);
+  // MOV QuickTime peut utiliser la version 1 de l'entrée mp4a :
+  // 16 octets supplémentaires puis un conteneur wave avec esds.
+  // L'ancien parseur commençait à +36 et prenait ces 16 octets
+  // pour une boîte MP4, provoquant un faux rejet « taille incohérente ».
+  const qtVersion=v.getUint16(entry+16);
+  if(qtVersion!==0&&qtVersion!==1)fail("version mp4a QuickTime inconnue");
+  const children=boites(b,entry+(qtVersion===1?52:36),entry+entrySize);
+  const wave=select(children,"wave");
+  if(qtVersion===1&&!wave)fail("configuration AAC QuickTime wave absente");
+  const nested=wave?boites(b,wave.start,wave.end):[];
+  if(wave){
+   const frma=select(nested,"frma");
+   if(!frma||frma.end-frma.start!==4||four(b,frma.start)!=="mp4a")
+    fail("wave QuickTime sans format audio mp4a identifiable");
+  }
+  const direct=select(children,"esds"),indirect=select(nested,"esds");
+  if((direct&&indirect)||(!direct&&!indirect))
+   fail("configuration esds absente ou ambiguë");
+  const asc=ascFromEsds(b,direct||indirect,sampleRate,channels);
   const count=v.getUint32(stsz.start+8),fixed=v.getUint32(stsz.start+4);
   if(!count||count>MAX_PACKETS)fail("quantité de paquets AAC excessive");
   const rollDistance=lireRoll(b,tables,count);
