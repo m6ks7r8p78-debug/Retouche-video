@@ -370,7 +370,13 @@ var Mp4Muxer = (() => {
       stsc(track),
       stsz(track),
       stco(track),
-      needsCtts ? ctts(track) : null
+      needsCtts ? ctts(track) : null,
+      track.info.type === "audio" && track.info.rollDistance != null ? fullBox("sgpd", 1, 0, [
+        ascii("roll"), u32(2), u32(1), i16(track.info.rollDistance)
+      ]) : null,
+      track.info.type === "audio" && track.info.rollDistance != null ? fullBox("sbgp", 0, 0, [
+        ascii("roll"), u32(1), u32(track.samples.length), u32(1)
+      ]) : null
     ]);
   };
   var stsd = (track) => fullBox("stsd", 0, 0, [
@@ -1479,6 +1485,11 @@ var Mp4Muxer = (() => {
           `Invalid number of audio channels: ${options.audio.numberOfChannels}. Must be a positive integer.`
         );
       }
+      // Extension NOVA : ne recopier que les groupes AAC roll de distance -1/0.
+      if (options.audio.rollDistance !== void 0 && (options.audio.codec !== "aac" ||
+          ![-1, 0].includes(options.audio.rollDistance))) {
+        throw new TypeError("Unsupported AAC roll pre-roll distance");
+      }
       if (!Number.isInteger(options.audio.sampleRate) || options.audio.sampleRate <= 0) {
         throw new TypeError(
           `Invalid audio sample rate: ${options.audio.sampleRate}. Must be a positive integer.`
@@ -1583,6 +1594,7 @@ var Mp4Muxer = (() => {
           codec: __privateGet(this, _options).audio.codec,
           numberOfChannels: __privateGet(this, _options).audio.numberOfChannels,
           sampleRate: __privateGet(this, _options).audio.sampleRate,
+          rollDistance: __privateGet(this, _options).audio.rollDistance ?? null,
           decoderConfig: null
         },
         timescale: __privateGet(this, _options).audio.sampleRate,
