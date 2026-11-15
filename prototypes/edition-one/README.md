@@ -1,38 +1,43 @@
-# RetoucheProAI — Édition One
+# RetoucheProAI — Édition One, revue de design v2
 
-## Statut
-Prototype interactif autonome, sans dépendance réseau, créé le 15 novembre 2026. **Ce n’est pas une version livrée de retoucheproai.com et aucun traitement IA réel n’est exécuté.** Ne pas fusionner aveuglément avec `main`.
+> **Statut : prototype d'interface interactif, non publié en production.** Aucune restauration IA, analyse AR ou export vidéo n'est exécuté dans ce document HTML. Les préréglages n'ajustent que le rendu affiché dans le navigateur. L'option « Pour X » est un choix d'interface sans encodage réel.
 
-## Vision de design
-La photo ou vidéo dirige l’interface. Identité éditoriale premium : papier chaud et encre profonde pour découvrir, atelier charbon pour manipuler le média, une couleur signature corail sur l’action d’import ; un accent citron très limité pour la sortie/validation.
+## Direction artistique validée comme base
 
-Inspiration de principes, sans copier d'interface : Apple Photos (priorité au contenu), Adobe Lightroom (outils par besoin à une main), VSCO (prévisualisation immersive), Linear (cohérence et retrait du superflu). Pas de robots, halos « IA », pavés de fonctionnalités, ni dégradés bleu-violet omniprésents.
+- Accueil éditorial lumineux, photographie dominante, typographie chaleureuse, appel à l'action unique.
+- Atelier photo immersif sombre, image occupant la majorité de l'écran, comparateur tactile.
+- Navigation flottante compacte ; absence d'écran saturé de contrôles ; zones tactiles généreuses.
+- Accompagnement en langage courant sans jargon, options avancées dans un panneau secondaire.
+- Un seul parcours commun pour adolescents et seniors ; préférences de grands caractères et mouvements réduits.
 
-## Parcours
-1. Accueil : promesse éditoriale, photographie de démonstration, seul appel à l’action « Ajouter une photo ou vidéo », deux entrées simples « Embellir » et « Restaurer ».
-2. Atelier : média pleine largeur, comparaison avant/après à la glisse horizontale, maintien « Voir l’original », réglages secondaires dépliables, choix de sortie.
-3. Créations : reprise d’un média importé dans la session, vue lisible ; prévoir la vraie persistance de projets dans l’application.
-4. Options : taille du texte et réduction d’animation, conformément à l’accessibilité iOS.
-5. Sortie : Qualité maximale, Standard, Pour X (publication X manuelle par l’utilisateur). Aucun de ces choix n’exécute d’export dans le prototype.
+## Ajouts de cette version
 
-## Réalisation actuelle
-- Un `index.html` autonome, CSS et JS intégrés, image CC0 intégrée en base64, import local image ou vidéo.
-- Pour la photo, avant/après **simulation par filtres CSS**, non sauvegardée, sans supposer de vraie récupération de détails.
-- Pour la vidéo, lecteur HTML5 local compatible avec les codecs du navigateur, sans conversion.
-- Comparateur accessible au clavier, commandes au doigt, appui prolongé pour l’original, tiroir de sortie.
-- Quatre tailles de fenêtre contrôlées en Chromium (320×700, 390×844, 430×932, 768×1024) : navigation, réglages, import PNG, choix « Pour X » et absence de débordement horizontal.
-- Il n’y a pas eu de test sur un iPhone physique / Safari ; ceux-ci restent nécessaires.
+1. Signature visuelle raffinée (micro-typographie, couleurs, reliefs, boutons et navigation).
+2. Bandeau « parcours » : sélectionner amélioration, restauration, filtre AR, ou adaptation de format dans une feuille modale au toucher.
+3. Trois aperçus de rendu (Naturel, Doux, Éclat) réellement interactifs, basés sur des réglages CSS *non génératifs*.
+4. Import local d'une image ou d'une vidéo, avec désactivation des aperçus photo sur une vidéo.
+5. Comparateur avec glisser tactile, clavier et bouton pour voir l'original.
+6. Choix d'export standard / maximum / X (préconfiguration esthétique uniquement).
+7. Options gros caractères et mouvement réduit ; maquette utilisable sans abonnement ni service externe.
 
-## Étapes d’intégration à confier à Claude ou à l’équipe
-1. **Garder le moteur et les données du projet existants** (`app.js`, import, traitements, modèles, consentements, service worker). Ne pas remplacer `index.html` de production par la maquette brute.
-2. Isoler le design en composants CSS/JS de présentation ; brancher à la machine d’états réelle (import, analyse, traitement, projet, validation visuelle, export).
-3. Ne jamais afficher une restauration comme « terminée » sans succès du moteur ; distinguer la prévisualisation du fichier exporté.
-4. L’utilisateur doit pouvoir facilement forcer la fidélité originale, annuler toute modification et afficher la provenance des reconstructions.
-5. Reprendre les exports « normale », « maximale », « pour X » existants. Ne pas promettre de suppression de compression par X.
-6. Conserver import multiple, suivi AR, restauration visages, audio, projets, données de recherche et modes avancés, sous une couche intuitive.
-7. Ajouter tests de non-régression PWA, clavier/VoiceOver, réduction des animations, contraste, petite largeur, gros texte, orientation, performances sur iPhone 15 Pro Max.
-8. Ne pas publier les 157 vidéos privées ni leurs modèles ; pas de télémétrie ou transfert média sans consentement et traçabilité.
-9. Faire valider captures réelles iPhone avant de fusionner ; ne pas modifier la branche expérimentale en cours sans coordination.
+## Tests effectués
 
-## Image de démonstration
-Photographie de café CC0, Rachel Michetti / Pikolo Espresso Bar, distribuée dans `skimage.data.coffee` (documentation : pas de restrictions de copyright). Elle est intégrée localement pour que la maquette soit utilisable sans réseau.
+Chromium automatisé en 320×700, 375×812, 390×844, 430×932, 768×1024 ; aucune erreur JavaScript ou débordement horizontal. Vérification du parcours de navigation, des styles, de la modale d'objectif, de l'export fictif, des préférences, et de l'import local d'un JPEG.
+
+**Non encore validé :** comportement sur iPhone Safari physique, VoiceOver, contraste WCAG audité, vidéos longues 3–10 minutes, mémoire en conditions réelles, intégration aux moteurs de RetoucheProAI, traitement IA, qualité d'export, préservation des sauvegardes, et tests de non-régression complets.
+
+## Intégration proposée après validation explicite de l'utilisateur
+
+1. Conserver la version actuelle et les branches expérimentales intactes ; préparer une branche d'intégration nouvelle.
+2. Exposer la navigation et les étapes existantes sous l'habillage Édition One, sans réécrire les moteurs internes ; relier les boutons à l'état réel de `app.js`.
+3. Brancher les contrôles de la fiche média aux fonctions existantes (import, analyse, aperçu, édition, export), avec indications honnêtes des fonctionnalités indisponibles.
+4. Intégrer le Directeur IA seulement après son propre cycle de validation indépendant ; ne jamais annoncer de traitement AR s'il ne fonctionne pas.
+5. Préserver les réglages experts et les chemins de secours, y compris les anciens formats de projets et la confidentialité.
+6. Tester sur Safari iPhone, les médias réels et les cas d'échec ; conserver un retour arrière simple.
+7. **Ne déployer et ne fusionner vers `main` qu'après autorisation explicite**, rapport de tests et vérification de la page d'accueil et des exports. Claude n'est pas nécessaire pour ces opérations : elles sont réalisables directement avec les accès GitHub appropriés.
+
+## Fichiers
+
+- `index.html` : le prototype autonome à ouvrir dans un navigateur.
+- `v2-accueil.png`, `v2-atelier.png`, `v2-reglages.png`, `v2-export.png` : captures générées par Chromium, taille 430×932.
+
