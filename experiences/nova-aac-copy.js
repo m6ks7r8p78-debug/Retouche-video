@@ -38,6 +38,29 @@ function ascFromEsds(b,esds,sampleRate,channels){
  }
  fail("AAC-LC ou paramètres ASC non confirmés");
 }
+/* ISO-BMFF : préchargement AAC indiqué par sgpd/sbgp de type "roll".
+ * Ne transférer que le cas entièrement explicite : un groupe par piste,
+ * affecté à tous les échantillons, distance -1 ou 0. Les autres refusent.
+ */
+function lireRoll(b,tables,sampleCount){
+ const groups=tables.filter(x=>x.type==="sgpd"||x.type==="sbgp");
+ if(!groups.length)return null;
+ if(groups.length!==2)fail("groupes AAC incomplets ou multiples");
+ const desc=groups.find(x=>x.type==="sgpd"),map=groups.find(x=>x.type==="sbgp");
+ if(!desc||!map)fail("groupe de préchargement incomplet");
+ const v=dv(b);
+ if(desc.start+18>desc.end||map.start+20>map.end||
+   b[desc.start]!==1||v.getUint32(desc.start)&0xffffff||
+   v.getUint32(map.start)!==0||
+   four(b,desc.start+4)!=="roll"||four(b,map.start+4)!=="roll"||
+   v.getUint32(desc.start+8)!==2||v.getUint32(desc.start+12)!==1||
+   v.getUint32(map.start+8)!==1||
+   v.getUint32(map.start+12)!==sampleCount||v.getUint32(map.start+16)!==1)
+  fail("groupes d'échantillons AAC/priming non représentables");
+ const distance=v.getInt16(desc.start+16);
+ if(distance!==-1&&distance!==0)fail("distance de préchargement AAC non couverte");
+ return distance;
+}
 function extract(b,sizeLimit,mdatRanges){
  const root=boites(b,0,b.byteLength),tracks=root.filter(x=>x.type==="trak");
  if(tracks.length>16)fail("trop de pistes");
@@ -57,11 +80,8 @@ function extract(b,sizeLimit,mdatRanges){
   const timescale=v.getUint32(mdhd.start+(version===1?20:12));
   if(!safe(timescale)||!timescale)fail("timescale invalide");
   const stbl=need(b,need(b,mdia,"minf"),"stbl"),tables=kids(b,stbl);
-  // Les sample groups AAC peuvent porter les règles d'amorçage (roll/prol).
-  // Le muxer pilote ne copie pas encore ces groupes : refus explicite
-  // pour éviter de présenter un son décalé sur Safari/iPhone.
-  if(tables.some(x=>x.type==="sgpd"||x.type==="sbgp"))
-   fail("groupes d'échantillons AAC/priming non conservés par le muxer");
+  // Les groupes de préchargement doivent être entièrement décrits pour
+  // être recopiés avec la même sémantique dans le MP4 final.
   const stsd=select(tables,"stsd"),stsz=select(tables,"stsz"),stsc=select(tables,"stsc"),
     stts=select(tables,"stts"),stco=select(tables,"stco")||select(tables,"co64");
   if(!stsd||!stsz||!stsc||!stts||!stco)fail("index audio incomplet");
@@ -75,6 +95,7 @@ function extract(b,sizeLimit,mdatRanges){
   const asc=ascFromEsds(b,select(boites(b,entry+36,entry+entrySize),"esds"),sampleRate,channels);
   const count=v.getUint32(stsz.start+8),fixed=v.getUint32(stsz.start+4);
   if(!count||count>MAX_PACKETS)fail("quantité de paquets AAC excessive");
+  const rollDistance=lireRoll(b,tables,count);
   if(!fixed&&stsz.start+12+count*4>stsz.end)fail("tailles AAC tronquées");
   const sizes=Array.from({length:count},(_,i)=>fixed||v.getUint32(stsz.start+12+i*4));
   const nChunks=v.getUint32(stco.start+4),wide=stco.type==="co64";
@@ -115,7 +136,7 @@ function extract(b,sizeLimit,mdatRanges){
    }
   }
   if(packets.length!==count||!safe(t))fail("chronologie des AAC incomplète");
-  found.push({sampleRate,channels,asc,packets});
+  found.push({sampleRate,channels,asc,packets,rollDistance});
  }
  if(found.length!==1)fail(found.length?"pistes AAC multiples":"piste AAC absente");
  return found[0];
