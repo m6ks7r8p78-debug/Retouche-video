@@ -37,6 +37,14 @@ jobs:
         run: node studio-cinema/p22/src/build_p22_controls.cjs studio-cinema/p22/results/controls.json
       - name: Test actual P19 drawing and P21 localized pixel overlay
         run: python -m unittest discover -s studio-cinema/p22/tests -p 'test_p22_visual.py' -v
+      - name: Install free system FFmpeg with H264 and AAC support
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep -q libx264
+          ffmpeg -hide_banner -encoders | grep -q ' aac '
       - name: Render original P19 vector frames + P21 gestures (60 fps, synthetic audio)
         run: |
           python studio-cinema/p22/src/render_p22.py --data studio-cinema/p22/results/controls.json --out studio-cinema/p22/results/proof --render-preview
