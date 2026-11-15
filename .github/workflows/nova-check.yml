@@ -57,7 +57,7 @@ jobs:
         run: |
           export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -x "$CHROME"
-          node --test tests/nova-browser.test.mjs tests/nova-hevc-browser.test.mjs tests/nova-iphone-cadence.test.mjs
+          node --test tests/nova-browser.test.mjs tests/nova-hevc-browser.test.mjs tests/nova-iphone-cadence.test.mjs tests/nova-iphone-color.test.mjs tests/nova-iphone-mov-browser.test.mjs
 
   webkit:
     runs-on: ubuntu-latest
