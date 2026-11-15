@@ -148,10 +148,12 @@ def run_one(browser,base,source,viewport,out):
 def negative(browser,base,source):
     ctx=browser.new_context(viewport={"width":390,"height":844},is_mobile=True,has_touch=True)
     page=ctx.new_page()
+    # The native module is intentionally frozen. Mock the script response
+    # before navigation, instead of silently failing to overwrite its method.
+    page.route("**/experiences/nova-native-hd.js",lambda route:route.fulfill(
+      status=200,content_type="application/javascript",
+      body='var NOVA_NATIVE_HD={exporter:async()=>{throw Error("Audio natif NOVA : AAC PRIVATE_PERSON_FILENAME.mov invalid")}};'))
     page.goto(base+"/experiences/nova-final-av-lab/index.html",wait_until="load")
-    page.evaluate("""() => {NOVA_NATIVE_HD.exporter=async()=>{throw Error(
-      "Audio natif NOVA : AAC PRIVATE_PERSON_FILENAME.mov invalid"
-    )}}""")
     page.locator("#local-video").set_input_files(str(source))
     page.locator("#start").click()
     page.locator("#report-panel").wait_for(state="visible",timeout=10000)
