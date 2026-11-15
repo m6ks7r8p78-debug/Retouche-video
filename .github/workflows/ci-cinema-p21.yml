@@ -1,0 +1,30 @@
+name: Cinema P21 — procedural gestures and evidence QA
+on:
+  push:
+    paths:
+      - 'studio-cinema/p21/**'
+      - 'studio-cinema/p20/**'
+      - 'studio-cinema/p19/**'
+      - 'studio-cinema/p15/**'
+      - '.github/workflows/ci-cinema-p21.yml'
+  pull_request:
+    paths:
+      - 'studio-cinema/p21/**'
+      - 'studio-cinema/p20/**'
+      - 'studio-cinema/p19/**'
+      - 'studio-cinema/p15/**'
+      - '.github/workflows/ci-cinema-p21.yml'
+  workflow_dispatch:
+jobs:
+  microgesture-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Real P15-P21 integration with synthetic test data only
+        run: |
+          test -f studio-cinema/p15/behavior_ontology.js
+          test -f studio-cinema/p19/src/p19_micro_motion_generator.js
+          node --test studio-cinema/p21/tests/test_p21.cjs studio-cinema/p20/tests/test_p20.cjs studio-cinema/p19/tests/test_p19.cjs studio-cinema/p15/tests/test_behavior_ontology.cjs

@@ -1,0 +1,73 @@
+name: Cinema P22 — real P19 vector rendering and pixel observability
+on:
+  push:
+    paths:
+      - 'studio-cinema/p22/**'
+      - 'studio-cinema/p21/**'
+      - 'studio-cinema/p20/**'
+      - 'studio-cinema/p19/**'
+      - '.github/workflows/ci-cinema-p22.yml'
+  pull_request:
+    paths:
+      - 'studio-cinema/p22/**'
+      - 'studio-cinema/p21/**'
+      - 'studio-cinema/p20/**'
+      - 'studio-cinema/p19/**'
+      - '.github/workflows/ci-cinema-p22.yml'
+  workflow_dispatch:
+jobs:
+  vector-pixel-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated synthetic image dependencies
+        run: python -m pip install --disable-pip-version-check 'numpy<3' 'opencv-python-headless>=4.9,<5'
+      - name: Run real P15-P21 regression suite
+        run: node --test studio-cinema/p21/tests/test_p21.cjs studio-cinema/p20/tests/test_p20.cjs studio-cinema/p19/tests/test_p19.cjs studio-cinema/p15/tests/test_behavior_ontology.cjs
+      - name: Generate 480 P19/P21 synthetic controls
+        run: node studio-cinema/p22/src/build_p22_controls.cjs studio-cinema/p22/results/controls.json
+      - name: Test actual P19 drawing and P21 localized pixel overlay
+        run: python -m unittest discover -s studio-cinema/p22/tests -p 'test_p22_visual.py' -v
+      - name: Install free system FFmpeg with H264 and AAC support
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep -q libx264
+          ffmpeg -hide_banner -encoders | grep -q ' aac '
+      - name: Render original P19 vector frames + P21 gestures (60 fps, synthetic audio)
+        run: |
+          python studio-cinema/p22/src/render_p22.py --data studio-cinema/p22/results/controls.json --out studio-cinema/p22/results/proof --render-preview
+          python - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          p=Path('studio-cinema/p22/results/proof/P22_vector_microgestures_synthetic_60fps.mp4')
+          assert p.exists() and p.stat().st_size>10_000
+          result=json.loads(subprocess.check_output(['ffprobe','-v','error','-count_frames','-show_entries','stream=codec_type,codec_name,r_frame_rate,nb_read_frames:format=duration','-of','json',str(p)],text=True))
+          video=next(s for s in result['streams'] if s['codec_type']=='video')
+          audio=next(s for s in result['streams'] if s['codec_type']=='audio')
+          assert video['codec_name']=='h264',result
+          assert video['r_frame_rate']=='60/1',result
+          assert int(video['nb_read_frames'])==480,result
+          assert audio['codec_name']=='aac',result
+          assert abs(float(result['format']['duration'])-8)<.1,result
+          subprocess.run(['ffmpeg','-v','error','-i',str(p),'-f','null','-'],check=True)
+          print('P22 validated synthetic H264/AAC 480-frame visual proof:',p.stat().st_size,'bytes')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinema-p22-vector-synthetic-proof
+          path: |
+            studio-cinema/p22/results/proof/
+          if-no-files-found: error
+          retention-days: 3
