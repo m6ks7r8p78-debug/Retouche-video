@@ -23,6 +23,27 @@ const messages=Object.freeze({
  "analysis-unavailable":"Un module de vérification manque ou a échoué ; aucun résultat favorable.",
  "cancelled":"Précontrôle annulé ; aucune modification du fichier."
 });
+// Seuls les codes reconnus, jamais un texte d'exception, sont présentés.
+const causeLabels=Object.freeze({
+ "not-hevc-pilot":"Cette source utilise un autre codec que le pilote HEVC.",
+ "pilot-limit-exceeded":"Un plafond propre au pilote HEVC est dépassé.",
+ "pixel-aspect-unsupported":"La géométrie des pixels ne peut pas être conservée dans ce chemin.",
+ "color-metadata-unsupported":"La colorimétrie déclarée sort du profil SDR BT.709 pris en charge.",
+ "color-metadata-missing":"Les informations de couleur sont insuffisantes pour conclure.",
+ "sps-vui-unverified":"Le contrôle du SPS/VUI HEVC n'a pas pu être confirmé.",
+ "sps-vui-check-unavailable":"Le module local de contrôle SPS/VUI manque.",
+ "sps-vui-unsupported":"Des informations SPS/VUI contrôlées ne correspondent pas au pilote.",
+ "timeline-data-unavailable":"Les informations de temps disponibles sont insuffisantes.",
+ "timeline-duplicate-pts":"La chronologie contient des horodatages de présentation dupliqués.",
+ "timeline-negative-preroll":"Le pré-défilement temporel dépasse la limite du lecteur.",
+ "timeline-start-nonzero":"La première image présentable ne commence pas à zéro.",
+ "timeline-end-inconsistent":"La fin temporelle ne correspond pas à la durée déclarée.",
+ "timeline-first-keyframe-missing":"La première image n'est pas identifiée comme image clé.",
+ "timeline-check-unavailable":"Le module de contrôle des horodatages manque.",
+ "timeline-check-inconclusive":"Le contrôle des horodatages n'a pas abouti.",
+ "independent-checks-inconclusive":"Les contrôles indépendants n'expliquent pas le refus.",
+ "unresolved":"La cause exacte ne peut pas être établie."
+});
 // Les diagnostics détaillés sont issus exclusivement de compteurs techniques
 // bornés. Les autres critères restent non vérifiés en cas de refus précoce.
 function details(report){
@@ -52,6 +73,13 @@ function details(report){
  }
  if(reasons.length)
   items.push("Autres vérifications non concluantes ou non exécutées : notamment la couleur, les PTS et l'audio. Aucun export automatique.");
+ const diag=report?.diagnostic;
+ if(diag&&Object.hasOwn(causeLabels,diag.code)){
+  const prefix=diag.confidence==="confirmed-by-metadata"?
+   "Cause identifiable dans les métadonnées (d'autres causes restent possibles) : ":
+   "Vérification supplémentaire non concluante : ";
+  items.push(prefix+causeLabels[diag.code]+" Audio non testé à cette étape.");
+ }
  return items.length?" "+items.join(" "):"";
 }
 let selected=null,controller=null,generation=0,blobUrl=null;
