@@ -347,6 +347,10 @@ main{display:flex;flex-direction:column;flex:1;min-height:0}.stage-wrap{margin:0
   nativeTimer=setTimeout(()=>{
     if(!pendingHandoff || pendingHandoff.id!==id || !studioOpened)return;
     try{
+      if(frame.contentWindow.__AURA_NATIVE_BRIDGE_V1__ === true){
+        nativeTimer=setTimeout(()=>{if(pendingHandoff&&pendingHandoff.id===id){pendingHandoff=null;showStudioProblem('Le studio ne répond pas. Aucun traitement confirmé.')}},6000);
+        return;
+      }
       const doc=frame.contentDocument;
       const input=doc && doc.getElementById(S.kind==='video'?'f':'fp');
       if(!(input instanceof frame.contentWindow.HTMLInputElement) || input.type!=='file' || typeof frame.contentWindow.DataTransfer!=='function')
