@@ -63,6 +63,33 @@
       ]
     },
     {
+      "id": "nova-hd-color-evidence",
+      "label": "NOVA — récupération de preuve couleur HEVC SPS/VUI et VideoFrame",
+      "branch": "chatgpt-nova-iphone-hd-color-evidence-v1",
+      "pr": 52,
+      "observation": "draft-pr-observed",
+      "interface": "Couleur BT709 SDR vérifiable depuis conteneur, SPS/VUI et trames natives; conservation de protection HDR/P3; rapport local couleur sans média",
+      "workBoundary": "experiences/nova-hd-color.js; tests/nova-hd-color.test.mjs; branche expérimentale et PR #52",
+      "validationGap": "36/36 tests unitaires et 1/1 test navigateur Chromium H264/AAC réussis, y compris colr absent; pas encore testé sur HEVC réel Safari iPhone, aucune fusion ou publication",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/52",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43721591804"
+      ]
+    },
+    {
+      "id": "nova-native-hd",
+      "label": "NOVA — chemin expérimental décodage WebCodecs natif HEVC/H264 HD et AAC",
+      "branch": "chatgpt-nova-iphone-native-fullhd-v1",
+      "pr": 47,
+      "observation": "draft-pr-observed",
+      "interface": "Traitement local de vidéos Full-HD jusqu'à 2,2 Mpix, sans réduction automatique d'images/résolution; codec natif et AAC sous conditions strictes",
+      "workBoundary": "experiences/nova-native-hd*; tests/nova-native-hd*; workflow nova-native-hd",
+      "validationGap": "Tests Chromium H264/AAC synthétiques réussis; sur iPhone réel, le premier export HEVC a refusé pour preuve BT.709 incomplète; branche suppléée par nova-hd-color-evidence",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/47"
+      ]
+    },
+    {
       "id": "smallmotion",
       "label": "SmallMotion / PWA / budgets",
       "branch": "preprod-retoucheproai-local-v1",
@@ -214,6 +241,12 @@
       "from": "nova-real-preflight",
       "to": "nova",
       "topic": "Précontrôle HEVC/AAC et mémoire en lecture seule avant tentative d'export; statut favorable non suffisant pour validation de fidélité, PR #42 non fusionnée.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-hd-color-evidence",
+      "to": "nova",
+      "topic": "Ne pas refuser une vidéo faute de colr complet : combiner SPS/VUI et VideoFrame.colorSpace, garder veto HDR/P3; validation HEVC Safari encore nécessaire avant intégration",
       "state": "proposal"
     }
   ],
