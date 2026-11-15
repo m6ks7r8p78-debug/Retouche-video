@@ -38,7 +38,7 @@ def main():
     # The production test assumes a nonempty list; verify staging independently
     # while applying the *same* ordered SHA-256 content algorithm.
     sw=(dist/'sw.js').read_text('utf8')
-    assert 'const LOURDS=[]' in sw and 'retouche-v851' in sw
+    assert 'const LOURDS=[]' in sw and 'retouche-v852' in sw
     assets=json.loads(re.search(r'\bF=(\[[^\]]+\])',sw).group(1))
     h=hashlib.sha256()
     for name in assets:
@@ -90,7 +90,7 @@ def main():
           page.reload(wait_until='domcontentloaded');page.wait_for_function('!!navigator.serviceWorker.controller',timeout=20000)
           # Wait for all assets before simulating an iPhone offline restart.
           page.evaluate('''async()=>{
-            const c=await caches.open('retouche-v851');
+            const c=await caches.open('retouche-v852');
             const urls=['index.html','app.js','research/3d-smallmotion/smallmotion-local.js',
               'research/3d-smallmotion/smallmotion-worker.js',
               'research/3d-smallmotion/smallmotion-worker-runner.js'];
@@ -106,7 +106,7 @@ def main():
           out.append({'viewport':[width,height],'preprodTag':True,'onlinePath':online['mode'],
             'offlinePath':offline['mode'],'parity':offline['parity'],
             'externalRequests':len(external),'javascriptErrors':len(errors),
-            'cache':'retouche-v851','previewDeployed':False})
+            'cache':'retouche-v852','previewDeployed':False})
           context.close()
         browser.close()
     finally:
