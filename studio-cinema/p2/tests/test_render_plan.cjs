@@ -1,0 +1,21 @@
+const test = require('node:test'); const assert=require('node:assert/strict');
+const D=require('../cinema-director-p1-core.js');
+const P=require('../cinema-render-plan.js');
+const example="Une femme brune de 35 ans marche dans la rue. Puis elle s'assoit dans un café et boit une tasse, ensuite répond au téléphone. Film de 2 minutes.";
+const mk=()=>D.buildProject({description:example,mode:'text'});
+test('deterministic and decoupled from GPU',()=>{const a=P.makeRenderManifest(mk());const b=P.makeRenderManifest(mk());assert.deepEqual(a,b);assert.equal(a.model_engine,'not_connected');assert.equal(a.rendered_video,null)});
+test('full 120 seconds segmented into <=5 secs',()=>{const m=P.makeRenderManifest(mk());assert.equal(m.total_duration_seconds,120);assert.equal(m.clips.reduce((t,c)=>t+c.duration_seconds,0),120);assert(m.clips.every(c=>c.duration_seconds<=5));assert.equal(m.clips.length,24)});
+test('no media URL or bytes ever exported, text-only contract',()=>{const p=D.buildProject({description:'Une femme marche dans un salon puis boit un café.',mode:'photo',media:{name:'privée.png',type:'image/png',size:327},hasRights:true});p.media.data='SECRET_PIXELS';p.media.url='file:///private';const m=P.makeRenderManifest(p);const raw=JSON.stringify(m);for(const s of ['SECRET_PIXELS','privée.png','file:///private','data:image','media_01'])assert.equal(raw.includes(s),false);assert.equal(m.consent.reference_media_included,false);});
+test('media needs rights',()=>{const p=mk();p.mode='video';p.has_rights_confirmed=false;assert.throws(()=>P.makeRenderManifest(p),/Droits/)});
+test('permanent character and prop ids',()=>{const m=P.makeRenderManifest(mk());assert(m.clips.some(c=>c.continuity.prop_ids.includes('tasse')));assert(m.clips.every(c=>c.continuity.character_ids.includes('character_01')))});
+test('no leaked URLs, storage or claim of video output',()=>{const m=P.makeRenderManifest(mk());assert(!JSON.stringify(m).includes('http:'));assert(m.clips.every(c=>c.status==='not_submitted'&&c.output===null))});
+test('deny malformed clip duration',()=>{const m=P.makeRenderManifest(mk());m.clips[0].duration_seconds=7;assert.throws(()=>P.validateRenderManifest(m))});
+test('deny tampered video/consent claim',()=>{const m=P.makeRenderManifest(mk());m.rendered_video='real.mp4';assert.throws(()=>P.validateRenderManifest(m))});
+test('deny duplicate clip IDs',()=>{const m=P.makeRenderManifest(mk());m.clips[1].clip_id=m.clips[0].clip_id;assert.throws(()=>P.validateRenderManifest(m))});
+test('reject unknown characters',()=>{const p=mk();p.shots[0].character_ids=['wrong'];assert.throws(()=>P.makeRenderManifest(p))});
+test('reject oversize plan and duration',()=>{const p=mk();p.shots[0].duration_seconds=121;assert.throws(()=>P.makeRenderManifest(p))});
+test('validate valid manifest with 1 sec clips',()=>{const p=mk(),m=P.makeRenderManifest(p,{maxClipSeconds:1});assert(P.validateRenderManifest(m));assert.equal(m.clips.length,120)});
+test('deterministic seed change on shot action edits',()=>{const p=mk();let seed=P.makeRenderManifest(p).clips[0].seed;p.shots[0].action+=' Elle sourit.';assert.notEqual(seed,P.makeRenderManifest(p).clips[0].seed)});
+test('reject invalid split granularity',()=>{assert.throws(()=>P.makeRenderManifest(mk(),{maxClipSeconds:10}))});
+test('max 120 clips, 10 min',()=>{const p=mk();p.shots=Array.from({length:10},(_,i)=>({...p.shots[0],id:`shot_${String(i+1).padStart(2,'0')}`,duration_seconds:60}));const m=P.makeRenderManifest(p);assert.equal(m.clips.length,120);assert(P.validateRenderManifest(m))});
+
