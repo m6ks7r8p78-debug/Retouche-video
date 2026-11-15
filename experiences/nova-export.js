@@ -185,13 +185,11 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   onProgress({stage:"audio",progress:0});
   // decodeAudioData fournit du PCM mais n'expose pas les edits/offsets
   // des pistes MP4. Auditer ces temps avant le réencodage.
-  let audioSourceAudit=null;
+  let audioSourceAudit=null,audioSourceRaw=null;
   if(!allowSilent){
     if(!globalThis.NOVA_AVSYNC)
       throw new Error("Contrôle de synchronisation audio source indisponible");
-    audioSourceAudit=NOVA_AVSYNC.verifier(await NOVA_AVSYNC.analyser(file),{
-      videoStartUs:sourcePTS?.info.firstPTSUs??0,durationSeconds:timeline.durationSeconds
-    });
+    audioSourceRaw=await NOVA_AVSYNC.analyser(file);
   }
   if(signal?.aborted)throw new Error("Export annulé");
   // Priorité à la copie exacte de paquets AAC pour les MP4 sans montage
@@ -202,6 +200,13 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     try{audioCopy=await NOVA_AAC_COPY.planifier(file,{
       durationSeconds:timeline.durationSeconds,signal
     })}catch(e){copyError=e.message||String(e)}
+  }
+  if(!allowSilent){
+    audioSourceAudit=NOVA_AVSYNC.verifier(audioSourceRaw,{
+      videoStartUs:sourcePTS?.info.firstPTSUs??0,
+      durationSeconds:timeline.durationSeconds,
+      allowLeadingGap:!!audioCopy
+    });
   }
   let audio=null;
   if(!allowSilent&&!audioCopy){
@@ -224,7 +229,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
       ...(audioCopy?.rollDistance!=null?{rollDistance:audioCopy.rollDistance}:{}),
       ...(audioCopy?.editDurationSeconds!=null?{
         editMediaTime:audioCopy.editMediaTime,
-        editDurationSeconds:audioCopy.outputEditSeconds
+        editDurationSeconds:audioCopy.outputEditSeconds,
+        editGapSeconds:audioCopy.outputEditGapSeconds
       }:{})}}:{})});
   videoEnc=new VideoEncoder({output:(chunk,meta)=>{try{muxer.addVideoChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
   videoEnc.configure(config);
