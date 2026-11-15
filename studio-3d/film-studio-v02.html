@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>RetoucheProAI — Film Studio expérimental v0.2</title>
+<style>
+:root{color-scheme:dark;--ink:#f4f4f7;--muted:#b4b6c3;--bg:#0b0c12;--panel:#181b27;--edge:#333748;--accent:#d7c4ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 80% 2%,#30233f 0,transparent 47%),var(--bg);font:16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}
+.wrap{max-width:860px;margin:auto;padding:25px 18px 55px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:730;font-size:14px}header span{font-size:11px;color:#c8e4d5;border:1px solid #45645a;border-radius:100px;padding:7px 10px}
+h1{margin:45px 0 12px;font-size:clamp(34px,6.5vw,60px);line-height:1.04;letter-spacing:-.06em;font-weight:760}h1 em{font-style:normal;color:var(--accent)}
+.lead{color:var(--muted);line-height:1.65;max-width:660px;font-size:15px;margin-bottom:28px}
+.panel{background:linear-gradient(140deg,#1a1d2b,#131620);border:1px solid var(--edge);border-radius:22px;padding:24px;margin:17px 0}
+label{font-weight:680;font-size:14px;display:block;margin-bottom:12px}
+textarea{width:100%;min-height:156px;resize:vertical;border-radius:14px;border:1px solid #484958;background:#0e111b;color:white;padding:16px;font:15px/1.55 inherit;font-family:inherit}
+textarea:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid #e3c8ff;outline-offset:3px}
+button{border:0;border-radius:13px;min-height:49px;padding:13px 18px;font-size:14px;font-weight:750;cursor:pointer}
+button.primary{width:100%;background:#dfcbff;color:#211733;margin-top:15px}
+button:disabled{opacity:.53;cursor:not-allowed}
+a.download{display:inline-block;margin:12px 0;padding:13px 19px;border-radius:12px;color:#171022;background:#e1f2e6;text-decoration:none;font-size:14px;font-weight:760}
+a.download[hidden],[hidden]{display:none!important}
+.small{font-size:12px;line-height:1.6;color:var(--muted)}
+#status{font-size:13px;line-height:1.6;min-height:22px;color:#cde1f5}#status.error{color:#ffbcae}
+h2{font-size:19px;letter-spacing:-.02em;margin:0 0 13px}
+#steps{display:flex;gap:9px;flex-wrap:wrap;padding:0;list-style:none;margin:0}
+#steps li{font-size:12px;padding:10px 12px;background:#292a3c;border:1px solid #47455d;border-radius:11px}
+#limits{margin:15px 0 0;padding-left:19px;color:#c0b6c8;font-size:12px;line-height:1.65}
+footer{margin-top:23px;font-size:12px;line-height:1.7;color:#9ea0ad}
+@media(max-width:550px){.wrap{padding:20px 14px 40px}h1{margin-top:32px}.panel{padding:18px;border-radius:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>✦ RetoucheProAI / Film Studio <span>Local · laboratoire</span></header>
+  <h1>Décrivez la scène.<br><em>Donnez-lui du mouvement.</em></h1>
+  <p class="lead">Premier prototype : une scène courte, un personnage adulte inventé, une chaise, une tasse et des gestes stylisés. Ce n’est pas encore un générateur de films réalistes.</p>
+  <main>
+    <section class="panel">
+      <label for="prompt">Votre description</label>
+      <textarea id="prompt" maxlength="4000" spellcheck="true">Une femme brune s'assoit dans le salon, boit un café, pose sa tasse, puis parle.</textarea>
+      <button type="button" id="create" class="primary">Créer mon animation 3D</button>
+      <p id="status" role="status" aria-live="polite">Prêt. La génération est locale, sans transfert de médias.</p>
+      <a class="download" id="download" download="retoucheproai-scene-v02.glb" hidden>Enregistrer le fichier 3D animé (.glb)</a>
+      <p class="small">Un fichier 3D animé GLB n’est pas un MP4. Aucune photo, vidéo ou voix n’est importée, et rien n’est envoyé à un serveur.</p>
+    </section>
+    <section class="panel" aria-label="Compte-rendu du storyboard">
+      <h2>Scénario extrait</h2>
+      <ol id="steps" aria-label="Actions dans leur ordre"></ol>
+      <ul id="limits" aria-label="Limites du résultat"></ul>
+    </section>
+  </main>
+  <footer>Laboratoire isolé de la version publique. Contact main–tasse non mesuré, posture assise approximative, mouvements de lèvres sans voix ni synchronisation labiale. Personnages originaux uniquement ; références de personnes réelles et export cinéma non disponibles dans ce pilote.</footer>
+</div>
+<script type="module" src="./film-ui-v02.mjs"></script>
+</body>
+</html>
