@@ -29,7 +29,7 @@ Les boîtes sont des **hypothèses du détecteur**, non annotées par un expert.
 - `p13_quality.py` : métriques d'images valides, couvertures et recouvrement entre boîtes.
 - `RetoucheCinema_P13_Atelier_iPhone.html` : lecteur local pour afficher les mesures sur la vidéo correspondante, export d'un résumé agrégé sans identité. Interdit les requêtes réseau par CSP.
 - `examples/P13_demo_visage_fictif.json` et `examples/RetoucheCinema_P7_Regard_Bouche_Geste_iPhone.mp4` : démonstration de détection sur un personnage fictif créé par IA.
-- Tests Python et captures de démonstration fictives.
+- Tests Python et captures de démonstration fictives. Un petit JPEG fictif est inclus sous forme texte Base64 pour rendre les tests exécutables aussi après extraction dans un dépôt GitHub.
 
 ### Utilisation sur ordinateur / exécution Python
 
