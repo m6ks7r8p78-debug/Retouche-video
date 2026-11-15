@@ -88,6 +88,7 @@ await execFileAsync("ffmpeg",[
  "-f","lavfi","-i","sine=frequency=740:sample_rate=48000:duration=1.2",
  "-map","0:v:0","-map","1:a:0",
  "-c:v","libx264","-preset","ultrafast","-threads","1","-bf","0",
+ "-x264-params","colorprim=bt709:transfer=bt709:colormatrix=bt709:range=limited",
  "-pix_fmt","yuv420p","-color_primaries","bt709",
  "-color_trc","bt709","-colorspace","bt709",
  "-c:a","aac","-b:a","48k","-ac","1",
