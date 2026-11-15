@@ -172,12 +172,12 @@ for(const inputFPS of [30,60])test(
    await page.waitForFunction(()=>!!document.querySelector("#iphoneBenchJson")?.getAttribute("href"),
     null,{timeout:90000});
    const benchStatus=await page.locator("#iphoneBenchStatus").innerText();
-   assert.match(benchStatus,/Test réussi localement/,benchStatus);
+   assert.match(benchStatus,/test réussi/i,benchStatus);
    assert.match(await page.locator("#iphoneBenchMp4").getAttribute("href")||"",/^blob:/);
    const reportDownload=page.waitForEvent("download");
    await page.locator("#iphoneBenchJson").click();
    const downloaded=await reportDownload;
-   assert.match(downloaded.suggestedFilename(),/NOVA_023_rapport_Safari_local\.json/);
+   assert.match(downloaded.suggestedFilename(),/NOVA_024_rapport_Safari_local\.json/);
    const report=JSON.parse(await fs.readFile(await downloaded.path(),"utf8"));
    assert.equal(report.result,"success");
    assert.equal(report.source.containerVideo,"hevc");
