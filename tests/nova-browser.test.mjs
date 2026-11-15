@@ -744,7 +744,8 @@ test("NOVA 0.12 : retard audio de 250 ms conserve elst vide, AAC et sync AV",asy
    "FFmpeg peut quantifier le délai initial sur une frontière AAC : "+JSON.stringify(meta));
   assert.ok(Math.abs(copy.outputEditGapSeconds*1e6-meta.delayUs)<=1,
    "le plan doit reprendre exactement le délai de présentation réellement écrit");
-  assert.ok(copy.editMediaTime>0);
+  assert.equal(Math.round(copy.editMediaTime*1e6/copy.sampleRate),meta.trimUs,
+   "le media_time doit correspondre au priming du MP4 source (y compris zéro)");
   assert.equal(copy.rollDistance,-1);
   assert.deepEqual([a0.length,v0.length],[2,2]);
   await new Promise(resolve=>app.listen(0,"127.0.0.1",resolve));
