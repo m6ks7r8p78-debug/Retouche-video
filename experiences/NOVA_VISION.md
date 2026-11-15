@@ -614,3 +614,10 @@ Les modules `nova-hevc-annexb.js` et `nova-hevc-lab.js` vérifient désormais à
 Le pipeline incrémental échantillonne la **capacité du tas Emscripten WASM** (`HEAPU8.buffer.byteLength`) avant et pendant le décodage, avec un seuil conservateur configurable de 384 Mio pour ce pilote, ainsi que la métrique navigateur facultative `performance.memory.usedJSHeapSize` quand elle existe. Il expose le nombre de paramètres en bande, le nombre maximal de frames extraites par `drain/flush`, les octets par paquet et images YUV ainsi que la durée du pipeline (qui inclut I/O et callback). **La capacité allouée du tas WASM n'est PAS une mesure de la mémoire effectivement utilisée, et le JS heap facultatif n'est pas le pic RAM/RSS ni un benchmark iPhone**. Les tests couvrent le rejet des modifications intra-échantillon et les propriétés de ces métriques sous Chromium et WebKit Linux.
 
 **Statut : changements en attente des résultats GitHub Actions du dernier SHA**, ne pas proclamer des chiffres sans journaux verts. Plafonds 12 s / 60 Mo / 640 px / 15 i/s / HEVC 90 échantillons inchangés ; aucun iPhone physique testé, aucune production modifiée.
+
+
+### NOVA 0.21 — diagnostic interne visible uniquement après export HEVC
+
+Le moteur d'export expose maintenant ses `hevcDiagnostics` issus de `NOVA_HEVC_LAB.decoderFlux`, et l'interface expérimentale les présente dans une section `details` discrète **uniquement après un export HEVC réussi** : capacité maximale du tas WASM, mémoire JS facultative, durée pipeline, nombre de trames et de paramètres en bande, pic de frames par drain. L'interface indique explicitement que ces chiffres **ne représentent pas la RAM totale ni un benchmark Safari iPhone**. Les exports non HEVC restent inchangés. Le banc d'intégration audiovisuel Chromium vérifie la disponibilité et le texte de ces éléments.
+
+**Changements non déclarés certifiés avant validation exacte par la CI du HEAD.**

@@ -121,12 +121,16 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <p>12 secondes maximum, 640 pixels, 15 images/seconde. Vérifiez toujours le fichier final.</p>
 <button class="primary" id="exportVideo" disabled>Exporter un MP4 restauré</button>
 <details class="sourceAdvanced"><summary>Compatibilité des vidéos</summary>
-<p>Par défaut, NOVA utilise les horodatages MP4 natifs. Pour un fichier non pris en charge, vous pouvez choisir un décodage approximatif : certaines images peuvent alors être doublées ou manquées.</p>
+<p>NOVA utilise les horodatages MP4 natifs. Pour HEVC, le pilote impose un décodage WebAssembly local avec audit de couleur ; l'option approximative ne contourne jamais ces contrôles. Pour certains autres fichiers, un décodage approximatif peut doubler ou manquer des images.</p>
 <label><input type="checkbox" id="allowApproximate"> Autoriser le décodage approximatif pour cet export</label>
 </details>
 <label><input type="checkbox" id="allowSilent"> J'accepte explicitement un export <b>sans son</b> si je le choisis. Sinon, l'export est interrompu lorsque l'audio ne peut pas être conservé.</label>
 <a id="downloadVideo" hidden>Enregistrer le fichier MP4</a>
 <div id="exportStatus" role="status" aria-live="polite">Aucun export lancé.</div>
+<details class="sourceAdvanced" id="hevcDiagnosticsPanel" hidden>
+<summary>Diagnostic technique HEVC de cet export</summary>
+<p id="hevcDiagnosticsText"></p>
+</details>
 </section><p id="modeReport" style="margin-top:12px">L'export vidéo et les moteurs neuronaux restent dans l'application principale ou le laboratoire de recherche.</p></section>
 </aside>
 </div>

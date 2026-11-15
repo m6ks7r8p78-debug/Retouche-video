@@ -5,7 +5,8 @@
 "use strict";
 const $=id=>document.getElementById(id);
 const panel=$("pilotVideo"),start=$("exportVideo"),silent=$("allowSilent"),
-  download=$("downloadVideo"),status=$("exportStatus"),fileInput=$("file"),drop=$("drop"),approx=$("allowApproximate");
+  download=$("downloadVideo"),status=$("exportStatus"),fileInput=$("file"),drop=$("drop"),approx=$("allowApproximate"),
+  hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText");
 if(!panel||!start||!silent||!download||!status||!fileInput)return;
 let file=null,controller=null,blobUrl=null,generation=0;
 function msg(s){status.textContent=s}
@@ -14,6 +15,8 @@ function clear(){
  if(controller){controller.abort();controller=null}
  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null}
  download.hidden=true;download.removeAttribute("href");
+ if(hevcPanel)hevcPanel.hidden=true;
+ if(hevcText)hevcText.textContent="";
  start.disabled=true;start.textContent="Exporter un MP4 restauré";panel.hidden=true;silent.checked=false;if(approx)approx.checked=false;
 }
 function choisir(f){
@@ -57,6 +60,19 @@ start.addEventListener("click",async()=>{
   if(ctl.signal.aborted||generation!==thisGen)return;
   if(blobUrl)URL.revokeObjectURL(blobUrl);
   blobUrl=URL.createObjectURL(result.blob);
+  if(hevcPanel&&hevcText&&result.hevcDiagnostics){
+   const m=result.hevcDiagnostics;
+   const mib=n=>Number.isSafeInteger(n)?(n/1048576).toFixed(1)+" Mio":"non disponible";
+   hevcText.textContent="Capacité maximale du tas WebAssembly : "+
+    mib(m.wasmHeapPeakBytes)+" (pas la RAM totale). Tas JavaScript facultatif : "+
+    mib(m.jsHeapPeakBytes)+". Durée du pipeline HEVC : "+
+    (Number.isFinite(m.pipelineElapsedMs)?Math.round(m.pipelineElapsedMs)+" ms":"non mesurée")+
+    ". Images source traitées : "+m.frames+
+    ". Paramètres SPS/VPS/PPS en bande validés : "+m.inbandParameterSets+
+    ". Images extraites dans un même lot : "+m.peakDrainedFrames+
+    ". Mesures de laboratoire ; pas un benchmark Safari iPhone.";
+   hevcPanel.hidden=false;
+  }
   download.href=blobUrl;
   download.download=(file.name||"video").replace(/\.[^.]+$/,"")+"_NOVA_pilote.mp4";
   download.hidden=false;

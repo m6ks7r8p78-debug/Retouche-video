@@ -124,6 +124,12 @@ for(const inputFPS of [30,60])test(
   assert.match(await page.locator("#downloadVideo").getAttribute("href")||"",/^blob:/,status);
   assert.match(status,/audio AAC original copié/);
   assert.match(status,/HEVC WASM/);
+  assert.equal(await page.locator("#hevcDiagnosticsPanel").evaluate(x=>x.hidden),false,
+   "diagnostic du décodage WASM disponible dans les options discrètes");
+  const diagnostic=await page.locator("#hevcDiagnosticsText").textContent();
+  assert.match(diagnostic,/Capacité maximale du tas WebAssembly/);
+  assert.match(diagnostic,/pas la RAM totale/);
+  assert.match(diagnostic,/Paramètres SPS\/VPS\/PPS en bande validés : 0/);
   const pending=page.waitForEvent("download");
   await page.locator("#downloadVideo").click();
   const dl=await pending,output=await dl.path();
