@@ -60,7 +60,7 @@ test("H264 : couleurs imprécises ou HDR et aspect non carré refusés",async()=
 test("H264 : limites du pilote, mais non confusion 640x360 HEVC/1080p H264",async()=>{
  for(const info of [
   {...goodInfo,W:1922,H:1080},{...goodInfo,ns:5001},
-  {...goodInfo,durationUs:12100000},{...goodInfo,W:161}]){
+  {...goodInfo,durationUs:24100000},{...goodInfo,W:161}]){
   assert.equal((await inspect({info})).status,"h264-pilot-limit");
  }
  const r=await inspect({info:{...goodInfo,W:1280,H:720}});
