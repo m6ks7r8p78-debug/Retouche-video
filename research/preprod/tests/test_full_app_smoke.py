@@ -94,12 +94,24 @@ def run():
                     page.locator('#f').set_input_files({'name':path.name,'mimeType':'video/mp4' if codec=='h264' else 'video/webm','buffer':path.read_bytes()})
                     page.wait_for_function('''()=>document.querySelector('#app')?.hidden===false''',timeout=20000)
                     page.wait_for_function('''()=>document.querySelector('#smallmotion-app-panel')?.hidden===false''',timeout=10000)
-                    before=page.evaluate('''()=>({hasSelected:document.querySelector('#f').files.length,
+                    before=page.evaluate('''()=>{const g=id=>{
+                          const r=document.getElementById(id)?.getBoundingClientRect();
+                          return r?{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height}:null;
+                        };return {hasSelected:document.querySelector('#f').files.length,
                           originalExportReady:typeof document.querySelector('#ex').onclick==='function',
                           panelButton:document.querySelector('#smallmotion-app-panel button')?.textContent,
                           firstFile:document.querySelector('#f').files[0].name,
-                          videoMode:typeof mode==='undefined'?'missing':mode})''')
+                          videoMode:typeof mode==='undefined'?'missing':mode,
+                          importBounds:g('pick'),photoBounds:g('pickp'),dropBounds:g('drop'),panelBounds:g('smallmotion-app-panel'),
+                          panelParent:document.getElementById('smallmotion-app-panel')?.parentElement?.id
+                        }}''')
                     assert before['hasSelected']==1 and before['originalExportReady'] and before['videoMode']=='video',before
+                    # Avoid the actual v1 mobile UI regression: inserting the advisory
+                    # panel as a third child of .drop-acts compressed both import buttons.
+                    assert before['panelParent']=='ws',('SmallMotion must be outside import button group',before)
+                    assert before['panelBounds']['top']>=before['dropBounds']['bottom']-1,('Panel overlaps original importer',before)
+                    assert before['panelBounds']['width']>=min(300,0.75*before['dropBounds']['width']),('Panel is squeezed on mobile',before)
+                    assert before['importBounds']['width']>=90,('Original import button squeezed',before)
                     page.locator('#smallmotion-app-panel button').first.click()
                     try:
                         page.wait_for_function('''()=>window.RetoucheMotionLabUI?.observe()!=null''',timeout=17000)
