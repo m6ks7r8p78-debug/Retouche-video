@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Retouche Cinema — vérification P24 synthétique</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
+    body{margin:0;background:#181c22;color:#f7f4ee;padding:18px;min-height:100vh}
+    main{max-width:600px;margin:auto}
+    h1{font-size:1.3rem;line-height:1.4}
+    p{line-height:1.5}
+    video{display:block;width:100%;max-width:540px;aspect-ratio:1/1;background:#111;border-radius:12px}
+    button{margin-top:15px;min-height:48px;padding:12px 20px;font:inherit;font-weight:700;color:#222;background:#ffda89;border:0;border-radius:10px;cursor:pointer}
+    button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+    #state{min-height:28px;font-variant-numeric:tabular-nums}
+    .minor{font-size:.88rem;color:#bec7d0}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Cinema P24 — contrôle vidéo expérimental</h1>
+  <p>Illustration vectorielle entièrement fictive, 8 secondes à 60 images/s.
+     Ce film ne démontre ni mouvements humains réalistes ni restauration de vidéo.</p>
+  <video id="movie" width="720" height="720" controls playsinline preload="metadata"
+         aria-label="Démonstration synthétique Cinema P23">
+    <source src="./P23_temporal_blend_synthetic_60fps.mp4" type="video/mp4">
+    Ce navigateur ne peut pas afficher la vidéo.
+  </video>
+  <button id="play" type="button">Lire le film de démonstration</button>
+  <p id="state" role="status" aria-live="polite">Vérification locale du codec en attente.</p>
+  <p class="minor">Aucune vidéo personnelle ni donnée n'est envoyée. Aucun logiciel de production n'est modifié.</p>
+</main>
+<script>
+  'use strict';
+  const movie=document.getElementById('movie');
+  const status=document.getElementById('state');
+  movie.addEventListener('loadedmetadata',()=>{
+    const duration=Number.isFinite(movie.duration)?movie.duration.toFixed(3):'inconnue';
+    status.textContent='Métadonnées : '+movie.videoWidth+' × '+movie.videoHeight+' ; '+duration+' s';
+  });
+  movie.addEventListener('error',()=>{status.textContent='Codec ou fichier non pris en charge par ce navigateur.'});
+  document.getElementById('play').addEventListener('click',async()=>{
+    try{
+      await movie.play();
+      status.textContent='Lecture demandée et acceptée par le navigateur.';
+    }catch(error){
+      status.textContent='Lecture indisponible ou refusée. Aucun autre fichier ne sera utilisé.';
+    }
+  });
+</script>
+</body>
+</html>
