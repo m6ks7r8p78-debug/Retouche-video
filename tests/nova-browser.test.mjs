@@ -239,3 +239,59 @@ test("NOVA : décodage MP4 à fréquence variable et audit des images",async()=>
   await fs.rm(tmp,{recursive:true,force:true});
  }
 });
+
+
+test("NOVA 0.6 : source portrait 29,97 i/s, durée et trames conservées en sortie CFR",async()=>{
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-portrait-"));
+ const src=path.join(tmp,"portrait2997.mp4"),app=server();
+ try{
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error","-f","lavfi","-i",
+    "testsrc2=size=144x256:rate=30000/1001:duration=1.6",
+    "-c:v","libx264","-pix_fmt","yuv420p","-movflags","+faststart","-y",src]);
+  await new Promise(r=>app.listen(0,"127.0.0.1",r));
+  const browser=await chromium.launch({headless:true,
+    ...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  try{
+   const page=await browser.newPage({viewport:{width:390,height:844},acceptDownloads:true});
+   const errors=[];page.on("pageerror",e=>errors.push(e.message));
+   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
+   await page.locator("#file").setInputFiles(src);
+   const source=await page.evaluate(async()=>{
+    const info=await NOVA_DEMUX.analyser(document.querySelector("#file").files[0]);
+    if(!info)return null;
+    const rank=NOVA_PTS.planifier(info);
+    return {width:info.dw,height:info.dh,frames:info.ns,
+      gap:rank.nonnegative[1].ptsUs-rank.nonnegative[0].ptsUs};
+   });
+   assert.ok(source&&source.frames>=40,"source 29,97 i/s réellement créée");
+   assert.equal(source.width,144);assert.equal(source.height,256);
+   assert.ok(source.gap>33000&&source.gap<35000,"PTS originaux proches de 29,97 i/s");
+   await page.locator("#allowSilent").check();
+   await page.locator("#exportVideo").click();
+   await page.waitForFunction(()=>!!document.querySelector("#downloadVideo")?.getAttribute("href")||
+     document.querySelector("#exportStatus").textContent.startsWith("Export refusé"),
+     null,{timeout:90000});
+   const href=await page.locator("#downloadVideo").getAttribute("href");
+   assert.match(href||"",/^blob:/,await page.locator("#exportStatus").innerText());
+   const requested=page.waitForEvent("download");
+   await page.locator("#downloadVideo").click();
+   const downloaded=await requested;
+   const {stdout}=await runBinary("ffprobe",["-v","error","-select_streams","v:0",
+     "-show_entries","stream=codec_name,duration,nb_frames,width,height,avg_frame_rate",
+     "-of","json",await downloaded.path()]);
+   const out=JSON.parse(stdout).streams[0];
+   assert.equal(out.codec_name,"h264");
+   assert.equal(out.width,144);assert.equal(out.height,256);
+   assert.equal(out.avg_frame_rate,"15/1");
+   assert.ok(+out.nb_frames>=22&&+out.nb_frames<=26,"24 images de sortie environ");
+   const md5=await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
+      "-i",await downloaded.path(),"-an","-f","framemd5","-"]);
+   const hashes=md5.stdout.split("\n").filter(v=>/^\d+,/.test(v.trim())).map(v=>v.split(",").at(-1).trim());
+   assert.ok(new Set(hashes).size>=8,"le portrait ne doit pas être figé");
+   assert.deepEqual(errors,[]);
+  }finally{await browser.close()}
+ }finally{
+  if(app.listening)await new Promise(r=>app.close(r));
+  await fs.rm(tmp,{recursive:true,force:true});
+ }
+});
