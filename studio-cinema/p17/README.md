@@ -4,8 +4,8 @@
 
 ## Ce qui est réellement intégré
 
-1. `src/presence_director.js` (copie exacte du moteur P16 de la branche de recherche au moment de P17) : gestes et direction d'acteur, cinq dimensions de présence, chronologie superposée.
-2. `src/cinema-render-plan.js` (copie exacte du planificateur P2 de la branche de recherche au moment de P17) : découpage, durée, personnages et accessoires, validation stricte.
+1. `src/presence_director.js` (reprise locale du moteur P16 de la branche de recherche) : gestes et direction d'acteur, cinq dimensions de présence, chronologie superposée.
+2. `src/cinema-render-plan.js` (reprise locale du planificateur P2 de la branche de recherche) : découpage, durée, personnages et accessoires, validation stricte.
 3. `src/acting_clip_bridge.js` **nouveau** : transforme les gestes P16 en instructions de rendu P2 propres à chaque clip ; reporte la continuité aux coupes, relève des contradictions non corrigées silencieusement, garde le même personnage et objet.
 4. `src/cross_lab_handoff.js` **nouveau** : interfaces optionnelles de NOVA (synchro/conformité d'export), CameraGuard (compensation de caméra 2D), et SmallMotion (politique PWA de mise à jour sans interruption). **Les trois fournisseurs ne sont pas connectés pour un rendu dans cette livraison.** Les adaptateurs signalent clairement `not_executed` et refusent les affirmations sans preuve.
 5. `public/RetoucheCinema_P17_Studio_iPhone.html` : un seul fichier HTML hors ligne, interface iPhone et ordinateur ; choix de scène, personnage fictif adulte, durée, format, cadence visée 30/45/60, sliders d'intention, timeline des clips, alertes, export JSON.
@@ -39,3 +39,6 @@ python -m pytest -q tests/test_p17_browser.py
 ## Confidentialité
 
 Ni les 157 vidéos privées, ni des noms de source, ni leurs empreintes et leurs annotations ne sont inclus dans l'archive publique ou dans GitHub. Aucun chargement réseau dans l'atelier. Les observations artistiques ne sont pas des preuves d'intentions réelles. Aucune publication, génération vidéo, entraînement supervisé ni modification de retoucheproai.com.
+## État des fichiers sur cette branche GitHub
+
+Versionnés ici : ce README, `cross_lab_handoff.js` et `module_registry.json`. Le **code complet du pont P2/P16**, l'interface HTML autonome et les tests correspondants sont disponibles dans **l'archive locale P17** fournie dans la conversation. Cette PR ne représente pas encore l'intégration intégrale du prototype dans le dépôt et n'active aucune fonction de production.
