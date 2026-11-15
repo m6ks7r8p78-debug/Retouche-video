@@ -27,7 +27,7 @@ function reachCup(scaleY,desired=CUP){
  const elbow=Math.atan2(.065,.51)-second-shoulder;
  return {shoulder,elbow};
 }
-function buildSyntheticFilmSceneV03(request,generator){
+function buildSyntheticFilmSceneV03(request,generator,{decorateModel}={}){
  const output=buildSyntheticFilmSequence(request,generator);
  if(output.status!=='apercu_partiel_glb_anime')return output;
  const {internalModel:model}=output;
@@ -127,6 +127,12 @@ function buildSyntheticFilmSceneV03(request,generator){
  tableTrack.values=times.map(()=>[.0001,.0001,.0001]);
  model.animations[0].name='film_scene_v03';
  model.animations[0].label='Tasse unique pilotée par le point de prise, bouche muette';
+ // Point d'extension local pour les gestes procéduraux des versions expérimentales.
+ // Les autres versions sont inchangées si aucun décorateur n'est demandé.
+ if(decorateModel!==undefined){
+   if(typeof decorateModel!=='function')throw Error('Décorateur de rig incompatible.');
+   decorateModel({model,output,ids:{actor,sh,el,onTable,onHand,cupId,wrist:idx('poignet_droite')},fineTimes});
+ }
  const glb=generator.encodeGLB(model).bytes;
  const scene=readSyntheticGLB(glb);
  const held=[];
