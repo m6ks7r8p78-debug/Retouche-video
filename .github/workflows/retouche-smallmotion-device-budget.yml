@@ -1,0 +1,58 @@
+name: Retouche 3D — SmallMotion device budget (experimental)
+on:
+  push:
+    branches:
+      - lab-3d-smallmotion-device-budget-v1
+    paths:
+      - 'research/3d-smallmotion/**'
+      - 'index.html'
+      - '.github/workflows/retouche-smallmotion-device-budget.yml'
+  pull_request:
+    paths:
+      - 'research/3d-smallmotion/**'
+      - 'index.html'
+      - '.github/workflows/retouche-smallmotion-device-budget.yml'
+jobs:
+  local-budget-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: research/3d-camera-v43:research/3d-multimotion:research/3d-depth-evidence:research/3d-smallmotion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install open source CPU-only dependencies
+        run: python -m pip install numpy opencv-python-headless pytest playwright
+      - name: Ensure synthetic decoder tools and a Chromium browser
+        run: |
+          if ! command -v ffmpeg >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y ffmpeg; fi
+          if ! command -v chromium >/dev/null && ! command -v google-chrome >/dev/null && ! command -v chromium-browser >/dev/null; then python -m playwright install --with-deps chromium; fi
+      - name: All earlier 3D lab regressions
+        run: python -m pytest -q research/3d-camera-v43/tests research/3d-multimotion/tests research/3d-depth-evidence/tests research/3d-smallmotion/tests/test_smallmotion.py
+      - name: Original SmallMotion JS checks and in-app bridge
+        run: |
+          node research/3d-smallmotion/tests/test_smallmotion_local.cjs
+          node research/3d-smallmotion/tests/test_director_local.cjs
+      - name: New budget policy and fail-closed behavior
+        run: node research/3d-smallmotion/tests/test_resource_guard.cjs
+      - name: Confirm only additive experimental wiring
+        run: |
+          python research/3d-smallmotion/tests/test_app_wiring.py
+          python research/3d-smallmotion/tests/test_budget_wiring.py
+      - name: Synthetic video decoding, downshift and abstention
+        run: python research/3d-smallmotion/tests/browser_check.py
+      - name: Self-contained offline HTML browser and manual JSON-export checks
+        run: python research/3d-smallmotion/tests/test_safari_harness.py
+      - name: Upload synthetic-only reproducible results
+        uses: actions/upload-artifact@v4
+        with:
+          name: smallmotion-device-budget-synthetic
+          path: |
+            research/3d-smallmotion/results/browser_check.json
+            research/3d-smallmotion/results/offline_page_check.json
+          if-no-files-found: error
