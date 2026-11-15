@@ -104,6 +104,20 @@
       ]
     },
     {
+      "id": "nova-hd-aac-rescue",
+      "label": "NOVA — compatibilité AAC MPEG-4 et réencodage natif AAC-LC Safari",
+      "branch": "chatgpt-nova-iphone-hd-aac-rescue-v1",
+      "pr": 59,
+      "observation": "draft-pr-observed",
+      "interface": "Copie AAC-LC originale prioritaire, lecture ESDS 03/04/05 et fréquence ASC explicite; recours WebAudio+AudioEncoder AAC-LC local si support annoncé; jamais de son supprimé implicitement",
+      "workBoundary": "experiences/nova-aac-copy.js; experiences/nova-aac-native.js; experiences/nova-native-hd.js; expériences UI; tests AAC; workflow",
+      "validationGap": "62 tests unitaires et 1 vrai test navigateur Chromium H264/AAC synthétique réussis ; recours AAC-LC natif vérifié par mocks uniquement ; HEVC + audio de vidéo personnelle Safari iPhone toujours non certifiés",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/59",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43726569952"
+      ]
+    },
+    {
       "id": "smallmotion",
       "label": "SmallMotion / PWA / budgets",
       "branch": "preprod-retoucheproai-local-v1",
@@ -267,6 +281,12 @@
       "from": "nova-hd-sdr-matrices",
       "to": "nova",
       "topic": "Matrice SDR BT601 5/6 ou BT2020 NCL 9 différente de BT709 : vérification colr+SPS+VideoFrame et correction YUV8 si accessible avant Canvas sRGB/BT709. Ne pas requalifier HDR/P3; tests synthétiques réussis, HEVC Safari non validé.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-hd-aac-rescue",
+      "to": "nova",
+      "topic": "AAC-LC ESDS/ASC robuste + recours AAC natif Safari sous vérification de codecs; ne jamais déduire absence de son d'une ASC non confirmée; iPhone réel et synchro à vérifier, pas de bascule muette.",
       "state": "proposal"
     }
   ],
