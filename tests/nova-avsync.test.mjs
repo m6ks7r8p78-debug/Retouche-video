@@ -62,7 +62,7 @@ test("NOVA AV : temps audio trop court ou décalage face à la vidéo sont refus
  assert.throws(()=>AV.verifier(a,{videoStartUs:200000,durationSeconds:1}),/désalignement/);
 });
 test("NOVA AV : montage de pré-roll AAC anormal rejeté",async()=>{
- const a=await AV.analyser(movie({tracks:[track({edit:[[1200,10240]]})]}));
+ const a=await AV.analyser(movie({tracks:[track({edit:[[1000,10240]]})]}));
  assert.throws(()=>AV.verifier(a,{durationSeconds:1.0}),/trim audio trop important/);
 });
 test("NOVA AV : fichier muet ne peut pas être prétendu sonore",async()=>{
