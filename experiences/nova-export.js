@@ -200,7 +200,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
       sourceAudit=NOVA_GUARD.exigerDebutFidele(NOVA_GUARD.auditerPTS({
         ptsUs:sourcePTS.info.ptsUs,durationSeconds:sourceDuration,fps:settings.fps
       }));
-      disposer(media);URL.revokeObjectURL(url);
+      disposer(media);if(url)URL.revokeObjectURL(url);
       onProgress({stage:"source",mode:"pts",codec:sourcePTS.info.codec,frames:sourcePTS.info.samples});
     }catch(e){
       throw new Error("Décodage PTS natifs impossible : "+(e.message||"erreur source")+
@@ -275,26 +275,18 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   trans=transformateur(moteur,arbitre);
   const trace={repetitions:0,sautsDeSource:0,premierPTSUs:null,dernierPTSUs:null};
   let lastRank=null;
-  for(const entry of timeline.entries){
-   const i=entry.index;
+  function noter(source){
+   if(lastRank!==null){
+    if(source.rank===lastRank)trace.repetitions++;
+    if(source.rank>lastRank+1)trace.sautsDeSource+=source.rank-lastRank-1;
+   }
+   lastRank=source.rank;
+   if(trace.premierPTSUs===null)trace.premierPTSUs=source.selectedPTSUs;
+   trace.dernierPTSUs=source.selectedPTSUs;
+  }
+  async function encoderImage(entry){
    if(signal?.aborted)throw new Error("Export annulé");
    if(error)throw error;
-   const t=Math.min(sourceDuration-.001,entry.seekSeconds);
-   if(sourcePTS){
-     const source=await sourcePTS.imageA(t,canvas);
-     if(lastRank!==null){
-       if(source.rank===lastRank)trace.repetitions++;
-       if(source.rank>lastRank+1)trace.sautsDeSource+=source.rank-lastRank-1;
-     }
-     lastRank=source.rank;
-     if(trace.premierPTSUs===null)trace.premierPTSUs=source.selectedPTSUs;
-     trace.dernierPTSUs=source.selectedPTSUs;
-   }else{
-     await seek(media,t,signal);
-     const position=NOVA_TIMELINE.validerPosition(media.currentTime,t,sourceDuration);
-     if(!position.ok)throw new Error("Recherche vidéo imprécise : export refusé ("+position.distance.toFixed(3)+" s)");
-     ctx.drawImage(media,0,0,canvas.width,canvas.height);
-   }
    const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
    const processed=await trans.traiter(pixels);
    ctx.putImageData(new ImageData(processed.data,processed.width,processed.height),0,0);
@@ -302,7 +294,30 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    try{videoEnc.encode(frame,{keyFrame:entry.keyFrame})}finally{frame.close()}
    if(videoEnc.encodeQueueSize>5)await NOVA_GUARD.attendreEncodeur(videoEnc,{maxQueue:3,signal});
    if(error)throw error;
-   onProgress({stage:"video",progress:(i+1)/settings.frames,frame:i+1,total:settings.frames});
+   onProgress({stage:"video",progress:(entry.index+1)/settings.frames,
+     frame:entry.index+1,total:settings.frames});
+  }
+  if(useHevcWasm){
+   const result=await NOVA_HEVC_RENDER.rendre(file,probe,{
+    timeline,canvas,signal,onOutput:async(entry,selected)=>{
+     noter(selected);await encoderImage(entry);
+    }
+   });
+   if(result.frames!==settings.frames)throw new Error("Sortie HEVC WASM incomplète");
+  }else for(const entry of timeline.entries){
+   if(signal?.aborted)throw new Error("Export annulé");
+   if(error)throw error;
+   const t=Math.min(sourceDuration-.001,entry.seekSeconds);
+   if(sourcePTS){
+    noter(await sourcePTS.imageA(t,canvas));
+   }else{
+    await seek(media,t,signal);
+    const position=NOVA_TIMELINE.validerPosition(media.currentTime,t,sourceDuration);
+    if(!position.ok)throw new Error("Recherche vidéo imprécise : export refusé ("+
+     position.distance.toFixed(3)+" s)");
+    ctx.drawImage(media,0,0,canvas.width,canvas.height);
+   }
+   await encoderImage(entry);
   }
   await videoEnc.flush();
   if(error)throw error;
@@ -337,8 +352,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   onProgress({stage:"fini",progress:1});
   return {blob,plan:settings,validation,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
-    audit:sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
-  },report:sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
+    audit:sourceMode==="hevc-wasm"?"HEVC MIT WASM local, PTS MOV et sortie CFR":sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
+  },report:sourceMode==="hevc-wasm"?"HEVC SDR BT.709 traité localement, sortie audiovisuelle à contrôler sur iPhone":sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
  }finally{
   try{trans?.fermer()}catch(_){}
   try{sourcePTS?.fermer()}catch(_){}
