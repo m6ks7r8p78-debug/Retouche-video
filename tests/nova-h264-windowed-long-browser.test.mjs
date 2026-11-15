@@ -93,15 +93,13 @@ test("NOVA 20s H264/AAC : 4 fenêtres, 1 MP4, cadence continue et AAC intégral"
   assert.equal(before.privacy.mediaUploaded,false);
   assert.equal(await page.locator("#downloadVideo").getAttribute("href"),null,
    "Un précontrôle ne lance pas l'export automatiquement");
-  const stages=[];
-  await page.evaluate(()=>{window.__nova_test_progress=[];const original=NOVA_EXPORT.exporter;
-   NOVA_EXPORT.exporter=async function(args){
-    return original({...args,onProgress:x=>{
-     if(x.stage==="window")window.__nova_test_progress.push({
-      stage:x.stage,index:x.index,total:x.total,startMs:x.startMs,endMs:x.endMs});
-     args.onProgress?.(x);
-    }});
-   };
+  // Écoute uniquement les index et bornes temporelles transmis à l'UI :
+  // l'API exporter est gelée et ne doit pas être modifiée par le test.
+  await page.evaluate(()=>{
+   window.__nova_test_progress=[];
+   document.addEventListener("nova:window-progress",e=>{
+    window.__nova_test_progress.push({...e.detail});
+   });
   });
   await page.locator("#exportVideo").click();
   await page.waitForFunction(()=>
