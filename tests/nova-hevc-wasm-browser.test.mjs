@@ -148,6 +148,21 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
   assert.ok(actual.streamMetrics.peakChunkBytes<actual.annexBBytes,
    "le décodage flux ne doit jamais assembler le bitstream entier");
   assert.ok(actual.streamMetrics.peakFrameBytes<=160*90*3);
+  assert.equal(actual.streamMetrics.inbandParameterSets,0);
+  assert.ok(actual.streamMetrics.peakDrainedFrames>=1);
+  assert.ok(actual.streamMetrics.pipelineElapsedMs>=0);
+  assert.equal(actual.streamMetrics.memorySemantics,
+   "wasm-capacity-not-used; js-heap-optional-not-total-rss");
+  const wasm=actual.streamMetrics.wasmHeapPeakBytes;
+  assert.ok(wasm!==null&&wasm>=actual.streamMetrics.wasmHeapStartBytes);
+  assert.ok(wasm<=384*1024*1024,"capacité WASM sous budget expérimental");
+  assert.ok(actual.streamMetrics.wasmHeapEndBytes<=wasm);
+  if(actual.streamMetrics.jsHeapPeakBytes!==null){
+   assert.ok(actual.streamMetrics.jsHeapPeakBytes>=
+    actual.streamMetrics.jsHeapStartBytes);
+   assert.ok(actual.streamMetrics.jsHeapEndBytes<=
+    actual.streamMetrics.jsHeapPeakBytes);
+  }
   assert.deepEqual(errors,[]);
   assert.deepEqual(requests,[],"zéro appel externe pendant l'import et décodage WASM");
   t.diagnostic("HEVC WASM local : "+JSON.stringify({

@@ -46,6 +46,33 @@ function decouper(sample,lengthBytes){
  if(!out.length)refuse("échantillon vide");
  return out;
 }
+/* Interdit un changement de configuration au milieu d'un MOV/MP4.
+ * Les trois types de NAL paramètres (VPS/SPS/PPS) en bande sont autorisés
+ * uniquement s'ils correspondent OCTET PAR OCTET à une valeur hvcC approuvée.
+ * Tout nouvel ID, réordonnancement syntaxique ou remplacement est refusé.
+ * Cette politique conservative vaut pour hvc1 ET hev1.
+ */
+function verifierParametres(nals,cfg){
+ if(!Array.isArray(nals)||!cfg||!Array.isArray(cfg.parameterSets))
+  refuse("contrôle des paramètres HEVC indisponible");
+ let inband=0;
+ for(const nal of nals){
+  if(!(nal instanceof Uint8Array)||nal.length<2)refuse("NAL HEVC invalide");
+  const type=(nal[0]>>1)&63;
+  if(type!==32&&type!==33&&type!==34)continue;
+  if((nal[0]&128)!==0||(((nal[0]&1)<<5)|(nal[1]>>3))!==0||
+      (nal[1]&7)===0||nal.length<3)
+   refuse("VPS/SPS/PPS en bande mal formé");
+  if(!cfg.parameterSets.some(expected=>{
+   if(((expected[0]>>1)&63)!==type||expected.length!==nal.length)return false;
+   for(let i=0;i<nal.length;i++)if(expected[i]!==nal[i])return false;
+   return true;
+  }))
+   refuse("changement VPS/SPS/PPS en bande non couvert : source refusée");
+  inband++;
+ }
+ return inband;
+}
 async function extraire(file,info,{maxBytes=16*1024*1024,maxSamples=90,signal}={}){
  if(!file||typeof file.slice!=="function"||!Number.isSafeInteger(file.size)||
     !info||!/^(hvc1|hev1)\./.test(info.codec||""))
@@ -70,7 +97,9 @@ async function extraire(file,info,{maxBytes=16*1024*1024,maxSamples=90,signal}={
    refuse("échantillon hors fichier");
   const bytes=new Uint8Array(await file.slice(offset,offset+len).arrayBuffer());
   if(bytes.length!==len)refuse("échantillon tronqué");
-  for(const nal of decouper(bytes,cfg.lengthBytes))add(nal);
+  const nals=decouper(bytes,cfg.lengthBytes);
+  verifierParametres(nals,cfg);
+  for(const nal of nals)add(nal);
  }
  const out=new Uint8Array(size);let at=0;
  for(const x of chunks){out.set(startCode,at);at+=4;out.set(x,at);at+=x.length}
@@ -115,10 +144,13 @@ async function* flux(file,info,{maxBytes=16*1024*1024,maxPacketBytes=2*1024*1024
    refuse("sample HEVC hors fichier ou budget mémoire");
   const sample=new Uint8Array(await file.slice(offset,offset+len).arrayBuffer());
   if(sample.length!==len)refuse("échantillon tronqué");
-  const bytes=pack(decouper(sample,cfg.lengthBytes));
-  yield Object.freeze({sampleIndex:i,bytes,role:"accessUnit",totalBytes:total});
+  const nals=decouper(sample,cfg.lengthBytes);
+  const inbandParameters=verifierParametres(nals,cfg);
+  const bytes=pack(nals);
+  yield Object.freeze({sampleIndex:i,bytes,role:"accessUnit",
+   inbandParameters,totalBytes:total});
  }
 }
-return Object.freeze({configuration,decouper,extraire,flux});
+return Object.freeze({configuration,decouper,verifierParametres,extraire,flux});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_HEVC_ANNEXB;

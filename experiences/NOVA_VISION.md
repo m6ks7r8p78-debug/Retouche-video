@@ -605,3 +605,12 @@ Le premier audit du MP4 a révélé que la VideoFrame créée directement depuis
 **Ce qui reste hors périmètre :** Safari sur iPhone physique, empreinte RAM/thermique réelle sur iPhone, multimédia HEVC long à 4K/8K/HDR/P3, audio iPhone réel et généralisation à tous les contenus, suivi des SPS éventuellement remplacés en cours de flux `hev1` et contrôle détaillé du transfert colorimétrique après chaque restauration. Ne pas déployer ni fusionner cette branche sans preuves spécifiques.
 
 **Prochaines priorités :** essais iPhone physiques, suivi de paramètres SPS/VUI en bande, tests de vidéos HEVC plus longues et éventuellement sortie 30/60 i/s avec mesure RAM/thermique et conservation de la synchronisation réelle. La PR #3 demeure `draft`.
+
+
+### NOVA 0.21 — Paramètres HEVC en bande et instrumentation mémoire (code en validation)
+
+Les modules `nova-hevc-annexb.js` et `nova-hevc-lab.js` vérifient désormais à chaque échantillon en ordre de décodage les éventuels paramètres HEVC VPS/SPS/PPS en bande : ils doivent correspondre exactement octet par octet à une entrée `hvcC` préalablement acceptée. Tout changement de SPS, PPS, VPS, identifiant, profondeur, profil ou entête invalide entraîne un **refus explicite avant de fournir cet échantillon au décodeur**. Il s'agit d'une politique conservatrice pour `hev1` et `hvc1`, non d'une prise en charge automatique des nouveaux profils. Les copies identiques sont autorisées.
+
+Le pipeline incrémental échantillonne la **capacité du tas Emscripten WASM** (`HEAPU8.buffer.byteLength`) avant et pendant le décodage, avec un seuil conservateur configurable de 384 Mio pour ce pilote, ainsi que la métrique navigateur facultative `performance.memory.usedJSHeapSize` quand elle existe. Il expose le nombre de paramètres en bande, le nombre maximal de frames extraites par `drain/flush`, les octets par paquet et images YUV ainsi que la durée du pipeline (qui inclut I/O et callback). **La capacité allouée du tas WASM n'est PAS une mesure de la mémoire effectivement utilisée, et le JS heap facultatif n'est pas le pic RAM/RSS ni un benchmark iPhone**. Les tests couvrent le rejet des modifications intra-échantillon et les propriétés de ces métriques sous Chromium et WebKit Linux.
+
+**Statut : changements en attente des résultats GitHub Actions du dernier SHA**, ne pas proclamer des chiffres sans journaux verts. Plafonds 12 s / 60 Mo / 640 px / 15 i/s / HEVC 90 échantillons inchangés ; aucun iPhone physique testé, aucune production modifiée.

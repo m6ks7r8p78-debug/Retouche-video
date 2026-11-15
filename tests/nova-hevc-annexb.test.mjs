@@ -60,3 +60,47 @@ test("NOVA 0.18 : flux HEVC restitue exactement Annex B avec mémoire bornée",a
   for await(const x of ANNEXB.flux(file,info,{signal:cancelled})){void x}
  },/annulée/);
 });
+
+test("NOVA 0.21 : HEVC hev1 accepte uniquement les paramètres en bande identiques hvcC",async()=>{
+ const cfg=config(),base=ANNEXB.configuration(cfg);
+ const vps=base.parameterSets.find(x=>(x[0]>>1)===32);
+ const sps=base.parameterSets.find(x=>(x[0]>>1)===33);
+ const pps=base.parameterSets.find(x=>(x[0]>>1)===34);
+ const nals=[vps,sps,pps,new Uint8Array([2,1,5])];
+ const sample=new Uint8Array(nals.reduce((n,x)=>n+x.length+4,0));
+ let at=0;
+ for(const n of nals){
+  sample.set([0,0,0,n.length],at);at+=4;
+  sample.set(n,at);at+=n.length;
+ }
+ const file=new Blob([sample]);
+ const info={codec:"hev1.1.6.L30",desc:cfg,ns:1,so:[0],sz:[sample.length]};
+ assert.equal(ANNEXB.verifierParametres(nals,base),3);
+ const collected=[];
+ for await(const x of ANNEXB.flux(file,info,{maxPacketBytes:1024,maxBytes:2048}))
+  collected.push(x);
+ assert.equal(collected[1].inbandParameters,3);
+ assert.equal((await ANNEXB.extraire(file,info)).samples,1);
+ for(const type of [32,33,34]){
+  const modified=nals.map(x=>new Uint8Array(x));
+  const idx=modified.findIndex(x=>(x[0]>>1)===type);
+  modified[idx][2]^=1;
+  assert.throws(()=>ANNEXB.verifierParametres(modified,base),/changement VPS\/SPS\/PPS/);
+  const bad=new Uint8Array(sample);
+  const offset=nals.slice(0,idx).reduce((sum,x)=>sum+x.length+4,0);
+  bad[offset+4+2]^=1;
+  const badFile=new Blob([bad]);
+  await assert.rejects(async()=>{
+   for await(const x of ANNEXB.flux(badFile,info,{maxPacketBytes:1024,maxBytes:2048}))void x;
+  },/changement VPS\/SPS\/PPS/);
+  await assert.rejects(ANNEXB.extraire(badFile,info),/changement VPS\/SPS\/PPS/);
+ }
+});
+test("NOVA 0.21 : rejette VPS/SPS/PPS en bande au mauvais ID ou entête invalide",()=>{
+ const base=ANNEXB.configuration(config());
+ const badHeader=new Uint8Array([66,0,1]);
+ assert.throws(()=>ANNEXB.verifierParametres([badHeader],base),/mal formé/);
+ const badLayer=new Uint8Array([67,1,1]);
+ assert.throws(()=>ANNEXB.verifierParametres([badLayer],base),/mal formé/);
+ assert.equal(ANNEXB.verifierParametres([new Uint8Array([2,1,5])],base),0);
+});
