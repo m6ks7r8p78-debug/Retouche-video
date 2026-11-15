@@ -110,3 +110,10 @@ La PR reste en brouillon. Aucun changement de `main` ou de déploiement public.
 2. Vrai essai Safari sur iPhone physique (réactivité, température, mémoire et reprise après verrouillage).
 3. Tests de scènes très mouvementées et de durée sonore non alignée, comparés au pipeline historique.
 4. N'autoriser ensuite une augmentation progressive des limites d'export qu'après ces mesures.
+
+
+### NOVA 0.4b — contrôle de lisibilité avant téléchargement
+
+Après `muxer.finalize()`, l'export crée une URL Blob locale, charge les métadonnées de sortie dans un élément vidéo muet et contrôle dimensions et durée (tolérance 300 ms). **Le lien de téléchargement n'apparaît qu'après réussite**. Le Blob temporaire de diagnostic est révoqué. Le rapport reste honnête : lecture des métadonnées démontrée, mais pas lecture intégrale, pas qualité perceptuelle ni intégrité du son sur Safari ; la CI FFprobe inspecte séparément les pistes, dont AAC. Un MP4 qui ne s'ouvre pas au moins au niveau métadonnées est refusé.
+
+La première CI 0.4 avait les deux jobs verts : **4/4 tests Chromium** (photo mobile/bureau, aperçu vidéo MP4, export MP4 avec inspection FFprobe) et job unitaire réussi. Le contrôle de lisibilité supplémentaire correspond à un **nouveau commit qui doit être revalidé** avant promotion.
