@@ -1,0 +1,88 @@
+name: NOVA Safari decoded-frame reorder buffer (experimental)
+on:
+  push:
+    branches:
+      - chatgpt-nova-hevc-decoder-reorder-buffer-v1
+  pull_request:
+    branches:
+      - chatgpt-nova-hevc-first-frame-priming-v1
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-native-reorder-window-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg and FFprobe
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Source syntax and 30 existing regression tests
+        run: |
+          node --check experiences/nova-native-hd.js
+          node --check experiences/nova-native-hd-smoke-ui.js
+          node --check tests/nova-native-hevc-smoke-browser.test.mjs
+          node --test tests/nova-real-preflight.test.mjs tests/nova-native-hd.test.mjs tests/nova-zones.test.mjs tests/nova-iphone-preview.test.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg and FFprobe
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Playwright
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: HEVC withheld first-frame reorder plus existing H264/AAC and privacy regression
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --check tests/nova-native-hd-prime9-browser.test.mjs tests/nova-native-hd-reorder8-browser.test.mjs
+          node --check tests/nova-native-hd-reorder8-browser.test.mjs
+          node --test --test-concurrency=1 tests/nova-native-hevc-smoke-browser.test.mjs tests/nova-native-hd-bframes-browser.test.mjs tests/nova-native-hd-prime9-browser.test.mjs tests/nova-native-hd-reorder8-browser.test.mjs
+  preview:
+    needs:
+      - unit
+      - browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Build HTTPS preview with synthetic fixtures only
+        run: |
+          node outils/build-nova-iphone-preview.mjs
+          test -f dist/nova-iphone-preview/experiences/nova-native-hd-smoke-ui.js
+          test -f dist/nova-iphone-preview/experiences/nova-test-synthetic.mov
+          node -e 'const m=require("./dist/nova-iphone-preview/asset-manifest.json"); if(m.publication!=="none"||m.privateMediaIncluded!==false) process.exit(1); const clips=m.files.filter(x=>/\.(mp4|mov|jpg|jpeg|png)$/i.test(x.path)); if(clips.length!==2||clips.some(x=>x.origin!=="ffmpeg-synthetic-only")) process.exit(1);'
+          cd dist/nova-iphone-preview
+          zip -q -X -r ../../NOVA_Safari_HEVC_reordonnancement.zip .
+          cd ../..
+          unzip -t NOVA_Safari_HEVC_reordonnancement.zip >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-Safari-HEVC-reordonnancement-HTTPS-manuel
+          path: NOVA_Safari_HEVC_reordonnancement.zip
+          retention-days: 7
+          if-no-files-found: error
