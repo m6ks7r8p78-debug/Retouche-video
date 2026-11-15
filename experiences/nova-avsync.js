@@ -79,9 +79,9 @@ function analyserMoov(b){
    for(let i=0;i<edits;i++){
     const p=elst.start+8+i*step;
     const seg=v===1?number64(dv.getBigUint64(p)):dv.getUint32(p);
-    const media=v===1?number64(dv.getBigInt64(p+8)):dv.getInt32(p+4);
+    const media=v===1?Number(dv.getBigInt64(p+8)):dv.getInt32(p+4);
     const rate=dv.getInt32(p+(v===1?16:8));
-    if(rate!==65536||!safe(seg))fail("vitesse de montage audio non standard");
+    if(rate!==65536||!safe(seg)||!Number.isSafeInteger(media))fail("vitesse ou temps de montage audio non standard");
     entries.push({seg,media});
    }
    if(edits===2){
