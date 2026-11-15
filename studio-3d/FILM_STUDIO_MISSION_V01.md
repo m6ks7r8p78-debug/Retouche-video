@@ -105,3 +105,23 @@ Effectuer un test navigateur effectif de la page locale, puis inspection visuell
 - WebGL2 ne transforme pas notre géométrie procédurale en photoréalisme : formes simplifiées, texture et éclairage PBR absents, aucune peau/chevelure reconstruite, mouvements imparfaits, contacts physiques des doigts non vérifiés, scène unique, sans voix ni MP4.
 - Safari iPhone physique à mesurer : stabilité mémoire, thermiques, orientation, mise en arrière-plan, perte du contexte WebGL et export GLB via l'interface native.
 - PR en brouillon ; aucune fusion, aucun déploiement ni publication des 157 vidéos privées. La démonstration est disponible en **code source dans la branche**, non sur le site public.
+
+
+## Film Studio v0.5 — WebKit Safari : validation du moteur et du repli (15 novembre 2026)
+
+### Modifications sur la PR #69
+- film-ui-v05.mjs : reprise du lecteur WebGL2 v0.4 avec repli Canvas 2D robuste en cas d'échec des shaders (recréation de l'élément Canvas après un contexte GL déjà attribué), limite de la résolution interne à 2048 px par axe, capture tactile défensive, tentative de reprise après perte/restauration du contexte GPU et préservation du contenu lors du cache de navigation Safari (pageshow/pagehide persistés).
+- film-studio-v05.html : interface française responsive avec création de scènes stylisées d'un bouton, lecture/pause, déplacement tactile, curseur temporel et téléchargement local GLB.
+- film-browser-webkit-v05.test.mjs : test **réel du moteur WebKit de Playwright sur Linux Ubuntu 24.04**, écran tactile 390×844 puis 844×390 ; vérification des pixels du rendu, du changement d'image aux gestes, du repli forcé après refus des shaders, de la préservation du lien Blob après événements pagehide/pageshow persistés et du refus des scénarios incomplets.
+- GitHub Actions : troisième job navigateur WebKit indépendant, sans chargement de médias privés ni appel réseau externe de la page ; installation temporaire de Playwright/WebKit uniquement sur le runner CI.
+
+### Résultats vérifiés
+- GitHub Actions **run 43736977633 : trois jobs réussis** : 38/38 tests Node, Chromium WebGL2, et WebKit sur Linux.
+- WebKit normal : **WebGL2 réel**, 16 441 pixels de premier plan sur toile interne 712×580, rotation tactile et animation changent l'image, portrait/paysage sans débordement, export protégé et zéro erreur JS.
+- WebKit avec refus des shaders injecté : **Canvas 2D de secours** effectif, 148 760 pixels de premier plan ; navigation et export/refus restent opérationnels. Le repli a été réellement exécuté.
+- Captures entièrement synthétiques sauvegardées dans l'artefact GitHub Actions film-studio-v05-webkit-synthetic (durée de conservation CI 7 jours).
+
+### Limites de validation
+- **WebKit Playwright sous Linux n'est pas Safari physique sur iPhone 15 Pro Max** : GPU Apple, thermiques, mémoire, version iOS, téléchargement iOS et PWA non attestés.
+- Animations toujours stylisées, posture assise approximative, doigts sans préhension physique, pas de voix, de film MP4, de photoréalisme ni d'entraînement sur les 157 vidéos privées.
+- Aucune fusion, aucun déploiement, aucun changement public. PR en brouillon.
