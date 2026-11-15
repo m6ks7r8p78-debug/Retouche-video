@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#12141b">
+<title>Retouche Cinema Director P1 — Studio iPhone</title>
+<style>
+:root{color-scheme:dark;--bg:#11131a;--surface:#1c1e27;--raised:#252832;--text:#faf5ed;--muted:#b6b2b7;--line:#ffffff22;--accent:#efbd9d;--mint:#9dd0c3;--r:22px}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{background:radial-gradient(ellipse 900px 550px at 85% 0,#b3849850,transparent 55%),var(--bg);color:var(--text);margin:0;font:16px/1.48 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+button,textarea,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--mint);outline-offset:3px}button:disabled{opacity:.42;cursor:not-allowed}input,textarea,select{color:var(--text);background:#12141b;border:1px solid #62616b;border-radius:12px;min-height:44px;padding:12px;width:100%}textarea{resize:vertical}select{color-scheme:dark}input[type=checkbox]{width:20px;height:20px;min-height:20px;accent-color:var(--accent)}input[type=range]{padding:0;border:0;min-height:24px;accent-color:var(--accent)}small{color:var(--muted)}
+.wrap{max-width:1200px;margin:auto;width:calc(100% - 44px)}header{display:flex;align-items:center;justify-content:space-between;min-height:81px;border-bottom:1px solid var(--line);gap:10px}.brand{font-weight:850;letter-spacing:.12em;font-size:13px}.brand span{color:var(--accent)}.logo{display:inline-grid;place-items:center;width:36px;height:36px;background:#efbd9d24;border:1px solid #efbd9d66;border-radius:12px;color:var(--accent);margin-right:8px}.tag{border:1px solid var(--line);border-radius:90px;padding:8px 12px;color:#c7c0ba;font-size:11px;white-space:nowrap}.hero{display:grid;grid-template-columns:1.07fr .93fr;gap:40px;align-items:center;padding:65px 0 40px}.kicker{font-size:11px;font-weight:800;letter-spacing:.19em;text-transform:uppercase;color:var(--accent)}h1,h2{font-family:Georgia,serif;font-weight:400;letter-spacing:-.045em}h1{font-size:clamp(42px,6.4vw,80px);line-height:1.07;margin:14px 0 16px}h1 em{font-weight:400;color:var(--accent)}h2{font-size:clamp(27px,3.6vw,43px);margin:0 0 6px}.lead{font-size:16px;color:#c4c0c6;max-width:540px}.heroart{height:300px;position:relative;border:1px solid #ffffff33;border-radius:28px;overflow:hidden;box-shadow:0 22px 90px #0006;background:radial-gradient(ellipse at 70% 25%,#f2c3a499,transparent 39%),linear-gradient(145deg,#53576a,#1c2130 70%)}.heroart:before{content:"";position:absolute;width:210px;height:265px;right:16%;bottom:-56px;border-radius:105px 105px 40px 40px;transform:rotate(-6deg);background:linear-gradient(120deg,#ac8e91,#352c39 70%,#1b1b28);box-shadow:inset -20px 12px 20px #0005}.heroart:after{content:"";position:absolute;right:27%;top:53px;width:109px;height:137px;border-radius:48% 48% 50% 50%;background:linear-gradient(110deg,#f1c1ac,#9c7472);box-shadow:8px -30px 0 -12px #382b38}.heroart .over{position:absolute;inset:0;z-index:2;padding:21px;display:flex;flex-direction:column;justify-content:space-between}.overline{font-size:11px;letter-spacing:.16em;color:#fff1e3}.bigcount{font:36px Georgia,serif}.bodygrid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:22px;align-items:start}.panel{border:1px solid #ffffff26;background:var(--surface);border-radius:26px;padding:25px;box-shadow:0 20px 50px #0002}.panel .eyeline{font-size:12px;color:var(--muted);letter-spacing:.02em}.sectiontitle{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:20px}.sectiontitle h2{font-size:29px}.tabs{display:flex;gap:6px;margin:17px 0}.tab{min-height:45px;flex:1;padding:10px 12px;border-radius:80px;border:1px solid #ffffff33;background:transparent;color:#ded9dd;font-size:13px;font-weight:700}.tab[aria-selected=true]{background:var(--accent);color:#201922;border-color:var(--accent)}.inputbox{border:1px solid #77717a;background:#11141c;padding:8px;border-radius:18px}.inputbox textarea{background:transparent;border:0;outline:none;min-height:173px;padding:12px;color:white}.inputbox .hint{display:flex;justify-content:space-between;padding:0 10px 8px;gap:10px;color:#b1adb6;font-size:11px}.examples{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0 6px}.example{border:1px solid #ffffff3b;color:#e3dce0;background:#ffffff0c;border-radius:90px;padding:9px 11px;font-size:12px}.example:hover{border-color:var(--accent)}.primary{border:0;background:linear-gradient(108deg,#f2c49f,#e6a1aa);color:#211922;min-height:52px;padding:15px 21px;border-radius:90px;font-weight:850}.primary:hover{filter:brightness(1.07)}.secondary{border:1px solid #ffffff4c;background:#ffffff0b;color:#faf5ed;min-height:44px;padding:10px 15px;border-radius:90px;font-weight:650}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.createbar{margin-top:19px}.soft{font-size:13px;color:var(--muted)}.tiny{font-size:11px;color:var(--muted)}.media-image{max-width:135px;max-height:100px;object-fit:cover;border-radius:12px}.media-preview{display:flex;gap:13px;align-items:center;flex-wrap:wrap;margin:12px 0}.media-desc{font-size:12px;color:var(--muted);word-break:break-word}.filepick{margin:10px 0;background:#232631;padding:15px;border-radius:14px;border:1px dashed #b6adbd}.checkline{display:flex;gap:11px;align-items:flex-start;font-size:13px;color:#d5d0d2;margin:11px 0}.checkline input{flex:none;margin-top:3px}.hint-card{border-radius:20px;padding:23px;background:radial-gradient(ellipse at right top,#eead9a30,transparent 55%),linear-gradient(145deg,#272d38,#1a1e28);border:1px solid #ffffff27;margin-top:0}.hint-card h3{font:27px Georgia,serif;margin:10px 0}.hint-card p{font-size:14px;color:#c9c4c9}.numnav{display:flex;gap:8px;align-items:center;font-size:12px;color:#e7bda5}.dot{height:8px;width:8px;border-radius:10px;background:var(--mint)}.featureline{border-top:1px solid #ffffff23;padding-top:13px;margin-top:14px;display:flex;gap:9px;font-size:12px;color:#e1d5d0}.adv{margin-top:14px;color:var(--muted);font-size:13px}.adv summary{cursor:pointer;padding:9px 0}.options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.options label{display:flex;flex-direction:column;gap:5px;font-size:12px}.error{border-color:#f6a1ac!important;color:#ffd0d0!important}.notice{padding:14px 16px;border:1px solid #8bb5a5;background:#9dd0c316;border-radius:14px;margin:18px 0;color:#d6f5e9;font-size:13px}
+#studio{padding:43px 0}.studiohead{display:flex;align-items:end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:0 0 18px}.meta{display:flex;gap:7px;flex-wrap:wrap}.chip{border-radius:12px;padding:8px 11px;background:#ffffff12;border:1px solid #ffffff22;color:#e6e0e0;font-size:12px}.workgrid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:18px;align-items:start}.preview{background:#1a1d27;border:1px solid #ffffff2e;border-radius:24px;padding:17px;min-width:0}.previewbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;gap:14px}.previewbar h3{font:24px Georgia,serif;margin:0}.previewbar .eyeline{font-size:11px;color:var(--accent)}.screenwrap{background:#15171d;border-radius:14px;overflow:hidden;display:grid;place-items:center;min-height:270px}.screenwrap canvas{display:block;width:100%;max-width:960px;max-height:430px;object-fit:contain;aspect-ratio:auto}.screenwrap canvas[data-portrait="true"]{width:auto;height:min(70vh,500px);max-height:500px;max-width:100%;aspect-ratio:9/16}.seekline{height:3px;background:#ffffff25;overflow:hidden;margin:13px 0 8px;border-radius:8px}.seekline b{display:block;width:0;height:100%;background:var(--accent)}.previewtools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.previewtools .secondary{font-size:12px}.previewtools input[type=range]{flex:1;min-width:90px}.clock{font-size:12px;color:#d4cbd0;font-variant-numeric:tabular-nums}.info{padding:16px 0 0;color:#c3b8bd;font-size:12px}.continuity{border:1px solid #ffffff2e;background:var(--surface);border-radius:24px;padding:19px}.continuity h3,.shot-section h3{font:25px Georgia,serif;margin:0 0 9px}.person{border-radius:15px;padding:14px;background:#ffffff0c;border:1px solid #ffffff1e;margin-bottom:9px}.person-head{display:flex;gap:8px;align-items:center;margin-bottom:9px}.person-label{font-weight:750;font-size:12px}.avatar{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;background:#f1bc9830;color:var(--accent);font:17px Georgia,serif}.person input{font-size:13px;margin-bottom:7px}.property-chip{font-size:12px;border-radius:99px;display:inline-block;padding:8px 11px;background:#83afa424;border:1px solid #83afa44d;margin:5px 5px 0 0}.warnings{font-size:12px;color:#e1d4c8;line-height:1.65;border-top:1px solid #ffffff20;padding-top:13px;margin-top:13px}.shot-section{margin:24px 0 20px}.shot-head{display:flex;gap:12px;align-items:center;margin-bottom:14px}.shot-index{font:37px Georgia,serif;color:var(--accent)}.shot-type{font-size:11px;color:#ddd5da;flex:1}.mini-controls{display:flex;gap:6px}.smallbutton{min-width:35px;min-height:35px;padding:4px;border:1px solid #ffffff3f;background:transparent;color:white;border-radius:9px;font-size:18px}.shot-card{border:1px solid #ffffff31;border-radius:19px;background:var(--surface);padding:18px;margin-bottom:12px}.field-label{color:#bab2ba;font-size:12px;font-weight:750}.shot-card textarea{min-height:72px;margin:5px 0 12px}.detail-grid{display:grid;grid-template-columns:1.15fr .6fr 1fr;gap:8px}.shortlabel{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#c7bec2;margin-bottom:10px}.shortlabel input,.shortlabel select{font-size:13px}.studiofoot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border:1px solid #ffffff24;padding:19px 22px;background:#24242a;border-radius:20px;margin-top:20px}.studiofoot p{margin:0;max-width:500px;font-size:13px;color:#c1b8b7}footer{border-top:1px solid #ffffff22;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:27px 0 40px;font-size:11px;color:#b1a8ad}.sr-only{position:absolute!important;left:-10000px;width:1px;height:1px;overflow:hidden}
+@media(max-width:900px){.hero{grid-template-columns:1fr;padding:36px 0 24px;gap:18px}.heroart{height:185px}.heroart:before{bottom:-135px;right:23%}.heroart:after{top:24px;right:35%}.bodygrid,.workgrid{grid-template-columns:1fr}.continuity{order:2}}@media(max-width:570px){.wrap{width:calc(100% - 26px)}header{min-height:68px}.brand{font-size:11px}.tag{font-size:10px;padding:6px}h1{font-size:clamp(43px,11vw,58px);margin:10px 0}.hero{padding:28px 0 18px}.lead{font-size:14px}.heroart{height:158px;border-radius:20px}.heroart .bigcount{font-size:26px}.panel{padding:17px;border-radius:20px}.sectiontitle h2{font-size:25px}.hint-card{padding:17px}.tab{padding:9px 6px;font-size:12px}.inputbox textarea{min-height:154px}.createbar .primary{width:100%}.options{grid-template-columns:1fr 1fr}.preview{padding:11px}.screenwrap{min-height:210px}.screenwrap canvas{max-height:340px}.previewtools .secondary{font-size:11px;padding:9px}.detail-grid{grid-template-columns:1fr 1fr}.detail-grid .shortlabel:last-child{grid-column:1/-1}.shot-card{padding:13px}.studiofoot{padding:14px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body><div class="wrap">
+<header><div class="brand"><span class="logo" aria-hidden="true">✦</span>RETOUCHE <span>CINEMA</span></div><div class="tag">DIRECTOR P1 · LABO LOCAL</div></header>
+<section class="hero"><div><div class="kicker">Un studio. Une idée. Ton film.</div><h1>Imagine.<br><em>Nous organisons</em><br>la réalisation.</h1><p class="lead">Décris ton histoire ou ajoute une référence. Nous préparons les personnages, les plans, les mouvements et une première animatique à modifier.</p></div><div class="heroart" aria-hidden="true"><div class="over"><div class="overline">RETOUCHE ORIGINAL / CINEMA LAB</div><div><div class="overline">LE STUDIO COMMENCE PAR UNE IDÉE</div><div class="bigcount">01 · 02 · 03</div></div></div></div></section>
+<div class="bodygrid"><section class="panel" aria-label="Préparer mon film"><div class="sectiontitle"><div><div class="kicker">01 / TON HISTOIRE</div><h2>Qu'as-tu en tête ?</h2></div></div><div role="tablist" aria-label="Type de création" class="tabs"><button class="tab" id="tab-text" type="button" role="tab" aria-selected="true">✦ Décrire</button><button class="tab" id="tab-photo" type="button" role="tab" aria-selected="false">▧ Photo</button><button class="tab" id="tab-video" type="button" role="tab" aria-selected="false">▣ Vidéo</button></div>
+<div class="inputbox"><label class="sr-only" for="prompt">Décris la scène que tu imagines</label><textarea id="prompt" maxlength="4000" placeholder="Une femme brune marche dans une rue, puis entre dans un café. Elle s'assoit, boit son café et discute avec une amie. Film naturel, 1 minute, vertical."></textarea><div class="hint"><span>Personnages, actions, lieux, dialogues, durée…</span><span id="counter">0/4000</span></div></div>
+<div id="media-zone" hidden><label class="filepick" for="media-input" style="display:block">Ajouter une photo ou vidéo locale <input id="media-input" type="file" accept="image/*" style="margin-top:10px" aria-label="Importer une photo ou une vidéo locale"></label><div id="media-preview" class="media-preview"></div></div>
+<div id="rights-area" hidden><label class="checkline"><input id="rights" type="checkbox"><span>Je confirme disposer des droits et autorisations nécessaires pour utiliser ce média comme référence. Il restera sur cet appareil dans cette démonstration.</span></label></div>
+<div class="examples"><button class="example" data-example="Une femme brune de 35 ans marche dans une rue. Puis elle entre dans un café, s'assoit, boit une tasse de café et répond au téléphone. Film naturel, 1 minute." type="button">Dans un café</button><button class="example" data-example="Un homme adulte s'assoit sur un canapé dans un salon. Ensuite il lit un livre, puis discute avec une amie. Film de 30 secondes, format vertical." type="button">Un salon</button><button class="example" data-example="Une femme blonde adulte traverse un parc. Puis elle s'arrête et regarde la lumière du soir. Film de deux minutes." type="button">Au parc</button></div>
+<details class="adv"><summary>Personnaliser la durée et le format</summary><div class="options"><label>Durée souhaitée<select id="duration"><option value="auto">Selon ma description</option><option value="30">30 secondes</option><option value="60">1 minute</option><option value="120">2 minutes</option><option value="180">3 minutes</option><option value="300">5 minutes</option></select></label><label>Format<select id="format"><option value="auto">Automatique</option><option value="16:9">Horizontal 16:9</option><option value="9:16">Vertical 9:16</option></select></label></div></details>
+<div class="createbar"><button id="create" class="primary" type="button">✦ Préparer mon film</button><div class="tiny" style="margin-top:9px">Gratuit, sans compte et sans envoi de fichier dans ce prototype.</div></div>
+</section><aside class="hint-card" aria-label="Ce que fait le studio"><div class="numnav"><span class="dot"></span>LE CINEMA DIRECTOR / PREMIÈRE VERSION</div><h3>Ton idée devient une production organisée.</h3><p>Nous découpons ta description en plans et gardons une fiche pour chaque personnage et objet. Tu ajustes les gestes, le lieu, les paroles et la durée.</p><div class="featureline">✧ Scénario et storyboard modifiables</div><div class="featureline">✧ Personnages et objets suivis</div><div class="featureline">✧ Animatique stylisée réellement animée</div><div class="featureline">✧ Export de projet JSON et, si compatible, vidéo de l'animatique</div><div class="featureline">◯ Pas encore de génération vidéo IA photoréaliste</div></aside></div>
+<div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+<section id="studio" aria-label="Studio de production" hidden><div class="studiohead"><div><div class="kicker">02 / TON STUDIO</div><h2 id="film-title">Ton projet</h2><div class="soft" id="original-description"></div></div><div class="meta"><span id="plans-chip" class="chip">0 plan</span><span id="duration-chip" class="chip">0 s</span><span id="format-chip" class="chip">16:9</span><span class="chip">Animatique · non photoréaliste</span></div></div>
+<div class="workgrid"><div class="preview"><div class="previewbar"><div><div class="eyeline">03 / DÉMONSTRATION ANIMÉE</div><h3>Ton animatique</h3></div><div class="tag">HORS LIGNE</div></div><div class="screenwrap"><canvas id="screen" width="960" height="540" aria-label="Animatique dessinée représentant les scènes du storyboard"></canvas></div><div class="seekline"><b id="preview-progress"></b></div><div class="previewtools"><button id="play" class="secondary" type="button">▶ Lire l'animatique</button><button id="restart" class="secondary" type="button">↺</button><label class="sr-only" for="seek">Avancer dans l'animatique</label><input id="seek" type="range" min="0" max="20" value="0" step="0.1"><span class="clock"><span id="preview-time">00:00</span> / <span id="preview-length">00:00</span></span></div><div class="row" style="margin-top:12px"><button id="record" class="secondary" type="button">◉ Enregistrer l'animatique</button><span class="tiny">Vidéo stylisée condensée, sans son. Selon compatibilité du navigateur.</span></div><div class="info">Les personnages de cette prévisualisation sont dessinés par un moteur 2D simple. Ce n'est pas un générateur vidéo photoréaliste. La durée de l'animatique est condensée par rapport au projet final.</div></div>
+<div class="continuity"><div class="kicker">04 / MÉMOIRE VISUELLE</div><h3>Personnages & objets</h3><p class="soft">La même fiche de personnage est utilisée dans chaque plan. Les objets sont référencés pour les étapes futures.</p><div id="characters"></div><div id="props"></div><div class="warnings" id="warnings"></div></div></div>
+<div class="shot-section"><div class="sectiontitle"><div><div class="kicker">05 / TOUCHE PERSONNELLE</div><h3>Les plans de ton film</h3><p class="soft">Change une action, un décor ou un cadrage. Monte ou descends les plans.</p></div><button id="add-shot" class="secondary" type="button">+ Ajouter un plan</button></div><div id="shot-list"></div></div>
+<div class="studiofoot"><div><strong>Ton projet reste à toi.</strong><p>Le JSON conserve le scénario, pas les pixels de ta référence. Aucun fichier n'est transmis à un serveur.</p></div><div class="row"><button id="export-json" class="primary" type="button">↓ Enregistrer le projet JSON</button><label class="secondary" for="import-json" style="cursor:pointer">↑ Ouvrir un projet<input id="import-json" type="file" accept="application/json,.json" class="sr-only" aria-label="Importer un projet JSON"></label></div></div></section>
+<footer><span>RETOUCHE CINEMA AI · DIRECTOR P1 · PROTOTYPE EXPÉRIMENTAL</span><span>Pas de génération vidéo IA, pas de réseau, pas de média personnel exporté.</span></footer>
+</div><script>
+/* Retouche Cinema P1 — deterministic, offline storyboard director.
+ * This is deliberately NOT a video-generation model. No network calls.
+ * MIT-style original implementation for the project, 2026.
+ */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  if (root) root.RetoucheCinemaDirector = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  const VERSION = 'cinema-p1.0';
+  const MAX_SHOTS = 16, MAX_SECONDS = 600;
+  const reduce = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, Number(n) || lo));
+  const places = [
+    ['salon', /\b(salon|canape)\b/], ['rue', /\b(rue|trottoir|avenue)\b/],
+    ['cuisine', /\b(cuisine)\b/], ['chambre', /\b(chambre|lit)\b/],
+    ['restaurant', /\b(restaurant|bistrot)\b/], ['cafe', /\b(dans un cafe|au cafe|entree? dans un cafe)\b/],
+    ['parc', /\b(parc|jardin)\b/], ['plage', /\b(plage|mer)\b/],
+    ['bureau', /\b(bureau)\b/], ['terrasse', /\b(terrasse)\b/]
+  ];
+  const props = [
+    ['tasse', /\b(tasse|cafe|the|mug)\b/], ['telephone', /\b(telephone|portable|smartphone|appel)\b/],
+    ['cigarette', /\b(cigarette|fume|fumer)\b/], ['sac', /\b(sac|valise)\b/],
+    ['livre', /\b(livre|roman)\b/], ['lunettes', /\b(lunettes)\b/], ['verre', /\b(verre|eau)\b/]
+  ];
+  function getDesiredDuration(s) {
+    const x = reduce(s);
+    const clock = x.match(/\b(\d{1,2})\s*(?:min|minutes?)\s*(\d{1,2})\s*(?:s|sec|secondes?)\b/);
+    if (clock) return clamp(+clock[1] * 60 + +clock[2], 5, MAX_SECONDS);
+    const words = {un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,neuf:9,dix:10};
+    const num = '(\\d{1,3}|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)';
+    const unit = new RegExp('\\b' + num + '\\s*(minutes?|mins?|secondes?|secs?)\\b');
+    const m = x.match(unit);
+    if (!m) return 45;
+    const n = words[m[1]] || Number(m[1]);
+    return clamp(n * (/^min/.test(m[2]) ? 60 : 1), 5, MAX_SECONDS);
+  }
+  function detectPlace(s, prior) {
+    const x = reduce(s);
+    for (const [name, re] of places) if (re.test(x)) return name;
+    return prior || 'Décor à définir';
+  }
+  function detectProps(s) { const x = reduce(s); return props.filter(([, re]) => re.test(x)).map(([name]) => name); }
+  function detectCharacters(s, mode) {
+    const x = reduce(s);
+    const a = [];
+    const two = /\b(avec (son|sa|une?|l')?\s*(ami|amie|compagnon|compagne)|discute avec|conversation avec|ils discutent|elles discutent)\b/.test(x);
+    const gender = /\b(femme|madame|blonde|brune)\b/.test(x) ? 'femme' : /\b(homme|monsieur|brun|blond)\b/.test(x) ? 'homme' : 'personnage';
+    const color = /\b(blonde|blond)\b/.test(x) ? 'blonds' : /\b(brune|brun)\b/.test(x) ? 'bruns' : '';
+    const age = x.match(/\b(\d{2})\s*ans\b/);
+    a.push({id:'character_01',role:'principal',description:(gender + ' adulte' + (color ? ' aux cheveux '+color : '') + (age ? ' de '+age[1]+' ans' : '')).trim(),identity_source:mode==='text'?'fictional':'reference_non_verifiee',reference_id:mode==='text'?null:'media_01',voice_consented:false});
+    if (two) a.push({id:'character_02',role:'secondaire',description:'autre personne adulte, apparence à préciser',identity_source:'fictional',reference_id:null,voice_consented:false});
+    return a;
+  }
+  function extractActions(input) {
+    let s=String(input).trim().replace(/\s+/g, ' ');
+    // Intentional rule-based split, rather than an AI semantic parse.
+    const parts = s.split(/(?:[.!?;]+\s+|\s*,?\s*\b(?:puis|ensuite|apres cela|plus tard|et ensuite)\b\s*[,:]?\s*)/i)
+      .map(x => x.replace(/^[,\s]+|[,\s]+$/g, '').trim()).filter(Boolean);
+    const desc = parts.filter(x => !/^(?:ambiance|style|lumi[eè]re|format|qualit[eé]|dur[eé]e|film\s+de|\d+\s*(?:minutes?|secondes?))\b/i.test(x));
+    return (desc.length ? desc : [s]).slice(0,MAX_SHOTS);
+  }
+  function planType(action) {
+    const a=reduce(action);
+    if (/\b(telephone|boit|cafe|tasse|main|regarde|sourit|parle|discute|fume|yeux)\b/.test(a)) return 'Plan rapproché';
+    if (/\b(marche|court|entre|sort|rue|traverse|avance)\b/.test(a)) return 'Plan d’ensemble';
+    return 'Plan moyen';
+  }
+  function rebalance(shots, seconds) {
+    if (!shots.length) return shots;
+    const total=Math.max(shots.length*2,clamp(seconds,5,MAX_SECONDS));
+    const base=Math.floor(total/shots.length);
+    let left=total-base*shots.length;
+    shots.forEach(s => {s.duration_seconds=base+(left-- > 0 ? 1:0);});
+    return shots;
+  }
+  function buildProject(config) {
+    const cfg=config||{}; const description=String(cfg.description||'').trim();
+    if (!description || description.length>4000) throw new Error('Décris ton film (1 à 4 000 caractères).');
+    const mode=['text','photo','video'].includes(cfg.mode)?cfg.mode:'text';
+    if(mode!=='text' && (!cfg.media || !cfg.media.name)) throw new Error('Ajoute un fichier photo ou vidéo.');
+    if(mode!=='text' && !cfg.hasRights) throw new Error('Confirme tes droits sur cette référence avant de continuer.');
+    const media=mode==='text'?null:{id:'media_01',name:String(cfg.media.name).slice(0,180),mime_type:String(cfg.media.type||''),size_bytes:Math.max(0,Number(cfg.media.size)||0),transferred:false,embedded:false};
+    if(media && media.size_bytes>200*1024*1024) throw new Error('Fichier trop volumineux pour ce prototype (200 Mo max).');
+    const characters=detectCharacters(description,mode);
+    let lastLocation=detectPlace(description), allProps=[];
+    const actions=extractActions(description);
+    const shots=actions.map((action,i)=>{
+      const matched=detectPlace(action,null);
+      if(matched!=='Décor à définir') lastLocation=matched;
+      const used=detectProps(action);
+      for(const p of used) if(!allProps.includes(p)) allProps.push(p);
+      return {id:'shot_'+String(i+1).padStart(2,'0'),title:'Plan '+(i+1),action,location:lastLocation,camera:planType(action),character_ids:characters.map(c=>c.id),prop_ids:used,duration_seconds:4,render_status:'not_rendered',dialogue:'',render_uri:null};
+    });
+    const requested=getDesiredDuration(description);
+    rebalance(shots,requested);
+    return {
+      schema_version:VERSION,project_type:'storyboard_and_animatic',status:'storyboard_only',
+      description,mode,media,has_rights_confirmed:mode==='text'?null:true,
+      characters,props:allProps.map((p,i)=>({id:p,label:p,owner_character_id:'character_01',continuity_note:'À garder cohérent entre les plans'})),
+      shots,requested_duration_seconds:requested,format:/\b(9\s*[:/]\s*16|vertical|portrait)\b/i.test(description)?'9:16':'16:9',
+      quality_flags:[],rendered_video:null,video_model_connected:false,
+      privacy:{uploaded_to_server:false,media_embedded_in_json:false,training_opt_in:false},
+      disclaimer:'Découpage déterministe + animatique dessinée ; aucun film IA photoréaliste généré.'
+    };
+  }
+  function diagnostics(project) {
+    const out=[];
+    const shots=project.shots||[];
+    if (shots.length>MAX_SHOTS || !shots.length) out.push('Nombre de plans invalide.');
+    if (new Set(shots.map(s=>s.id)).size!==shots.length) out.push('Identifiants de plans dupliqués.');
+    const ids=new Set((project.characters||[]).map(c=>c.id));
+    for(const s of shots){
+      if(!s.action || !s.action.trim()) out.push('Plan sans action : '+s.id);
+      if(!Number.isInteger(Number(s.duration_seconds)) || s.duration_seconds<1 || s.duration_seconds>120) out.push('Durée de plan invalide : '+s.id);
+      if((s.character_ids||[]).some(id=>!ids.has(id))) out.push('Personnage non répertorié : '+s.id);
+    }
+    if(shots.reduce((n,s)=>n+Number(s.duration_seconds||0),0)>MAX_SECONDS) out.push('Durée totale supérieure à dix minutes.');
+    if(project.mode!=='text' && !project.has_rights_confirmed) out.push('Droits de référence non confirmés.');
+    if((project.characters||[]).length>1) out.push('Deux personnages repérés : vérifier lequel parle ou agit dans chaque plan.');
+    if(project.media) out.push('Référence locale : les images originales ne sont pas incluses dans l’export JSON.');
+    out.push('Aucune génération vidéo IA réelle connectée : animatique de démonstration uniquement.');
+    return [...new Set(out)];
+  }
+  function validateImported(obj) {
+    if(!obj || obj.schema_version!==VERSION) throw new Error('Version de projet non prise en charge.');
+    if(!Array.isArray(obj.shots)||!obj.shots.length||obj.shots.length>MAX_SHOTS) throw new Error('Nombre de plans invalide.');
+    if(!Array.isArray(obj.characters)||obj.characters.length>8) throw new Error('Personnages invalides.');
+    if(!['text','photo','video'].includes(obj.mode)) throw new Error('Mode invalide.');
+    // Only data that the offline editor knows how to handle, never include foreign URLs or embedded pixels.
+    const clone=JSON.parse(JSON.stringify(obj));
+    clone.media=obj.media?{id:'media_01',name:String(obj.media.name||'').slice(0,180),mime_type:String(obj.media.mime_type||''),size_bytes:Math.max(0,Number(obj.media.size_bytes)||0),embedded:false,transferred:false}:null;
+    clone.description=String(obj.description||'').slice(0,4000);
+    clone.shots=clone.shots.map((s,i)=>({
+      id:String(s.id||'').slice(0,70),title:String(s.title||'Plan '+(i+1)).slice(0,80),action:String(s.action||'').slice(0,700),
+      location:String(s.location||'Décor à définir').slice(0,100),camera:String(s.camera||'Plan moyen').slice(0,80),
+      character_ids:Array.isArray(s.character_ids)?s.character_ids.map(x=>String(x).slice(0,80)):[],
+      prop_ids:Array.isArray(s.prop_ids)?s.prop_ids.map(x=>String(x).slice(0,80)):[],
+      duration_seconds:Number(s.duration_seconds),render_status:'not_rendered',dialogue:String(s.dialogue||'').slice(0,500),render_uri:null
+    }));
+    clone.characters=clone.characters.map(c=>({id:String(c.id).slice(0,80),role:String(c.role||'').slice(0,80),description:String(c.description||'').slice(0,240),identity_source:String(c.identity_source||'fictional').slice(0,60),reference_id:c.reference_id?String(c.reference_id).slice(0,80):null,voice_consented:false}));
+    clone.props=Array.isArray(clone.props)?clone.props.slice(0,30).map(p=>({id:String(p.id||'').slice(0,80),label:String(p.label||'').slice(0,80),owner_character_id:String(p.owner_character_id||'').slice(0,80),continuity_note:String(p.continuity_note||'').slice(0,180)})):[];
+    clone.rendered_video=null;clone.video_model_connected=false;clone.status='storyboard_only';
+    clone.privacy={uploaded_to_server:false,media_embedded_in_json:false,training_opt_in:false};
+    if(diagnostics(clone).some(x=>/invalide|sans action|non répertorié|supérieure|non confirmés|dupliqués/.test(x)))throw new Error('Projet JSON non conforme : vérifie les plans, durées et droits.');
+    return clone;
+  }
+  function totalDuration(project){return project.shots.reduce((v,s)=>v+Number(s.duration_seconds||0),0)}
+  function nextId(project){let n=1;while(project.shots.some(s=>s.id==='shot_'+String(n).padStart(2,'0')))n++;return 'shot_'+String(n).padStart(2,'0')}
+  return {VERSION,MAX_SHOTS,MAX_SECONDS,buildProject,detectPlace,detectProps,extractActions,getDesiredDuration,diagnostics,validateImported,totalDuration,nextId};
+});
+
+</script><script>
+/* Retouche Cinema P1 — UI and locally drawn animatic.
+   No network, no tracking, no remote model. */
+(() => {
+  'use strict';
+  const D=window.RetoucheCinemaDirector, $=id=>document.getElementById(id);
+  let mode='text', file=null, fileUrl=null, project=null, running=false, recording=false;
+  let playSeconds=0, lastTick=0, rafId=0, mediaRecorder=null;
+  const canvas=$('screen'), ctx=canvas.getContext('2d',{alpha:false});
+  const safeText=(node,s)=>{node.textContent=String(s??'')};
+  function notice(s,isError=false){const n=$('notice');n.hidden=false;n.classList.toggle('error',isError);safeText(n,s)}
+  function applyMode(m){
+    mode=m;
+    for(const k of ['text','photo','video'])$('tab-'+k).setAttribute('aria-selected',String(k===m));
+    $('media-zone').hidden=m==='text'; $('rights-area').hidden=m==='text';
+    $('media-input').accept=m==='photo'?'image/*':m==='video'?'video/*':'';
+    if(file&&((m==='text')||(m==='photo'&&!file.type.startsWith('image/'))||(m==='video'&&!file.type.startsWith('video/'))))clearMedia();
+    $('tab-'+m).focus();
+  }
+  function clearMedia(){if(fileUrl)URL.revokeObjectURL(fileUrl);fileUrl=null;file=null;$('media-input').value='';$('media-preview').replaceChildren();$('rights').checked=false;}
+  function onMediaChange(){
+    clearMedia(); const f=$('media-input').files?.[0]; if(!f)return;
+    if(!f.type.startsWith(mode==='photo'?'image/':'video/')){notice('Ce fichier ne correspond pas au type choisi.',true);return;}
+    if(f.size>200*1024*1024){notice('Pour ce prototype, limite locale : 200 Mo.',true);return;}
+    file=f;fileUrl=URL.createObjectURL(f);
+    const el=document.createElement(mode==='photo'?'img':'video');el.src=fileUrl;el.className='media-image';
+    if(mode==='video'){el.controls=true;el.muted=true;el.playsInline=true;el.preload='metadata'}else el.alt='Aperçu de la photo locale';
+    const label=document.createElement('div');label.className='media-desc';safeText(label,f.name+' · aperçu local, fichier non transféré');$('media-preview').append(el,label);
+  }
+  for(const m of ['text','photo','video'])$('tab-'+m).addEventListener('click',()=>applyMode(m));
+  $('media-input').addEventListener('change',()=>{
+    const f=$('media-input').files?.[0];
+    if(fileUrl)URL.revokeObjectURL(fileUrl);fileUrl=null;file=null;$('media-preview').replaceChildren();
+    if(!f)return;
+    if(!f.type.startsWith(mode==='photo'?'image/':'video/')){notice('Format de fichier incorrect.',true);$('media-input').value='';return;}
+    if(f.size>200*1024*1024){notice('Fichier trop volumineux (limite 200 Mo).',true);$('media-input').value='';return;}
+    file=f;fileUrl=URL.createObjectURL(f);const el=document.createElement(mode==='photo'?'img':'video');el.src=fileUrl;el.className='media-image';
+    if(mode==='video'){el.muted=true;el.controls=true;el.playsInline=true;el.preload='metadata'}else el.alt='Photo locale choisie';
+    const label=document.createElement('div');label.className='media-desc';safeText(label,f.name+' · reste sur cet appareil');$('media-preview').append(el,label);
+  });
+  const prompt=$('prompt');prompt.addEventListener('input',()=>safeText($('counter'),prompt.value.length+'/4000'));
+  document.querySelectorAll('[data-example]').forEach(btn=>btn.addEventListener('click',()=>{prompt.value=btn.dataset.example;prompt.dispatchEvent(new Event('input'));prompt.focus()}));
+  $('create').addEventListener('click',()=>{
+    try{
+      const cfg={description:prompt.value,mode,media:file?{name:file.name,type:file.type,size:file.size}:null,hasRights:mode==='text'||$('rights').checked};
+      project=D.buildProject(cfg);
+      const dur=$('duration').value,fmt=$('format').value;
+      if(dur!=='auto'){project.requested_duration_seconds=+dur;D.buildProject;const n=project.shots.length;
+        const base=Math.floor(+dur/n),rem=(+dur)%n;project.shots.forEach((s,i)=>s.duration_seconds=base+(i<rem?1:0));}
+      if(fmt!=='auto')project.format=fmt;
+      playSeconds=0;running=false;showProject();notice('Découpage préparé. Tu peux modifier chaque plan, puis prévisualiser une animatique dessinée.');
+    }catch(e){notice(e.message,true);}
+  });
+  function layoutCanvas(){const portrait=project?.format==='9:16';canvas.dataset.portrait=String(portrait);canvas.width=portrait?540:960;canvas.height=portrait?960:540;draw();}
+  function showProject(){if(!project)return;$('studio').hidden=false;safeText($('film-title'),project.description.length>77?project.description.slice(0,74)+'…':project.description);
+    $('original-description').textContent=project.description; $('format-chip').textContent=project.format;
+    renderCharacters();renderProps();renderShots();renderWarnings();layoutCanvas();$('studio').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function renderCharacters(){const root=$('characters');root.replaceChildren();
+    project.characters.forEach((c,i)=>{const card=document.createElement('div');card.className='person';
+      const head=document.createElement('div');head.className='person-head';const avatar=document.createElement('span');avatar.className='avatar';avatar.textContent=String(i+1).padStart(2,'0');
+      const label=document.createElement('span');label.className='person-label';safeText(label,i?'Personnage secondaire':'Personnage principal');head.append(avatar,label);
+      const input=document.createElement('input');input.type='text';input.maxLength=240;input.value=c.description;input.setAttribute('aria-label','Apparence du personnage '+(i+1));
+      input.addEventListener('change',()=>{c.description=input.value.trim()||'personnage adulte à préciser';renderWarnings();});
+      const foot=document.createElement('small');safeText(foot,c.identity_source==='fictional'?'Fictif · cohérent entre plans':'Référence visuelle locale · identité non vérifiée');
+      card.append(head,input,foot);root.append(card);
+    });
+  }
+  function renderProps(){const root=$('props');root.replaceChildren();
+    if(!project.props.length){const p=document.createElement('p');p.className='soft';p.textContent='Aucun objet récurrent reconnu pour le moment.';root.append(p);return;}
+    for(const item of project.props){const chip=document.createElement('span');chip.className='property-chip';safeText(chip,item.label+' · suivi');root.append(chip);}
+  }
+  function makeButton(name,handler,aria){const b=document.createElement('button');b.type='button';b.className='smallbutton';b.textContent=name;b.setAttribute('aria-label',aria||name);b.addEventListener('click',handler);return b}
+  function renderShots(){const root=$('shot-list');root.replaceChildren();
+    project.shots.forEach((s,i)=>{
+      const card=document.createElement('article');card.className='shot-card';card.dataset.id=s.id;
+      const top=document.createElement('div');top.className='shot-head';const no=document.createElement('span');no.className='shot-index';safeText(no,String(i+1).padStart(2,'0'));
+      const type=document.createElement('span');type.className='shot-type';safeText(type,s.camera+' / '+s.location);
+      const controls=document.createElement('div');controls.className='mini-controls';
+      controls.append(makeButton('↑',()=>move(i,-1),'Monter le plan '+(i+1)),makeButton('↓',()=>move(i,1),'Descendre le plan '+(i+1)),makeButton('×',()=>remove(i),'Supprimer le plan '+(i+1)));
+      top.append(no,type,controls);
+      const actionLabel=document.createElement('label');actionLabel.className='field-label';actionLabel.textContent='Action';
+      const textarea=document.createElement('textarea');textarea.rows=2;textarea.maxLength=700;textarea.value=s.action;textarea.setAttribute('aria-label','Action du plan '+(i+1));
+      textarea.addEventListener('change',()=>{s.action=textarea.value.trim();s.prop_ids=D.detectProps(s.action);renderWarnings();draw();});
+      const detail=document.createElement('div');detail.className='detail-grid';
+      const location=document.createElement('input');location.type='text';location.maxLength=100;location.value=s.location;location.setAttribute('aria-label','Lieu du plan '+(i+1));location.addEventListener('change',()=>{s.location=location.value;renderWarnings();draw();});
+      const len=document.createElement('input');len.type='number';len.min=1;len.max=120;len.value=s.duration_seconds;len.setAttribute('aria-label','Durée du plan '+(i+1)+' en secondes');len.addEventListener('change',()=>{s.duration_seconds=Math.max(1,Math.min(120,Math.round(Number(len.value)||1)));len.value=s.duration_seconds;updateTiming();});
+      const camera=document.createElement('select');camera.setAttribute('aria-label','Cadrage du plan '+(i+1));
+      for(const str of ['Plan d’ensemble','Plan moyen','Plan rapproché','Très gros plan']){const opt=document.createElement('option');opt.value=str;opt.textContent=str;camera.append(opt)}camera.value=s.camera;camera.addEventListener('change',()=>{s.camera=camera.value;draw();});
+      const wrap=(title,el)=>{const d=document.createElement('label');d.className='shortlabel';d.textContent=title;d.append(el);return d};
+      detail.append(wrap('Décor',location),wrap('Durée (s)',len),wrap('Caméra',camera));
+      const dialog=document.createElement('input');dialog.type='text';dialog.maxLength=500;dialog.placeholder='Dialogue (facultatif)…';dialog.value=s.dialogue||'';dialog.setAttribute('aria-label','Dialogue du plan '+(i+1));dialog.addEventListener('change',()=>s.dialogue=dialog.value);
+      card.append(top,actionLabel,textarea,detail,wrap('Dialogue',dialog));root.append(card);
+    });
+    updateTiming();
+  }
+  function updateTiming(){
+    const secs=D.totalDuration(project);safeText($('duration-chip'),secs+' s');safeText($('plans-chip'),project.shots.length+' plan'+(project.shots.length>1?'s':''));
+    const n=animaticLength();$('seek').max=String(n);if(playSeconds>n)playSeconds=0;safeText($('preview-length'),niceTime(n));
+    renderWarnings();draw();
+  }
+  function move(i,delta){const j=i+delta;if(j<0||j>=project.shots.length)return;const x=project.shots[i];project.shots[i]=project.shots[j];project.shots[j]=x;renderShots();}
+  function remove(i){if(project.shots.length<2){notice('Le projet doit contenir au moins un plan.',true);return;}project.shots.splice(i,1);renderShots();}
+  $('add-shot').addEventListener('click',()=>{
+    if(!project)return;if(project.shots.length>=D.MAX_SHOTS){notice('Maximum '+D.MAX_SHOTS+' plans dans ce prototype.',true);return;}
+    const prev=project.shots.at(-1);
+    project.shots.push({id:D.nextId(project),title:'Nouveau plan',action:'Nouvelle action à décrire',location:prev.location,camera:'Plan moyen',character_ids:[project.characters[0].id],prop_ids:[],duration_seconds:5,render_status:'not_rendered',dialogue:'',render_uri:null});renderShots();
+    const last=document.querySelector('#shot-list .shot-card:last-child textarea');last?.focus();
+  });
+  function renderWarnings(){if(!project)return;const el=$('warnings');el.replaceChildren();for(const w of D.diagnostics(project)){const p=document.createElement('div');p.textContent='• '+w;el.append(p)} }
+  function niceTime(x){let s=Math.floor(x||0);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+  function animaticPlanSeconds(s){return Math.max(2,Math.min(5,Math.round(s.duration_seconds/10)||2));}
+  function animaticLength(){return project?project.shots.reduce((acc,s)=>acc+animaticPlanSeconds(s),0):0;}
+  const wordsOf=(t,max)=>String(t||'').length<=max?String(t||''):String(t||'').slice(0,max-1)+'…';
+  function rounded(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
+  function drawAt(sec){
+    if(!project){ctx.clearRect(0,0,canvas.width,canvas.height);return;}
+    const w=canvas.width,h=canvas.height,portrait=project.format==='9:16',scale=portrait?h/540:Math.min(w/960,h/540);
+    ctx.save();ctx.fillStyle='#191e28';ctx.fillRect(0,0,w,h);
+    ctx.translate((w-960*scale)/2,portrait?0:(h-540*scale)/2);ctx.scale(scale,scale);
+    const tmax=animaticLength();sec=Math.min(Math.max(sec,0),Math.max(0,tmax-.0001));
+    let idx=0,start=0;for(let i=0;i<project.shots.length;i++){const dur=animaticPlanSeconds(project.shots[i]);if(sec<start+dur||i===project.shots.length-1){idx=i;break;}start+=dur;}
+    const s=project.shots[idx],phase=(sec-start)/animaticPlanSeconds(s);const xAction=D.extractActions(s.action).join(' ').toLowerCase();
+    const loc=(s.location||'').toLowerCase();
+    const sky=ctx.createLinearGradient(0,0,0,470); sky.addColorStop(0,loc.includes('rue')?'#626783':loc.includes('cuisine')?'#aaa8a0':loc.includes('salon')?'#7f767a':loc.includes('parc')?'#7698a0':'#7b738a');sky.addColorStop(1,'#2f3844');
+    ctx.fillStyle=sky;ctx.fillRect(0,0,960,540);
+    if(/rue|parc|plage/.test(loc)){
+      ctx.fillStyle='#4a535d';ctx.fillRect(0,322,960,218);
+      for(let i=0;i<5;i++){ctx.fillStyle=i%2?'#3b4350':'#545d69';ctx.fillRect(i*210-15,152+(i%2)*30,174,182);
+        for(let j=0;j<3;j++){ctx.fillStyle='#d9bc9d';ctx.fillRect(i*210+15+j*43,192+(i%2)*20,24,36)}}
+      ctx.fillStyle='#c3b1a174';ctx.fillRect(0,340,960,3);
+    }else{
+      ctx.fillStyle='#353942';ctx.fillRect(0,340,960,200);
+      ctx.fillStyle='#d0beb28f';ctx.fillRect(60,90,250,180);ctx.fillStyle='#576f8e';ctx.fillRect(72,101,225,155);
+      ctx.fillStyle='#ffffff40';ctx.fillRect(180,101,6,155);ctx.fillRect(72,166,225,5);
+      if(/salon|chambre/.test(loc)){ctx.fillStyle='#d6ac99';rounded(ctx,570,350,330,108,29);ctx.fill();ctx.fillStyle='#c49591';rounded(ctx,570,317,330,62,20);ctx.fill()}
+      else{ctx.fillStyle='#b39b81';rounded(ctx,575,345,290,19,7);ctx.fill();ctx.fillRect(605,364,14,90);ctx.fillRect(815,364,14,90)}
+    }
+    const female=/femme|brune|blonde/.test(project.characters[0]?.description||'');
+    const walking=/marche|court|avance|traverse|entre|sort/.test(xAction);const sitting=/assis|assise|canape|lit/.test(xAction);
+    const sipping=/boit|cafe|tasse|mug/.test(xAction);const phone=/telephone|appel|decroche/.test(xAction);const smoke=/cigarette|fume/.test(xAction);const talking=/discut|conversation|parle/.test(xAction);
+    const motion=walking?Math.sin(phase*Math.PI*5):Math.sin(phase*Math.PI*2)*.08;
+    let cx=portrait?475:460;if(walking)cx=portrait?(404+phase*145):(300+phase*335);
+    let cy=sitting?303:274;const bounce=walking?Math.abs(Math.sin(phase*Math.PI*10))*5:0;
+    ctx.save();ctx.translate(cx,cy+bounce);
+    ctx.strokeStyle='#262a38';ctx.lineCap='round';ctx.lineWidth=20;
+    if(sitting){ctx.beginPath();ctx.moveTo(0,102);ctx.lineTo(75,110);ctx.lineTo(83,161);ctx.moveTo(10,105);ctx.lineTo(-55,112);ctx.lineTo(-60,160);ctx.stroke();}
+    else{ctx.beginPath();ctx.moveTo(-11,107);ctx.lineTo(-26+motion*26,186);ctx.moveTo(15,107);ctx.lineTo(32-motion*26,186);ctx.stroke()}
+    ctx.fillStyle='#e3b2a0';rounded(ctx,-16,-64,34,30,10);ctx.fill();
+    ctx.fillStyle='#2a3342';rounded(ctx,-47,-43,94,157,25);ctx.fill();
+    ctx.strokeStyle='#e1ad94';ctx.lineWidth=14;ctx.beginPath();ctx.moveTo(-46,-22);ctx.lineTo(-64-motion*19,54);ctx.moveTo(43,-20);ctx.lineTo(phone?78:60+motion*17,phone?-80:48);ctx.stroke();
+    ctx.fillStyle='#d9a494';ctx.beginPath();ctx.ellipse(0,-99,55,70,0,0,Math.PI*2);ctx.fill();
+    if(female){ctx.fillStyle='#382831';ctx.beginPath();ctx.arc(0,-116,58,Math.PI*1.08,Math.PI*1.95);ctx.lineTo(51,-106);ctx.quadraticCurveTo(22,-190,-40,-150);ctx.fill();ctx.fillRect(-50,-119,12,97);}
+    else {ctx.fillStyle='#372a30';ctx.beginPath();ctx.ellipse(0,-154,52,25,0,Math.PI,Math.PI*2);ctx.fill()}
+    ctx.fillStyle='#32282b';ctx.beginPath();ctx.arc(-18,-104,3,0,7);ctx.arc(18,-104,3,0,7);ctx.fill();
+    ctx.strokeStyle='#6f4647';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(-10,-79);ctx.quadraticCurveTo(0,-72,13,-79);ctx.stroke();
+    if(sipping){ctx.fillStyle='#f2e0c7';rounded(ctx,52,-35,35,37,5);ctx.fill();ctx.strokeStyle='#f2e0c7';ctx.lineWidth=5;ctx.beginPath();ctx.arc(89,-19,10,-1.2,1.2);ctx.stroke()}
+    if(phone){ctx.fillStyle='#1c2636';rounded(ctx,67,-109,24,46,6);ctx.fill();ctx.fillStyle='#9cc0ce';ctx.fillRect(73,-101,12,26)}
+    if(smoke){ctx.strokeStyle='#eee1c6';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(60,-28);ctx.lineTo(91,-20);ctx.stroke();ctx.strokeStyle='#ffffff99';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(98,-20);ctx.bezierCurveTo(120,-45,80,-62,106,-98);ctx.stroke()}
+    ctx.restore();
+    if(project.characters.length>1&&talking){ctx.save();ctx.translate(725,292);ctx.fillStyle='#d5ac97';ctx.beginPath();ctx.arc(0,-100,49,0,7);ctx.fill();ctx.fillStyle='#293645';rounded(ctx,-38,-50,78,138,20);ctx.fill();ctx.restore();}
+    if(!portrait){
+      ctx.fillStyle='#101319bf';rounded(ctx,28,24,286,44,12);ctx.fill();ctx.fillStyle='#f7dfc9';ctx.font='700 15px system-ui';ctx.fillText('RETOUCHE CINEMA / ANIMATIQUE',43,52);
+      ctx.fillStyle='#101319bf';rounded(ctx,790,24,140,44,12);ctx.fill();ctx.fillStyle='#f7e9e1';ctx.font='700 18px system-ui';ctx.fillText(String(idx+1).padStart(2,'0')+' / '+String(project.shots.length).padStart(2,'0'),830,53);
+      ctx.fillStyle='#101319df';rounded(ctx,28,424,904,98,18);ctx.fill();ctx.fillStyle='#f3bca1';ctx.font='700 15px system-ui';ctx.fillText(String(s.location||'Décor').toUpperCase()+' · '+s.camera,47,449);
+      ctx.fillStyle='#f7f0e7';ctx.font='22px system-ui';ctx.fillText(wordsOf(s.action,75),47,485,850);
+      ctx.fillStyle='#ffffffa0';ctx.font='13px system-ui';ctx.fillText('Illustration procédurale · pas un rendu IA photoréaliste',47,507);
+    }
+    ctx.restore();
+    if(portrait){
+      ctx.fillStyle='#141822db';rounded(ctx,19,25,w-38,65,14);ctx.fill();ctx.fillStyle='#f2c09e';ctx.font='700 22px system-ui';ctx.fillText('RETOUCHE CINEMA',35,53);ctx.fillStyle='#f5e8e1';ctx.font='20px system-ui';ctx.fillText('ANIMATIQUE · '+(idx+1)+' / '+project.shots.length,35,78);
+      ctx.fillStyle='#11141bea';rounded(ctx,19,h-185,w-38,160,20);ctx.fill();ctx.fillStyle='#eeb99d';ctx.font='700 21px system-ui';ctx.fillText(String(s.location||'DÉCOR').toUpperCase()+' · '+s.camera,36,h-145,w-72);
+      const val=String(s.action||'');const limit=42;const words=val.split(/\s+/);let lines=[],line='';for(const word of words){if((line+' '+word).trim().length>limit&&line){lines.push(line);line=word;}else line=(line+' '+word).trim()}if(line)lines.push(line);
+      ctx.fillStyle='#fff5eb';ctx.font='25px system-ui';lines.slice(0,2).forEach((line,i)=>ctx.fillText(wordsOf(line,limit),36,h-107+i*30,w-72));
+      ctx.fillStyle='#ffffffa3';ctx.font='17px system-ui';ctx.fillText('Dessin 2D · pas un film IA réel',36,h-43,w-72);
+    }
+    $('seek').value=String(sec);safeText($('preview-time'),niceTime(sec));
+    const b=$('preview-progress');b.style.width=(100*sec/Math.max(1,tmax)).toFixed(1)+'%';
+  }
+  function draw(){drawAt(playSeconds)}
+  function animationTick(time){if(!running){rafId=0;return;}if(!lastTick)lastTick=time;playSeconds+=(time-lastTick)/1000;lastTick=time;
+    if(playSeconds>=animaticLength()){playSeconds=animaticLength();running=false;safeText($('play'),'▶ Lire l’animatique');if(recording&&mediaRecorder?.state==='recording')mediaRecorder.stop();}
+    drawAt(playSeconds);if(running)rafId=requestAnimationFrame(animationTick);
+  }
+  function play(){if(!project)return;if(running){running=false;cancelAnimationFrame(rafId);safeText($('play'),'▶ Reprendre');return;}
+    if(playSeconds>=animaticLength())playSeconds=0;running=true;lastTick=0;safeText($('play'),'Ⅱ Pause');rafId=requestAnimationFrame(animationTick);
+  }
+  $('play').addEventListener('click',play);$('restart').addEventListener('click',()=>{running=false;cancelAnimationFrame(rafId);playSeconds=0;draw();safeText($('play'),'▶ Lire l’animatique');});
+  $('seek').addEventListener('input',()=>{playSeconds=Number($('seek').value);lastTick=0;draw();});
+  function downloadJson(){if(!project)return;const clean=D.validateImported(project);
+    // Force explicit state; no media bytes, reference URLs, weights, or server upload.
+    const blob=new Blob([JSON.stringify(clean,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='retouche-cinema-director-p1.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);notice('Projet JSON enregistré sans inclure la photo ni la vidéo.');
+  }
+  $('export-json').addEventListener('click',()=>{try{downloadJson()}catch(e){notice(e.message,true)}});
+  $('import-json').addEventListener('change',async()=>{const f=$('import-json').files?.[0];if(!f)return;try{
+    if(f.size>2*1024*1024)throw new Error('JSON trop volumineux.');
+    const text=await f.text();project=D.validateImported(JSON.parse(text));prompt.value=project.description;prompt.dispatchEvent(new Event('input'));
+    playSeconds=0;showProject();notice('Storyboard importé. Les médias ne sont pas inclus dans ce fichier.');
+  }catch(e){notice('Import refusé : '+e.message,true);}finally{$('import-json').value='';}});
+  $('record').addEventListener('click',()=>{
+    if(!project||recording)return;
+    if(!canvas.captureStream||!window.MediaRecorder){notice('L’enregistrement de la toile animée n’est pas disponible sur ce navigateur. Utilise le visionnage local ou le JSON.',true);return;}
+    const types=['video/mp4','video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+    const mime=types.find(x=>MediaRecorder.isTypeSupported(x))||'';
+    try{
+      const stream=canvas.captureStream(24),bits=mime?{mimeType:mime,videoBitsPerSecond:2500000}:{videoBitsPerSecond:2500000};
+      const chunks=[];mediaRecorder=new MediaRecorder(stream,bits);recording=true;
+      mediaRecorder.addEventListener('dataavailable',e=>{if(e.data.size)chunks.push(e.data)});
+      mediaRecorder.addEventListener('error',()=>notice('Erreur de capture vidéo, utilise le JSON.',true));
+      mediaRecorder.addEventListener('stop',()=>{recording=false;$('record').disabled=false;stream.getTracks().forEach(t=>t.stop());
+        if(!chunks.length){notice('Aucune donnée vidéo capturée.',true);return;}
+        const blob=new Blob(chunks,{type:mime||mediaRecorder.mimeType||'video/webm'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;
+        a.download='retouche-cinema-ANIMATIQUE.'+(blob.type.includes('mp4')?'mp4':'webm');a.click();setTimeout(()=>URL.revokeObjectURL(url),15000);
+        notice('Animatique dessinée enregistrée, sans bande-son. Ce n’est pas un film génératif IA.');});
+      mediaRecorder.start(250);$('record').disabled=true;
+      running=false;cancelAnimationFrame(rafId);playSeconds=0;draw();running=true;lastTick=0;safeText($('play'),'Ⅱ Pause');rafId=requestAnimationFrame(animationTick);
+      notice('Capture locale de l’animatique en cours. Le rendu est dessiné, sans audio.');
+    }catch(e){recording=false;$('record').disabled=false;notice('Enregistrement indisponible : '+e.message,true);}
+  });
+  window.addEventListener('beforeunload',()=>{if(fileUrl)URL.revokeObjectURL(fileUrl)});
+  ctx.fillStyle='#222935';ctx.fillRect(0,0,canvas.width,canvas.height);
+  // Preview only: never synthesize a video before the user creates a project.
+})();
+
+</script></body></html>
