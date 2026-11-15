@@ -66,8 +66,10 @@ async function analyser(file){
     const edits=find(trak.s,trak.e,["edts","elst"])[0];
     let editMediaTime=0,editSupported=true;
     if(edits){
+      if(edits.s+8>edits.e||(dv.getUint32(edits.s)&0xffffff)!==0)return null;
       const version=buf[edits.s],count=dv.getUint32(edits.s+4),entry=edits.s+8;
-      if(count!==1||![0,1].includes(version))return null;
+      if(count!==1||![0,1].includes(version)||
+         entry+(version===1?20:12)>edits.e)return null;
       if(version===0){
         editMediaTime=dv.getInt32(entry+4);
         editSupported=dv.getUint32(entry+8)===65536;
