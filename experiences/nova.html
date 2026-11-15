@@ -128,16 +128,16 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <section class="card"><small>02 / Le contrôle</small><h2>Preuves, pas promesses.</h2><div id="metrics"><div class="metric"><span>Source</span><strong>—</strong></div><div class="metric"><span>Décision</span><strong>En attente</strong></div></div>
 <button class="secondary" id="save" disabled>Exporter l'aperçu PNG</button>
 <section class="pilot" id="pilotVideo" hidden>
-<strong>Export MP4 — pilote expérimental (H.264 vérifié jusqu'à 24 s)</strong>
-<p>12 secondes maximum, 640 pixels, 15 images/seconde. Vérifiez toujours le fichier final.</p>
+<strong>Export MP4 — H.264 SDR jusqu'à 48 s avec OPFS</strong>
+<p>HEVC : 12 s. H.264 vérifié : 24 s en mémoire ou 48 s en OPFS optionnel, à 640 pixels et 15 images/seconde maximum. Vérifiez toujours le fichier final.</p>
 <button class="primary" id="exportVideo" disabled>Exporter un MP4 restauré</button>
 <details class="sourceAdvanced"><summary>Compatibilité des vidéos</summary>
-<p>NOVA conserve les horodatages MP4 natifs : HEVC reste limité à 12 s. Pour H.264 SDR BT.709 vérifié, le pilote traite jusqu'à 24 s en fenêtres vidéo continues, sans recoller des pistes AAC. Les plafonds de résolution et de mémoire restent actifs. L'option approximative peut doubler ou manquer des images et n'autorise pas le mode long.</p>
+<p>NOVA conserve les horodatages MP4 natifs : HEVC reste limité à 12 s. Pour H.264 SDR BT.709 vérifié, le pilote traite jusqu'à 24 s en mémoire et 48 s avec écriture OPFS volontaire, par fenêtres vidéo continues et avec une seule piste AAC. La sortie reste à 640 pixels et 15 images/s maximum. Les options approximatives n'autorisent pas le mode long.</p>
 <label><input type="checkbox" id="allowApproximate"> Autoriser le décodage approximatif pour cet export</label>
 </details>
 <label><input type="checkbox" id="allowSilent"> J'accepte explicitement un export <b>sans son</b> si je le choisis. Sinon, l'export est interrompu lorsque l'audio ne peut pas être conservé.</label>
 <details class="sourceAdvanced"><summary>Écriture progressive locale (expérimental)</summary>
-<p>Enregistrez temporairement le MP4 dans le stockage privé de ce navigateur, puis récupérez-le avec le lien de téléchargement habituel. Uniquement H.264 BT.709 vérifié de 12 à 24 s avec piste AAC conservable. Test Safari iPhone physique non effectué. Le stockage OPFS peut persister après une fermeture brutale ; évitez tout fichier confidentiel dans ce laboratoire avant validation.</p>
+<p>Enregistrez temporairement le MP4 dans le stockage privé de ce navigateur, puis récupérez-le avec le lien de téléchargement habituel. Mode réservé aux vidéos H.264 BT.709 vérifiées de plus de 12 à 48 s avec piste AAC conservable. Obligatoire au-delà de 24 s. Test Safari iPhone physique non effectué. Le stockage OPFS peut persister après une fermeture brutale ; évitez tout fichier confidentiel dans ce laboratoire avant validation.</p>
 <label><input type="checkbox" id="writeOpfs"> Utiliser l'écriture progressive privée sur cet appareil (sans upload)</label>
 </details>
 <a id="downloadVideo" hidden>Enregistrer le fichier MP4</a>
