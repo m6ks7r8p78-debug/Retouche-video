@@ -200,7 +200,7 @@ test("cancellation after capability does not create a false success",async()=>{
 });
 
 test("actual NOVA AAC native module WebKit ES descriptor extraction works with staged check",async()=>{
- const mono=[3,128,128,128,34,0,0,0,4,128,128,128,20,64,20,0,24,0,0,0,0,
+ const mono=[3,128,128,128,34,0,0,0,4,128,128,128,20,64,20,0,24,0,0,0,0,0,
   0,0,0,0,5,128,128,128,2,17,136,6,128,128,128,1,2];
  const desc=new Uint8Array(mono);
  desc[32]=0x90;
