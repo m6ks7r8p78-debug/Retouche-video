@@ -22,7 +22,7 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.ok(names.includes("experiences/nova-iphone-report.js"));
   assert.ok(names.includes("experiences/vendor/hevc/wasm/hevc-decode.wasm"));
   assert.ok(names.includes("experiences/vendor/hevc/LICENSE.txt"));
-  assert.equal(names.filter(x=>/\\.(mov|mp4|png|jpg|jpeg)$/i.test(x)).join(","),
+  assert.equal(names.filter(x=>/\.(mov|mp4|png|jpg|jpeg)$/i.test(x)).join(","),
    "experiences/nova-test-synthetic.mov",
    "seul le clip généré par FFmpeg est accepté");
   const fixture=m.files.find(x=>x.path==="experiences/nova-test-synthetic.mov");
