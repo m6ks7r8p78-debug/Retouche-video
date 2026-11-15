@@ -1,0 +1,76 @@
+name: NOVA Safari AAC — synthetic codec probe and isolated HTTPS delivery
+on:
+  push:
+    branches:
+      - chatgpt-nova-safari-aac-probe-20261115
+  pull_request:
+    branches:
+      - chatgpt-nova-iphone-hd-aac-rescue-v1
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  codec-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free offline FFmpeg needed by inherited NOVA tests
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -version | head -n 1
+      - name: Contract and regression tests (no private data)
+        run: |
+          node --check experiences/nova-safari-aac-probe/core.js
+          node --check experiences/nova-safari-aac-probe/ui.js
+          node --test tests/nova-safari-aac-probe.test.mjs
+          node --test tests/nova-aac-copy.test.mjs tests/nova-aac-native.test.mjs tests/nova-native-hd.test.mjs tests/nova-hd-color.test.mjs tests/nova-real-preflight.test.mjs tests/nova-iphone-preview.test.mjs
+      - name: Install free Chromium browser test tooling
+        run: |
+          python -m pip install --disable-pip-version-check playwright
+          python -m playwright install --with-deps chromium
+      - name: Test real browser UI with mocked AAC and actual Linux codec capabilities
+        run: |
+          python tests/nova-safari-aac-browser.py --out artifacts/nova-safari-aac
+      - name: Verify public HTTPS code served exactly from the experimental branch
+        run: |
+          python - <<'PY'
+          import urllib.request, pathlib,time
+          root=pathlib.Path("experiences/nova-safari-aac-probe")
+          base="https://raw.githack.com/m6ks7r8p78-debug/Retouche-video/chatgpt-nova-safari-aac-probe-20261115/experiences/nova-safari-aac-probe/"
+          expected={"index.html":"text/html","core.js":"javascript",
+                    "ui.js":"javascript","style.css":"text/css"}
+          for name,content_type in expected.items():
+            for i in range(5):
+              try:
+                req=urllib.request.Request(base+name,
+                   headers={"User-Agent":"NOVA-synthetic-AAC-probe-lab/1.0"})
+                with urllib.request.urlopen(req,timeout=30) as resp:
+                  assert resp.status==200
+                  body=resp.read()
+                  t=resp.headers.get("content-type","")
+                  assert content_type in t,(name,t)
+                  assert body==(root/name).read_bytes(),f"{name} bytes differ"
+                  print("HTTPS verified",name,len(body),"bytes",t)
+                break
+              except Exception as error:
+                if i==4:raise
+                print("retry",name,str(error))
+                time.sleep(4)
+          print("ALL FOUR public synthetic AAC probe assets byte-identical to GitHub code")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-safari-synthetic-aac-probe-browser-proof
+          path: artifacts/nova-safari-aac/
+          retention-days: 3
+          if-no-files-found: error
