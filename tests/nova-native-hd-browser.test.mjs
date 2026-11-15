@@ -57,6 +57,10 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
    if(!["GET","HEAD"].includes(r.method()))upload.push(r.url());
   });
   await page.goto(base+"/experiences/nova.html");
+  assert.match(await page.locator("#novaHdBuild").textContent(),/NOVA HD 0\.33/);
+  assert.equal(await page.locator("#pilotVideo").isVisible(),false,
+   "export control intentionally appears only after video import");
+
   const webkitFixed=await page.evaluate(()=>{
    const faulty=new Uint8Array([3,128,128,128,34,0,0,0,4,
     128,128,128,20,64,20,0,24,0,0,0,0,0,0,0,0,0,
@@ -274,6 +278,45 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   assert.equal(Number(opaqueV.nb_frames),15);
   assert.equal(opaqueA.codec_name,"aac");
   assert.equal(opaqueV.color_space,"bt709");
+
+  // Autre branche Safari, manquante dans NOVA 0.32 : trame déclarée
+  // SDR mais son format n'est pas I420/NV12 et aucun plan YUV n'est
+  // accessible. Le rendu Canvas de la vraie trame reste possible.
+  await page.reload();
+  await page.locator("#novaHdPanel summary").click();
+  await page.evaluate(()=>{
+   const original=NOVA_HD_COLOR.imagePourRendu;
+   window.NOVA_HD_COLOR={...NOVA_HD_COLOR,imagePourRendu:async(frame,evidence)=>{
+    const cs=frame.colorSpace;
+    const surrogate={format:"RGBX",colorSpace:{
+     primaries:cs.primaries,transfer:cs.transfer,
+     matrix:"bt709",fullRange:cs.fullRange
+    }};
+    const proof=await original(surrogate,evidence);
+    if(proof.proof.method!=="native-safari-sdr-bt709-display")
+     throw Error("RGBX fallback not selected");
+    return {frame,owned:false,proof:proof.proof};
+   }};
+  });
+  await page.locator("#file").setInputFiles(matrix601);
+  await page.waitForFunction(()=>!document.querySelector("#novaHdRun").disabled);
+  await page.locator("#novaHdRun").click();
+  await page.waitForFunction(()=>{
+   const t=document.querySelector("#novaHdStatus")?.textContent||"";
+   return !!document.querySelector("#novaHdSave")?.getAttribute("href")||
+    /Essai HD non abouti/.test(t);
+  },null,{timeout:100000});
+  const rgbxStatus=await page.locator("#novaHdStatus").textContent();
+  assert.match(rgbxStatus,/MP4 HD exporté/,rgbxStatus);
+  assert.match(rgbxStatus,/ATTENTION COULEURS/);
+  const rgbxDL=page.waitForEvent("download");
+  await page.locator("#novaHdSave").click();
+  const rgbxPath=await (await rgbxDL).path();
+  const rgbxProbe=JSON.parse((await run("ffprobe",["-v","error","-show_streams",
+   "-of","json",rgbxPath],{timeout:10000})).stdout);
+  assert.equal(rgbxProbe.streams.find(x=>x.codec_type==="video").nb_frames,"15");
+  assert.equal(rgbxProbe.streams.find(x=>x.codec_type==="video").width,160);
+  assert.equal(rgbxProbe.streams.find(x=>x.codec_type==="audio").codec_name,"aac");
 
   assert.deepEqual(failures,[]);
   assert.deepEqual(external,[]);
