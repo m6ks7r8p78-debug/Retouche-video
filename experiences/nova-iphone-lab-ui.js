@@ -107,6 +107,10 @@ async function execute(selectFile,button,synthetic){
     "Impossible de terminer ce test local. Vérifiez que l'aperçu NOVA 0.24 contient le clip synthétique.";
  }finally{
   if(controller===ctrl){
+   // Safari peut suspendre la page : ne jamais laisser "en cours"
+   // ou un ancien lien après le retour d'un résultat tardif.
+   if(ctrl.signal.aborted&&myGeneration===generation)
+    status.textContent="Diagnostic annulé ou interrompu par Safari. Aucun nouvel export.";
    controller=null;
    run.textContent=runLabel;run.disabled=!file;
    if(demo){demo.textContent=demoLabel;demo.disabled=false}
@@ -161,6 +165,8 @@ async function repeatSynthetic(){
     "Série interrompue : aucune réussite certifiée, ne pas répéter automatiquement.";
  }finally{
   if(controller===ctrl){
+   if(ctrl.signal.aborted&&activeGeneration===generation&&stabilityStatus)
+    stabilityStatus.textContent="Série annulée ou interrompue par Safari : aucun bilan de réussite.";
    controller=null;run.disabled=!file;
    if(demo)demo.disabled=false;
    stability.textContent="Vérifier la stabilité · 3 essais synthétiques";
