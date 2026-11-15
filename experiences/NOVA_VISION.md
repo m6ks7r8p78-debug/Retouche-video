@@ -69,3 +69,27 @@ Direction visuelle : papier clair et typographie éditoriale pour la navigation 
 - Limites : détection de zones sombres heuristique, pas de nettoyage AR réel, pas de preuve que la texture naturelle est mieux conservée, aucun critère perceptuel validé. L'éclaircissement de pixels existants n'est pas une restauration de vrais détails absents. Travaux orientés **filiation et sécurité du rendu**, pas promesse 8K.
 
 **Jalon suivant** : tester les masques et le rendu sur de vrais médias autorisés avec revues perceptuelles, mesurer les coûts iPhone, puis raccorder progressivement l'export vidéo au moteur validé sans écraser l'application historique.
+
+
+## Cycle NOVA 0.3 — export MP4 réellement recalculé (15 novembre 2026)
+
+**Code versionné, pilote non déployé.** La vidéo exportée n'est plus seulement un aperçu Canvas. `experiences/nova-export.js` crée un lecteur de décodage local secondaire, prélève des images à timestamps monotones, applique NOVA Mosaïque (Worker si disponible), envoie les images corrigées à `VideoEncoder` H.264, puis construit un MP4 avec le `mp4-muxer.js` déjà utilisé par RetoucheProAI. L'utilisateur dispose d'un bouton indépendant, d'une annulation et d'un téléchargement (`experiences/nova-export-ui.js`).
+
+### Garde-fous du premier export
+
+- **Durée au plus 12 secondes**, fichier au plus **60 Mo**, dimensions de sortie paires avec côté long au plus **640 px**, **15 images/s** maximum. Ces limites sont des contraintes expérimentales, pas des capacités maximales de l'application.
+- **Son** : par défaut, décoder la piste via Web Audio et encoder en AAC avec `AudioEncoder`. Si la piste n'est pas décodable, s'il manque la prise en charge AAC, ou si l'assemblage audio échoue, l'export est refusé. Une case distincte permet de choisir **explicitement** une sortie sans son. Aucun son n'est jeté silencieusement.
+- `AbortController`, validation des capacités encodeur, et nettoyage des objets `VideoFrame`, `AudioData`, lecteur, Worker et URL temporaires.
+- La sortie reçoit un autre nom et ne remplace pas le fichier source. Pas de téléchargement automatique : l'utilisateur choisit d'enregistrer le résultat.
+- **Important** : l'accès aux images se fait par recherche temporelle sur HTMLVideoElement et non par démultiplexage image-par-image avec horodatages natifs. Ce chemin peut dupliquer ou manquer des images ; la fidélité aux mouvements et la synchronisation fine restent à mesurer, même si le MP4 est lisible.
+- Les modules AR v4 et RNE ne sont pas exécutés. Il s'agit d'un **recalcul par région classique non génératif**, pas d'un entraînement ni d'une solution 4K/8K.
+- Le pilote peut ne pas être utilisable sur certaines versions de Safari ou avec certains fichiers, même si l'application historique sait les traiter. Refuser proprement plutôt que perdre la piste audio.
+
+### Validation à réaliser avant toute activation publique
+
+1. `node --test tests/nova-export.test.mjs` : limites de durée/dimensions/taille et absence de repli audio implicite.
+2. `tests/nova-browser.test.mjs` : MP4 synthétique avec piste AAC, export réel et inspection des pistes par `ffprobe` ; vérifier la vidéo, la présence de la piste audio en export normal réussi et son absence uniquement sur choix explicite. Ces tests de CI **ne remplacent pas un essai matériel Safari iPhone**.
+3. Contrôler nombre de frames, temps audio/vidéo, orientation, cadence, décalage son et différences perceptuelles sur des vidéos autorisées et non utilisées à l'entraînement. Préparer un bench comparatif face à la chaîne historique.
+4. Après validation : préférer l'export image-par-image horodaté et un muxage audio robuste de la version principale pour les fichiers longs ; ne pas étendre arbitrairement les limites de ce premier pilote.
+
+La PR reste en brouillon. Aucun changement de `main` ou de déploiement public.
