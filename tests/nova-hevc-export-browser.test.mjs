@@ -83,6 +83,14 @@ test("NOVA 0.19 : MOV HEVC VFR BT.709 + AAC vers MP4 H.264/AAC avec synchro rée
   assert.ok(pts.length>25&&pts.length<=90);
   assert.ok(new Set(pts.slice(1).map((x,i)=>x-pts[i])).size>1,"cadence réellement variable");
   assert.ok(info.ptsUs.some((v,i)=>i&&v<info.ptsUs[i-1]),"B-frames réelles");
+  const {stdout:sourceVideoMeta}=await run("ffprobe",["-v","error","-select_streams","v:0",
+   "-show_entries","stream=duration","-of","json",input]);
+  const ffDuration=Number(JSON.parse(sourceVideoMeta).streams[0].duration);
+  assert.ok(Math.abs(info.durationUs-ffDuration*1e6)<=1000,
+   "durée de présentation MOV doit correspondre à FFprobe / tkhd, pas à mdhd - editMediaTime");
+  t.diagnostic("NOVA HEVC MOV source : "+JSON.stringify({
+   pts:pts.length,firstUs:pts[0],lastUs:pts.at(-1),durationUs:info.durationUs,
+   ffDuration,editMediaTime:info.editMediaTime,colors:info.color}));
   const [audio0,video0,hash0]=await Promise.all([soundTimes(input),flashTimes(input),hashes(input)]);
   assert.deepEqual([audio0.length,video0.length],[2,2]);
   await new Promise(ok=>app.listen(0,"127.0.0.1",ok));
