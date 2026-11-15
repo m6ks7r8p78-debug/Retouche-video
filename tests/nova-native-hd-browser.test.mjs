@@ -339,7 +339,7 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
     const simulated=await original(surrogate,evidence);
     if(simulated.proof.sourceRangeVerified!==false||
        simulated.proof.colorFidelity!=="uncertified-against-source")
-     throw Error("Unknown MOV range must not be certified");
+     throw Error("Synthetic source nclc diagnostic: "+JSON.stringify({kind:evidence.kind,sourceRange:evidence.sourceFullRange,expectedMatrix:evidence.expectedMatrix,method:simulated.proof.method,sourceRangeVerified:simulated.proof.sourceRangeVerified,colorFidelity:simulated.proof.colorFidelity}));
     return {frame,owned:false,proof:simulated.proof};
    }};
   });
