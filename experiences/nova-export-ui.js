@@ -6,12 +6,59 @@
 const $=id=>document.getElementById(id);
 const panel=$("pilotVideo"),start=$("exportVideo"),silent=$("allowSilent"),
   download=$("downloadVideo"),status=$("exportStatus"),fileInput=$("file"),drop=$("drop"),approx=$("allowApproximate"),
-  hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText");
+  hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText"),
+  proofRun=$("novaOutputProofRun"),proofSave=$("novaOutputProofSave"),
+  proofStatus=$("novaOutputProofStatus");
 if(!panel||!start||!silent||!download||!status||!fileInput)return;
 let file=null,controller=null,blobUrl=null,generation=0;
+let proofBlob=null,proofClaim=null,proofUrl=null;
+function clearProof(){
+ if(proofUrl){URL.revokeObjectURL(proofUrl);proofUrl=null}
+ proofBlob=null;proofClaim=null;
+ if(proofRun){proofRun.hidden=true;proofRun.disabled=false}
+ if(proofSave){proofSave.hidden=true;proofSave.removeAttribute("href")}
+ if(proofStatus)proofStatus.textContent="";
+}
+function prepareProof(blob,result){
+ clearProof();
+ if(!(blob instanceof Blob)||!result||!proofRun)return;
+ proofBlob=blob;proofClaim={
+  originalWidth:result.originalWidth,originalHeight:result.originalHeight,
+  sourceFrames:result.sourceFrames,audioMode:result.audioMode
+ };
+ proofRun.hidden=false;
+ if(proofStatus)proofStatus.textContent="Le MP4 est prêt. Vérification facultative du fichier avant copie ou partage.";
+}
+proofRun?.addEventListener("click",async()=>{
+ if(!proofBlob||!proofClaim||!globalThis.NOVA_OUTPUT_IDENTITY)return;
+ const current=proofBlob,gen=generation;
+ proofRun.disabled=true;
+ if(proofStatus)proofStatus.textContent="Lecture locale et calcul de l’empreinte SHA-256 du MP4 exporté…";
+ try{
+  const evidence=await NOVA_OUTPUT_IDENTITY.inspect(current,proofClaim);
+  if(gen!==generation||proofBlob!==current)return;
+  const json=NOVA_OUTPUT_IDENTITY.serialiser(evidence);
+  if(proofUrl)URL.revokeObjectURL(proofUrl);
+  proofUrl=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+  if(proofSave){
+   proofSave.href=proofUrl;proofSave.download="NOVA_preuve_integrite_MP4_local.json";
+   proofSave.hidden=false;
+  }
+  if(proofStatus)proofStatus.textContent=evidence.matchesClaim?
+    "MP4 contrôlé AVANT partage : dimensions et nombre d'images conformes. Enregistre le rapport JSON. Son empreinte identifie ce MP4 ; partage-la seulement si tu le souhaites.":
+    "ALERTE : dimensions ou nombre d'images non conformes à l'annonce NOVA. Conserve l'original et le rapport.";
+ }catch(e){
+  if(gen===generation&&proofBlob===current&&proofStatus)
+   proofStatus.textContent="Preuve non disponible : "+(e?.message||"échec du contrôle")+
+    ". Le MP4 exporté reste intact.";
+ }finally{
+  if(gen===generation&&proofBlob===current)proofRun.disabled=false;
+ }
+});
 function msg(s){status.textContent=s}
 function clear(){
  generation++;
+ clearProof();
  if(controller){controller.abort();controller=null}
  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null}
  download.hidden=true;download.removeAttribute("href");
@@ -41,6 +88,7 @@ start.addEventListener("click",async()=>{
  const ctl=new AbortController(),thisGen=generation;
  controller=ctl;start.textContent="Annuler l'export";
  download.hidden=true;
+ clearProof();
  msg("Vérification des codecs et du son…");
  try{
   // Director NOVA : une vidéo Full HD ou avec beaucoup d'images ne doit
@@ -72,6 +120,7 @@ start.addEventListener("click",async()=>{
    download.download=(file.name||"video").replace(/\.[^.]+$/,"")+
     "_NOVA_HD_experimental.mp4";
    download.hidden=false;
+   prepareProof(hd.blob,hd);
    msg("MP4 HD disponible : "+hd.originalWidth+" × "+hd.originalHeight+
     ", "+hd.outputFrames+" / "+hd.sourceFrames+" images, "+
     hd.sourceFps+" i/s d'origine ; "+(hd.audioMode==="aac-copy"?

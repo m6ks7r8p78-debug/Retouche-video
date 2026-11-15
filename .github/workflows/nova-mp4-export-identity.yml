@@ -1,0 +1,95 @@
+name: NOVA MP4 file identity check before iPhone copy or share
+on:
+  push:
+    branches:
+      - chatgpt-nova-export-mp4-identity-check-v1
+  pull_request:
+    branches:
+      - chatgpt-nova-safari-601-frame-evidence-20261115
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-export-identity-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Syntaxe et régressions NOVA / HD / AAC / couleur
+        run: |
+          node --check experiences/nova-native-hd.js
+          node --check experiences/nova-native-hd-ui.js
+          node --check experiences/nova-hd-color.js
+          node --check tests/nova-safari-bt601-reorder-bridge-browser.test.mjs
+          node --check experiences/nova-export-ui.js
+          node --check experiences/nova-output-identity.js
+          node --check tests/nova-output-identity.test.mjs
+          node --test tests/nova-aac-copy.test.mjs tests/nova-aac-native.test.mjs tests/nova-native-hd.test.mjs tests/nova-hd-color.test.mjs tests/nova-real-preflight.test.mjs tests/nova-iphone-preview.test.mjs tests/nova-output-identity.test.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Playwright
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: Vrai export H264 AAC / BT601 / format Safari + trames réordonnées
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test --test-concurrency=1 tests/nova-native-hd-browser.test.mjs tests/nova-safari-bt601-reorder-bridge-browser.test.mjs
+  manual-zip:
+    needs:
+      - unit
+      - browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: HTTPS package strictement synthétique
+        run: |
+          node outils/build-nova-iphone-preview.mjs
+          test -f dist/nova-iphone-preview/index.html
+          test -f dist/nova-iphone-preview/_headers
+          test -f dist/nova-iphone-preview/experiences/nova-hd-color.js
+          grep -q 'Correctif couleur Safari 1/1/6' dist/nova-iphone-preview/experiences/nova.html
+          test -f dist/nova-iphone-preview/experiences/nova-native-hd.js
+          test -f dist/nova-iphone-preview/experiences/nova-output-identity.js
+          grep -q 'novaOutputProofRun' dist/nova-iphone-preview/experiences/nova.html
+          node -e 'const r=require("./dist/nova-iphone-preview/asset-manifest.json");if(r.publication!=="none"||r.privateMediaIncluded!==false||!r.files.filter(x=>/\\.(mov|mp4|png|jpg|jpeg)$/i.test(x.path)).every(x=>x.origin==="ffmpeg-synthetic-only"))process.exit(1)'
+          cd dist/nova-iphone-preview
+          zip -q -X -r ../../NOVA_iPhone_MP4_identite_avant_partage.zip .
+          cd ../..
+          unzip -t NOVA_iPhone_MP4_identite_avant_partage.zip >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-iPhone-MP4-identite-avant-partage-HTTPS-manuel
+          path: NOVA_iPhone_MP4_identite_avant_partage.zip
+          retention-days: 7
+          if-no-files-found: error

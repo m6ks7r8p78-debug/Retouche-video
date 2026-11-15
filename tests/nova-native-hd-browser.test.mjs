@@ -8,6 +8,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import http from "node:http";
+import {createHash} from "node:crypto";
 import {execFile} from "node:child_process";
 import {promisify} from "node:util";
 import {fileURLToPath} from "node:url";
@@ -146,6 +147,62 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   assert.equal(Number(v.nb_frames),15);
   assert.equal(a.codec_name,"aac");
   assert.ok(Math.abs(Number(check.format.duration)-1)<0.2);
+  // Preuve avant partage : l'onglet principal utilise EXACTEMENT le Blob
+  // produit par le moteur HD déjà testé ci-dessus, sans re-rendu.
+  await page.evaluate(async()=>{
+   const srcBlob=await (await fetch(document.querySelector("#novaHdSave").href)).blob();
+   const hd=NOVA_NATIVE_HD;
+   window.NOVA_NATIVE_HD={...hd,exporter:async()=>({
+    blob:srcBlob,originalWidth:160,originalHeight:120,
+    sourceFrames:15,outputFrames:15,sourceFps:15,
+    modifiedFrames:0,audioMode:"aac-copy",colorWarning:null
+   })};
+   // NOVA_DEMUX is frozen; replacing its method silently does nothing.
+   // Wrap the global object to emulate an HD-sized source for routing only.
+   const demux=window.NOVA_DEMUX;
+   window.NOVA_DEMUX={...demux,analyser:async f=>{
+    const info=await demux.analyser(f);
+    return f instanceof File&&info?{...info,ns:100}:info;
+   }};
+  });
+  await page.locator("#exportVideo").click();
+  await page.waitForTimeout(1400);
+  const mainState=await page.evaluate(()=>({
+   message:document.querySelector("#exportStatus")?.textContent,
+   filename:document.querySelector("#downloadVideo")?.download,
+   proofVisible:!document.querySelector("#novaOutputProofRun")?.hidden,
+   ready:!document.querySelector("#exportVideo")?.disabled,
+   blob:!!document.querySelector("#downloadVideo")?.href,
+   errorList:window.__proofErrors||[]
+  }));
+  assert.match(mainState.message||"",/MP4 HD disponible/,
+   "Diagnose main export state: "+JSON.stringify(mainState));
+  assert.equal(await page.locator("#novaOutputProofRun").isVisible(),true);
+  await page.locator("#novaOutputProofRun").click();
+  await page.waitForFunction(()=>!!document.querySelector("#novaOutputProofSave")?.getAttribute("href"),
+   null,{timeout:10000});
+  const proof=await page.evaluate(async()=>{
+   const a=document.querySelector("#novaOutputProofSave");
+   return await (await fetch(a.href)).json();
+  });
+  assert.equal(proof.schema,"retoucheproai.nova.local-export-identity.v1");
+  assert.equal(proof.video.width,160);
+  assert.equal(proof.video.height,120);
+  assert.equal(proof.video.frames,15);
+  assert.equal(proof.novaClaim.frames,15);
+  assert.equal(proof.matchesClaim,true);
+  assert.equal(proof.majorBrand,"isom");
+  const proofDownload=page.waitForEvent("download");
+  await page.locator("#novaOutputProofSave").click();
+  const proofFile=JSON.parse(await fs.readFile(await (await proofDownload).path(),"utf8"));
+  assert.equal(proofFile.sha256,proof.sha256);
+  const videoDL=page.waitForEvent("download");
+  await page.locator("#downloadVideo").click();
+  const exactBytes=await fs.readFile(await (await videoDL).path());
+  assert.equal(createHash("sha256").update(exactBytes).digest("hex"),proof.sha256,
+   "JSON must hash exact same bytes as the MP4 download link");
+  assert.equal(proof.sizeBytes,exactBytes.length);
+  assert.equal(JSON.stringify(proof).includes("PRIVATE"),false);
   // Simulation d'une vraie ambiguïté colr : les pixels H.264 sont
   // réellement décodés, mais le conteneur source ne donne plus de colr.
   // Le moteur doit utiliser VideoFrame.colorSpace plutôt que déclarer HDR.
