@@ -1,7 +1,8 @@
 'use strict';
 const fs=require('node:fs'),assert=require('node:assert/strict'),vm=require('node:vm');
 const path=require('node:path');
-const root=path.resolve(__dirname,'..');
+const moduleDir=path.resolve(__dirname,'..');
+const root=fs.existsSync(path.resolve(moduleDir,'../..','sw.js'))?path.resolve(moduleDir,'../..'):moduleDir;
 const src=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 const C=src.match(/const C="([^"]+)"/)[1];
 const F=JSON.parse(src.match(/F=(\[[^\]]+\])/)[1]);
