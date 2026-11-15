@@ -18,7 +18,7 @@ Le moteur `NOVA_NATIVE_HD` de la PR #47 accepte en principe HEVC et H.264 via `V
 
 ## Preuves / validation
 Suite ciblée CI `.github/workflows/nova-h264-preflight-relay.yml` sur la seule branche expérimentale.
-**Résultats CI : à vérifier sur le HEAD exact avant d'annoncer un succès.** Tests automatisés synthétiques uniquement : le H.264 natif physique sur iPhone, le HEVC réel, la fidélité du son et la lecture finale restent non certifiés.
+**Résultats CI vérifiés sur le HEAD `8566e48dbdd2b165802027ff7afbaf4acc893f35` : 21/21 tests Node réussis, 0 échec, 0 ignoré**, y compris H.264 sans WebAssembly, blocages codec/AAC et sérialisation privée. [GitHub Actions #43720461540](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43720461540) : SUCCESS. Les vérifications de syntaxe JS et du périmètre expérimental passent également. Tests automatisés synthétiques uniquement : le H.264 natif physique sur iPhone, le HEVC réel, la fidélité du son et la lecture finale restent non certifiés.
 
 ## Limites et intégration
 Le précontrôle ne modifie aucun média et n'ouvre pas de nouveau format de décodage. Le traitement HD reste limité dans #47 à 60 Mio, 12 s, 360 images, 2,2 Mpx et BT.709 SDR : une source hors de ces bornes conserve l'original mais n'est pas encore transformable par cette voie. Ce travail ne prétend pas atteindre l'objectif universel. Ne pas annoncer comme « compatible tout fichier » avant routeurs supplémentaires, validation audio/vidéo et essais physiques.
