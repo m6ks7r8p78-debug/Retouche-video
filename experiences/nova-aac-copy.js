@@ -80,6 +80,11 @@ function extract(b,sizeLimit,mdatRanges){
   if(edits){
    // Une seule édition média ou [vide -1, média]. Version 1 emploie
    // uint64/int64 : ne convertir en Number QUE si la valeur est sûre.
+   if(edits.start+8>edits.end)fail("en-tête elst audio tronqué");
+   const flags=v.getUint32(edits.start)&0xffffff;
+   // ISO/IEC 14496-12 Amd 2 : flags bit 0 répète les edits.
+   // La copie simple ne peut pas conserver une boucle temporelle.
+   if(flags!==0)fail("édition AAC répétée ou flags elst non pris en charge");
    const version=b[edits.start],count=v.getUint32(edits.start+4);
    const step=version===1?20:12;
    if((version!==0&&version!==1)||(count!==1&&count!==2)||
