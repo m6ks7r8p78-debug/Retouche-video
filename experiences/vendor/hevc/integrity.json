@@ -1,0 +1,29 @@
+{
+  "library": "@hevcjs/core",
+  "version": "1.8.0",
+  "license": "MIT",
+  "licenseUrl": "https://github.com/lid-labs/hevc.js/blob/main/LICENSE",
+  "origin": "https://github.com/lid-labs/hevc.js",
+  "assets": [
+    {
+      "path": "chunk-M6WO4WIK.js",
+      "bytes": 10353,
+      "sha256": "bb1684339a4bac970b81ea141a0e8af8eeb2ab9431506c51f2a2db881d7b6c9a"
+    },
+    {
+      "path": "decoder-entry.js",
+      "bytes": 120,
+      "sha256": "52bc46311a54b7dd3228f1fc1a68257bc9c818ee194c5a7bb5b085ebb5c656e8"
+    },
+    {
+      "path": "wasm/hevc-decode.js",
+      "bytes": 48170,
+      "sha256": "12401d76a5063082b9fd1e87ce1069c3ac73d45c2d4e434e32499755b19a99eb"
+    },
+    {
+      "path": "wasm/hevc-decode.wasm",
+      "bytes": 344949,
+      "sha256": "450601a71473125e772f01437877eb97abcb3a55332553e205f352f500208a1d"
+    }
+  ]
+}
