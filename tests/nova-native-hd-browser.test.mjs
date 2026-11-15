@@ -155,6 +155,18 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   assert.equal(Number(converted.nb_frames),15);
   assert.equal(converted.color_space,"bt709");
   assert.equal(matrixCheck.streams.find(x=>x.codec_type==="audio")?.codec_name,"aac");
+  // Contrôle perceptuel minimum : convertir source BT.601 et sortie BT.709
+  // en RGB par FFmpeg, comparer les images après transcodage classique NOVA.
+  // Le score ne constitue PAS une certification de fidélité iPhone.
+  const comparison=await run("ffmpeg",["-hide_banner","-nostdin","-v","info",
+   "-i",matrix601,"-i",matrixOutput,
+   "-filter_complex","[0:v:0]format=rgb24[reference];[1:v:0]format=rgb24[converted];[reference][converted]psnr",
+   "-an","-f","null","-"],{timeout:30000});
+  const matches=[...comparison.stderr.matchAll(/PSNR y:([\d.]+) u:([\d.]+) v:([\d.]+) average:([\d.]+)/g)];
+  assert.ok(matches.length>0,"PSNR RGB absent : "+comparison.stderr.slice(-600));
+  const psnr=Number(matches.at(-1)[4]);
+  assert.ok(psnr>25,"Conversion BT.601->BT.709 trop différente : PSNR "+psnr);
+
   assert.deepEqual(failures,[]);
   assert.deepEqual(external,[]);
   assert.deepEqual(upload,[]);
