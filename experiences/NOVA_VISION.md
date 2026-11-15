@@ -710,3 +710,10 @@ Le script `outils/build-nova-iphone-preview.mjs` prépare un dossier statique, a
 **Limites :** aucune promotion sur `main`/retoucheproai.com, aucun lien HTTPS de prévisualisation publié, aucun iPhone 15 Pro Max physique testé ; pilote HEVC plafonné à **12 s / 60 Mo / 90 images source / 640×360 / sortie 15 i/s**, SDR BT.709 8 bits. L'artefact est une préparation de déploiement isolé, non une autorisation de fusion/production. La mémoire RAM totale, le GPU, la batterie et la thermique ne sont pas couverts par les métriques navigateur.
 
 **Prochaine étape concrète :** héberger volontairement l'artefact sur un domaine de prévisualisation HTTPS **distinct**, puis utiliser sur iPhone Safari le protocole `experiences/NOVA_IPHONE_TEST.md`, enregistrer localement le JSON et le MP4 d'essai, et comparer les résultats en Safari/PWA avant toute modification des limites.
+
+
+### NOVA 0.24 — contrôle autonome sans dépendances au checkout GitHub (banc distinct)
+
+Une vérification supplémentaire `tests/nova-iphone-preview-browser.test.mjs` reconstruit une archive dans un **répertoire temporaire isolé du dépôt** et n'expose via serveur localhost sécurisé que ses propres ressources. Chromium et WebKit Linux ouvrent la page d'accueil et l'interface, importent une vraie photo synthétique, contrôlent les erreurs JavaScript/404 et interdisent les requêtes externes. Un MOV HEVC/AAC de test est encodé avec FFmpeg, importé depuis l'appareil simulé, puis le banc lance l'essai de rapport JSON ; Chromium doit encoder un MP4 valide, et WebKit doit produire soit un export complet, soit un refus sans MP4 incomplet. Les tests sont complémentaires du **parcours à un clic avec fixture synthétique** développé simultanément : ils cherchent surtout les chemins d'assets manquants et les dépendances accidentelles à la racine du dépôt.
+
+Ce contrôle de serveur **localhost** ne prouve ni le fonctionnement d'un site HTTPS distant ni Safari sur iPhone physique.

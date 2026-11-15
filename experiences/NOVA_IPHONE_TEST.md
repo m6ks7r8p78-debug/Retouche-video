@@ -19,3 +19,7 @@ Le script `node outils/build-nova-iphone-preview.mjs` construit `dist/nova-iphon
 
 Il faut un aperçu HTTPS réellement hébergé séparément **et** une exécution physique iPhone. Le code GitHub et les essais WebKit Linux ne remplacent pas ces étapes. La sortie reste à 15 images/s, HEVC 8 bits BT.709 uniquement.
 \nLe rapport contient `sourceKind = synthetic-generated` pour l’essai sans média privé et `local-user-file` pour une vidéo choisie. Le clip synthétique n’est pas un substitut à un essai avec une vraie vidéo iPhone.\n
+
+### Vérification indépendante de l'archive
+
+Un second banc de NOVA 0.24 reconstruit le paquet statique **dans un dossier temporaire autonome**, puis lance le laboratoire dans Chromium et WebKit Linux à partir de ce seul dossier. Il vérifie le parcours photo et l'export de rapport depuis un vrai MOV HEVC/AAC de test, l'absence de ressource manquante et l'absence de requête externe. Il ne doit pas être confondu avec un test physique Safari iPhone.
