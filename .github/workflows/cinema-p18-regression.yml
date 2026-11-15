@@ -1,0 +1,26 @@
+name: Cinema P17-P18 offline regression
+on:
+  pull_request:
+    paths:
+      - 'studio-cinema/p17/**'
+      - 'studio-cinema/p18/**'
+      - 'studio-cinema/p16/**'
+      - 'studio-cinema/p2/**'
+      - '.github/workflows/cinema-p18-regression.yml'
+  push:
+    branches: [chatgpt-cinema-ai-rfc-v01]
+    paths:
+      - 'studio-cinema/p17/**'
+      - 'studio-cinema/p18/**'
+      - 'studio-cinema/p16/**'
+      - 'studio-cinema/p2/**'
+jobs:
+  offline-node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: P17 + P18 tests, no private media
+        run: node --test studio-cinema/p17/tests/*.cjs studio-cinema/p18/tests/*.cjs
