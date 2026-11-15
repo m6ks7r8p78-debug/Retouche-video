@@ -1,0 +1,56 @@
+name: NOVA - OPFS MP4 H264 AAC 48 seconds isolated
+on:
+  push:
+    branches:
+      - chatgpt-nova-opfs-48s-av-v1-20261115
+  pull_request:
+    branches:
+      - chatgpt-nova-opfs-mp4-stream-v1-20261115
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-opfs-48s-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier syntaxe, AAC/muxer, OPFS, 48s et régressions héritées
+        run: |
+          node --check experiences/nova-export.js
+          node --check experiences/nova-windows.js
+          node --check experiences/nova-h264-path.js
+          node --check experiences/nova-real-preflight.js
+          node --check experiences/nova-real-preflight-ui.js
+          node --check experiences/nova-export-ui.js
+          node --check mp4-muxer.js
+          node --check tests/nova-opfs-stream-browser.test.mjs
+          node --test tests/nova-opfs-stream.test.mjs tests/nova-muxer-24s.test.mjs tests/nova-aac-copy.test.mjs tests/nova-windows.test.mjs tests/nova-export.test.mjs tests/nova-h264-path.test.mjs tests/nova-avc-vui.test.mjs tests/nova-hevc-refusal-diagnostic.test.mjs tests/nova-real-preflight.test.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Playwright sans redéployer le site public
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: FFmpeg et FFprobe sur médias créés à la volée
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep -q libx264
+      - name: MP4 20/24/36/48s avec OPFS actif et AAC inchangé, puis anciens tests
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test tests/nova-opfs-stream-browser.test.mjs tests/nova-h264-windowed-long-browser.test.mjs
