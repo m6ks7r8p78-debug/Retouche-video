@@ -6,18 +6,27 @@
 const $=id=>document.getElementById(id);
 const panel=$("pilotVideo"),start=$("exportVideo"),silent=$("allowSilent"),
   download=$("downloadVideo"),status=$("exportStatus"),fileInput=$("file"),drop=$("drop"),approx=$("allowApproximate"),
-  hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText");
+  hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText"),
+  opfs=$("writeOpfs");
 if(!panel||!start||!silent||!download||!status||!fileInput)return;
-let file=null,controller=null,blobUrl=null,generation=0;
+let file=null,controller=null,blobUrl=null,generation=0,releaseStored=null;
+function releaseTemp(){
+ if(!releaseStored)return;
+ const dispose=releaseStored;releaseStored=null;
+ Promise.resolve().then(()=>dispose()).catch(()=>{});
+}
+window.addEventListener("pagehide",releaseTemp);
 function msg(s){status.textContent=s}
 function clear(){
  generation++;
  if(controller){controller.abort();controller=null}
  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null}
+ releaseTemp();
  download.hidden=true;download.removeAttribute("href");
  if(hevcPanel)hevcPanel.hidden=true;
  if(hevcText)hevcText.textContent="";
  start.disabled=true;start.textContent="Exporter un MP4 restauré";panel.hidden=true;silent.checked=false;if(approx)approx.checked=false;
+ if(opfs){opfs.checked=false;opfs.disabled=!globalThis.NOVA_OPFS_STREAM?.supported();}
 }
 function choisir(f){
  clear();file=null;
@@ -46,9 +55,11 @@ start.addEventListener("click",async()=>{
   const result=await NOVA_EXPORT.exporter({
    file,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,
    allowSilent:silent.checked,allowApproximate:!!approx?.checked,signal:ctl.signal,
+   storageMode:opfs?.checked?"opfs":"memory",
    onProgress:step=>{
     if(generation!==thisGen)return;
     if(step.stage==="budget")msg("Protection mémoire : "+step.estimatedMiB+" Mio estimés / "+step.limitMiB+" Mio de budget pilote…");
+    if(step.stage==="storage")msg("Écriture MP4 progressive dans le stockage privé du navigateur (aucun envoi réseau)…");
     if(step.stage==="source")msg(step.mode==="hevc-wasm"?
      "HEVC WASM local : "+step.frames+" images source BT.709 SDR analysées par PTS…":step.mode==="pts"?
      "Décodage vidéo selon les PTS MP4 natifs ("+step.frames+" images source)":
@@ -71,7 +82,10 @@ start.addEventListener("click",async()=>{
     if(step.stage==="fini")msg("MP4 lisible selon les métadonnées locales. Vérifiez l'image et le son avant partage.");
    }
   });
-  if(ctl.signal.aborted||generation!==thisGen)return;
+  if(ctl.signal.aborted||generation!==thisGen){
+   await result.release?.();return;
+  }
+  releaseStored=result.release??null;
   if(blobUrl)URL.revokeObjectURL(blobUrl);
   blobUrl=URL.createObjectURL(result.blob);
   if(hevcPanel&&hevcText&&result.hevcDiagnostics){
@@ -106,7 +120,9 @@ start.addEventListener("click",async()=>{
   download.href=blobUrl;
   download.download=(file.name||"video").replace(/\.[^.]+$/,"")+"_NOVA_pilote.mp4";
   download.hidden=false;
-  msg("MP4 prêt"+(result.windowPlan?
+  msg("MP4 prêt"+(result.storageMode==="opfs-local-stream"?
+    " (écrit progressivement en stockage privé local)":"")+
+    (result.windowPlan?
     " ("+result.windowPlan.count+" fenêtres vidéo, une piste AAC continue)":"")+
     " : "+result.plan.width+" × "+result.plan.height+", "+
     (result.audioMode==="aac-copy"?"audio AAC original copié":result.audioMode==="aac-encode"?"audio AAC réencodé":"sans son, selon votre choix")+
