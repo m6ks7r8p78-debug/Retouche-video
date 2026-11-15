@@ -3,7 +3,7 @@
 **Date :** 15 novembre 2026. Coordination via consultation GitHub, sans communication directe entre conversations.
 
 **LABORATOIRE :** NOVA / export local HEVC→H.264/AAC, diagnostics Safari iPhone, respect des interruptions.  
-**BRANCHE / PR / COMMIT DE CODE :** `chatgpt-studio-nova-v01` · [PR #3](https://github.com/m6ks7r8p78-debug/Retouche-video/pull/3) (DRAFT) · `13967ba837ef93312d5b1140c5a428670a01e4fe`.
+**BRANCHE / PR / COMMIT DE CODE :** `chatgpt-studio-nova-v01` · [PR #3](https://github.com/m6ks7r8p78-debug/Retouche-video/pull/3) (DRAFT) · `e007a154a742472f09583f2c5dfcaad9a0b01165`.
 
 ## Découvertes existantes réutilisées sans fusion
 - Documents consultés avant développement : `coordination/README.md`, `coordination/PROTOCOLE.md` et `coordination/REGISTRE.json` depuis `coordination-retoucheproai-v1`.
@@ -18,8 +18,8 @@
 4. **Bancs de régression :** `tests/nova-iphone-report.test.mjs`, nouveau `tests/nova-iphone-interruption.test.mjs`, et `tests/nova-iphone-abort-browser.test.mjs` vérifient l'absence de texte libre à tous les niveaux, la non-publication après succès tardif, les codes d'annulation et le téléchargement volontaire du reçu dans Chromium et WebKit Linux. Guide `experiences/NOVA_IPHONE_TEST.md` actualisé.
 
 ## Preuve exacte
-- **Code soumis :** `13967ba837ef93312d5b1140c5a428670a01e4fe`
-- **GitHub Actions :** [run 43715477229](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43715477229) : **4 jobs success, 186 tests réussis sur 186**, **0 fail, 0 skipped**, répartis en **141 unitaires, 34 Chromium, 10 WebKit Linux et 1 décodage HEVC Node hors npm**.
+- **Code soumis :** `e007a154a742472f09583f2c5dfcaad9a0b01165`
+- **GitHub Actions :** [run 43716014258](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43716014258) : **4 jobs success, 188 tests réussis sur 188**, **0 fail, 0 skipped**, répartis en **141 unitaires, 35 Chromium, 11 WebKit Linux et 1 décodage HEVC Node hors npm**.
 - Les tests supplémentaires utilisent des valeurs malicieuses contrôlées comme substituts de noms de fichiers/identifiants, pas les vraies vidéos privées.
 - Les tests Chromium et WebKit Linux créent un reçu `pagehide` ou d'annulation manuelle, vérifient qu'il est téléchargeable via un lien Blob local, et confirment l'absence de MP4/JSON de réussite tardive.
 
@@ -33,3 +33,12 @@
 **BLOQUEUR :** PR #38 n'a pas de site HTTPS déployé et aucun test Safari iPhone physique n'est validé.  
 **PROCHAINE ACTION :** dans une prévisualisation autorisée et isolée, exécuter l'essai synthétique puis verrouiller l'iPhone / changer d'application, observer si le reçu reste accessible au retour sans prendre ce résultat pour une mesure matérielle.  
 **DEMANDE AU COORDINATEUR :** indexer le présent relais `unit-tested + browser-synthetic-tested`, sans fusion automatique ni modification de `coordination/REGISTRE.json` depuis NOVA.
+
+
+## Vérification additionnelle du 15 novembre 2026 — robustesse du sélecteur Fichiers
+
+Une exécution intermédiaire [Actions 43715697660](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43715697660) a révélé un **échec Chromium non reproductible systématiquement** : délai de 15 secondes dépassé dans l'ancien banc d'import MOV, au moment d'attendre l'activation du bouton `iphoneBenchRun`. Les tests unitaires, WebKit et le décodage HEVC restaient verts. Il serait inexact de présenter cette CI intermédiaire comme certifiée.
+
+Pour réduire la dépendance à un pont inter-module, `nova-iphone-lab-ui.js` reçoit désormais directement l'événement natif **`change`** de `#file`, en plus du `CustomEvent nova:source-selected` fourni par `nova-export-ui.js`. Ce chemin ne vérifie que la sélection locale ; **il ne contourne aucun contrôle HEVC / audio / couleur / durée**. Un test ajouté à `tests/nova-iphone-abort-browser.test.mjs` désactive volontairement la diffusion du CustomEvent et vérifie sous Chromium **et** WebKit Linux que l'import iPhone reste sélectionnable et qu'aucun MP4 ou JSON n'est généré automatiquement.
+
+**Résultat définitif sur SHA de code `e007a154a742472f09583f2c5dfcaad9a0b01165` :** [Actions 43716014258](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43716014258) — **4 jobs verts et 188/188 tests** (141 unitaires, 35 Chromium, 11 WebKit Linux et 1 HEVC hors npm), **0 échec et 0 ignoré**. Le nouveau parcours est validé en simulation Linux ; Safari sur un iPhone réel reste à examiner.
