@@ -134,8 +134,8 @@ function buildSyntheticFilmSceneV03(request,generator){
   metrics.push(norm(sample.world[onHand].translation,sample.world[cupId].translation));
  }
  const maxAnchorGap=metrics.length?Math.max(...metrics):null;
- if(maxAnchorGap!==null&&(!Number.isFinite(maxAnchorGap)||maxAnchorGap>.18))
-  throw Error('Écart main-tasse trop grand pour ce prototype (refus contrôlé).');
+ if(maxAnchorGap!==null&&(!Number.isFinite(maxAnchorGap)||maxAnchorGap>.025))
+  throw Error('Écart main-tasse supérieur à 25 mm : export refusé pour ce pilote.');
  const warnings=output.warnings.filter(s=>!s.includes('Prise et dépôt de tasse simulés'));
  warnings.push('La tasse unique suit un point d’ancrage calculé et non les doigts. Contacts de surface/collisions non prouvés.');
  if(maxAnchorGap!==null)warnings.push('Écart maximum calculé centre d’ancrage–tasse : '+Math.round(maxAnchorGap*1000)+' mm (échantillonnage 20 Hz).');
@@ -144,7 +144,7 @@ function buildSyntheticFilmSceneV03(request,generator){
    schema:'retoucheproai.film-motion-preview.v0.3',
    status:'apercu_partiel_glb_anime',
    contactAudit:{kind:'ancrage_geométrique_non_physique',sampleCount:metrics.length,
-     maxGapMeters:maxAnchorGap,thresholdMeters:.18,actualCollisionVerified:false},
+     maxGapMeters:maxAnchorGap,thresholdMeters:.025,actualCollisionVerified:false},
    warnings
  };
 }
