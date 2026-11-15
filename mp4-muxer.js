@@ -1520,15 +1520,20 @@ var Mp4Muxer = (() => {
       // Durée étendue UNIQUEMENT pour le pipeline H264 à fenêtres (24 s),
       // AAC bitstream unique et MP4 progressif en mémoire. Le chemin standard
       // garde strictement sa limite de 12 s.
+      // "opfs" = StreamTarget non fragmenté, écriture privée sur disque.
+      // true = mode original in-memory. Les autres profils restent à 12 s.
+      const windowedAACAllowed =
+        (options.audio.windowed24Seconds === true &&
+         options.fastStart === "in-memory") ||
+        (options.audio.windowed24Seconds === "opfs" &&
+         options.fastStart === false);
       if (options.audio.windowed24Seconds !== void 0 &&
-          (options.audio.windowed24Seconds !== true ||
-           options.audio.codec !== "aac" ||
-           options.fastStart !== "in-memory" ||
+          (!windowedAACAllowed || options.audio.codec !== "aac" ||
            !Number.isFinite(options.audio.editDurationSeconds) ||
            options.audio.editDurationSeconds > 24)) {
         throw new TypeError("Unsupported windowed AAC edit-list profile");
       }
-      const maxAacEditDuration = options.audio.windowed24Seconds === true ? 24 : 12;
+      const maxAacEditDuration = windowedAACAllowed ? 24 : 12;
       // Extension NOVA : elst simple (même piste AAC, pas de vide, 1x).
       if (options.audio.editDurationSeconds !== void 0 &&
           (options.audio.codec !== "aac" ||
