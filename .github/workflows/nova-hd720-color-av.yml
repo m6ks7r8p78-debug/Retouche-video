@@ -1,0 +1,51 @@
+name: NOVA - H264 HD 720p 30fps fidelity lab
+on:
+  push:
+    branches:
+      - chatgpt-nova-hd720-color-av-v1-20261115
+  pull_request:
+    branches:
+      - chatgpt-nova-h264-local-path-v1-20261115
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-hd720-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe et tests Node hérités
+        run: |
+          node --check experiences/nova-export.js
+          node --check experiences/nova-h264-path.js
+          node --check tests/nova-hd720-color-av-browser.test.mjs
+          node --test tests/nova-export.test.mjs tests/nova-h264-path.test.mjs tests/nova-hevc-refusal-diagnostic.test.mjs tests/nova-real-preflight.test.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Playwright pour Chromium existant
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: Vérifier FFmpeg FFprobe et H264 libx264
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep -q libx264
+      - name: Test de vrai export HD 720p source et contrôle audio/couleur
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test tests/nova-hd720-color-av-browser.test.mjs tests/nova-h264-export-browser.test.mjs
