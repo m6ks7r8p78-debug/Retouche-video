@@ -107,6 +107,14 @@ for(const inputFPS of [30,60])test(
   });
   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
   await page.locator("#file").setInputFiles(input);
+  // Un iPhone pourrait signaler le HEVC natif pris en charge :
+  // le parcours pilote doit rester WASM pour conserver l'audit SPS/VUI.
+  if(inputFPS===30)await page.evaluate(()=>{
+   const original=VideoDecoder.isConfigSupported.bind(VideoDecoder);
+   VideoDecoder.isConfigSupported=async config=>
+    /^(hvc1|hev1)\./.test(config.codec||"")?
+    {supported:true,config}:original(config);
+  });
   await page.locator("#exportVideo").click();
   await page.waitForFunction(()=>
     !!document.querySelector("#downloadVideo")?.getAttribute("href")||

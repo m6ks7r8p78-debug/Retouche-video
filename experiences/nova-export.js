@@ -144,18 +144,13 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   probe=await NOVA_DEMUX.analyser(file);
   if(probe)NOVA_DEMUX.exigerPresentationFidele(probe);
   if(probe&&/^(hvc1|hev1)\./.test(probe.codec)){
-   let nativeSupported=false;
-   if(typeof VideoDecoder==="function")try{
-    nativeSupported=!!(await VideoDecoder.isConfigSupported({
-     codec:probe.codec,description:probe.desc,codedWidth:probe.W,codedHeight:probe.H
-    })).supported;
-   }catch(_){}
-   useHevcWasm=!nativeSupported;
-   if(useHevcWasm){
-    if(!globalThis.NOVA_HEVC_RENDER)
-     throw new Error("Décodeur local HEVC WASM absent : export refusé");
-    NOVA_HEVC_RENDER.metadata(probe); // couleur/PTS/tailles vérifiés AVANT export
-   }
+   // Le moteur natif HEVC n'a pas encore de contrôle SPS/VUI + couleur
+   // de sortie équivalent à notre décodeur expérimental. Utiliser le
+   // même chemin WASM local sur les navigateurs pris en charge.
+   useHevcWasm=true;
+   if(!globalThis.NOVA_HEVC_RENDER)
+    throw new Error("Décodeur local HEVC WASM absent : export refusé");
+   NOVA_HEVC_RENDER.metadata(probe); // PTS/tailles/couleur avant export
   }
  }
  const media=useHevcWasm?null:document.createElement("video");
@@ -275,6 +270,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   canvas.width=settings.width;canvas.height=settings.height;
   trans=transformateur(moteur,arbitre);
   const trace={repetitions:0,sautsDeSource:0,premierPTSUs:null,dernierPTSUs:null};
+  let hevcDiagnostics=null;
   let lastRank=null;
   function noter(source){
    if(lastRank!==null){
@@ -310,6 +306,9 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     }
    });
    if(result.frames!==settings.frames)throw new Error("Sortie HEVC WASM incomplète");
+   hevcDiagnostics=Object.freeze({...result.metrics,
+    outputFrames:result.frames,
+    qualification:"WASM heap capacity, not browser or iPhone total RAM"});
   }else for(const entry of timeline.entries){
    if(signal?.aborted)throw new Error("Export annulé");
    if(error)throw error;
@@ -370,7 +369,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
       "boîte nclx vérifiée, cohérence du SPS H.264 à contrôler séparément"});
   }
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,validation,colorAudit,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
+  return {blob,plan:settings,validation,colorAudit,hevcDiagnostics,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:sourceMode==="hevc-wasm"?"HEVC MIT WASM local, PTS MOV et sortie CFR":sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
   },report:sourceMode==="hevc-wasm"?"HEVC SDR BT.709 traité localement, sortie audiovisuelle à contrôler sur iPhone":sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
