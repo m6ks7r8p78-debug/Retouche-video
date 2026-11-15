@@ -7,7 +7,7 @@ const src=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 const C=src.match(/const C="([^"]+)"/)[1];
 const F=JSON.parse(src.match(/F=(\[[^\]]+\])/)[1]);
 const must=['smallmotion-local.js','smallmotion-resource-guard.js','smallmotion-worker-runner.js','smallmotion-director-local.js','smallmotion-app-bootstrap.js','smallmotion-worker.js'].map(n=>'research/3d-smallmotion/'+n);
-assert.equal(C,'retouche-v85');
+assert.equal(C,'retouche-v86');
 for (const n of must)assert.ok(F.includes(n),'offline manifest missing: '+n);
 assert.equal(new Set(F).size,F.length,'duplicate cache entries');
 let checks=0,failOnce=false,skip=0,claimed=0,offline=false;
