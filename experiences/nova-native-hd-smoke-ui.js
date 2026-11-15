@@ -32,6 +32,8 @@ const checkpoints=Object.freeze({
  "native-decoder-submit":"soumission d’un échantillon au décodeur HEVC",
  "native-decoder-submitted":"échantillons transmis au décodeur HEVC",
  "native-decoder-output":"restitution des images décodées",
+ "native-decoder-wait-first":"attente de la première image chronologique",
+ "native-decoder-buffer-limit":"fenêtre de réordonnancement trop grande pour la mémoire",
  "native-decoder-error":"erreur asynchrone signalée par le décodeur HEVC",
  "native-decoder-drain":"vidage des images en attente du décodeur",
  "native-image-process":"restauration et conversion des images",
@@ -69,6 +71,7 @@ function blankReport(){
   result:"failed",failedAt:null,errorCode:null,
   checkpoint:null,errorClass:null,framesStarted:0,processedFrames:0,
   decoderChunksSubmitted:0,decoderFramesReceived:0,
+  decoderBufferPeak:0,firstPresentationFrameReceived:false,
   source:null,output:null,decodedByNative:false,encodedByNative:false,
   preservedAac:false,
   privacy:{userMediaRead:false,externalUpload:false,filenameInReport:false,
@@ -143,6 +146,15 @@ button.addEventListener("click",async()=>{
        Number.isSafeInteger(step.submitted)&&step.submitted>=1&&
        step.submitted<=report.source.frames)
      report.decoderChunksSubmitted=Math.max(report.decoderChunksSubmitted,step.submitted);
+    if((step?.stage==="native-decoder-output"||
+        step?.stage==="native-decoder-wait-first"||
+        step?.stage==="native-decoder-buffer-limit")&&
+       Number.isSafeInteger(step.buffered)&&step.buffered>=0&&
+       step.buffered<=24)
+     report.decoderBufferPeak=Math.max(report.decoderBufferPeak,step.buffered);
+    if(step?.stage==="native-decoder-output"&&
+       step.firstPresentationReceived===true)
+     report.firstPresentationFrameReceived=true;
     if(step?.stage==="native-decoder-output"&&
        Number.isSafeInteger(step.received)&&step.received>=1&&
        step.received<=report.source.frames)
@@ -196,6 +208,7 @@ button.addEventListener("click",async()=>{
    status.textContent="Essai natif non abouti : "+checkpoint+
     ". "+report.decoderChunksSubmitted+" échantillon(s) HEVC transmis, "+
     report.decoderFramesReceived+" image(s) décodée(s), "+
+    (report.firstPresentationFrameReceived?"première image reçue, ":"première image manquante, ")+
     report.processedFrames+" image(s) traitée(s). "+
     "Aucun MP4 n'est présenté comme réussi. Rapport JSON local disponible.";
   }else status.textContent="Test annulé; aucun MP4 incomplet enregistré.";
