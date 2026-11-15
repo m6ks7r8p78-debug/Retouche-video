@@ -57,7 +57,7 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
    if(!["GET","HEAD"].includes(r.method()))upload.push(r.url());
   });
   await page.goto(base+"/experiences/nova.html");
-  assert.match(await page.locator("#novaHdBuild").textContent(),/NOVA HD 0\.33/);
+  assert.match(await page.locator("#novaHdBuild").textContent(),/NOVA HD 0\.34/);
   assert.equal(await page.locator("#pilotVideo").isVisible(),false,
    "export control intentionally appears only after video import");
 
@@ -318,6 +318,46 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   assert.equal(rgbxProbe.streams.find(x=>x.codec_type==="video").width,160);
   assert.equal(rgbxProbe.streams.find(x=>x.codec_type==="audio").codec_name,"aac");
 
+  // Cas distinct : l'export principal échoue encore sur un frame
+  // expérimental interdit (I420P10). Il doit fournir un rapport privé
+  // de la vraie décision, pas obliger l'utilisateur à rechercher l'erreur.
+  await page.reload();
+  await page.evaluate(()=>{
+   const original=NOVA_DEMUX.analyser;
+   window.NOVA_DEMUX={...NOVA_DEMUX,analyser:async file=>{
+    const info=await original(file);
+    if(file instanceof File)return {...info,
+     W:1920,H:1088,ns:195,codec:"hvc1.1.6.L120"};
+    return info;
+   }};
+   window.NOVA_NATIVE_HD={...NOVA_NATIVE_HD,exporter:async()=>{
+    const info={W:160,H:120,codec:"avc1.4d4028",
+     color:{kind:"nclx",primaries:1,transfer:1,matrix:6,
+      fullRange:false}};
+    const proof=NOVA_HD_COLOR.metadata(info);
+    return NOVA_HD_COLOR.imagePourRendu({format:"I420P10",
+     colorSpace:{primaries:"bt709",transfer:"bt709",
+      matrix:"bt709",fullRange:false}},proof);
+   }};
+  });
+  await page.locator("#file").setInputFiles(matrix601);
+  await page.waitForFunction(()=>!document.querySelector("#exportVideo").disabled);
+  await page.locator("#exportVideo").click();
+  await page.waitForFunction(()=>!!document.querySelector("#novaHdFrameReport")?.getAttribute("href"),
+   null,{timeout:15000});
+  const report=await page.evaluate(async()=>{
+   const a=document.querySelector("#novaHdFrameReport");
+   return JSON.parse(await (await fetch(a.href)).text());
+  });
+  assert.equal(report.version,"0.34");
+  assert.equal(report.source.matrix,6);
+  assert.equal(report.decoded.matrix,"bt709");
+  assert.equal(report.decoded.format,"I420P10");
+  assert.equal(report.reason,"denied-unsupported-format");
+  assert.equal(report.privacy.framePixelsIncluded,false);
+  assert.equal(report.privacy.audioIncluded,false);
+  assert.equal(await page.locator("#downloadVideo").getAttribute("href"),null,
+   "refused export never becomes a video download");
   assert.deepEqual(failures,[]);
   assert.deepEqual(external,[]);
   assert.deepEqual(upload,[]);
