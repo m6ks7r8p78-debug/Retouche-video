@@ -17,6 +17,102 @@ function asc(rate,channels){
  if(i<0||![1,2].includes(channels))error("configuration ASC AAC-LC non représentable");
  return new Uint8Array([(2<<3)|(i>>1),((i&1)<<7)|(channels<<3)]);
 }
+/* WebKit #302253 (réglé dans son code source le 22/10/2026) :
+ * Safari 26/27 pouvait renvoyer un ES_Descriptor complet dans
+ * AudioEncoder.metadata.decoderConfig.description, au lieu de l'ASC
+ * attendue par WebCodecs. C'est la vraie cause du rejet « ASC invalide ».
+ * Ne jamais passer le descripteur complet à mp4-muxer, qui attend l'ASC.
+ */
+function viewBytes(value){
+ let b;
+ if(value instanceof ArrayBuffer)b=new Uint8Array(value);
+ else if(ArrayBuffer.isView(value))
+  b=new Uint8Array(value.buffer,value.byteOffset,value.byteLength);
+ else error("description AAC native de type inconnu");
+ if(b.length<2||b.length>256)error("description AAC native absente ou hors limites");
+ return new Uint8Array(b);
+}
+function descriptor(b,pos,end){
+ if(pos>=end)error("descripteur MPEG-4 tronqué");
+ const tag=b[pos++];let n=0,done=false;
+ for(let k=0;k<4;k++){
+  if(pos>=end)error("taille descripteur MPEG-4 tronquée");
+  const x=b[pos++];n=(n<<7)|(x&127);
+  if(!(x&128)){done=true;break}
+ }
+ if(!done||n<0||pos+n>end)error("descripteur MPEG-4 incohérent");
+ return {tag,start:pos,end:pos+n,next:pos+n};
+}
+function unwrapEsds(b){
+ let start=0,end=b.length;
+ // Description esds : WebKit a parfois fourni les octets du payload
+ // (03...) et d'autres implémentations peuvent exposer FullBox/atom.
+ if(b.length>=12&&String.fromCharCode(...b.slice(4,8))==="esds"){
+  const len=new DataView(b.buffer,b.byteOffset,b.byteLength).getUint32(0);
+  if(len!==b.length)error("taille boîte esds native incohérente");
+  start=12;
+  if(b.slice(8,12).some(Boolean))error("version/flags esds inattendus");
+ }else if(b.length>=8&&b.slice(0,4).every(x=>x===0)&&b[4]===3)
+  start=4;
+ const es=descriptor(b,start,end);
+ if(es.tag===5&&es.next===end)return b.slice(es.start,es.end);
+ if(es.tag!==3||es.next!==end)error("ES_Descriptor natif inattendu");
+ let pos=es.start;
+ if(pos+3>es.end)error("ES_Descriptor natif incomplet");
+ pos+=2;const flags=b[pos++];
+ if(flags&128)pos+=2;
+ if(flags&64){
+  if(pos>=es.end)error("URL ES_Descriptor tronquée");
+  pos+=1+b[pos];
+ }
+ if(flags&32)pos+=2;
+ if(pos>=es.end)error("DecoderConfigDescriptor AAC manquant");
+ const cfg=descriptor(b,pos,es.end);
+ if(cfg.tag!==4||cfg.start+13>cfg.end||b[cfg.start]!==0x40||
+    (b[cfg.start+1]>>2)!==5)
+  error("DecoderConfig AAC non audio ou incomplet");
+ const dsi=descriptor(b,cfg.start+13,cfg.end);
+ if(dsi.tag!==5||dsi.next!==cfg.end)
+  error("AudioSpecificConfig AAC absente ou ambiguë");
+ if(cfg.next<es.end){
+  const sl=descriptor(b,cfg.next,es.end);
+  if(sl.tag!==6||sl.next!==es.end)
+   error("SLConfig MPEG-4 native ambiguë");
+ }
+ return b.slice(dsi.start,dsi.end);
+}
+function verifierAsc(ascBytes,rate,channels){
+ if(!(ascBytes instanceof Uint8Array)||ascBytes.length<2||
+    ascBytes.length>32)error("ASC AAC native de longueur non reconnue");
+ let bit=0;
+ const read=n=>{
+  if(bit+n>ascBytes.length*8)error("ASC AAC native tronquée");
+  let x=0;
+  for(let i=0;i<n;i++,bit++)
+   x=(x<<1)|((ascBytes[bit>>3]>>(7-(bit&7)))&1);
+  return x;
+ };
+ let objectType=read(5);
+ if(objectType===31)objectType=32+read(6);
+ const index=read(4);
+ const freq=index===15?read(24):rates[index];
+ const count=read(4);
+ if(objectType!==2)error("ASC Safari n'est pas AAC-LC");
+ if(!freq||freq!==rate||count!==channels)
+  error("ASC Safari : fréquence/canaux non conformes à l'encodeur");
+ return ascBytes;
+}
+function normalizeDescription(value,rate,channels){
+ const b=viewBytes(value);
+ let config;
+ // À longueur grande ou si le premier octet est ES_Descriptor (03),
+ // il faut lire le format MPEG-4; ne pas tronquer à deux octets de fin.
+ if(b[0]===3||b[0]===5||b.length>32||
+    b.length>8&&b.slice(0,4).every(x=>x===0)&&b[4]===3)
+  config=unwrapEsds(b);
+ else config=b;
+ return verifierAsc(config,rate,channels);
+}
 async function capability({AudioEncoderClass=globalThis.AudioEncoder,
  SampleRate=48000,channels=2}={}){
  if(typeof AudioEncoderClass!=="function"||!AudioEncoderClass.isConfigSupported)
@@ -106,12 +202,19 @@ async function planifier(file,{durationSeconds,signal}={},{
      error("en-tête ADTS dans AAC brut non pris en charge");
     totalBytes+=bytes.length;
     if(totalBytes>MAX_AAC)error("taille AAC réencodée hors budget");
-    const desc=meta?.decoderConfig?.description;
+    const conf=meta?.decoderConfig;
+    if(conf){
+     if(conf.codec&&conf.codec!=="mp4a.40.2"&&conf.codec!=="mp4a.40.02")
+      error("codec AAC annoncé par Safari non LC");
+     if(conf.sampleRate!=null&&conf.sampleRate!==pcm.sampleRate||
+        conf.numberOfChannels!=null&&conf.numberOfChannels!==pcm.channels)
+      error("codec AAC Safari incohérent avec le PCM");
+    }
+    const desc=conf?.description;
     if(desc!=null){
-     const arr=new Uint8Array(desc.buffer??desc,desc.byteOffset??0,desc.byteLength);
-     if(arr.length<2||arr.length>32)error("ASC natif AAC invalide");
-     if(seenConfig&&arr.some((x,i)=>x!==seenConfig[i])||
-        seenConfig&&seenConfig.length!==arr.length)
+     const arr=normalizeDescription(desc,pcm.sampleRate,pcm.channels);
+     if(seenConfig&&(arr.length!==seenConfig.length||
+        arr.some((x,i)=>x!==seenConfig[i])))
       error("configuration AAC native modifiée en cours de flux");
      seenConfig=new Uint8Array(arr);
     }
@@ -152,7 +255,11 @@ async function planifier(file,{durationSeconds,signal}={},{
   const end=Math.max(...packets.map(p=>p.timestamp+p.duration));
   if(end<maxDuration-90000||end>maxDuration+120000)
    error("durée audio AAC réencodée non alignée");
-  const description=seenConfig||asc(pcm.sampleRate,pcm.channels);
+  // En mode AAC brut WebCodecs, le navigateur doit fournir l'ASC
+  // via decoderConfig.description. S'il ne le fait pas, il est dangereux
+  // d'inventer cette configuration : mieux vaut refuser que créer du silence.
+  if(!seenConfig)error("Safari n'a pas fourni d'AudioSpecificConfig vérifiable");
+  const description=seenConfig;
   return Object.freeze({mode:"aac-native-encode",packets,asc:description,
    sampleRate:pcm.sampleRate,channels:pcm.channels,
    outputEnd:maxDuration,
@@ -177,6 +284,7 @@ async function copier(_file,plan,muxer,{signal,onPacket=()=>{}}={}){
  }
  return Object.freeze({mode:plan.mode,count});
 }
-return Object.freeze({capability,decode,planifier,copier,asc});
+return Object.freeze({capability,decode,planifier,copier,asc,
+ normalizeDescription});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_AAC_NATIVE;
