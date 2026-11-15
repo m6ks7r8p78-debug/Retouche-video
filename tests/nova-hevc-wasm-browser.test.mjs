@@ -44,7 +44,9 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
     "-fps_mode","vfr","-use_editlist","1"]:[]),
    "-c:v","libx265","-preset","ultrafast","-threads","1",
    "-x265-params","pools=none:frame-threads=1:log-level=error:bframes=2",
-   "-pix_fmt","yuv420p","-f","mov","-y",source],{timeout:60000});
+   "-pix_fmt","yuv420p","-color_primaries","bt709",
+   "-color_trc","bt709","-colorspace","bt709",
+   "-movflags","+write_colr","-f","mov","-y",source],{timeout:60000});
   const {stdout:raw}=await run("ffmpeg",["-hide_banner","-loglevel","error",
    "-i",source,"-map","0:v:0","-vsync","0","-pix_fmt","yuv420p",
    "-f","rawvideo","-"],{encoding:null,maxBuffer:8*1024*1024});
@@ -64,6 +66,12 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
   assert.equal(expectedPTS.length,expectedFrames,"FFprobe doit horodater chaque frame");
   const expectedFrameHashes=Array.from({length:expectedFrames},(_,i)=>
    crypto.createHash("sha256").update(raw.subarray(i*frameSize,(i+1)*frameSize)).digest("hex"));
+  const {stdout:rgb}=await run("ffmpeg",["-v","error","-i",source,
+   "-frames:v","1","-pix_fmt","rgba","-f","rawvideo","-"],
+   {encoding:null,maxBuffer:1024*1024});
+  assert.equal(rgb.length,160*90*4);
+  const positions=Array.from({length:32},(_,i)=>((5+(i*17)%80)*160+((i*41+7)%155)));
+  const expectedColors=positions.map(i=>Array.from(rgb.subarray(i*4,i*4+3)));
   await new Promise(ok=>app.listen(0,"127.0.0.1",ok));
   browser=await browserEngine.launch({headless:true,
    ...(!isWebKit&&process.env.CHROME?{executablePath:process.env.CHROME}:{})});
@@ -80,7 +88,7 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
   // un export ES module. Chargement local explicite, sans CDN.
   await page.addScriptTag({url:"/experiences/vendor/hevc/wasm/hevc-decode.js"});
   await page.locator("#file").setInputFiles(source);
-  const actual=await page.evaluate(async()=>{
+  const actual=await page.evaluate(async({positions})=>{
    const HEVCDecoder=(await import("/experiences/vendor/hevc/decoder-entry.js")).HEVCDecoder;
    const f=document.querySelector("#file").files[0];
    const source=await NOVA_DEMUX.analyser(f);
@@ -88,6 +96,11 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
    const before=performance.now();
    const r=await NOVA_HEVC_LAB.decoder(f,{HEVCDecoder,
     wasmBinaryUrl:"/experiences/vendor/hevc/wasm/hevc-decode.wasm"});
+   const colorCanvas=document.createElement("canvas");
+   colorCanvas.width=160;colorCanvas.height=90;
+   NOVA_HEVC_RENDER.dessiner(r.stamped[0].frame,r.stamped[0].ptsUs,source,colorCanvas);
+   const colors=colorCanvas.getContext("2d").getImageData(0,0,160,90).data;
+   const colorSamples=positions.map(i=>[colors[i*4],colors[i*4+1],colors[i*4+2]]);
    const total=r.stamped.reduce((n,x)=>n+x.frame.y.length+x.frame.cb.length+x.frame.cr.length,0);
    const raw=new Uint8Array(total);let pos=0;
    for(const {frame} of r.stamped){
@@ -111,14 +124,19 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
      streamed.push({hash,ptsUs});
     }});
    return {digest,frames:r.stamped.length,annexBBytes:r.annexBBytes,
-    streamed,streamMetrics:stream,originalPTS,
+    streamed,streamMetrics:stream,originalPTS,colorSamples,
     firstPTS:r.stamped[0].ptsUs,lastPTS:r.stamped.at(-1).ptsUs,
     dimensions:[r.info.encodedWidth,r.info.encodedHeight],
     elapsedMs:Math.round(performance.now()-before)};
-  });
+  },{positions});
   assert.equal(actual.frames,expectedFrames,"aucune image HEVC manquante ou ajoutée");
   assert.deepEqual(actual.dimensions,[160,90]);
   assert.equal(actual.digest,expected,"WASM doit décoder exactement les pixels de FFmpeg");
+  const meanRgbError=actual.colorSamples.reduce((sum,p,i)=>sum+
+   p.reduce((d,v,ch)=>d+Math.abs(v-expectedColors[i][ch]),0),0)/
+   (positions.length*3);
+  assert.ok(meanRgbError<=12,
+   "rendu I420 BT.709 Canvas doit rester proche du RGB FFmpeg : MAE="+meanRgbError);
   assert.equal(actual.streamMetrics.frames,expectedFrames);
   assert.deepEqual(actual.streamed.map(x=>x.hash),expectedFrameHashes,
    "stream feed/drain/flush doit reproduire chaque image FFmpeg sans accumulation");
@@ -132,7 +150,8 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
   assert.ok(actual.streamMetrics.peakFrameBytes<=160*90*3);
   assert.deepEqual(errors,[]);
   assert.deepEqual(requests,[],"zéro appel externe pendant l'import et décodage WASM");
-  t.diagnostic("HEVC WASM local : "+JSON.stringify(actual));
+  t.diagnostic("HEVC WASM local : "+JSON.stringify({
+   ...actual,meanRgbError,colorSamples:undefined}));
  }finally{
   try{await browser?.close()}finally{
    if(app.listening)await new Promise(ok=>app.close(ok));
