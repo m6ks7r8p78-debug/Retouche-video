@@ -77,7 +77,8 @@ start.addEventListener("click",async()=>{
     hd.sourceFps+" i/s d'origine ; "+(hd.audioMode==="aac-copy"?
      "AAC original conservé sans réencodage": "AAC-LC réencodé localement (contrôler la synchronisation)")+". "+
     hd.modifiedFrames+" images avec corrections locales de lumière. "+
-    "Vérifiez image et son. Pas de reconstruction neuronale.");
+    (hd.colorWarning?(" ATTENTION COULEURS : "+hd.colorWarning):" Couleurs vérifiées par NOVA.")+
+    " Vérifiez image et son. Pas de reconstruction neuronale.");
    return;
   }
   const result=await NOVA_EXPORT.exporter({

@@ -132,6 +132,47 @@ function verifyFrame(frame,evidence){
   matrixConversion:convertedMatrix,
   processing:"browser color-managed Canvas sRGB to BT709 limited; verify visual fidelity"});
 }
+/* Sortie native opaque Safari : le décodeur matériel peut avoir déjà
+ * normalisé la matrice et ne plus exposer les plans YUV. WebCodecs impose
+ * au Canvas de convertir les couleurs déclarées de la trame vers sRGB.
+ * Ce rendu conserve le visuel effectivement présenté par le navigateur,
+ * MAIS il ne prouve pas l'identité avec le BT.601 source. Ne jamais
+ * prétendre que la matrice a été réparée ou les pixels vérifiés.
+ * Un utilisateur peut comparer avec la vidéo d'origine avant d'adopter
+ * l'export. Jamais utilisé pour des sources HDR/P3/BT2020.
+ */
+function renduNatifOpaque(frame,evidence){
+ const p=frame?.colorSpace||{};
+ // Colr/SPS peuvent ne préciser que la matrice BT.601, sans primaires
+ // ni transfert. Safari fournit parfois toute l'information SDR décodée.
+ // Dans ce cas, l'export reproduit l'affichage Safari mais n'est PAS
+ // qualifié comme conversion fidèle des métadonnées de la source.
+ const nativeFullySpecified=VIDEO_PRIMARIES.has(p.primaries)&&
+  VIDEO_XFER.has(p.transfer)&&p.matrix==="bt709"&&
+  typeof p.fullRange==="boolean";
+ if(!nativeFullySpecified||![5,6].includes(evidence?.sourceMatrix)||
+    !["bt470bg","smpte170m"].includes(evidence.expectedMatrix)||
+    !VIDEO_PRIMARIES.has(p.primaries)||
+    (evidence.expectedPrimaries&&p.primaries!==evidence.expectedPrimaries)||
+    p.matrix!=="bt709"||
+    !VIDEO_XFER.has(p.transfer)||
+    typeof p.fullRange!=="boolean"||
+    p.fullRange!==evidence.sourceFullRange)
+  err("rendu natif opaque non certifiable (espace ou plage couleur non conforme)");
+ return {frame,owned:false,proof:Object.freeze({
+  method:"native-safari-sdr-bt709-display",
+  sourceMatrix:evidence.expectedMatrix,
+  decodedMatrix:p.matrix,
+  sourceTransfer:evidence.sourceTransfer,
+  matrixConversion:false,rangeConversion:false,
+  frameFullyTagged:true,sourceMismatch:true,
+  colorFidelity:"uncertified-against-source",
+  warning:"Le fichier annonce BT.601 et le décodeur annonce BT.709. " +
+   "Le rendu natif du navigateur est utilisé sans réétiqueter les pixels. " +
+   "Comparer les couleurs de l'export à celles de l'original.",
+  processing:"VideoFrame natif -> Canvas sRGB -> I420 BT709 limité"
+ })};
+}
 // Certains décodeurs Chrome retournent une trame YUV de matrice "bt709"
 // alors que le MOV et le SPS spécifient BT.601. Ne PAS ignorer cette
 // contradiction : recoller une preuve couleur sur les échantillons YUV bruts,
@@ -150,16 +191,33 @@ async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFra
    VIDEO_PRIMARIES.has(p.primaries)&&VIDEO_XFER.has(p.transfer)&&
    (!evidence.expectedPrimaries||p.primaries===evidence.expectedPrimaries)&&
    (evidence.sourceFullRange===null||evidence.sourceFullRange===p.fullRange);
-  if(!acceptableMismatch||!["I420","NV12"].includes(frame.format)||
+  if(!acceptableMismatch)throw e;
+  // Safari HEVC matériel : format=null signifie plan YUV inaccessible.
+  // La trame possède néanmoins une couleur BT709 décodée déclarée.
+  // Le rendu natif est permis uniquement dans ce cas SDR clairement borné.
+  if(frame.format==null)
+   return renduNatifOpaque(frame,evidence);
+  if(!["I420","NV12"].includes(frame.format)||
      !VideoFrameClass||typeof frame.allocationSize!=="function"||
      typeof frame.copyTo!=="function")throw e;
   const originalRect=frame.codedRect;
   if(!originalRect)throw e;
   const options={rect:originalRect};
-  const size=frame.allocationSize(options);
-  if(!Number.isSafeInteger(size)||size<1||size>12*1048576)throw e;
-  const data=new Uint8Array(size);
-  const layout=await frame.copyTo(data,options);
+  let size,layout,data;
+  try{
+   size=frame.allocationSize(options);
+   if(!Number.isSafeInteger(size)||size<1||size>12*1048576)
+    err("plan YUV hors budget");
+   data=new Uint8Array(size);
+   layout=await frame.copyTo(data,options);
+  }catch(copyError){
+   // Si le GPU empêche la copie YUV, ne pas rejeter systématiquement
+   // la vidéo. Utiliser uniquement les couleurs réellement annoncées
+   // par la trame native, en déclarant le manque de certification.
+   if(copyError?.name==="NotSupportedError")
+    return renduNatifOpaque(frame,evidence);
+   throw copyError;
+  }
   const transfer=evidence.sourceTransferCode===6?"smpte170m":
    evidence.sourceTransferCode===13?"iec61966-2-1":
     evidence.sourceTransferCode===1?"bt709":p.transfer;
@@ -176,7 +234,8 @@ async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFra
    });
    const v=verifyFrame(corrected,evidence);
    return {frame:corrected,owned:true,proof:Object.freeze({...v,
-    method:"raw-yuv-source-matrix-correction",decoderReportedMatrix:p.matrix,
+    method:"raw-yuv-source-matrix-correction",colorFidelity:"source-matrix-confirmed",
+    decoderReportedMatrix:p.matrix,
     sourceMatrix:expected,
     limitation:"Correction de métadonnées YUV sur trame 8 bits brute ; vérifier la fidélité visuelle avec l'original."})};
   }catch(error){try{corrected?.close()}catch{}throw error}

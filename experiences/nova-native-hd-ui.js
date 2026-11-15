@@ -67,10 +67,10 @@ run.addEventListener("click",async()=>{
    " i/s, "+(out.audioMode==="aac-copy"?
     "AAC original copié sans réencodage":"AAC-LC réencodé localement : vérifie le son et sa synchronisation")+
    ". "+out.modifiedFrames+
-   " images avec correction locale de lumière. Couleur source vérifiée : "+
-   (out.decodedColorEvidence||out.sourceColorEvidence)+
-   (out.decodedColorEvidence==="decoded-frame-sdr-full-to-limited"?
-    " (conversion contrôlée de plage entière SDR vers plage vidéo limitée)." : ".")+
+   " images avec correction locale de lumière. "+
+   (out.colorWarning?("ATTENTION COULEURS : "+out.colorWarning):
+    "Couleurs source et décodage contrôlés : "+
+    (out.decodedColorEvidence||out.sourceColorEvidence)+".")+
    " Vérifie visuellement la fidélité et écoute le son ; aucune restauration neuronale.";
  }catch(e){
   if(my===generation&&!ctrl.signal.aborted&&reportLink){
