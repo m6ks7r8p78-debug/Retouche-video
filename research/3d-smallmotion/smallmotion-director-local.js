@@ -118,13 +118,13 @@
     if(d.getElementById('smallmotion-app-panel'))return null;
     const panel=d.createElement('section');panel.id='smallmotion-app-panel';
     panel.setAttribute('aria-label','Observation de mouvement locale expérimentale');
-    panel.style.cssText='padding:12px;margin:10px 0;border:1px solid #b9d8ca;border-radius:12px;background:#f5faf7;color:#1b3930;max-width:600px';
+    panel.style.cssText='padding:16px;margin:12px 0;border:1px solid #4b525d;border-radius:14px;background:#202125;color:#f4f5f6;max-width:600px;box-sizing:border-box';
     panel.hidden=true;
-    const title=d.createElement('strong');title.textContent='Analyse de mouvement · sur cet appareil';panel.append(title);
-    const desc=d.createElement('p');desc.textContent='Analyse consultative de deux images seulement. Ne modifie ni le traitement ni l’export.';desc.style.fontSize='12px';panel.append(desc);
-    const button=d.createElement('button');button.type='button';button.textContent='Analyser localement';button.style.cssText='min-height:44px;padding:9px 15px;border-radius:10px';panel.append(button);
-    const cancel=d.createElement('button');cancel.type='button';cancel.textContent='Annuler';cancel.hidden=true;cancel.style.cssText='min-height:44px;margin-left:8px';panel.append(cancel);
-    const status=d.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.style.cssText='font-size:12px;line-height:1.5';panel.append(status);
+    const title=d.createElement('strong');title.textContent='SmallMotion · Analyse de mouvement locale';title.style.cssText='display:block;font-size:16px;font-weight:750;line-height:1.45;letter-spacing:.01em;color:#fff';panel.append(title);
+    const desc=d.createElement('p');desc.textContent='Analyse consultative de deux images seulement. Ne modifie ni le traitement ni l’export.';desc.style.cssText='font-size:13px;line-height:1.5;color:#d4d7dc;margin:10px 0';panel.append(desc);
+    const button=d.createElement('button');button.type='button';button.textContent='Analyser localement';button.style.cssText='appearance:none;min-height:44px;padding:10px 16px;border:1px solid #f0b65e;border-radius:10px;background:#f5b351;color:#1e1710;font-size:14px;font-weight:750;cursor:pointer';panel.append(button);
+    const cancel=d.createElement('button');cancel.type='button';cancel.textContent='Annuler';cancel.hidden=true;cancel.style.cssText='min-height:44px;margin-left:8px;padding:10px 14px;border:1px solid #808b9a;border-radius:10px;background:#353942;color:#fff;font-weight:650';panel.append(cancel);
+    const status=d.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');status.style.cssText='font-size:13px;line-height:1.55;color:#e3ebed;margin:14px 0';panel.append(status);
     const detail=d.createElement('details');const summary=d.createElement('summary');summary.textContent='Diagnostic de l’analyse (sans images)';const pre=d.createElement('pre');pre.style.cssText='font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere';detail.append(summary,pre);panel.append(detail);
     // The import buttons live in a horizontal .drop-acts row; never insert
     // the advisory panel into it (on iPhone it shrinks both original actions).
