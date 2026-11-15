@@ -41,7 +41,7 @@ for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
     "testsrc2=size=160x90:rate=30:duration=1.6":
     "testsrc2=size=160x90:rate=15:duration=1.2",
    ...(isVFR?["-vf","select='not(mod(n,2))+not(mod(n,7))'",
-    "-fps_mode","vfr","-use_editlist","0"]:[]),
+    "-fps_mode","vfr","-use_editlist","1"]:[]),
    "-c:v","libx265","-preset","ultrafast","-threads","1",
    "-x265-params","pools=none:frame-threads=1:log-level=error:bframes=2",
    "-pix_fmt","yuv420p","-f","mov","-y",source],{timeout:60000});
