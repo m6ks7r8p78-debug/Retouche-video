@@ -47,6 +47,28 @@ test("NOVA 0.6 : identifie les sauts temporels et rejette PTS invalides",()=>{
  assert.throws(()=>GUARD.auditerPTS({ptsUs:[0,0],durationSeconds:1,fps:15}),/dupliqué/);
  assert.throws(()=>GUARD.auditerPTS({ptsUs:[NaN],durationSeconds:1,fps:15}),/invalide/);
 });
+test("NOVA 0.6 : AAC absent, désordonné ou décalé est refusé",()=>{
+ const good=GUARD.auditerPaquetsAAC([
+  {timestamp:0,duration:20000},{timestamp:20000,duration:20000},
+  {timestamp:40000,duration:20000}],{durationSeconds:.06});
+ assert.equal(good.packets,3);
+ assert.equal(good.couvertureControlee,true);
+ assert.throws(()=>GUARD.auditerPaquetsAAC([],{durationSeconds:1}),/aucun paquet/);
+ assert.throws(()=>GUARD.auditerPaquetsAAC([
+  {timestamp:20000,duration:20000},{timestamp:0,duration:20000}
+ ],{durationSeconds:.04}),/non monotones/);
+ assert.throws(()=>GUARD.auditerPaquetsAAC([
+  {timestamp:300000,duration:20000}
+ ],{durationSeconds:.32}),/Départ audio/);
+ assert.throws(()=>GUARD.auditerPaquetsAAC([
+  {timestamp:0,duration:20000}
+ ],{durationSeconds:1}),/Durée AAC/);
+});
+test("NOVA 0.6 : absence de durée paquet AAC visible comme vérification partielle",()=>{
+ const a=GUARD.auditerPaquetsAAC([{timestamp:-20000,duration:null},
+   {timestamp:0,duration:null}],{durationSeconds:.02});
+ assert.equal(a.couvertureControlee,false);
+});
 class FakeEncoder extends EventTarget{
  constructor(size){super();this.state="configured";this.encodeQueueSize=size}
  drain(size){this.encodeQueueSize=size;this.dispatchEvent(new Event("dequeue"))}
