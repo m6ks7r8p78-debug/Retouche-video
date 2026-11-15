@@ -7,7 +7,7 @@ h1{font-size:clamp(2.15rem,10vw,3.4rem);line-height:1.05;letter-spacing:-.06em;m
 .intro p:not(.eyebrow){color:#54657e;line-height:1.58;font-size:1.04rem}
 .card{background:#fff;border:1px solid #e6edf8;border-radius:23px;padding:clamp(19px,5vw,29px);box-shadow:0 12px 38px #20335d09}
 h2{letter-spacing:-.03em;font-size:1.36rem;margin:0 0 12px}.card>p:not(.status){font-size:.92rem;color:#56687d;margin:0 0 20px}
-button{cursor:pointer;min-height:51px;width:100%;background:#304bd4;border:1px solid #304bd4;border-radius:13px;font:700 .94rem inherit;color:white;padding:12px 15px;touch-action:manipulation}
+button{cursor:pointer;min-height:51px;width:100%;background:#304bd4;border:1px solid #304bd4;border-radius:13px;font-size:.94rem;font-weight:700;font-family:inherit;color:white;padding:12px 15px;touch-action:manipulation}
 button:disabled{opacity:.55;cursor:not-allowed}.secondary{background:white;color:#304bd4;margin-top:11px}
 button:focus-visible,textarea:focus-visible{outline:3px solid #617af4;outline-offset:3px}
 .status{font-size:.86rem;color:#536887;margin:15px 0 0;line-height:1.5;overflow-wrap:anywhere}
