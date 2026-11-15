@@ -139,11 +139,12 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 </details>
 <details class="sourceAdvanced" id="iphoneBenchPanel">
 <summary>Tester sur iPhone Safari · diagnostic local</summary>
-<p>Un seul test volontaire sur une courte vidéo HEVC. Le rapport JSON ne contient
+<p>Deux tests volontaires : clip HEVC/AAC synthétique (sans média personnel) ou courte vidéo HEVC locale. Le rapport JSON distingue la source et ne contient
 ni nom de fichier, ni média, ni GPS, ni identifiant d'appareil. Aucun envoi automatique.
 Conservez le son par défaut ; « sans son » reste un choix explicite.</p>
+<button type="button" class="secondary" id="iphoneBenchSynthetic">Tester Safari sans vidéo personnelle</button>
 <button type="button" class="secondary" id="iphoneBenchRun" disabled>Tester Safari sur cette vidéo</button>
-<div id="iphoneBenchStatus" role="status" aria-live="polite">Importez une courte vidéo HEVC locale pour activer le test.</div>
+<div id="iphoneBenchStatus" role="status" aria-live="polite">Essayez le clip synthétique ou importez une courte vidéo HEVC.</div>
 <a id="iphoneBenchJson" hidden>Enregistrer le rapport JSON local</a>
 <a id="iphoneBenchMp4" hidden>Enregistrer le MP4 de validation</a>
 </details>
