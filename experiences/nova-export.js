@@ -26,12 +26,12 @@ function disposer(media){
 function pret(media){
  return new Promise((resolve,reject)=>{
   let timer;
-  function cleanup(){clearTimeout(timer);media.removeEventListener("loadedmetadata",ok);media.removeEventListener("error",bad)}
+  function cleanup(){clearTimeout(timer);media.removeEventListener("loadeddata",ok);media.removeEventListener("error",bad)}
   function ok(){cleanup();resolve()}
   function bad(){cleanup();reject(new Error("La vidéo ne peut pas être décodée ici"))}
-  media.addEventListener("loadedmetadata",ok,{once:true});
+  media.addEventListener("loadeddata",ok,{once:true});
   media.addEventListener("error",bad,{once:true});
-  timer=setTimeout(()=>{cleanup();reject(new Error("Métadonnées vidéo indisponibles"))},10000);
+  timer=setTimeout(()=>{cleanup();reject(new Error("Première image vidéo indisponible"))},10000);
   media.load();
  });
 }
