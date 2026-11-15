@@ -157,7 +157,11 @@ function renduNatifOpaque(frame,evidence){
     p.matrix!=="bt709"||
     !VIDEO_XFER.has(p.transfer)||
     typeof p.fullRange!=="boolean"||
-    p.fullRange!==evidence.sourceFullRange)
+    // MOV nclc ne signale pas la plage. Dans ce SEUL cas, le rendu SDR
+    // natif reste possible, mais la plage de la SOURCE reste non certifiée.
+    // Une plage explicitement contradictoire demeure interdite.
+    (typeof evidence.sourceFullRange==="boolean"&&
+      p.fullRange!==evidence.sourceFullRange))
   err("rendu natif opaque non certifiable (espace ou plage couleur non conforme)");
  return {frame,owned:false,proof:Object.freeze({
   method:"native-safari-sdr-bt709-display",
@@ -167,9 +171,11 @@ function renduNatifOpaque(frame,evidence){
   matrixConversion:false,rangeConversion:false,
   frameFullyTagged:true,sourceMismatch:true,
   colorFidelity:"uncertified-against-source",
+  sourceRangeVerified:typeof evidence.sourceFullRange==="boolean",
   warning:"Le fichier annonce BT.601 et le décodeur annonce BT.709. " +
+   (typeof evidence.sourceFullRange==="boolean"?"":"La plage source est non renseignée. ") +
    "Le rendu natif du navigateur est utilisé sans réétiqueter les pixels. " +
-   "Comparer les couleurs de l'export à celles de l'original.",
+   "Comparer les couleurs et la luminosité de l'export à celles de l'original.",
   processing:"VideoFrame natif -> Canvas sRGB -> I420 BT709 limité"
  })};
 }
@@ -263,6 +269,44 @@ async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFra
   }
  }
 }
+// Audit d'une VideoFrame SANS pixels : champs typés en listes blanches,
+// sans horodatages, dimensions précises, nom, octets ni messages WebCodecs.
+function frameEvidence(frame,evidence){
+ const p=frame?.colorSpace||{};
+ const allowedFormat=["I420","NV12","I422","I444","RGBA","RGBX","BGRA",
+  "BGRX","I420P10","I420P12","P010","I420A"];
+ const fmt=frame?.format==null?"opaque":allowedFormat.includes(frame.format)?
+  frame.format:"other";
+ const primary=["bt709","bt470bg","smpte170m","bt2020","smpte432",
+  "iec61966-2-1"].includes(p.primaries)?p.primaries:"unknown";
+ const transfer=["bt709","smpte170m","iec61966-2-1","pq","hlg"].includes(p.transfer)?
+  p.transfer:"unknown";
+ const matrix=["bt709","bt470bg","smpte170m","bt2020-ncl","rgb"].includes(p.matrix)?
+  p.matrix:"unknown";
+ const sourceRange=typeof evidence?.sourceFullRange==="boolean"?
+  evidence.sourceFullRange?"full":"limited":"not-declared";
+ const decodedRange=typeof p.fullRange==="boolean"?
+  p.fullRange?"full":"limited":"not-declared";
+ const expected=["bt709","bt470bg","smpte170m","bt2020-ncl"].includes(
+  evidence?.expectedMatrix)?evidence.expectedMatrix:"unknown";
+ const source601=expected==="bt470bg"||expected==="smpte170m";
+ const safeSdr=VIDEO_PRIMARIES.has(p.primaries)&&VIDEO_XFER.has(p.transfer)&&
+  matrix==="bt709"&&typeof p.fullRange==="boolean";
+ const rangeConflict=sourceRange!=="not-declared"&&
+  decodedRange!=="not-declared"&&sourceRange!==decodedRange;
+ return Object.freeze({schema:"retoucheproai.nova.hd-frame-evidence.v1",
+  format:fmt,primaries:primary,transfer,matrix,
+  sourceMatrix:expected,sourceRange,decodedRange,
+  sourceIs601:source601,decodedSdrFullySpecified:safeSdr,
+  declaredRangeConflict:rangeConflict,
+  hasCodedRect:!!frame?.codedRect,
+  hasCopyTo:typeof frame?.copyTo==="function",
+  hasAllocationSize:typeof frame?.allocationSize==="function",
+  eligibleForUncertifiedSafariDisplay:source601&&safeSdr&&!rangeConflict&&
+   (fmt==="opaque"||["I420","NV12","I422","I444","RGBA",
+    "RGBX","BGRA","BGRX"].includes(fmt))
+ });
+}
 function report(info){
  const c=recognized(info?.color)?info.color:null;
  const fields=x=>x?{primaries:Number.isInteger(x.primaries)?x.primaries:null,
@@ -284,6 +328,6 @@ function report(info){
   explanation:"Informations techniques locales seulement. L'absence de colr ne prouve ni SDR ni HDR. Aucun média transmis."
  });
 }
-return Object.freeze({metadata,verifyFrame,imagePourRendu,report});
+return Object.freeze({metadata,verifyFrame,imagePourRendu,report,frameEvidence});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_HD_COLOR;

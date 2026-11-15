@@ -318,6 +318,80 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   assert.equal(rgbxProbe.streams.find(x=>x.codec_type==="video").width,160);
   assert.equal(rgbxProbe.streams.find(x=>x.codec_type==="audio").codec_name,"aac");
 
+  // Safari iPhone : la source MOV peut annoncer nclc 1/1/6 sans info de
+  // plage. Cette source n'est PAS certifiée fidèle : rendre ce que Safari
+  // annonce afficher avec avertissement, jamais requalifier la source.
+  await page.reload();
+  await page.locator("#novaHdPanel summary").click();
+  const banner=await page.locator("#novaHdFrameAuditBuild").textContent();
+  assert.ok(banner.includes("1/1/6")&&banner.includes("0.34"));
+  await page.evaluate(()=>{
+   const demux=NOVA_DEMUX.analyser;
+   window.NOVA_DEMUX.analyser=async file=>{
+    const i=await demux(file);
+    return file instanceof File&&i?{...i,color:{kind:"nclc",
+     primaries:1,transfer:1,matrix:6,fullRange:null}}:i;
+   };
+   const original=NOVA_HD_COLOR.imagePourRendu;
+   window.NOVA_HD_COLOR={...NOVA_HD_COLOR,imagePourRendu:async(frame,evidence)=>{
+    const surrogate={format:"RGBX",colorSpace:{primaries:"bt709",
+     transfer:"bt709",matrix:"bt709",fullRange:false}};
+    const simulated=await original(surrogate,evidence);
+    // Un autre indice de la source (p.ex. SPS/VUI) peut encore
+    // attester la plage, même si le seul colr MOV est de type nclc.
+    // Dans les DEUX cas, la matrice de la source reste non certifiée.
+    if(simulated.proof.colorFidelity!=="uncertified-against-source")
+     throw Error("Synthetic Safari display route must remain uncertified");
+    return {frame,owned:false,proof:simulated.proof};
+   }};
+  });
+  await page.locator("#file").setInputFiles(matrix601);
+  await page.waitForFunction(()=>!document.querySelector("#novaHdRun").disabled);
+  await page.locator("#novaHdRun").click();
+  await page.waitForFunction(()=>{
+   const msg=document.querySelector("#novaHdStatus")?.textContent||"";
+   return !!document.querySelector("#novaHdSave")?.getAttribute("href")||
+    /Essai HD non abouti/.test(msg);
+  },null,{timeout:100000});
+  const unknownRangeStatus=await page.locator("#novaHdStatus").textContent();
+  assert.match(unknownRangeStatus,/MP4 HD exporté/,unknownRangeStatus);
+  assert.match(unknownRangeStatus,/ATTENTION COULEURS/,unknownRangeStatus);
+  const outDL=page.waitForEvent("download");
+  await page.locator("#novaHdSave").click();
+  const unknownRangeOutput=await (await outDL).path();
+  const probed=JSON.parse((await run("ffprobe",["-v","error","-show_streams",
+   "-of","json",unknownRangeOutput],{timeout:10000})).stdout);
+  assert.equal(probed.streams.find(x=>x.codec_type==="video").nb_frames,"15");
+  assert.equal(probed.streams.find(x=>x.codec_type==="video").color_space,"bt709");
+  assert.equal(probed.streams.find(x=>x.codec_type==="audio").codec_name,"aac");
+
+  // En cas d'échec réel Safari, le JSON doit inclure les faits techniques
+  // de la première VideoFrame, mais jamais le message d'erreur brut.
+  await page.reload();
+  await page.locator("#novaHdPanel summary").click();
+  await page.evaluate(()=>{
+   window.NOVA_HD_COLOR={...window.NOVA_HD_COLOR,imagePourRendu:async()=>{
+    throw Error("PRIVATE_FILENAME_AND_GPS_MUST_NOT_ENTER_REPORT");
+   }};
+  });
+  await page.locator("#file").setInputFiles(matrix601);
+  await page.waitForFunction(()=>!document.querySelector("#novaHdRun").disabled);
+  await page.locator("#novaHdRun").click();
+  await page.waitForFunction(()=>/Essai HD non abouti/.test(
+   document.querySelector("#novaHdStatus")?.textContent||""),null,{timeout:100000});
+  const jsonHref=await page.locator("#novaHdColorJson").getAttribute("href");
+  assert.match(jsonHref||"",/^blob:/);
+  const checked=await page.evaluate(async()=>{
+   const url=document.querySelector("#novaHdColorJson").href;
+   return await (await fetch(url)).json();
+  });
+  assert.equal(checked.firstDecodedFrame.schema,
+   "retoucheproai.nova.hd-frame-evidence.v1");
+  assert.ok(["I420","NV12","I422","I444","RGBA","RGBX","BGRA",
+   "BGRX","opaque","other"].includes(checked.firstDecodedFrame.format));
+  assert.ok(!JSON.stringify(checked).includes("PRIVATE_FILENAME"));
+  assert.equal(await page.locator("#novaHdSave").getAttribute("href"),null);
+
   assert.deepEqual(failures,[]);
   assert.deepEqual(external,[]);
   assert.deepEqual(upload,[]);

@@ -122,7 +122,9 @@ function rgba709(data,w,h,timestamp,duration){
   timestamp,duration,colorSpace:{primaries:"bt709",transfer:"bt709",
    matrix:"bt709",fullRange:false}});
 }
-async function frameToOutput(frame,info,canvas,moteur,arbitre,duration,evidence){
+async function frameToOutput(frame,info,canvas,moteur,arbitre,duration,evidence,inspect){
+ if(inspect&&globalThis.NOVA_HD_COLOR?.frameEvidence)
+  inspect(globalThis.NOVA_HD_COLOR.frameEvidence(frame,evidence));
  const prepared=await globalThis.NOVA_HD_COLOR.imagePourRendu(frame,evidence);
  try{
   const colorProof=prepared.proof;
@@ -210,7 +212,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  const feedThreshold=Math.max(6,bufferMax-2);
  let encoder,decoder,failed=null,sent=0,encoded=0,encodedBytes=0,modified=0,closed=false;
  let peakDecoded=0,receivedFrames=0;
- let confirmedColor=null,colorsNotSourceVerified=0;
+ let confirmedColor=null,colorsNotSourceVerified=0,sourceRangeNotVerified=0;
  const started=clock();
  const check=()=>{if(signal?.aborted)fail("annulé");if(failed)throw failed};
  try{
@@ -262,9 +264,11 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    if(frame){
     decoded.delete(next);
     try{
-     const result=await frameToOutput(frame,info,canvas,moteur,arbitre,durations[next],p.colorEvidence);
+     const result=await frameToOutput(frame,info,canvas,moteur,arbitre,durations[next],
+      p.colorEvidence,next===0?d=>onProgress({stage:"native-first-frame-color",evidence:d}):null);
      confirmedColor=result.colorProof.method;
      if(result.colorProof.sourceMismatch)colorsNotSourceVerified++;
+    if(result.colorProof.sourceRangeVerified===false)sourceRangeNotVerified++;
      modified+=Number(result.modified);
      try{encoder.encode(result.out,{keyFrame:next===0||next%90===0})}
      finally{result.out.close()}
@@ -331,10 +335,12 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    colorFidelity:colorsNotSourceVerified?
     "native-display-only-not-source-certified":"source-matrix-audited",
    colorMismatchFrames:colorsNotSourceVerified,
+   sourceRangeUnverifiedFrames:sourceRangeNotVerified,
    colorWarning:colorsNotSourceVerified?
     "Safari annonce BT.709 pour des trames dont la source dit BT.601. "+
     "Le MP4 reproduit le rendu natif décodé sans certifier l'identité "+
-    "colorimétrique de la source : comparer l'export à l'original.":null,
+    "colorimétrique de la source : comparer l'export à l'original. "+
+    (sourceRangeNotVerified?"Plage source absente : luminosité non certifiée.":""):null,
    elapsedMs:Math.round(clock()-started),
    disclaimer:"Traitement classique doux, pas de reconstruction neuronale, visuel et audio à vérifier sur iPhone"});
  }finally{
