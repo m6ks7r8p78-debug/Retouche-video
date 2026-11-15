@@ -67,8 +67,17 @@ test("NOVA WebKit : photo locale, rendu, export PNG et aucun transfert externe",
   await page.locator("#save").click();
   const file=await dl;
   assert.match(file.suggestedFilename(),/nova_apercu\.png$/);
-  const w=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
-  assert.ok(w<4,"débordement horizontal sur viewport iPhone : "+w);
+  const overflow=await page.evaluate(()=>{
+    const w=document.documentElement.scrollWidth-innerWidth;
+    const offenders=[...document.querySelectorAll("body *")].map(el=>{
+      const r=el.getBoundingClientRect();
+      return {tag:el.tagName,id:el.id,cls:String(el.className||"").slice(0,55),
+        right:Math.round(r.right),left:Math.round(r.left),width:Math.round(r.width),
+        scroll:el.scrollWidth,client:el.clientWidth};
+    }).filter(x=>x.right>innerWidth+3).sort((a,b)=>b.right-a.right).slice(0,12);
+    return {w,viewport:innerWidth,offenders};
+  });
+  assert.ok(overflow.w<4,"débordement horizontal sur viewport iPhone : "+JSON.stringify(overflow));
   assert.deepEqual(errors,[]);
   assert.deepEqual(external,[]);
  });
