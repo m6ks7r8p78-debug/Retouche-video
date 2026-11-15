@@ -187,13 +187,22 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   }
   canvas.width=settings.width;canvas.height=settings.height;
   trans=transformateur(moteur,arbitre);
+  const trace={repetitions:0,sautsDeSource:0,premierPTSUs:null,dernierPTSUs:null};
+  let lastRank=null;
   for(const entry of timeline.entries){
    const i=entry.index;
    if(signal?.aborted)throw new Error("Export annulé");
    if(error)throw error;
    const t=Math.min(media.duration-.001,entry.seekSeconds);
    if(sourcePTS){
-     await sourcePTS.imageA(t,canvas);
+     const source=await sourcePTS.imageA(t,canvas);
+     if(lastRank!==null){
+       if(source.rank===lastRank)trace.repetitions++;
+       if(source.rank>lastRank+1)trace.sautsDeSource+=source.rank-lastRank-1;
+     }
+     lastRank=source.rank;
+     if(trace.premierPTSUs===null)trace.premierPTSUs=source.selectedPTSUs;
+     trace.dernierPTSUs=source.selectedPTSUs;
    }else{
      await seek(media,t,signal);
      const position=NOVA_TIMELINE.validerPosition(media.currentTime,t,media.duration);
@@ -233,7 +242,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   onProgress({stage:"verification",progress:1});
   const validation=await verifierMp4(blob,settings,signal);
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,validation,hasAudio:!!audio,sourceMode,sourceInfo:sourcePTS?.info??null,timeline:{
+  return {blob,plan:settings,validation,hasAudio:!!audio,sourceMode,sourceInfo:sourcePTS?.info??null,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
   },report:sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
