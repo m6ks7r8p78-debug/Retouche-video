@@ -11,7 +11,7 @@ const MAX_CODED_PIXELS=640*360, MAX_SOURCE_FRAMES=90, MAX_SECONDS_US=12000000;
 const MAX_OUTPUT_FPS=15;
 const blockingCodes=new Set(["coded-pixels-over-limit","source-frames-over-limit",
  "duration-over-limit","coded-dimensions-not-even"]);
-const advisoryCodes=new Set(["source-rate-above-output-rate"]);
+const advisoryCodes=new Set(["source-rate-above-output-rate","h264-opfs-required"]);
 const diagnosticCodes=new Set([
  "unresolved","not-hevc-pilot","pilot-limit-exceeded","pixel-aspect-unsupported",
  "color-metadata-unsupported","color-metadata-missing","sps-vui-unverified",
@@ -28,7 +28,8 @@ const codes=new Set(["ready-for-export-attempt","not-video","file-budget",
  "unsupported-video-codec","hevc-profile-or-timeline-incompatible",
  "resource-budget","audio-not-preservable","analysis-unavailable","cancelled",
  "h264-unsafe-metadata","h264-pilot-limit","h264-unsafe-color",
- "h264-timeline-incompatible","h264-decoder-unavailable","h264-encoder-unavailable"]);
+ "h264-timeline-incompatible","h264-decoder-unavailable","h264-encoder-unavailable",
+ "h264-opfs-unavailable"]);
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
 const count=x=>Number.isSafeInteger(x)&&x>=0?x:null;
 const small=x=>finite(x)&&x>=0&&x<=160?Math.round(x*10)/10:null;
@@ -144,6 +145,7 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
      return finish(r,"audio-not-preservable");
     r.audio="aac-copy-verified";
     r.exportProposal=h264.proposal;
+    if(info.durationUs>24000000)r.advisories.push("h264-opfs-required");
    }
    if(r.source.estimatedSourceFps!==null&&
        r.source.estimatedSourceFps>MAX_OUTPUT_FPS+0.2)
@@ -230,12 +232,12 @@ function serialiser(report){
    x=>advisoryCodes.has(x)))].slice(0,2):[],
   pilotLimits:{codedPixelAreaMax:r.codec==="h264"?1920*1080:MAX_CODED_PIXELS,
    sourceFramesMax:r.codec==="h264"?5000:MAX_SOURCE_FRAMES,
-   maxDurationMs:r.codec==="h264"?24000:MAX_SECONDS_US/1000,
+   maxDurationMs:r.codec==="h264"?48000:MAX_SECONDS_US/1000,
    outputFpsMax:MAX_OUTPUT_FPS,
    outputSideMax:640},
   exportProposal:p&&[p.width,p.height,p.fps,p.frames].every(Number.isSafeInteger)&&
     p.width>=2&&p.height>=2&&p.width<=640&&p.height<=640&&p.fps===15&&
-    p.frames>=1&&p.frames<=(r.codec==="h264"?360:180)?
+    p.frames>=1&&p.frames<=(r.codec==="h264"?720:180)?
     {width:p.width,height:p.height,fps:p.fps,frames:p.frames}:null,
   privacy:{mediaUploaded:false,rawMediaInReport:false,filenameInReport:false,
    automaticSharing:false,mediaModified:false},
