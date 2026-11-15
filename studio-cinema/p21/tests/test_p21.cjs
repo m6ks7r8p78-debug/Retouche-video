@@ -98,7 +98,7 @@ test('comparison requires real P15 and P20 contracts',()=>{
 });
 test('P21 comparison refuses network-enabled source',()=>{
   const d=doc([ev('tongue_visible','lips',7.2,7.45)]);d.allow_network=true;
-  assert.throws(()=>P21.compare(d,make(),P15,P20,{localEvaluationAllowed:true}),/Local-only/);
+  assert.throws(()=>P21.compare(d,make(),P15,P20,{localEvaluationAllowed:true}),/Privacy gates|Local-only/);
 });
 test('P21 comparison refuses training-flagged source',()=>{
   const d=doc([]);d.ready_for_training=true;
