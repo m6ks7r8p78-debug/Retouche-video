@@ -1,0 +1,76 @@
+name: NOVA local source audio — verify Safari diagnostic without uploads
+on:
+  push:
+    branches:
+      - chatgpt-nova-local-audio-validation-20261115
+  pull_request:
+    branches:
+      - chatgpt-nova-safari-aac-probe-20261115
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local-audio-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free local MP4 fixture and audio test dependencies
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -version | head -n 1
+          python -m pip install --disable-pip-version-check playwright
+          python -m playwright install --with-deps chromium
+      - name: Verify local file privacy, exact native AAC bridge and inherited NOVA regression
+        run: |
+          node --check experiences/nova-local-audio-check/core.js
+          node --check experiences/nova-local-audio-check/ui.js
+          node --test tests/nova-local-audio-check.test.mjs
+          node --test tests/nova-safari-aac-probe.test.mjs
+          node --test tests/nova-aac-copy.test.mjs tests/nova-aac-native.test.mjs tests/nova-native-hd.test.mjs tests/nova-hd-color.test.mjs tests/nova-real-preflight.test.mjs tests/nova-iphone-preview.test.mjs
+      - name: Test actual file picker with synthetic H264 AAC MP4 in local Chromium
+        run: |
+          python tests/nova-local-audio-browser.py --out artifacts/nova-local-audio
+      - name: Verify isolated HTTPS serving without publishing a user file
+        run: |
+          python - <<'PY'
+          import urllib.request,pathlib,time
+          root=pathlib.Path('experiences/nova-local-audio-check')
+          base='https://raw.githack.com/m6ks7r8p78-debug/Retouche-video/chatgpt-nova-local-audio-validation-20261115/experiences/nova-local-audio-check/'
+          items={'index.html':'text/html','style.css':'text/css','core.js':'javascript','ui.js':'javascript'}
+          for filename,mime in items.items():
+            for i in range(5):
+              try:
+                with urllib.request.urlopen(urllib.request.Request(base+filename,headers={'User-Agent':'NOVA-Local-Audio-CI/1.0'}),timeout=35) as response:
+                  assert response.status==200
+                  actual=response.read()
+                  assert actual==(root/filename).read_bytes(),filename
+                  assert mime in response.headers.get('Content-Type','')
+                  print('HTTPS verified',filename,len(actual),'bytes')
+                break
+              except Exception as exc:
+                if i==4:raise
+                print('retry',filename,str(exc))
+                time.sleep(4)
+          # Existing core is loaded from parent folder by page:
+          url='https://raw.githack.com/m6ks7r8p78-debug/Retouche-video/chatgpt-nova-local-audio-validation-20261115/experiences/nova-aac-native.js'
+          with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'NOVA-Local-Audio-CI/1.0'}),timeout=35) as response:
+            assert response.status==200
+            assert response.read()==pathlib.Path('experiences/nova-aac-native.js').read_bytes()
+          print('ALL FIVE HTTPS dependencies byte-identical; user video never uploaded')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-local-source-audio-browser-synthetic-proof
+          path: artifacts/nova-local-audio/
+          retention-days: 3
+          if-no-files-found: error
