@@ -6,6 +6,8 @@
  */
 var NOVA_SMALLMOTION=(()=>{
 "use strict";
+const reportStatuses=new Set(["cancelled","abstain_engine_unavailable",
+ "abstain_engine_error","abstain_unverified_result","abstain_invalid_regions"]);
 const statuses=new Set([
  "local_motion_candidate","no_supported_local_motion","abstain_texture",
  "abstain_matches","abstain_cut_or_flash"
@@ -85,7 +87,10 @@ function serialiser(report){
   version:report.version,provenance:report.provenance,status:report.status,
   action:report.action,confidence:report.confidence,method:report.method,
   frames:report.frames,frameTimesSeconds:report.frameTimesSeconds,
-  analysisDimensions:report.analysisDimensions,candidates:report.candidates,
+  analysisDimensions:Array.isArray(report.analysisDimensions)?[...report.analysisDimensions]:null,
+  candidates:Array.isArray(report.candidates)?report.candidates.map(c=>({
+   box:Array.isArray(c?.box)?[...c.box]:null,support:c?.support
+  })):null,
   processorMs:report.processorMs,
   privacy:{uploaded:false,stored:false,rawPixelsInReport:false},
   qualification:"Diagnostic géométrique local uniquement, aucune modification automatique."
@@ -95,6 +100,9 @@ function serialiser(report){
 }
 function validReport(x){
  const d=x?.analysisDimensions,t=x?.frameTimesSeconds;
+ if(!statuses.has(x?.status)&&!reportStatuses.has(x?.status))return false;
+ if(x?.method!=="local_2d_block_matching")return false;
+ if(x?.status==="local_motion_candidate"?!x.candidates?.length:x?.candidates?.length!==0)return false;
  if(x?.version!==1||!Array.isArray(d)||d.length!==2||
     !d.every(Number.isSafeInteger)||d[0]<64||d[1]<64||d[0]>320||d[1]>240||
     !Array.isArray(t)||t.length!==2||!t.every(Number.isFinite)||
