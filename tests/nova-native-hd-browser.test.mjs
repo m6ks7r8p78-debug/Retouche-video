@@ -134,20 +134,20 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   },null,{timeout:100000});
   const s=await page.locator("#novaHdStatus").textContent();
   assert.match(s,/MP4 HD exporté/,s);
-  const report=await page.evaluate(async()=>{
+  const qaReport=await page.evaluate(async()=>{
    const a=document.querySelector("#novaHdQualityJson");
    return a?.getAttribute("href")?JSON.parse(await (await fetch(a.href)).text()):null;
   });
   assert.ok(report,"HD export must provide its local quality report");
-  assert.equal(report.version,"0.35");
-  assert.equal(report.video.outputFrames,15);
-  assert.equal(report.video.dimensionsPreserved,true);
-  assert.equal(report.audio.codec,"AAC-LC");
-  assert.ok(report.audio.packets>=25);
-  assert.equal(report.audio.synchronizationPerceptuallyCertified,false);
-  assert.equal(report.color.visuallyIdenticalToSourceCertified,false);
-  assert.equal(report.privacy.mediaIncluded,false);
-  assert.equal(report.privacy.automaticUpload,false);
+  assert.equal(qaReport.version,"0.35");
+  assert.equal(qaReport.video.outputFrames,15);
+  assert.equal(qaReport.video.dimensionsPreserved,true);
+  assert.equal(qaReport.audio.codec,"AAC-LC");
+  assert.ok(qaReport.audio.packets>=25);
+  assert.equal(qaReport.audio.synchronizationPerceptuallyCertified,false);
+  assert.equal(qaReport.color.visuallyIdenticalToSourceCertified,false);
+  assert.equal(qaReport.privacy.mediaIncluded,false);
+  assert.equal(qaReport.privacy.automaticUpload,false);
   const dl=page.waitForEvent("download");
   await page.locator("#novaHdSave").click();
   const fname=await (await dl).path();
