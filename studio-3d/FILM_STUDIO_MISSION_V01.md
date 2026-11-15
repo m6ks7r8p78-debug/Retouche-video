@@ -183,3 +183,24 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - Un premier passage WebKit a détecté des noms d'export de diagnostic/partage restés en v0.7. Les noms GLB et JSON ont été corrigés et **le run cité a validé le correctif**.
 - Il n'y a **ni collision réaliste des doigts**, ni simulation de liquide, ni correspondance des lèvres, ni posture assise biomécanique validée, ni MP4, ni voix, ni photoréalisme. La vitesse de 120 Hz désigne uniquement la fréquence de **mesure de trajectoire**, non une fréquence de rendu vidéo.
 - Aucun test Safari iPhone physique n'a été réalisé, et aucune modification de retoucheproai.com, de main, de NOVA ou des 157 vidéos privées. PR toujours en brouillon et non fusionnée.
+
+
+## Film Studio v0.9 — doigts articulés et alignement du siège (15 novembre 2026)
+
+### Éléments réellement livrés
+- Extension optionnelle de film-contact-v03.mjs : le moteur des anciennes versions reste inchangé lorsqu'aucun décorateur de rig n'est fourni. La nouvelle étape ajoute des os et des surfaces synthétiques avant encodage dans le même GLB.
+- film-fingers-v09.mjs : **cinq doigts procéduraux** sur la main droite (index, majeur, annulaire, auriculaire et pouce), chacun avec pivot proximal, articulation distale et deux volumes maillés. Les doigts se ferment progressivement avant la prise de tasse, restent repliés pendant le transport et se rouvrent avant le dépôt, avec rotation opposée du pouce. C'est une approximation géométrique, pas une force de préhension ni une collision vérifiée.
+- Le plateau de la chaise passe à une hauteur compatible avec le bas du volume du bassin du personnage stylisé lorsqu'il est assis. L'ancien chevauchement de gros volumes est réduit au niveau du point de contact ; aucune posture assise humaine réaliste ou contact des pieds avec le sol n'est certifié.
+- auditFingerAndSeat : contrôle local de cinq bouts de doigts par rapport au centre de la tasse pendant l'intervalle tenu, des variations angulaires maximales des dix articulations, de la fermeture avant la prise et de l'ouverture après le dépôt. Mesure séparée de l'écart entre le bas du volume du bassin et le dessus du siège en station debout et à la fin de l'assise. Il refuse les déformations grossières (doigts trop éloignés, mouvement angulaire brusque, assise non alignée), mais ne résout aucune physique.
+- film-fingers-v09.test.mjs : six tests couvrant les phases d'ouverture/fermeture, le GLB de la main droite, la proximité doigt–objet, l'alignement du siège, l'acteur féminin et masculin synthétiques, le refus de références privées et une injection volontaire de rotation anormale dans un canal glTF.
+- film-ui-v09.mjs, film-studio-v09.html : parcours mobile simple inchangé ; présence des doigts et résultat d'assise indiqués. Le partage natif simulé et l'export local sont toujours facultatifs.
+- film-browser-webkit-v09.test.mjs : contrôle réel de l'interface sous WebKit Linux (WebGL2 et repli Canvas 2D), export et refus. Paquet statique indépendant film-studio-v09-iphone-https-package pour un futur essai sur iPhone physique, non déployé.
+
+### Preuves validées
+- GitHub Actions run **43754031675**, commit ec5b95ca9565dc9c64e478dcdf2328587025a158 : **62/62 tests Node**, test Chromium, test WebKit normal + Canvas 2D de secours et création du paquet HTTPS expérimental. **4 jobs sur 4 réussis**.
+- Un premier test avant correction a signalé une assertion contrôlant la fermeture des doigts trop tôt, avant le commencement programmé du geste. Le moment d'échantillonnage du test a été corrigé ; la suite est devenue verte sans masquer les audits de proximité et de rotation.
+
+### Frontières à ne pas dépasser
+- Le seuil de proximité des bouts de doigts à la tasse n'est **pas** une preuve de contact avec la surface, d'une force suffisante pour tenir l'objet, de collisions absentes ni de simulation des mouvements de chaque phalange humaine.
+- L'assise est seulement un ajustement volumétrique ; pas d'équilibre du tronc, de poids corporel, de position des pieds ou de contraintes articulaires réalistes démontrés.
+- Aucune image photoréaliste, aucun film MP4, aucune voix et aucune reconstruction à partir de vidéos privées dans le pilote. Pas de publication, de fusion ni de déploiement sur retoucheproai.com ; Safari physique iPhone non validé.
