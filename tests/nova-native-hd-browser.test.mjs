@@ -323,8 +323,8 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   // annonce afficher avec avertissement, jamais requalifier la source.
   await page.reload();
   await page.locator("#novaHdPanel summary").click();
-  assert.match(await page.locator("#novaHdFrameAuditBuild").textContent(),
-   /1\\/1\\/6.*0\\.34/);
+  const banner=await page.locator("#novaHdFrameAuditBuild").textContent();
+  assert.ok(banner.includes("1/1/6")&&banner.includes("0.34"));
   await page.evaluate(()=>{
    const demux=NOVA_DEMUX.analyser;
    window.NOVA_DEMUX.analyser=async file=>{
