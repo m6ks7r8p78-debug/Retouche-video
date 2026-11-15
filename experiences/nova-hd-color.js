@@ -46,8 +46,8 @@ function metadata(info){
    err("transfert HDR/PQ/HLG explicitement identifié, conversion SDR non autorisée");
   if(known(x.matrix)&&x.matrix!==1)
    err("matrice couleur incompatible BT.709");
-  if(x.fullRange===true)
-   err("plage entière explicite : conversion SDR limitée non certifiée");
+  // La plage entière n'est pas du HDR. Une fois confirmée par le
+  // décodeur, Canvas sRGB -> I420 limité réalise une conversion de plage.
  }
  // Ne jamais ignorer deux identifications connues et contradictoires.
  if(c&&s)for(const k of ["primaries","transfer","matrix"]){
@@ -58,13 +58,15 @@ function metadata(info){
  if(c&&s&&c.fullRange!==null&&c.fullRange!==undefined&&
     c.fullRange!==s.fullRange)err("plage entre colr et SPS/VUI contradictoire");
  const explicit=x=>!!x&&x.primaries===1&&SDR_XFER.has(x.transfer)&&
-    x.matrix===1&&x.fullRange===false;
+    x.matrix===1&&typeof x.fullRange==="boolean";
  const confirmed=explicit(s)||explicit(c);
  const kind=explicit(s)?"hevc-sps-vui-bt709":
   explicit(c)?"mp4-colr-bt709":"pending-decoded-frame";
  return Object.freeze({kind,confirmed,needsFrameCheck:true,
   colrPresent:!!c,spsVerified:explicit(s),sourceTransfer:
-   s?.transfer===13||c?.transfer===13?"srgb":"bt709-or-unspecified"});
+   s?.transfer===13||c?.transfer===13?"srgb":"bt709-or-unspecified",
+  sourceFullRange:typeof s?.fullRange==="boolean"?s.fullRange:
+   typeof c?.fullRange==="boolean"?c.fullRange:null});
 }
 function verifyFrame(frame,evidence){
  if(!frame||!evidence)err("image native ou preuve couleur absente");
@@ -75,13 +77,23 @@ function verifyFrame(frame,evidence){
   err("trame décodée HDR ou transfert incompatible : "+String(t));
  if(matrix!==null&&matrix!==undefined&&matrix!=="bt709")
   err("trame décodée matrice incompatible : "+String(matrix));
- if(range===true)err("trame décodée en plage entière non certifiée");
- const full=p==="bt709"&&VIDEO_XFER.has(t)&&matrix==="bt709"&&range===false;
+ if(typeof range==="boolean"&&typeof evidence.sourceFullRange==="boolean"&&
+    range!==evidence.sourceFullRange)
+  err("plage déclarée et décodée contradictoires");
+ const full=p==="bt709"&&VIDEO_XFER.has(t)&&matrix==="bt709"&&
+  typeof range==="boolean";
  if(!full&&!evidence.confirmed)
   err("couleur insuffisamment signalée par colr, SPS et VideoFrame");
- return Object.freeze({method:full?"decoded-frame-bt709":evidence.kind,
+ // Si la source est en plage complète, exigence de preuve vidéo : ne pas
+ // prétendre que le décodeur l'a correctement traitée sans indication.
+ if(evidence.sourceFullRange===true&&range!==true)
+  err("plage complète source non vérifiable après décodage");
+ return Object.freeze({method:full?
+    (range?"decoded-frame-sdr-full-to-limited":"decoded-frame-bt709"):
+    evidence.kind,
   spsVerified:evidence.spsVerified,frameFullyTagged:full,
-  sourceTransfer:evidence.sourceTransfer});
+  sourceTransfer:evidence.sourceTransfer,
+  rangeConversion:range===true});
 }
 function report(info){
  const c=recognized(info?.color)?info.color:null;
