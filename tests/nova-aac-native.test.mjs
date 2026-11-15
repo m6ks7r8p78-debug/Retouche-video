@@ -176,7 +176,7 @@ test("WebKit #302253 : rejette les descriptions corrompues et les canaux différ
  const wrongCodec=new Uint8Array(valid);wrongCodec[13]=0x20;
  assert.throws(()=>NATIVE.normalizeDescription(wrongCodec,48000,1),/DecoderConfig/);
  const noLC=new Uint8Array(valid);noLC[31]=0x29;
- assert.throws(()=>NATIVE.normalizeDescription(noLC,48000,1),/non.*AAC-LC/);
+ assert.throws(()=>NATIVE.normalizeDescription(noLC,48000,1),/pas AAC-LC/);
  assert.throws(()=>NATIVE.normalizeDescription(new Uint8Array(300),48000,2),/hors limites/);
 });
 test("WebKit AAC : ne crée plus d'ASC fictive quand l'encodeur ne fournit aucune description",async()=>{
