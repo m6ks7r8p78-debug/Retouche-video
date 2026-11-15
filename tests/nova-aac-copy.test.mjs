@@ -4,7 +4,7 @@ import AAC from "../experiences/nova-aac-copy.js";
 
 const u32=n=>{const b=Buffer.alloc(4);b.writeUInt32BE(n>>>0);return b};
 const box=(type,...parts)=>{const bytes=Buffer.concat(parts),h=Buffer.alloc(8);h.writeUInt32BE(bytes.length+8,0);h.write(type,4);return Buffer.concat([h,bytes])};
-function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=null,sampleGroup=false}={}){
+function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=null,sampleGroup=false,packetCount=3,editDurationMs=null}={}){
  const esds=box("esds",Buffer.alloc(4),Buffer.from([5,2,0x11,0x90]));
  const entry=Buffer.alloc(36);entry.writeUInt32BE(36+esds.length,0);entry.write(sampleType,4);
  entry.writeUInt16BE(2,24);entry.writeUInt32BE(rate*65536>>>0,32);
@@ -13,21 +13,21 @@ function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=
  const handler=Buffer.alloc(16);handler.write(sound?"soun":"vide",8);
  const stbl=box("stbl",
   box("stsd",Buffer.alloc(4),u32(1),sample),
-  box("stts",Buffer.alloc(4),u32(1),u32(3),u32(1024)),
-  box("stsc",Buffer.alloc(4),u32(1),u32(1),u32(3),u32(1)),
-  box("stsz",Buffer.alloc(4),u32(0),u32(3),u32(4),u32(4),u32(4)),
+  box("stts",Buffer.alloc(4),u32(1),u32(packetCount),u32(1024)),
+  box("stsc",Buffer.alloc(4),u32(1),u32(1),u32(packetCount),u32(1)),
+  box("stsz",Buffer.alloc(4),u32(0),u32(packetCount),...Array.from({length:packetCount},()=>u32(4))),
   box("stco",Buffer.alloc(4),u32(1),u32(wrongOffset??8)),
   ...(sampleGroup==="roll"?[
     box("sgpd",Buffer.from([1,0,0,0]),Buffer.from("roll"),u32(2),u32(1),Buffer.from([0xff,0xff])),
-    box("sbgp",Buffer.alloc(4),Buffer.from("roll"),u32(1),u32(3),u32(1))
+    box("sbgp",Buffer.alloc(4),Buffer.from("roll"),u32(1),u32(packetCount),u32(1))
   ]:sampleGroup?[box("sgpd",Buffer.alloc(8))]:[]));
  let edts=Buffer.alloc(0);
  if(edit!=null){
-  const elst=Buffer.alloc(20);elst.writeUInt32BE(1,4);elst.writeUInt32BE(edit>0?43:64,8);
+  const elst=Buffer.alloc(20);elst.writeUInt32BE(1,4);elst.writeUInt32BE(editDurationMs??(edit>0?43:64),8);
   elst.writeInt32BE(edit,12);elst.writeInt32BE(65536,16);
   edts=box("edts",box("elst",elst));
  }
- const mdat=box("mdat",Buffer.from([1,2,3,4,5,6,7,8,9,10,11,12]));
+ const mdat=box("mdat",Buffer.from(Array.from({length:packetCount*4},(_,i)=>i+1)));
  const mvhd=Buffer.alloc(24);mvhd.writeUInt32BE(1000,12);
  const moov=box("moov",box("mvhd",mvhd),box("trak",edts,
   box("mdia",box("mdhd",mdhd),box("hdlr",handler),box("minf",stbl))));
@@ -100,4 +100,24 @@ test("NOVA AAC copy : refuse montage AAC qui introduit un délai de démarrage a
    AAC.planifier(fixture({edit:1024,sampleGroup:false}),{durationSeconds:.042}),
    /groupes roll|priming AAC/
  );
+});
+
+test("NOVA AAC copy : priming Apple 2112 samples représenté seulement si tous les paquets existent",async()=>{
+ const enough=fixture({edit:2112,editDurationMs:44,packetCount:5,sampleGroup:"roll"});
+ const p=await AAC.planifier(enough,{durationSeconds:.044});
+ assert.equal(p.editMediaTime,2112);
+ assert.equal(p.rollDistance,-1);
+ assert.equal(p.editStartUs,44000);
+ assert.equal(p.packets.length,5);
+ assert.equal(p.outputEditSeconds,.044);
+ const sampled=[];
+ await AAC.copier(enough,p,{addAudioChunkRaw:(bytes,_type,pts)=>sampled.push({size:bytes.length,pts})});
+ assert.equal(sampled.length,5);
+ assert.equal(sampled[0].pts,0);
+ const short=fixture({edit:2112,editDurationMs:43,packetCount:3,sampleGroup:"roll"});
+ await assert.rejects(AAC.planifier(short,{durationSeconds:.02}),/sortant de la durée/);
+});
+test("NOVA AAC copy : refuse un montage edit-list présentant une région audio tronquée",async()=>{
+ const file=fixture({edit:1024,editDurationMs:15,packetCount:3,sampleGroup:"roll"});
+ await assert.rejects(AAC.planifier(file,{durationSeconds:.10}),/insuffisante/);
 });
