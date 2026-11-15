@@ -169,6 +169,11 @@ test("NOVA : MP4 court exporté avec son préservé ou refus, puis MP4 sans son 
     assert.ok(v.width<=640&&v.height<=640,"limite pilote respectée");
     assert.ok(+v.duration>1&&+v.duration<1.5,"durée vidéo plausible");
     assert.ok(+v.nb_frames>=16&&+v.nb_frames<=20,"quantité de trames attendue");
+    const md5=await runBinary("ffmpeg",["-hide_banner","-loglevel","error","-i",
+      await result.path(),"-an","-f","framemd5","-"]);
+    const hashes=md5.stdout.split("\n").filter(s=>/^\d+,/.test(s.trim())).map(s=>s.split(",").at(-1).trim());
+    assert.ok(hashes.length>=16,"le fichier comporte de vraies images décodables");
+    assert.ok(new Set(hashes).size>=8,"le film exporté n'est pas une image figée");
     if(a){
       assert.equal(a.codec_name,"aac");
       assert.ok(Math.abs(+v.duration-(+a.duration))<.25,"écart audio/vidéo trop élevé");
