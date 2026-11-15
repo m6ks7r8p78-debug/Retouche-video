@@ -1,0 +1,114 @@
+name: NOVA — final MP4 A/V locally gated, never auto-upload
+on:
+  push:
+    branches:
+      - chatgpt-nova-final-av-local-gate-20261115
+  pull_request:
+    branches:
+      - chatgpt-nova-webkit-aac-stage-20261115
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-synthetic-mp4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install open-source FFmpeg and local Chromium test engine
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep -E 'libx264|aac'
+          python -m pip install --disable-pip-version-check playwright
+          python -m playwright install --with-deps chromium
+      - name: Verify all new JavaScript source and inherited audio gates
+        run: |
+          node --check experiences/nova-final-av-lab/core.js
+          node --check experiences/nova-final-av-lab/ui.js
+          node --test tests/nova-final-av-lab.test.mjs
+          node --test tests/nova-aac-stage-webkit.test.mjs tests/nova-local-audio-check.test.mjs
+          node --test tests/nova-safari-aac-probe.test.mjs
+          node --test tests/nova-aac-copy.test.mjs tests/nova-aac-native.test.mjs tests/nova-native-hd.test.mjs tests/nova-hd-color.test.mjs tests/nova-real-preflight.test.mjs tests/nova-iphone-preview.test.mjs
+      - name: Real native NOVA MP4 mux H264/AAC, playable preview, audibility of synthetic tone, manual save gate
+        run: |
+          python tests/nova-final-av-browser.py --out artifacts/nova-final-av
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('artifacts/nova-final-av/nova-final-av-linux-report.json').read_text())
+          assert r['status']=='real_synthetic_mp4_h264_aac_muxed_and_pcm_decoded_on_linux'
+          assert len(r['tests'])==2
+          assert r['negative_test']['download_refused']
+          assert r['original_unchanged'] and r['no_user_media_in_repo_or_artifact']
+          assert r['actual_physical_safari_iphone_tested'] is False
+          for case in r['tests']:
+            assert case['native_nova_hd_real_browser_export']
+            assert case['user_gated_download'] and case['no_network_upload']
+            a=case['ffmpeg']
+            assert a['video_codec']=='h264' and a['audio_codec']=='aac'
+            assert a['audio_channels']==1 and a['frames']==15
+            assert a['non_silent_pcm_test'] and not a['sync_perceptually_verified']
+          print('PASS: two actual synthetic local H264+AAC MP4s, non-silent PCM, no upload, gating before save')
+          PY
+      - name: Verify HTTPS experimental page and dependencies exact bytes (no user files)
+        run: |
+          python - <<'PY'
+          import time,urllib.request
+          from pathlib import Path
+          repo="https://raw.githack.com/m6ks7r8p78-debug/Retouche-video/chatgpt-nova-final-av-local-gate-20261115/"
+          files=[
+           "experiences/nova-final-av-lab/index.html",
+           "experiences/nova-final-av-lab/style.css",
+           "experiences/nova-final-av-lab/core.js",
+           "experiences/nova-final-av-lab/ui.js",
+           "mp4-muxer.js",
+           "experiences/nova-decision.js",
+           "experiences/nova-zones.js",
+           "experiences/nova-demux.js",
+           "experiences/nova-hevc-annexb.js",
+           "experiences/nova-hevc-vui.js",
+           "experiences/nova-color709.js",
+           "experiences/nova-guard.js",
+           "experiences/nova-aac-copy.js",
+           "experiences/nova-aac-native.js",
+           "experiences/nova-hd-color.js",
+           "experiences/nova-native-hd.js",
+          ]
+          for path in files:
+            for attempt in range(4):
+              try:
+                req=urllib.request.Request(repo+path,
+                  headers={"User-Agent":"NOVA-final-audiovisual-local-lab-CI/1.0"})
+                with urllib.request.urlopen(req,timeout=40) as reply:
+                  assert reply.status==200
+                  mime=reply.headers.get("Content-Type","")
+                  kind="text/html" if path.endswith(".html") else (
+                    "text/css" if path.endswith(".css") else "javascript")
+                  assert kind in mime,(path,mime)
+                  content=reply.read()
+                  assert content==Path(path).read_bytes(),path+" content mismatch"
+                  print("HTTPS",path,len(content),"identical",mime)
+                break
+              except Exception as e:
+                print("RETRY",attempt+1,path,str(e))
+                if attempt==3:raise
+                time.sleep(4)
+          print("ALL 16 HTTPS page/dependencies matched the vetted GitHub branch exactly")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nova-final-av-gated-actual-synthetic-mp4-browser-proof
+          path: |
+            artifacts/nova-final-av/nova-final-av-linux-report.json
+            artifacts/nova-final-av/*.png
+          retention-days: 3
+          if-no-files-found: error
