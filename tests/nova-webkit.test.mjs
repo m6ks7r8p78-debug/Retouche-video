@@ -195,8 +195,19 @@ test("NOVA WebKit : vrai export H.264/AAC quand les deux codecs sont opérationn
      const streams=JSON.parse(ff.stdout).streams||[];
      assert.ok(streams.some(x=>x.codec_type==="video"&&x.codec_name==="h264"));
      assert.ok(streams.some(x=>x.codec_type==="audio"&&x.codec_name==="aac"));
+     const hash=async f=>{
+       const {stdout}=await run("ffprobe",["-v","error","-select_streams","a:0",
+        "-show_packets","-show_entries","packet=data_hash","-show_data_hash","sha256",
+        "-of","json",f],{maxBuffer:4*1024*1024});
+       return (JSON.parse(stdout).packets||[]).map(x=>x.data_hash);
+     };
+     const [sourceHashes,resultHashes]=await Promise.all([hash(source),hash(out)]);
+     assert.ok(resultHashes.length>=40,"la piste AAC doit contenir de vrais paquets");
+     assert.deepEqual(resultHashes,sourceHashes.slice(0,resultHashes.length),
+       "copie AAC dans WebKit strictement identique à la source");
      t.diagnostic("WebKit vrai export audiovisuel MP4 H.264/AAC : "+JSON.stringify({
-       ...cap,codecImportProbeComplete:canAttempt,streams
+       ...cap,codecImportProbeComplete:canAttempt,streams,
+       identicalAACPackets:resultHashes.length
      }));
     }else{
      assert.equal(canAttempt,false,
