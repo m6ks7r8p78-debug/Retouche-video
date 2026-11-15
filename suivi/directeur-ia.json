@@ -43,16 +43,17 @@
     "RNE11: recherche Reddit/OpenCV, capteur indépendant Lucas-Kanade vs Farneback, 23 tests synthétiques locaux PASS, 41 paires historiques de calibration. 1px de décalage synthétique détecté après réglage du seuil sur le même lot (résultats post-hoc, non indépendants). Non déployé.",
     "RNE12: troisième observateur par corrélation de phase; 144 cas nouveaux synthétiques, acceptations erronées 24/74→0/74 ; limite multi-plans 12/12→5/12 ; 26 tests PASS. Validation hors distribution et iPhone manquantes; non promu.",
     "RNE13: contrôle local 16 régions sur 54 scènes multicouches et 288 scènes synthétiques d'artefacts. 26/26 tests locaux; 22/39 régions à faux mouvement encore acceptées; coût ~101ms/720p CPU hors réseau/flux. NON promu; aucun média utilisé.",
-    "RNE14: descripteur Census en surcontrôle photo RNE13, 22 tests synthetiques; 288 scènes secondaires éclairage: 95/459 zones justes retrouvées mais 2/309 mauvaises nouvellement acceptées; autre générateur 120 scènes, +36 sous ombre, +7 gamma, aucun gain JPEG+lumière/flou. NON promu."
+    "RNE14: descripteur Census en surcontrôle photo RNE13, 22 tests synthetiques; 288 scènes secondaires éclairage: 95/459 zones justes retrouvées mais 2/309 mauvaises nouvellement acceptées; autre générateur 120 scènes, +36 sous ombre, +7 gamma, aucun gain JPEG+lumière/flou. NON promu.",
+    "RNE15: 50 tests synthétiques locaux, 450 scènes appariées. Nouveau garde-fou n'empêche aucun défaut supplémentaire par rapport à RNE14 et refuse 1249 zones correctes en plus. Rejet; nouveau filtre de preuve appariée ajouté."
   ],
   "prochaines_etapes": [
-    "RNE14 reste seulement un audit de recherche; ne jamais augmenter automatiquement le poids neuronal sur la seule foi d'une similarité Census.",
-    "Conserver comme contre-exemples les 2 fausses acceptations de mouvement sous éclairage et les échecs sous JPEG+lumière, blur, textures périodiques.",
-    "Concevoir une vérification d'ambiguïté réellement multiscale/multipériode sans ajuster directement les seuils au banc déjà observé.",
-    "Créer un contrôle de vérité sur mouvements articulés, occultations, textures répétitives hors distribution et vidéos inédites après gel des paramètres.",
-    "Conserver les 157 anciennes vidéos et les 41 récentes inchangées et hors du présent pipeline; aucun entraînement sur les 41 récentes.",
-    "Évaluer coût réel CPU/GPU mémoire et qualité sur Safari iPhone avant toute activation, et maintenir RNE04 comme référence expérimentale et bicubique comme fallback.",
-    "Vérifier GitHub Actions distant du HEAD; PR #1 reste DRAFT et main intacte."
+    "Ne pas intégrer RNE15: zéro défaut supplémentaire évité et trop de bonnes régions refusées.",
+    "Réutiliser evidence_gate.py pour toute proposition: mesurer une nouvelle amélioration réelle et éviter de rejeter >5% de bonnes zones, avant contrôle humain indépendant.",
+    "Créer un benchmark de vérité géométrique avec articulations, occultations, objets tenus, mélanges de profondeur, mouvements non rigides et données hors-famille.",
+    "Conserver les 41 vidéos récentes réservées et hors calibration/entraînement; ne pas adapter les règles à leur contenu.",
+    "Séparer restauration de pixels visibles et reconstruction hypothétique de pixels occultés, notamment sur visages et mains.",
+    "Tester mémoire, rendu et export sur iPhone Safari réel avant toute activation, RNE04 et bicubique inchangés.",
+    "Vérifier GitHub Actions de la dernière PR, aucun merge ni déploiement."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -63,14 +64,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-15",
     "objets": [
-      "outils/rne/rne14/illumination_census.py",
-      "tests/test_rne14_illumination_census.py",
-      "RETOUCHE_NEURAL_ENGINE_14.md",
+      "RETOUCHE_NEURAL_ENGINE_15.md",
+      "outils/rne/rne15/evidence_gate.py",
+      "tests/test_rne15_evidence_gate.py",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "22 tests synthétiques passés; développement 144, contrôle 288 graines secondaires, 120 scènes autre générateur et benchmark CPU",
+    "preuve_locale": "50 tests synthétiques, 450 scènes appariées, aucune donnée personnelle; rejet sans promotion",
     "statut_ci": "a_verifier",
-    "observations": "Aucun média ou poids personnels; RNE14 non promu."
+    "observations": "source du capteur rejeté et générateurs dans zip privé; rapport + garde-fou selection + tests sur github"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1568,5 +1569,91 @@
     ],
     "private_lab_archive": "RetoucheProAI_RNE14_Census_Lumiere_Recherche.zip",
     "conclusion": "Partial lighting recovery but 2 added false supports on synthetic same-generator secondary check. Do not promote; repeated texture detector fixed at 14px is not general."
+  },
+  "jalon_neural_engine_15": {
+    "date": "2026-11-15",
+    "status": "new NCC multiple-match diagnostic built; additional RNE14 veto REJECTED by paired evidence",
+    "motivation": "Periodic textures create many plausible matches; compare to existing guard before promoting another",
+    "research_basis": [
+      "OpenCV template matching TM_CCOEFF_NORMED",
+      "Alfarano et al CVIU 2024 optical flow survey"
+    ],
+    "local_work": {
+      "diagnostic": "ambiguity_guard.py (16 regions, NCC 2 peaks, dense-flow discrepancy)",
+      "generator": "procedural_bench.py (textures/stripes/checker/dots/two-layer articulated surrogate, exact shifts)",
+      "comparator": "evaluate_pair.py uses same scenes and synthetic ground truth for old/new",
+      "gate": "evidence_gate.py: new prevented errors and >=95% retained correct regions",
+      "frozen_thresholds_before_heldout": true,
+      "neural_weights_trained": false,
+      "synthetic_tests_passed": 50
+    },
+    "detector_heldout": {
+      "four_pixel": {
+        "scenes": 200,
+        "regions": 3200,
+        "bad": 858,
+        "bad_accepted": 0,
+        "good": 2342,
+        "good_accepted": 1244
+      },
+      "one_pixel": {
+        "scenes": 100,
+        "regions": 1600,
+        "bad": 508,
+        "bad_accepted": 264,
+        "good": 1092,
+        "good_accepted": 569
+      },
+      "caveat": "standalone 1px failure, synthetic only; cannot infer real-video safety"
+    },
+    "paired_against_rne14": {
+      "four_pixel": {
+        "scenes": 250,
+        "bad": 1150,
+        "bad_accepted_old": 0,
+        "bad_accepted_new": 0,
+        "good_accepted_old": 2041,
+        "good_accepted_new": 1342
+      },
+      "one_pixel": {
+        "scenes": 200,
+        "bad": 973,
+        "bad_accepted_old": 0,
+        "bad_accepted_new": 0,
+        "good_accepted_old": 1597,
+        "good_accepted_new": 1047
+      },
+      "combined": {
+        "scenes": 450,
+        "bad": 2123,
+        "additional_bad_prevented": 0,
+        "good_accepted_old": 3638,
+        "good_accepted_new": 2389,
+        "additional_good_refusals": 1249,
+        "retention_fraction": 0.656679
+      },
+      "decision": "REJECT; redundant on these synthetic perturbations, 34.33% of formerly accepted correct regions lost"
+    },
+    "cpu_local_ms": {
+      "NCC_audit_only": true,
+      "dimensions_192": 3.35,
+      "dimensions_640x360": 5.424,
+      "dimensions_1280x720": 11.938,
+      "iphone_safari_tested": false
+    },
+    "github_public": [
+      "RETOUCHE_NEURAL_ENGINE_15.md",
+      "outils/rne/rne15/evidence_gate.py",
+      "tests/test_rne15_evidence_gate.py",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE15_Banc_Ambiguites_Privé.zip",
+    "archive_files": 15,
+    "media_published": false,
+    "old_157_used": false,
+    "recent_41_used": false,
+    "neural_weights_updated": false,
+    "website_deployed": false,
+    "main_merged": false
   }
 }
