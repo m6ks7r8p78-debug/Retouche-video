@@ -28,7 +28,7 @@ function validateFile(f){
 function stageOf(e,phase){
  const message=String(e?.message||"");
  if(/annul[ée]/i.test(message))return "cancelled";
- if(/AAC|piste audio|son|AudioEncoder|AudioData|Web Audio/i.test(message))
+ if(/AAC|piste audio|\bson\b|AudioEncoder|AudioData|Web Audio/i.test(message))
   return "aac_track_not_verified";
  if(/color|couleur|HDR|P3|plage|matrice|BT.?709|colr|SPS|VUI|gamut/i.test(message))
   return "source_color_not_eligible";
