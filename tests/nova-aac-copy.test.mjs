@@ -4,7 +4,7 @@ import AAC from "../experiences/nova-aac-copy.js";
 
 const u32=n=>{const b=Buffer.alloc(4);b.writeUInt32BE(n>>>0);return b};
 const box=(type,...parts)=>{const bytes=Buffer.concat(parts),h=Buffer.alloc(8);h.writeUInt32BE(bytes.length+8,0);h.write(type,4);return Buffer.concat([h,bytes])};
-function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=null,sampleGroup=false,packetCount=3,editDurationMs=null}={}){
+function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=null,sampleGroup=false,packetCount=3,editDurationMs=null,leadingEmptyMs=0}={}){
  const esds=box("esds",Buffer.alloc(4),Buffer.from([5,2,0x11,0x90]));
  const entry=Buffer.alloc(36);entry.writeUInt32BE(36+esds.length,0);entry.write(sampleType,4);
  entry.writeUInt16BE(2,24);entry.writeUInt32BE(rate*65536>>>0,32);
@@ -22,9 +22,16 @@ function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=
     box("sbgp",Buffer.alloc(4),Buffer.from("roll"),u32(1),u32(packetCount),u32(1))
   ]:sampleGroup?[box("sgpd",Buffer.alloc(8))]:[]));
  let edts=Buffer.alloc(0);
- if(edit!=null){
-  const elst=Buffer.alloc(20);elst.writeUInt32BE(1,4);elst.writeUInt32BE(editDurationMs??(edit>0?43:64),8);
-  elst.writeInt32BE(edit,12);elst.writeInt32BE(65536,16);
+ if(edit!=null||leadingEmptyMs>0){
+  const size=leadingEmptyMs>0?32:20;
+  const elst=Buffer.alloc(size);elst.writeUInt32BE(leadingEmptyMs>0?2:1,4);
+  const at=leadingEmptyMs>0?20:8;
+  if(leadingEmptyMs>0){
+   elst.writeUInt32BE(leadingEmptyMs,8);elst.writeInt32BE(-1,12);
+   elst.writeInt32BE(65536,16);
+  }
+  elst.writeUInt32BE(editDurationMs??(edit>0?43:64),at);
+  elst.writeInt32BE(edit??0,at+4);elst.writeInt32BE(65536,at+8);
   edts=box("edts",box("elst",elst));
  }
  const mdat=box("mdat",Buffer.from(Array.from({length:packetCount*4},(_,i)=>i+1)));
@@ -128,4 +135,23 @@ test("NOVA AAC copy : ne prolonge pas le segment audible au-delà de l'elst orig
  assert.equal(plan.editStartUs,21333);
  assert.equal(plan.editDurationSeconds,.02);
  assert.equal(plan.outputEditSeconds,.02,"ne pas révéler les échantillons hors segment audio");
+});
+
+test("NOVA AAC copy : leading silence elst de 250 ms conservé sans ajouter de son",async()=>{
+ const f=fixture({edit:1024,sampleGroup:"roll",packetCount:5,editDurationMs:84,leadingEmptyMs:250});
+ const plan=await AAC.planifier(f,{durationSeconds:.334});
+ assert.equal(plan.leadingEmptyTicks,250);
+ assert.equal(plan.leadingEmptySeconds,.25);
+ assert.equal(plan.outputEditGapSeconds,.25);
+ assert.equal(plan.editMediaTime,1024);
+ assert.equal(plan.editStartUs,21333);
+ assert.equal(plan.outputEditSeconds,.084);
+ assert.equal(plan.packets.length,5);
+});
+test("NOVA AAC copy : refuse vide seul, espace de 501 ms, 3 éditions",async()=>{
+ await assert.rejects(AAC.planifier(
+  fixture({edit:1024,packetCount:5,sampleGroup:"roll",leadingEmptyMs:501,editDurationMs:84}),
+  {durationSeconds:.58}),/500 ms/);
+ const f=fixture({edit:1024,packetCount:5,sampleGroup:"roll",leadingEmptyMs:250,editDurationMs:84});
+ await assert.rejects(AAC.planifier(f,{durationSeconds:.50}),/insuffisante/);
 });
