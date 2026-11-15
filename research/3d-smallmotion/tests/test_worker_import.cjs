@@ -32,7 +32,7 @@ async function test(){
   thread.on('error',reject);
   thread.postMessage({op:'analyze',id:1,a,b},[a.data.buffer,b.data.buffer]);
  });
- assert.equal(result.ok,true);assert.equal(result.id,1);
+ assert.equal(result.ok,true);assert.equal(result.id,1);assert.equal(result.build,'smallmotion-pwa-bundle-v1');
  assert.equal(JSON.stringify(result.result),JSON.stringify(expected));
  assert.equal(a.data.length,0,'transferred buffer detached from caller');
  assert.ok(result.computeMs>=0);
