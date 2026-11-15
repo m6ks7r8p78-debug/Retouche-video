@@ -9,6 +9,9 @@ const MAX_BYTES=60*1048576;
 // Bornes de NOVA_HEVC_RENDER.metadata : restituées sans les relever.
 const MAX_CODED_PIXELS=640*360, MAX_SOURCE_FRAMES=90, MAX_SECONDS_US=12000000;
 const MAX_OUTPUT_FPS=15;
+const nativeReasons=new Set(["not-evaluated","module-missing","source-contract-unverified",
+ "decoder-unavailable","encoder-unavailable","aac-analysis-unavailable",
+ "aac-copy-unavailable","native-ready"]);
 const blockingCodes=new Set(["coded-pixels-over-limit","source-frames-over-limit",
  "duration-over-limit","coded-dimensions-not-even"]);
 const advisoryCodes=new Set(["source-rate-above-output-rate"]);
@@ -44,7 +47,8 @@ function source(file){return {
 function state(file){
  return {schema:"retoucheproai.nova.real-preflight.v1",version:1,
   status:"analysis-unavailable",readyForExportAttempt:false,
-  source:source(file),audio:"not-tested",estimatedMiB:null,
+  source:source(file),audio:"not-tested",nativeReason:"not-evaluated",
+  estimatedMiB:null,
   exportProposal:null,blockers:[],advisories:[],
   privacy:{mediaUploaded:false,rawMediaInReport:false,filenameInReport:false,
    automaticSharing:false,mediaModified:false},
@@ -111,28 +115,38 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
   // n'ont pas dépassé les anciennes limites HEVC WebAssembly.
   // Ne jamais déclarer une sortie possible avant vérification codec et AAC.
   const hd=globalThis.NOVA_NATIVE_HD;
+  if(r.source.codec==="h264"&&!hd)r.nativeReason="module-missing";
   if(hd&&(r.source.codec==="h264"||r.blockers.some(
    x=>x==="coded-pixels-over-limit"||x==="source-frames-over-limit"))){
+   // Seuls des codes de phase génériques peuvent sortir du navigateur.
+   // Ni message d'exception natif, ni nom de média, ni données de piste.
+   let phase="source-contract-unverified";
    try{
     const p=hd.analyse(info,file.size);
     if(stopped())return finish(r,"cancelled");
+    phase="decoder-unavailable";
     await hd.configDecoder(info);
+    phase="encoder-unavailable";
     await hd.configEncoder(p);
     if(stopped())return finish(r,"cancelled");
+    phase="aac-analysis-unavailable";
     const aud=audioPlan||globalThis.NOVA_AAC_COPY?.planifier;
     if(typeof aud!=="function")throw new Error("AAC-planifier unavailable");
     const a=await aud(file,{durationSeconds:p.durationSeconds,signal});
     if(stopped())return finish(r,"cancelled");
     if(a?.mode==="aac-copy"&&a.packets?.length>0){
+     r.nativeReason="native-ready";
      r.audio="aac-copy-verified";
      r.blockers=[];r.advisories=[];
      r.exportProposal={width:p.width,height:p.height,
       fps:Math.round(p.sourceFps),frames:p.sourceFrames};
      return finish(r,"ready-for-native-hd-attempt");
     }
+    r.nativeReason="aac-copy-unavailable";
     if(r.source.codec==="h264")return finish(r,"audio-not-preservable");
    }catch{
     if(stopped())return finish(r,"cancelled");
+    r.nativeReason=phase;
     // Aucune promotion HD si les codecs/couleurs/AAC ne sont pas validés.
    }
   }
@@ -201,6 +215,7 @@ function serialiser(report){
    estimatedSourceFps:finite(r.estimatedSourceFps)&&r.estimatedSourceFps>0&&
     r.estimatedSourceFps<1000?Math.round(r.estimatedSourceFps*10)/10:null},
   audio:report.audio==="aac-copy-verified"?"aac-copy-verified":"not-tested",
+  nativeReason:nativeReasons.has(report.nativeReason)?report.nativeReason:"not-evaluated",
   estimatedMiB:small(report.estimatedMiB),
   blockers:Array.isArray(report.blockers)?[...new Set(report.blockers.filter(
    x=>blockingCodes.has(x)))].slice(0,4):[],
