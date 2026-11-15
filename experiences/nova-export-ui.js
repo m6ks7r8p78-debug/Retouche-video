@@ -6,15 +6,21 @@
 const $=id=>document.getElementById(id);
 const panel=$("pilotVideo"),start=$("exportVideo"),silent=$("allowSilent"),
   download=$("downloadVideo"),status=$("exportStatus"),fileInput=$("file"),drop=$("drop"),approx=$("allowApproximate"),
-  hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText");
+  hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText"),
+  colorReport=$("novaHdFrameReport");
 if(!panel||!start||!silent||!download||!status||!fileInput)return;
-let file=null,controller=null,blobUrl=null,generation=0;
+let file=null,controller=null,blobUrl=null,generation=0,colorReportUrl=null;
+function clearColorReport(){
+ if(colorReportUrl){URL.revokeObjectURL(colorReportUrl);colorReportUrl=null}
+ if(colorReport){colorReport.hidden=true;colorReport.removeAttribute("href")}
+}
 function msg(s){status.textContent=s}
 function clear(){
  generation++;
  if(controller){controller.abort();controller=null}
  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null}
  download.hidden=true;download.removeAttribute("href");
+ clearColorReport();globalThis.NOVA_HD_COLOR?.resetDiagnostic?.();
  if(hevcPanel)hevcPanel.hidden=true;
  if(hevcText)hevcText.textContent="";
  start.disabled=true;start.textContent="Exporter un MP4 restauré";panel.hidden=true;silent.checked=false;if(approx)approx.checked=false;
@@ -40,6 +46,7 @@ start.addEventListener("click",async()=>{
  if(!file)return;
  const ctl=new AbortController(),thisGen=generation;
  controller=ctl;start.textContent="Annuler l'export";
+ clearColorReport();globalThis.NOVA_HD_COLOR?.resetDiagnostic?.();
  download.hidden=true;
  msg("Vérification des codecs et du son…");
  try{
@@ -138,7 +145,22 @@ start.addEventListener("click",async()=>{
     ", "+(result.sourceMode==="hevc-wasm"?"HEVC WASM local à PTS source":result.sourceMode==="pts"?"PTS natifs":"recherche approximative") +
     ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Métadonnées contrôlées : "+result.validation.width+" × "+result.validation.height+", "+result.validation.duration.toFixed(2)+" s."+ (result.trace?" Cadence : "+result.trace.repetitions+" répétitions et "+result.trace.sautsDeSource+" images source sautées lors de la conversion.":"")+" Vérifiez l’image et le son.");
  }catch(err){
-  if(generation===thisGen)msg(ctl.signal.aborted?"Export annulé. Aucun fichier créé.":"Export refusé : "+(err?.message||"erreur inconnue"));
+  if(generation===thisGen){
+   const diag=!ctl.signal.aborted?globalThis.NOVA_HD_COLOR?.diagnostic?.():null;
+   if(diag&&colorReport){
+    // Rapport techniques/énums uniquement. Aucune image, aucun son, nom,
+    // coordonnées, identifiant ou échantillon source.
+    colorReportUrl=URL.createObjectURL(new Blob([
+     JSON.stringify(diag,null,2)+"\n"
+    ],{type:"application/json"}));
+    colorReport.href=colorReportUrl;
+    colorReport.download="NOVA_034_diagnostic_trame_Safari.json";
+    colorReport.hidden=false;
+   }
+   msg(ctl.signal.aborted?"Export annulé. Aucun fichier créé.":
+    "Export refusé : "+(err?.message||"erreur inconnue")+
+     (diag?" Télécharge le diagnostic couleur Safari ci-dessus pour identifier la condition exacte.":""));
+  }
  }finally{
   if(controller===ctl){
    controller=null;start.disabled=false;start.textContent="Exporter un MP4 restauré";
