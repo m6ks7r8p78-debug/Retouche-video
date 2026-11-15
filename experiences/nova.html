@@ -136,7 +136,7 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <section class="card"><small>02 / Le contrôle</small><h2>Preuves, pas promesses.</h2><div id="metrics"><div class="metric"><span>Source</span><strong>—</strong></div><div class="metric"><span>Décision</span><strong>En attente</strong></div></div>
 <button class="secondary" id="save" disabled>Exporter l'aperçu PNG</button>
 <p id="novaHdBuild" style="font-size:.8rem;color:#526b5c;margin:12px 0 4px">
-Moteur NOVA HD 0.34 — Diagnostic des couleurs Safari et rendu SDR prudent.
+Moteur NOVA HD 0.35 — Bilan qualité réel du MP4, avec protection des médias.
 Le bouton d'export apparaît après l'import d'une vidéo.</p>
 <section class="pilot" id="pilotVideo" hidden>
 <strong>Export MP4 local — NOVA adaptatif (expérimental)</strong>
@@ -148,6 +148,7 @@ Le bouton d'export apparaît après l'import d'une vidéo.</p>
 </details>
 <label><input type="checkbox" id="allowSilent"> J'accepte explicitement un export <b>sans son</b> si je le choisis. Sinon, l'export est interrompu lorsque l'audio ne peut pas être conservé.</label>
 <a id="downloadVideo" hidden>Enregistrer le fichier MP4</a>
+<a id="novaHdQualityReport" hidden download="NOVA_035_bilan_qualite_local.json">Enregistrer le bilan qualité du MP4 (JSON local)</a>
 <a id="novaHdFrameReport" hidden download="NOVA_034_diagnostic_trame_Safari.json">Enregistrer le diagnostic couleur Safari (JSON, sans vidéo)</a>
 <div id="exportStatus" role="status" aria-live="polite">Aucun export lancé.</div>
 <details class="sourceAdvanced" id="hevcDiagnosticsPanel" hidden>
@@ -429,6 +430,7 @@ async function sampleVideo(){
 <script src="nova-smallmotion-bridge.js"></script>
 <script src="nova-smallmotion-ui.js"></script>
 <script src="nova-hd-color.js"></script>
+<script src="nova-hd-qa.js"></script>
 <script src="nova-native-hd.js"></script>
 <script src="nova-native-hd-ui.js"></script>
 <script src="nova-real-preflight.js"></script>
