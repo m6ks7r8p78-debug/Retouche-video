@@ -148,6 +148,13 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 </details>
 
 </section>
+<details class="sourceAdvanced" id="novaOpfsRecoveryPanel">
+<summary>Confidentialité — fichiers temporaires de ce navigateur</summary>
+<p>Après une fermeture imprévue, des MP4 temporaires peuvent rester dans le stockage privé OPFS. Vérifiez sans ouvrir les vidéos. Seuls les fichiers NOVA de plus d'une heure peuvent être supprimés sur demande ; un export récent ou utilisé dans cet onglet est protégé. Plusieurs onglets ouverts peuvent néanmoins nécessiter une prudence supplémentaire.</p>
+<button type="button" class="secondary" id="novaOpfsRecoveryScan">Vérifier les anciens fichiers locaux</button>
+<button type="button" class="secondary" id="novaOpfsRecoveryClean" disabled>Effacer les fichiers temporaires anciens</button>
+<div id="novaOpfsRecoveryStatus" role="status" aria-live="polite">Aucun inventaire lancé. Aucun fichier n'est supprimé automatiquement.</div>
+</details>
 <details class="sourceAdvanced" id="novaMotionPanel">
 <summary>SmallMotion · mouvement local (recherche)</summary>
 <p>Compare deux images d'une vidéo sélectionnée, dans ce navigateur uniquement.
@@ -203,6 +210,8 @@ Conservez le son par défaut ; « sans son » reste un choix explicite.</p>
 <script src="nova-aac-copy.js"></script>
 <script src="nova-windows.js"></script>
 <script src="nova-opfs-stream.js"></script>
+<script src="nova-opfs-recovery.js"></script>
+<script src="nova-opfs-recovery-ui.js"></script>
 <script src="nova-export.js"></script>
 <script>
 (()=>{
