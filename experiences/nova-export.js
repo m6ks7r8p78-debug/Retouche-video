@@ -80,6 +80,37 @@ function ascOnly(desc){
   return p+l<=b.length&&l>=2?b.slice(p,p+l):b.slice();
  }catch(_){return b.slice()}
 }
+/* Probe final : un encodeur qui a produit des octets n'a pas prouvé
+ * que le MP4 est lisible. Tester les métadonnées depuis un blob local.
+ * Ne mesure PAS la qualité d'image ni l'existence effective de l'audio.
+ */
+async function verifierMp4(blob,settings,signal){
+ const v=document.createElement("video"),url=URL.createObjectURL(blob);
+ v.muted=true;v.playsInline=true;v.preload="metadata";
+ try{
+  if(signal?.aborted)throw new Error("Export annulé");
+  const meta=await new Promise((resolve,reject)=>{
+   let timer;
+   const cleanup=()=>{clearTimeout(timer);v.removeEventListener("loadedmetadata",ok);v.removeEventListener("error",bad);signal?.removeEventListener("abort",abort)};
+   const ok=()=>{cleanup();resolve({width:v.videoWidth,height:v.videoHeight,duration:v.duration})};
+   const bad=()=>{cleanup();reject(new Error("MP4 créé mais non lisible sur cet appareil"))};
+   const abort=()=>{cleanup();reject(new Error("Export annulé"))};
+   v.addEventListener("loadedmetadata",ok,{once:true});v.addEventListener("error",bad,{once:true});
+   signal?.addEventListener("abort",abort,{once:true});
+   timer=setTimeout(()=>{cleanup();reject(new Error("Le MP4 ne fournit pas de métadonnées lisibles"))},10000);
+   v.src=url;v.load();
+  });
+  const expected=settings.frames/settings.fps;
+  if(meta.width!==settings.width||meta.height!==settings.height)
+   throw new Error("Dimensions du fichier MP4 incohérentes");
+  if(!finite(meta.duration)||Math.abs(meta.duration-expected)>.3)
+   throw new Error("Durée du MP4 incohérente");
+  return {...meta,verifie:"métadonnées vidéo locales; pas audit perceptuel/audio"};
+ }finally{
+  try{v.pause();v.removeAttribute("src");v.load()}catch(_){}
+  URL.revokeObjectURL(url);
+ }
+}
 function transformateur(moteur,arbitre){
  let worker=null,next=0,closed=false;
  if(typeof Worker!=="undefined")try{worker=new Worker("nova-worker.js")}catch(_){worker=null}
@@ -180,8 +211,10 @@ async function exporter({file,moteur,arbitre,allowSilent=false,onProgress=()=>{}
   muxer.finalize();
   const blob=new Blob([target.buffer],{type:"video/mp4"});
   if(blob.size<1024)throw new Error("Fichier de sortie incomplet");
+  onProgress({stage:"verification",progress:1});
+  const validation=await verifierMp4(blob,settings,signal);
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,hasAudio:!!audio,timeline:{
+  return {blob,plan:settings,validation,hasAudio:!!audio,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:"CFR de sortie validé, images source cherchées par temps (PTS natifs non disponibles)"
   },report:"Export limité, images cherchées par temps : cadence et fidélité aux trames à vérifier"};
