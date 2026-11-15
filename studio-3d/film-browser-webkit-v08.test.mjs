@@ -68,7 +68,7 @@ async function run(page,label,origin){
    page.waitForEvent('download'),
    page.locator('#saveDiagnostic').click()
  ]);
- assert.match(diagnosticDownload.suggestedFilename(),/diagnostic-v07\.json$/);
+ assert.match(diagnosticDownload.suggestedFilename(),/diagnostic-v08\.json$/);
  const diagnostic=JSON.parse(await readFile(await diagnosticDownload.path(),'utf8'));
  assert.equal(diagnostic.schema,'retoucheproai.film-studio.device-diagnostic.v0.6');
  assert.equal(diagnostic.validation.physicalIPhoneCertified,false);
@@ -80,7 +80,7 @@ async function run(page,label,origin){
  await page.locator('#shareDiagnostic').click();
  await page.waitForFunction(()=>window.__shareEvents.length===2);
  shares=await page.evaluate(()=>window.__shareEvents);
- assert.match(shares[1].name,/diagnostic-v07\.json$/);
+ assert.match(shares[1].name,/diagnostic-v08\.json$/);
  assert.equal(shares[1].type,'application/json');
  assert.ok(shares[1].size>100);
 
