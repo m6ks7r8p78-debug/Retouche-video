@@ -81,6 +81,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: NOVA-Safari-export-natif-diagnostic-HTTPS-manuel
-          path: NOVA_HEVC_natif_synthetique_iPhone.zip
+          path: NOVA_Safari_export_natif_diagnostic.zip
           retention-days: 7
           if-no-files-found: error
