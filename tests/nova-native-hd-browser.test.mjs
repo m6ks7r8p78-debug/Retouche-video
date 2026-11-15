@@ -164,12 +164,17 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
    };
   });
   await page.locator("#exportVideo").click();
-  await page.waitForFunction(()=>{
-   const status=document.querySelector("#exportStatus")?.textContent||"";
-   return /MP4 HD disponible/.test(status)||/Export refusé/.test(status);
-  },null,{timeout:10000});
-  const mainStatus=await page.locator("#exportStatus").textContent();
-  assert.match(mainStatus,/MP4 HD disponible/,mainStatus);
+  await page.waitForTimeout(1400);
+  const mainState=await page.evaluate(()=>({
+   message:document.querySelector("#exportStatus")?.textContent,
+   filename:document.querySelector("#downloadVideo")?.download,
+   proofVisible:!document.querySelector("#novaOutputProofRun")?.hidden,
+   ready:!document.querySelector("#exportVideo")?.disabled,
+   blob:!!document.querySelector("#downloadVideo")?.href,
+   errorList:window.__proofErrors||[]
+  }));
+  assert.match(mainState.message||"",/MP4 HD disponible/,
+   "Diagnose main export state: "+JSON.stringify(mainState));
   assert.equal(await page.locator("#novaOutputProofRun").isVisible(),true);
   await page.locator("#novaOutputProofRun").click();
   await page.waitForFunction(()=>!!document.querySelector("#novaOutputProofSave")?.getAttribute("href"),
