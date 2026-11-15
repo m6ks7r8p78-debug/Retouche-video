@@ -15,6 +15,14 @@ import {chromium} from "playwright";
 const run=promisify(execFile);
 const root=path.resolve(fileURLToPath(new URL("../",import.meta.url)));
 const W=384,H=216,LEVELS=[16,32,64,128,192,240],FPS=15;
+// Construct a correctly tagged BT.709 *source*, not sRGB pixels
+// disguised with BT.709 metadata. FFmpeg's matrix conversion does not
+// perform sRGB->BT.709 transfer by itself.
+function srgbTo709(v){
+ const c=v/255,lin=c<=0.04045?c/12.92:((c+0.055)/1.055)**2.4;
+ const t=lin<0.018?4.5*lin:1.099*lin**0.45-0.099;
+ return Math.max(0,Math.min(255,Math.round(t*255)));
+}
 async function decodeRgb(mp4){
  const {stdout}=await run("ffmpeg",["-hide_banner","-loglevel","error","-i",mp4,
   "-map","0:v:0","-frames:v","1","-vf","format=rgb24","-f","rawvideo","pipe:1"],
@@ -42,7 +50,8 @@ test("NOVA no-op native SDR pipeline: RGB bars stay natural, no exaggerated cont
   // explicitly so no missing-frame bug can masquerade as an export defect.
   const pixels=Buffer.alloc(W*H*3*FPS);
   for(let frame=0;frame<FPS;frame++)for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-   const g=LEVELS[Math.min(LEVELS.length-1,Math.floor(x/(W/LEVELS.length)))];
+   const g=srgbTo709(
+    LEVELS[Math.min(LEVELS.length-1,Math.floor(x/(W/LEVELS.length)))]);
    const k=((frame*H+y)*W+x)*3;
    pixels[k]=pixels[k+1]=pixels[k+2]=g;
   }
@@ -123,7 +132,7 @@ test("NOVA no-op native SDR pipeline: RGB bars stay natural, no exaggerated cont
   // Every bar is INSIDE its own region. >14 RGB code values in a no-op
   // pipeline would violate the natural-color promise beyond codec noise.
   assert.ok(maxDiff<=14,
-   "Excess contrast in no-op path: "+JSON.stringify({reference:pre,output:actual,
+   "BT709-to-Canvas-to-BT709 drift in no-op path: "+JSON.stringify({reference:pre,output:actual,
     diff:differences,maxDiff}));
   const ff=JSON.parse((await run("ffprobe",["-v","error","-show_streams",
    "-of","json",outfile],{timeout:10000})).stdout);
