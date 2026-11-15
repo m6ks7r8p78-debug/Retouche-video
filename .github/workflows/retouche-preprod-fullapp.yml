@@ -40,6 +40,10 @@ jobs:
         run: python research/preprod/tests/test_full_app_smoke.py
       - name: Actual app demux/remux AAC — MP4 must retain video AND sound
         run: python research/preprod/tests/test_real_aac_passthrough.py
+      - name: Build real static preproduction bundle and validate offline Worker
+        run: |
+          python research/preprod/tests/test_preview_bundle.py
+          (cd research/preprod/preview-dist && zip -q -r ../results/retoucheproai_preview_site.zip .)
       - name: Keep preproduction synthetic-only screenshots and diagnostic report
         if: always()
         uses: actions/upload-artifact@v4
@@ -48,5 +52,8 @@ jobs:
           path: |
             research/preprod/results/full_app_smoke.json
             research/preprod/results/aac_passthrough.json
+            research/preprod/results/preview_build.json
+            research/preprod/results/preview_offline_smoke.json
+            research/preprod/results/retoucheproai_preview_site.zip
             research/preprod/results/preprod_full_app_*.png
           if-no-files-found: warn
