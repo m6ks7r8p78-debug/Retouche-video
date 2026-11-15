@@ -234,8 +234,10 @@ test("AAC iPhone: esds avec deux DSI/longueur incohérente échoue sans fuite",a
  const src=fixture({wrapped:true});
  // fixture valide : le parseur refuse bien les corruptions ci-dessous.
  const b=new Uint8Array(await src.arrayBuffer());
- const pattern=[3,0x16,0,1,0,4];
- let found=-1;for(let i=0;i<b.length-6;i++)if(pattern.every((v,k)=>b[i+k]===v)){found=i;break}
+ let found=-1;for(let i=0;i<b.length-6;i++)
+  if(b[i]===3&&b[i+2]===0&&b[i+3]===1&&b[i+4]===0&&b[i+5]===4){
+   found=i;break
+  }
  assert.ok(found>=0);
  b[found+1]=0x7f;
  await assert.rejects(AAC.planifier(new Blob([b]),{durationSeconds:.06}),/Copie AAC prudente/);
