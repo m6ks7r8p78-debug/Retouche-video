@@ -17,7 +17,8 @@ const messages=Object.freeze({
  "browser-unavailable":"Ce navigateur ne présente pas toutes les fonctions WebCodecs requises.",
  "insecure-context":"HTTPS requis pour ce laboratoire.",
  "container-unreadable":"MOV/MP4 non analysable par le parseur local expérimental.",
- "unsupported-video-codec":"Ce précontrôle d'export est réservé aux sources HEVC H.265 du pilote.",
+ "unsupported-video-codec":"Codec vidéo non reconnu par ce laboratoire. La source reste intacte ; aucun export automatique.",
+ "native-hd-unavailable":"La source H.264 est reconnue, mais le moteur HD natif ne peut pas encore confirmer codec, couleurs, présentation et audio sur cet appareil. Ce n’est pas un refus du format par l’application finale.",
  "hevc-profile-or-timeline-incompatible":"Profil HEVC, BT.709, durée, cadence, présentation ou PTS incompatibles avec les limites du pilote.",
  "resource-budget":"Dimensions, durée ou budget mémoire estimé hors limites du pilote.",
  "audio-not-preservable":"Copie de la piste AAC d'origine non vérifiable ; aucun export sans son automatique.",
@@ -30,6 +31,17 @@ function details(report){
  const reasons=Array.isArray(report?.blockers)?report.blockers:[];
  const src=report?.source||{},limits=report?.pilotLimits||{};
  const items=[];
+ // Motif technique strictement catégorisé; jamais d'exception native brute
+ // (susceptible de contenir un chemin, une information privée ou un codec).
+ const nativeDetail=Object.freeze({
+  "module-missing":"Le module de traitement HD natif n'est pas chargé.",
+  "source-contract-unverified":"Le format source, la couleur, l'orientation ou les horodatages ne satisfont pas le contrat HD vérifiable.",
+  "decoder-unavailable":"Le décodeur natif pour ce codec n'est pas confirmé sur cet appareil.",
+  "encoder-unavailable":"L'encodeur H.264 natif ne peut pas être confirmé sur cet appareil.",
+  "aac-analysis-unavailable":"Le précontrôle de la piste audio AAC est indisponible ou a échoué.",
+  "aac-copy-unavailable":"La copie intégrale de la piste AAC d'origine n'est pas vérifiable."
+ })[report?.nativeReason];
+ if(nativeDetail)items.push(nativeDetail);
  if(reasons.includes("coded-pixels-over-limit")){
   const w=src.width,h=src.height;
   const dims=Number.isSafeInteger(w)&&Number.isSafeInteger(h)?w+" × "+h+" ; ":"";

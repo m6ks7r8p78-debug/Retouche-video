@@ -58,3 +58,16 @@ test("Mosaïque : résultat reproductible, pas d'état global caché",()=>{
  const img=synth(256,128,32,210),a=run(img),b=run(img);
  assert.deepEqual(a.data,b.data);assert.deepEqual(a.zones,b.zones);
 });
+
+test("NOVA vidéo HD : sans carte de forces, pixels identiques et baisse d'allocation",()=>{
+ const img=synth(320,256,28,193);
+ const classic=ZONES.restituer(img,{size:128,arbitre:NOVA});
+ const lean=ZONES.restituer(img,{size:128,arbitre:NOVA,includeForces:false});
+ assert.ok(classic.forces instanceof Float32Array);
+ assert.equal(classic.forces.length,img.width*img.height);
+ assert.equal(lean.forces,null);
+ assert.deepEqual(lean.data,classic.data,"aucun changement des pixels du MP4");
+ assert.deepEqual(lean.bilan,classic.bilan);
+ assert.deepEqual(lean.zones,classic.zones);
+ assert.deepEqual(ZONES.restituer(img,{size:128,arbitre:NOVA,includeForces:true}).data,classic.data);
+});
