@@ -176,26 +176,45 @@ for(const seconds of [20,24,36,48])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 l
   assert.match(opfsEntries[0],/^export-[a-f0-9]{32}\.mp4$/);
   assert.ok(!opfsEntries[0].includes("source-longue"),
    "Le nom privé de l'utilisateur n'est pas copié dans OPFS");
-  // Simule un ancien fichier temporaire abandonné. minAgeMs=0 est
-  // exclusivement réservé au banc : l'UI publique impose >= 1 h.
-  const recovered=await page.evaluate(async()=>{
+  // Test utilisateur du vrai bouton "Vérifier" puis "Effacer".
+  // Vieillissement simulé de l'horloge de page : AUCUN utilisateur réel
+  // ni fichier source n'est modifié ; le seuil produit reste 1 heure.
+  await page.evaluate(async()=>{
    const dir=await (await navigator.storage.getDirectory())
     .getDirectoryHandle("nova-opfs-local-v1");
    const orphan=await dir.getFileHandle("export-"+"a".repeat(32)+".mp4",
     {create:true});
    const w=await orphan.createWritable();
    await w.write(new Uint8Array([1,2,3,4]));await w.close();
-   const report=await NOVA_OPFS_RECOVERY.scan({minAgeMs:0});
-   const cleaned=await NOVA_OPFS_RECOVERY.cleanup({minAgeMs:0});
-   const names=[];for await (const [name] of dir.entries())names.push(name);
-   return {report,cleaned,names};
+   window.__novaOriginalDateNow=Date.now;
+   const current=Date.now();
+   Date.now=()=>current+2*3600000;
   });
-  assert.equal(recovered.report.oldFiles,1);
-  assert.equal(recovered.report.activeFiles,1,
-   "La vidéo OPFS disponible en téléchargement reste protégée");
-  assert.equal(recovered.cleaned.deleted,1);
-  assert.equal(recovered.names.length,1);
-  assert.equal(recovered.names[0],opfsEntries[0]);
+  await page.locator("#novaOpfsRecoveryPanel summary").click();
+  assert.equal(await page.locator("#novaOpfsRecoveryClean").isDisabled(),true);
+  await page.locator("#novaOpfsRecoveryScan").click();
+  await page.waitForFunction(()=>
+   document.querySelector("#novaOpfsRecoveryStatus").textContent
+    .includes("1 fichier(s) temporaire(s)"),null,{timeout:20000});
+  const inventory=await page.locator("#novaOpfsRecoveryStatus").innerText();
+  assert.match(inventory,/1 actif\(s\)/);
+  assert.ok(!inventory.includes("source-longue"));
+  assert.equal(await page.locator("#novaOpfsRecoveryClean").isDisabled(),false);
+  await page.locator("#novaOpfsRecoveryClean").click();
+  await page.waitForFunction(()=>
+   document.querySelector("#novaOpfsRecoveryStatus").textContent
+    .includes("1 ancien(s) fichier(s) temporaire(s) effacé(s)"),
+   null,{timeout:20000});
+  await page.evaluate(()=>{Date.now=window.__novaOriginalDateNow});
+  const remaining=await page.evaluate(async()=>{
+   const dir=await (await navigator.storage.getDirectory())
+    .getDirectoryHandle("nova-opfs-local-v1");
+   const names=[];for await(const [name] of dir.entries())names.push(name);
+   return names;
+  });
+  assert.equal(remaining.length,1);
+  assert.equal(remaining[0],opfsEntries[0],
+   "Le MP4 encore accessible au téléchargement doit rester intact");
   const data=await ffprobe(output,["-show_streams"]);
   const video=data.streams.filter(x=>x.codec_type==="video");
   const audio=data.streams.filter(x=>x.codec_type==="audio");
