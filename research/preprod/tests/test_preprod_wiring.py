@@ -21,7 +21,7 @@ assert 'id="app"' in page and 'id="out"' in page
 worker=(ROOT/'research/3d-smallmotion/smallmotion-worker.js').read_text()
 assert "importScripts('smallmotion-local.js')" in worker
 sw=(ROOT/'sw.js').read_text()
-assert 'retouche-v84' in sw
+assert 'retouche-v85' in sw
 assert 'self.skipWaiting()' not in sw.split('self.addEventListener("install"')[1].split('self.addEventListener("activate"')[0]
 assert all(p in sw for p in paths[1:]),'Missing offline pre-cache scripts'
 assert 'research/3d-smallmotion/smallmotion-worker.js' in sw
