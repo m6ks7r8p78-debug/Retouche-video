@@ -150,6 +150,7 @@ test("NOVA : MP4 court exporté avec son préservé ou refus, puis MP4 sans son 
     assert.ok(v,"flux vidéo MP4 attendu");
     assert.equal(v.codec_name,"h264");
     assert.equal(!!a,!silent,"la piste sonore respecte la décision utilisateur");
+    assert.match(await page.locator("#exportStatus").innerText(),/Métadonnées contrôlées/);
     assert.ok(v.width<=640&&v.height<=640,"limite pilote respectée");
     assert.ok(+v.duration>1&&+v.duration<1.5,"durée vidéo plausible");
     assert.ok(+v.nb_frames>=16&&+v.nb_frames<=20,"quantité de trames attendue");
