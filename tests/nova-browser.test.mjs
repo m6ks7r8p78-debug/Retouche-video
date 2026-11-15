@@ -378,6 +378,12 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
    const pending=page.waitForEvent("download");
    await page.locator("#downloadVideo").click();
    const saved=await pending;
+   const [sourceHashes,outputHashes]=await Promise.all([
+     audioPacketHashes(src),audioPacketHashes(await saved.path())
+   ]);
+   assert.ok(outputHashes.length>=10,"les unités AAC copiées doivent être nombreuses");
+   assert.deepEqual(outputHashes,sourceHashes.slice(0,outputHashes.length),
+      "les échantillons AAC doivent être bit à bit identiques à ceux du fichier source");
    const [outputAudio,outputVideo]=await Promise.all([
     decodeAudioEvents(await saved.path()),decodeVideoEvents(await saved.path())
    ]);
@@ -385,6 +391,9 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
      toleranceMs:90});
    assert.ok(audit.offsetMs<=90);
    assert.ok(audit.driftMs<=90);
+   t.diagnostic("Horloges source audio/vidéo : "+JSON.stringify({sourceAudio,sourceVideo})+
+     " ; sortie : "+JSON.stringify({outputAudio,outputVideo}));
+   t.diagnostic("Paquets AAC identiques bit à bit : "+outputHashes.length);
    t.diagnostic("Contrôle AV : offset ajouté "+audit.offsetMs.toFixed(1)+
      " ms, dérive "+audit.driftMs.toFixed(1)+" ms ; événements="+sourceAudio.length);
    assert.deepEqual(errors,[]);
@@ -395,6 +404,12 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
  }
 });
 
+async function audioPacketHashes(filename){
+ const {stdout}=await runBinary("ffprobe",["-v","error","-select_streams","a:0",
+   "-show_packets","-show_entries","packet=data_hash","-show_data_hash","sha256",
+   "-of","json",filename],{maxBuffer:4*1024*1024});
+ return (JSON.parse(stdout).packets||[]).map(x=>x.data_hash);
+}
 async function decodeAudioEvents(filename){
  const {stdout}=await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
    "-i",filename,"-map","0:a:0","-ac","1","-ar","48000","-f","f32le","-"],
