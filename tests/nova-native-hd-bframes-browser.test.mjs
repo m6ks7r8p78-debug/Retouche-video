@@ -89,6 +89,17 @@ test("NOVA HD : 30 B/P/I images H264 réordonnées décodées et exportées avec
   assert.equal(timing.color?.transfer,1,"fixture must signal BT.709 transfer in MP4");
   assert.equal(timing.color?.matrix,1,"fixture must signal BT.709 matrix in MP4");
   assert.equal(timing.color?.fullRange,false);
+  // Observer les événements du vrai pipeline H264/AAC, pas ceux d'un mock.
+  await page.evaluate(()=>{
+   window.__novaNativeStages=[];
+   const native=window.NOVA_NATIVE_HD;
+   window.NOVA_NATIVE_HD={...native,exporter:opts=>native.exporter({
+    ...opts,onProgress:step=>{
+     window.__novaNativeStages.push(step.stage);
+     opts.onProgress?.(step);
+    }
+   })};
+  });
   await page.locator("#novaHdRun").click();
   await page.waitForFunction(()=>{
    const status=document.querySelector("#novaHdStatus")?.textContent||"";
@@ -97,6 +108,18 @@ test("NOVA HD : 30 B/P/I images H264 réordonnées décodées et exportées avec
   },null,{timeout:110000});
   const status=await page.locator("#novaHdStatus").textContent();
   assert.match(status,/MP4 HD exporté/,status);
+  const nativeStages=await page.evaluate(()=>window.__novaNativeStages);
+  const expected=["native-source","native-decoder-config","native-encoder-config",
+   "native-aac-check","native-muxer","native-codec-start","native-video-feed",
+   "native-image-process","native-image-encode","native-encoder-flush",
+   "native-aac-copy","native-aac-audit","native-mux-finalize",
+   "native-output-index","native-output-color","complete"];
+  let previous=-1;
+  for(const label of expected){
+   const pos=nativeStages.indexOf(label);
+   assert.ok(pos>previous,label+" must be observed in real pipeline after preceding stages");
+   previous=pos;
+  }
   const dl=page.waitForEvent("download");
   await page.locator("#novaHdSave").click();
   const output=await (await dl).path();
