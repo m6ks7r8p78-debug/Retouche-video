@@ -10,9 +10,9 @@ const stages=["preflight","audio","video","video-flush","aac-copy","mux","verify
 const fail=s=>{throw new Error("NOVA 0.22 budget export : "+s)};
 function create({maxEncodedBytes=DEFAULT,clock,readJsHeap,
   frameProfile="standard"}={}){
- if(!["standard","h264-hd720-opfs-3s"].includes(frameProfile))
+ if(!["standard","h264-hd720-opfs-6s"].includes(frameProfile))
   fail("profil de copie image invalide");
- const maxFrameCopyBytes=frameProfile==="h264-hd720-opfs-3s"?
+ const maxFrameCopyBytes=frameProfile==="h264-hd720-opfs-6s"?
   1280*720*16:640*360*16;
  if(!Number.isSafeInteger(maxEncodedBytes)||maxEncodedBytes<1024||maxEncodedBytes>DEFAULT)
   fail("limite encodée invalide (1 Kio à 24 Mio)");
