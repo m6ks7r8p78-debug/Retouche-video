@@ -70,7 +70,23 @@ start.addEventListener("click",async()=>{
     ". Images source traitées : "+m.frames+
     ". Paramètres SPS/VPS/PPS en bande validés : "+m.inbandParameterSets+
     ". Images extraites dans un même lot : "+m.peakDrainedFrames+
-    ". Mesures de laboratoire ; pas un benchmark Safari iPhone.";
+    (m.pipelineAudit?(
+     ". Export audiovisuel complet : "+
+     Math.round(m.pipelineAudit.elapsedMs)+" ms dont "+
+     "précontrôle "+Math.round(m.pipelineAudit.stagesMs.preflight||0)+" ms, "+
+     "audio "+Math.round(m.pipelineAudit.stagesMs.audio||0)+" ms, "+
+     "vidéo/restauration "+Math.round(m.pipelineAudit.stagesMs.video||0)+" ms, "+
+     "vidage H.264 "+Math.round(m.pipelineAudit.stagesMs["video-flush"]||0)+" ms, "+
+     "copie AAC "+Math.round(m.pipelineAudit.stagesMs["aac-copy"]||0)+" ms, "+
+     "muxage "+Math.round(m.pipelineAudit.stagesMs.mux||0)+" ms, "+
+     "vérification "+Math.round(m.pipelineAudit.stagesMs.verify||0)+" ms. "+
+     "Payload H.264 : "+m.pipelineAudit.encodedVideoBytes+
+     " octets ; AAC : "+m.pipelineAudit.encodedAudioBytes+
+     " octets ; MP4 : "+m.pipelineAudit.finalMp4Bytes+" octets ; "+
+     "queue encodage max "+m.pipelineAudit.peakVideoEncodeQueue+"."
+    ):"")+
+    " Mesures de laboratoire ; mémoire WASM/JS et octets de fichiers "+
+    "ne représentent pas la RAM totale ni le coût CPU/GPU d'un iPhone.";
    hevcPanel.hidden=false;
   }
   download.href=blobUrl;

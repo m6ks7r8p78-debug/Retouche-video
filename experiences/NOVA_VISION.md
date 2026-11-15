@@ -647,3 +647,9 @@ Le nouveau module `nova-export-meter.js` suit les phases **précontrôle, analys
 
 **Limitation fondamentale** : les octets des payloads et `performance.memory` quand disponible ne sont **pas** le pic de RAM/RSS du navigateur, et le muxer `in-memory` peut dupliquer des buffers. Le module n'observe pas directement les allocations internes du WebAssembly, de l'encodeur natif ni celles d'un Worker. Les durées de phase sont des temps écoulés locaux, non des mesures de consommation CPU/GPU/thermique. Les plafonds produit préexistants restent appliqués.
 
+
+
+### NOVA 0.22 — preuve d'échec sur petit budget et diagnostic discret (code en validation)
+
+Le panneau repliable HEVC affiche maintenant la chronologie des phases du **pipeline audiovisuel complet** avec les octets vidéo/AAC, taille MP4, queue H.264 maximale. Les chiffres désignent les **payloads** et les temps d'exécution du navigateur, pas la RAM totale du processus. Un test d'intégration supplémentaire appelle l'API expérimentale avec `maxEncodedBytes:1024` pendant un vrai MOV HEVC synthétique : l'export doit être refusé et aucun nouveau lien de téléchargement n'est créé. Les tests unitaires imposent le même comportement au plafond MP4 final et au plafond des chunks. L'option ne permet jamais de dépasser le plafond interne de 24 Mio.
+

@@ -130,6 +130,9 @@ for(const inputFPS of [30,60])test(
   assert.match(diagnostic,/Capacité maximale du tas WebAssembly/);
   assert.match(diagnostic,/pas la RAM totale/);
   assert.match(diagnostic,/Paramètres SPS\/VPS\/PPS en bande validés : 0/);
+  assert.match(diagnostic,/Export audiovisuel complet/);
+  assert.match(diagnostic,/Payload H.264 : [1-9][0-9]* octets ; AAC : [1-9][0-9]* octets/);
+  assert.match(diagnostic,/queue encodage max/);
   const pending=page.waitForEvent("download");
   await page.locator("#downloadVideo").click();
   const dl=await pending,output=await dl.path();
@@ -155,6 +158,23 @@ for(const inputFPS of [30,60])test(
   assert.ok(measured.driftMs<=80);
   assert.deepEqual(jsErrors,[]);
   assert.deepEqual(external,[],"aucun média ou décodeur chargé d'un domaine tiers");
+  if(inputFPS===30){
+   // Injection de seuil uniquement via l'API laboratoire, pas de réglage
+   // accessible dans l'interface. Refus avant publication de MP4 partiel.
+   const beforeHref=await page.locator("#downloadVideo").getAttribute("href");
+   const blocked=await page.evaluate(async()=>{
+    try{
+     const f=document.querySelector("#file").files[0];
+     await NOVA_EXPORT.exporter({file:f,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,
+      allowSilent:true,maxEncodedBytes:1024});
+     return {refused:false};
+    }catch(e){return {refused:true,reason:e.message}}
+   });
+   assert.equal(blocked.refused,true,"le faible budget doit bloquer l'export");
+   assert.match(blocked.reason,/budget export.*(plafond mémoire|MP4 final dépasse)/i);
+   assert.equal(await page.locator("#downloadVideo").getAttribute("href"),beforeHref,
+    "l'échec d'API interne ne publie aucun nouveau MP4");
+  }
   t.diagnostic("NOVA HEVC WASM->MP4 + AAC : "+JSON.stringify({
    inputFPS,sourceFrames:pts.length,sourceDurationUs:info.durationUs,
    inputAudio:audio0,inputVideo:video0,outputAudio:audio1,outputVideo:video1,

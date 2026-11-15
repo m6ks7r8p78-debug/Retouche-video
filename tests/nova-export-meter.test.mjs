@@ -52,3 +52,14 @@ test("NOVA 0.22 : paramètres invalides et horloges/ordres non monotones refusé
  assert.throws(()=>m.stage("complete"),/après clôture/);
  assert.throws(()=>m.add("video",1),/après clôture/);
 });
+
+test("NOVA 0.22 : vérifie le MP4 final séparément des payloads",()=>{
+ const m=M.create({maxEncodedBytes:2048,clock:()=>1,readJsHeap:()=>null});
+ m.add("video",900);
+ assert.throws(()=>m.finalSize(2050),/MP4 final dépasse/);
+ assert.equal(m.snapshot().finalMp4Bytes,null);
+ m.finalSize(1400);
+ m.stage("complete");
+ assert.equal(m.snapshot().finalMp4Bytes,1400);
+ assert.equal(m.snapshot().jsHeapPeakBytes,null);
+});
