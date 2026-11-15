@@ -61,9 +61,11 @@ function exigerDebutFidele(audit){
   "PTS source : première image trop tardive ; ne pas inventer une image au début du film");
  return audit;
 }
-function auditerPaquetsAAC(packets,{durationSeconds}={}){
+function auditerPaquetsAAC(packets,{durationSeconds,leadingGapSeconds=0}={}){
  if(!Array.isArray(packets)||!packets.length||
-    !Number.isFinite(durationSeconds)||durationSeconds<=0)
+    !Number.isFinite(durationSeconds)||durationSeconds<=0||
+    !Number.isFinite(leadingGapSeconds)||leadingGapSeconds<0||
+    leadingGapSeconds>0.5||leadingGapSeconds>=durationSeconds)
   throw new Error("Piste AAC attendue, mais aucun paquet audio vérifiable");
  let first=null,last=null,end=null;
  for(const p of packets){
@@ -78,9 +80,13 @@ function auditerPaquetsAAC(packets,{durationSeconds}={}){
  }
  if(first>100000||first< -100000)
   throw new Error("Départ audio AAC décalé de plus de 100 ms");
- if(end!==null&&Math.abs(end-durationSeconds*1e6)>200000)
+ // Pour une piste à elst vide initial, les paquets sont sur la
+ // chronologie *media* ; l'édition vide n'est jamais un paquet AAC.
+ // Le délai n'est accepté que s'il a été validé en amont (AAC-copy).
+ const mediaEndSeconds=durationSeconds-leadingGapSeconds;
+ if(end!==null&&Math.abs(end-mediaEndSeconds*1e6)>200000)
   throw new Error("Durée AAC encodée incohérente avec la vidéo");
- return Object.freeze({packets:packets.length,startUs:first,endUs:end,
+ return Object.freeze({packets:packets.length,startUs:first,endUs:end,leadingGapUs:Math.round(leadingGapSeconds*1e6),
   couvertureControlee:end!==null,
   qualification:"vérification paquets AAC encodés ; synchronisation perceptuelle non validée"});
 }
