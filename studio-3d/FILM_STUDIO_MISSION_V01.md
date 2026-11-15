@@ -164,3 +164,22 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - **Aucune preuve de fonctionnement du panneau natif iOS réel**, de la sauvegarde de GLB dans l'application Fichiers, de la mémoire, de la température ou de la fluidité sur appareil Apple. Le test WebKit remplace navigator.share par un faux service contrôlé et ne peut pas attester le système iOS.
 - Toujours pas de film MP4, d'acteur photoréaliste, de dialogue audio, de reconstruction de personne ni de contact des doigts physiquement simulé. Les 157 vidéos privées restent hors de la CI, du paquet et du dépôt public.
 - PR en brouillon, pas de fusion, pas de diffusion publique, pas de déploiement à retoucheproai.com.
+
+
+## Film Studio v0.8 — trajectoire et prise/dépôt contrôlés (15 novembre 2026)
+
+### Ce qui fonctionne désormais
+- film-contact-v03.mjs (moteur commun) ajoute une rotation synthétique graduelle de la tasse : inclinaison autour de 0,26 radian (15°) pendant « boire », retour à la verticale à la fin. La tasse reste une seule géométrie GLB animée.
+- film-motion-v08.mjs introduit une **analyse indépendante du GLB réellement encodé** : échantillonnage local de la position tasse/point d’ancrage à 120 Hz sur toute la séquence, vérifications au voisinage précis des transitions « prise » et « dépôt », retour de la tasse au même point sur la table, et contrôle d'un plafond de vitesse.
+- Limites d'acceptation du pilote : maximum 25 mm d'écart au point d'ancrage pendant le transport, 40 mm de déplacement sur une fenêtre de 10 ms autour d'une transition, 25 mm d'écart à l'emplacement initial après dépôt, 6 m/s comme seuil d'alerte de vitesse excessive. Ces seuils servent à détecter les défauts grossiers, **pas** à certifier une motion capture ni la physique des objets.
+- film-motion-v08.test.mjs : six nouveaux tests Node, dont inspection de l'inclinaison aux différents instants, homme/femme synthétiques, refus de référence réelle et **injection volontaire d'une téléportation dans les données d'animation GLB** pour vérifier l'arrêt du pilote.
+- film-ui-v08.mjs et film-studio-v08.html : le parcours texte → créer → voir la scène → télécharger reste identique, avec une information courte sur la mesure cinématique. Pas de téléchargement réseau ni d'envoi de vidéo.
+- film-share-v08.mjs : noms des fichiers GLB et JSON cohérents entre le téléchargement classique et le partage iOS simulé.
+- film-browser-webkit-v08.test.mjs : vérification du parcours de création v0.8 et des exports dans WebKit Linux, en rendu WebGL2 natif et en mode Canvas 2D de secours.
+- La CI prépare un nouveau paquet statique nommé film-studio-v08-iphone-https-package, sans aucun média personnel.
+
+### Preuves et précautions
+- GitHub Actions **run 43752405431**, commit 397fea960f750a508a22110c36eaa3168a9a00b5 : **56 tests Node sur 56 réussis**, job Chromium réussi, job WebKit réussi (WebGL2 + repli Canvas) et paquet iPhone généré, soit **4 jobs sur 4 verts**.
+- Un premier passage WebKit a détecté des noms d'export de diagnostic/partage restés en v0.7. Les noms GLB et JSON ont été corrigés et **le run cité a validé le correctif**.
+- Il n'y a **ni collision réaliste des doigts**, ni simulation de liquide, ni correspondance des lèvres, ni posture assise biomécanique validée, ni MP4, ni voix, ni photoréalisme. La vitesse de 120 Hz désigne uniquement la fréquence de **mesure de trajectoire**, non une fréquence de rendu vidéo.
+- Aucun test Safari iPhone physique n'a été réalisé, et aucune modification de retoucheproai.com, de main, de NOVA ou des 157 vidéos privées. PR toujours en brouillon et non fusionnée.
