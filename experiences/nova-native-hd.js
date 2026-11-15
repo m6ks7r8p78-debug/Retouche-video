@@ -146,6 +146,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  if(signal?.aborted)fail("annulé");
  const dmx=probe||globalThis.NOVA_DEMUX?.analyser;
  if(typeof dmx!=="function")fail("analyseur MOV/MP4 absent");
+ onProgress({stage:"native-source"});
  const info=await dmx(file);
  if(!info)fail("métadonnées vidéo illisibles");
  const p=analyse(info,file.size);
@@ -156,17 +157,21 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  const Decoder=globalThis.VideoDecoder,Encoder=globalThis.VideoEncoder,
   Chunk=globalThis.EncodedVideoChunk;
  if(typeof Chunk!=="function")fail("EncodedVideoChunk absent");
+ onProgress({stage:"native-decoder-config"});
  const decCfg=await configDecoder(info,Decoder);
+ onProgress({stage:"native-encoder-config"});
  const encCfg=await configEncoder(p,Encoder);
  const audioPlan=checkAudio||globalThis.NOVA_AAC_COPY?.planifier;
  if(typeof audioPlan!=="function")fail("analyseur AAC manquant");
  // Politique obligatoire : conserver le son, sinon ne pas exporter.
+ onProgress({stage:"native-aac-check"});
  const audio=await audioPlan(file,{durationSeconds:p.durationSeconds,signal});
  if(!audio||audio.mode!=="aac-copy"||!audio.packets?.length)
   fail("AAC original non conservable, export HD refusé");
  if(signal?.aborted)fail("annulé");
  const Muxer=globalThis.Mp4Muxer;
  if(!Muxer?.Muxer||!Muxer?.ArrayBufferTarget)fail("muxeur MP4 local indisponible");
+ onProgress({stage:"native-muxer"});
  const target=new Muxer.ArrayBufferTarget();
  const muxer=new Muxer.Muxer({target,fastStart:"in-memory",
   video:{codec:"avc",width:p.width,height:p.height,colorMetadata:"bt709-limited"},
@@ -191,6 +196,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
     muxer.addVideoChunk(chunk,meta);encoded++;
    }catch(e){failed=e}
   },error:e=>{failed=e}});
+  onProgress({stage:"native-codec-start"});
   encoder.configure(encCfg);
   decoder=new Decoder({output:fr=>{
    if(closed){fr.close();return}
@@ -209,6 +215,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
   // Lire les échantillons dans l'ordre de décodage, strictement à partir du
   // fichier local (DTS), sans transfert vers un serveur ou relecture complète.
   let fed=0,next=0,stalled=clock();
+  onProgress({stage:"native-video-feed"});
   while(next<p.sourceFrames){
    check();
    while(fed<p.sourceFrames&&decoded.size<5&&decoder.decodeQueueSize<4&&fed<next+8){
@@ -225,8 +232,10 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    if(frame){
     decoded.delete(next);
     try{
+     onProgress({stage:"native-image-process",frame:next+1,total:p.sourceFrames});
      const result=frameToOutput(frame,info,canvas,moteur,arbitre,durations[next]);
      modified+=Number(result.modified);
+     onProgress({stage:"native-image-encode",frame:next+1,total:p.sourceFrames});
      try{encoder.encode(result.out,{keyFrame:next===0||next%90===0})}
      finally{result.out.close()}
      next++;sent++;
@@ -248,21 +257,27 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
     await new Promise(resolve=>setTimeout(resolve,20));
    }
   }
+  onProgress({stage:"native-encoder-flush"});
   await encoder.flush();check();
   if(encoded!==p.sourceFrames)fail("nombre d'images H.264 différent de la source");
   const packets=[];
+  onProgress({stage:"native-aac-copy"});
   await globalThis.NOVA_AAC_COPY.copier(file,audio,muxer,{signal,
    onPacket:v=>packets.push(v)});
+  onProgress({stage:"native-aac-audit"});
   globalThis.NOVA_GUARD.auditerPaquetsAAC(packets,{
    durationSeconds:p.durationSeconds,leadingGapSeconds:audio.outputEditGapSeconds??0});
+  onProgress({stage:"native-mux-finalize"});
   muxer.finalize();
   const blob=new Blob([target.buffer],{type:"video/mp4"});
   if(blob.size<1024||blob.size>MAX_ENCODED)fail("MP4 final incohérent");
+  onProgress({stage:"native-output-index"});
   const checkOut=await globalThis.NOVA_DEMUX.analyser(blob);
   if(!checkOut||checkOut.dw!==p.width||checkOut.dh!==p.height||
     checkOut.ns!==p.sourceFrames||
     Math.abs(checkOut.durationUs-info.durationUs)>150000)
    fail("dimensions, cadence source ou durée non préservées");
+  onProgress({stage:"native-output-color"});
   const c=checkOut.color;
   if(!c||c.kind!=="nclx"||c.primaries!==1||c.transfer!==1||
     c.matrix!==1||c.fullRange!==false)
