@@ -26,7 +26,7 @@ function analyserOrientation(W,H,m){
  const minx=Math.min(...xs),miny=Math.min(...ys);
  const dw=Math.max(...xs)-minx,dh=Math.max(...ys)-miny;
  if(dw<2||dh<2||dw*dh!==W*H)return null;
- return Object.freeze({mat:[A,B,C,D,-minx,-miny],dw,dh,
+ return Object.freeze({mat:[A,B,C,D,minx===0?0:-minx,miny===0?0:-miny],dw,dh,
    mirrored:A*D-B*C<0,oriented:dw!==W||dh!==H});
 }
 async function analyser(file){
