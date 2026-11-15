@@ -653,3 +653,19 @@ Le nouveau module `nova-export-meter.js` suit les phases **précontrôle, analys
 
 Le panneau repliable HEVC affiche maintenant la chronologie des phases du **pipeline audiovisuel complet** avec les octets vidéo/AAC, taille MP4, queue H.264 maximale. Les chiffres désignent les **payloads** et les temps d'exécution du navigateur, pas la RAM totale du processus. Un test d'intégration supplémentaire appelle l'API expérimentale avec `maxEncodedBytes:1024` pendant un vrai MOV HEVC synthétique : l'export doit être refusé et aucun nouveau lien de téléchargement n'est créé. Les tests unitaires imposent le même comportement au plafond MP4 final et au plafond des chunks. L'option ne permet jamais de dépasser le plafond interne de 24 Mio.
 
+
+
+
+### Bilan NOVA 0.22 — 142 tests réussis, export audiovisuel et budgets (15 novembre 2026)
+
+**Code confirmé :** `6dbdb842fec028645bf5a7ea17d4bb46052e6b03` ; **CI :** [43706017468](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43706017468) — **4 jobs verts, 142 tests réussis sur 142, zéro échec, zéro ignoré** : 108 unitaires, 28 Chromium, 5 WebKit Linux, 1 HEVC hors npm. Le commit documentaire suivant doit être validé séparément.
+
+`nova-export-meter.js` suit les durées par phase (préparation, analyse et copie AAC, décodage HEVC/restauration/encodage H.264, vidage, muxage, validation), les octets de paquets vidéo et audio, la taille MP4, le maximum d'images en file VideoEncoder et le tas JS facultatif. Les valeurs sont présentées après export HEVC réussi dans une section technique repliable, en complément de la capacité mesurée du tas WASM.
+
+**Budget strict du pilote :** 24 Mio maximum d'octets utiles encodés et 24 Mio pour la taille MP4 finale (seuil abaissable pour tests, jamais relevable). Dans un vrai banc Chromium, seuil abaissé à 1024 octets : **avec audio**, refus avant l'ajout d'un paquet AAC dépassant le plafond ; **sans audio**, refus lors du contrôle de la taille du MP4. Aucun nouveau téléchargement n'est proposé. Les tailles des copies intermédiaires du muxer ne sont pas comprises dans les octets utiles.
+
+**Deux exécutions illustrent la variabilité :** [43705819194](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43705819194) a mesuré **1 057/423 ms** pour les imports VFR HEVC de 34/69 images ; [43706017468](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43706017468) a mesuré **389/382 ms**, avec payload H.264 747/759 octets, AAC 3 826/3 838 octets et MP4 6 336/6 376 octets. Les essais sur 160×90 synthétique ne sont pas comparables à un vrai iPhone et ne démontrent aucune accélération universelle.
+
+**Portée honnête :** les octets encodés et la capacité du tas WASM ne représentent **pas** la RAM totale/RSS, ni la consommation GPU/CPU/thermique de l'iPhone. Le muxage `in-memory` peut allouer des copies supplémentaires. Les limites précédentes (12 s, entrée 60 Mo, sortie 640 px / 15 i/s, source HEVC 90 échantillons/640×360, SDR BT.709 8 bits) restent actives. Pas de Safari iPhone physique, HDR/4K/8K ni sortie 60 i/s validés ; aucun déploiement, fusion, ni média privé utilisé.
+
+**Suite** : banc iPhone physique reproductible et stress mémoire/codec sur médias consentis, avant toute élévation des plafonds.
