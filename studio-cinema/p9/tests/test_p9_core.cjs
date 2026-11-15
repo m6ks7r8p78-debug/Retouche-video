@@ -1,0 +1,13 @@
+const test=require('node:test'),assert=require('node:assert/strict');
+const m=require('../p9_annotation_core.js');
+const a={channel:'levres',phase:'contact',visibility:'observe',start_s:1,end_s:2,point:[.5,.5],smoke_origin:'unknown'};
+test('valid annotation interval',()=>assert.equal(m.validateAnnotation(a,3).end_s,2));
+test('bad duration refused',()=>assert.throws(()=>m.validateAnnotation({...a,end_s:9},3)));
+test('negative coordinates refused',()=>assert.throws(()=>m.validateAnnotation({...a,point:[-.1,.5]},3)));
+test('independent channels',()=>assert.equal(m.CHANNELS.length,14));
+test('visual and audio separate',()=>assert.ok(m.CHANNELS.includes('audio')&&m.CHANNELS.includes('joues')));
+test('automated identity not claimed',()=>assert.equal(m.buildProject({name:'synthetic.mp4',duration:3},'unknown',[a]).identity_proven,false));
+test('no media in exported project',()=>{let x=m.buildProject({name:'synthetic.mp4',duration:3},'unknown',[a]);assert.ok(x.no_pixels_exported&&x.no_audio_exported)});
+test('unknown age cannot train',()=>assert.equal(m.buildProject({name:'synthetic.mp4',duration:3},'unknown',[a],true).eligibility.ready_for_training,false));
+test('independent review always pending',()=>assert.equal(m.buildProject({name:'synthetic.mp4',duration:3},'verified_adult',Array(8).fill(a),true).eligibility.ready_for_training,false));
+test('face smoke must distinguish origin',()=>assert.ok(m.evaluateEvidence([{...a,channel:'fumee'}]).chronological_warnings.includes('origine_fumee_non_distinguee')));
