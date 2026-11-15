@@ -156,8 +156,9 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  }
  // Réutiliser le convertisseur sRGB -> I420 BT.709 uniquement si le
  // conteneur AVC déclare EXPLICITEMENT la plage limitée SDR BT.709.
- // Un nclc sans bit de plage ou un MP4 sans colr reste hors de cette preuve.
- // Le chemin approximatif, même choisi explicitement, n'est pas promu.
+ // Un nclc ambigu est accepté UNIQUEMENT si le SPS/VUI H.264 indique
+ // explicitement BT.709 limité et ne contredit pas le conteneur.
+ // Le mode temporel approximatif ne reçoit jamais ce niveau de preuve.
  let nativeH264Color709=false;
  if(!useHevcWasm&&!allowApproximate&&probe&&/^avc[13]\./.test(probe.codec||"")&&
     typeof globalThis.NOVA_AVC_VUI?.analyser==="function"){
