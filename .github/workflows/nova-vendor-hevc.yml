@@ -1,0 +1,49 @@
+name: NOVA - copie contrôlée HEVC WASM hors ligne
+on:
+  push:
+    branches:
+      - chatgpt-studio-nova-v01
+    paths:
+      - .github/workflows/nova-vendor-hevc.yml
+      - outils/nova-hevc-assets.mjs
+      - experiences/LICENSE-hevcjs-MIT.txt
+permissions:
+  contents: write
+concurrency:
+  group: nova-vendor-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  vendor:
+    if: github.ref == 'refs/heads/chatgpt-studio-nova-v01' && github.repository == 'm6ks7r8p78-debug/Retouche-video'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer UNIQUEMENT les archives npm versionnées (aucun postinstall)
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts @hevcjs/core@1.8.0
+      - name: Vérifier les 4 empreintes SHA-256 et recopier la licence MIT
+        run: |
+          node outils/nova-hevc-assets.mjs stage
+          node outils/nova-hevc-assets.mjs verify
+      - name: Enregistrer les fichiers exacts UNIQUEMENT sur la branche expérimentale
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/chatgpt-studio-nova-v01"
+          test "$GITHUB_REPOSITORY" = "m6ks7r8p78-debug/Retouche-video"
+          git add -- experiences/vendor/hevc/
+          if git diff --cached --quiet; then
+            echo "Décodeur HEVC local déjà synchronisé à l'octet près"
+            exit 0
+          fi
+          test "$(git diff --cached --name-only | grep -vc '^experiences/vendor/hevc/' || true)" -eq 0
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(nova 0.18): vendor audited HEVC WASM assets on experimental branch'
+          git push origin HEAD:refs/heads/chatgpt-studio-nova-v01

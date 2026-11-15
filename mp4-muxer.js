@@ -88,6 +88,10 @@ var Mp4Muxer = (() => {
     view.setUint32(4, value, false);
     return [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]];
   };
+  var i64 = (value) => {
+    view.setBigInt64(0, BigInt(value), false);
+    return [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]];
+  };
   var fixed_8_8 = (value) => {
     view.setInt16(0, 2 ** 8 * value, false);
     return [bytes[0], bytes[1]];
@@ -212,7 +216,9 @@ var Mp4Muxer = (() => {
       0,
       ...tracks.filter((x) => x.samples.length > 0).map((x) => {
         const lastSample = lastPresentedSample(x.samples);
-        return lastSample.presentationTimestamp + lastSample.duration;
+        return x.info.type === "audio" && x.info.editDurationSeconds != null
+          ? x.info.editDurationSeconds + (x.info.editGapSeconds ?? 0)
+          : lastSample.presentationTimestamp + lastSample.duration;
       })
     ), GLOBAL_TIMESCALE);
     let nextTrackId = Math.max(...tracks.map((x) => x.id)) + 1;
@@ -243,12 +249,28 @@ var Mp4Muxer = (() => {
   };
   var trak = (track, creationTime) => box("trak", null, [
     tkhd(track, creationTime),
+    track.info.type === "audio" && track.info.editDurationSeconds != null
+      ? box("edts", null, [fullBox("elst", track.info.editListVersion ?? 0, 0, [
+          u32(track.info.editGapSeconds > 0 ? 2 : 1),
+          track.info.editGapSeconds > 0 ? [
+            (track.info.editListVersion === 1 ? u64 : u32)(
+              intoTimescale(track.info.editGapSeconds, GLOBAL_TIMESCALE)),
+            (track.info.editListVersion === 1 ? i64 : i32)(-1),
+            fixed_16_16(1)
+          ] : [],
+          (track.info.editListVersion === 1 ? u64 : u32)(
+            intoTimescale(track.info.editDurationSeconds, GLOBAL_TIMESCALE)),
+          (track.info.editListVersion === 1 ? i64 : i32)(track.info.editMediaTime),
+          fixed_16_16(1)
+        ])]) : null,
     mdia(track, creationTime)
   ]);
   var tkhd = (track, creationTime) => {
     let lastSample = lastPresentedSample(track.samples);
     let durationInGlobalTimescale = intoTimescale(
-      lastSample ? lastSample.presentationTimestamp + lastSample.duration : 0,
+      track.info.type === "audio" && track.info.editDurationSeconds != null
+        ? track.info.editDurationSeconds + (track.info.editGapSeconds ?? 0)
+        : lastSample ? lastSample.presentationTimestamp + lastSample.duration : 0,
       GLOBAL_TIMESCALE
     );
     let needsU64 = !isU32(creationTime) || !isU32(durationInGlobalTimescale);
@@ -370,7 +392,13 @@ var Mp4Muxer = (() => {
       stsc(track),
       stsz(track),
       stco(track),
-      needsCtts ? ctts(track) : null
+      needsCtts ? ctts(track) : null,
+      track.info.type === "audio" && track.info.rollDistance != null ? fullBox("sgpd", 1, 0, [
+        ascii("roll"), u32(2), u32(1), i16(track.info.rollDistance)
+      ]) : null,
+      track.info.type === "audio" && track.info.rollDistance != null ? fullBox("sbgp", 0, 0, [
+        ascii("roll"), u32(1), u32(track.samples.length), u32(1)
+      ]) : null
     ]);
   };
   var stsd = (track) => fullBox("stsd", 0, 0, [
@@ -415,7 +443,12 @@ var Mp4Muxer = (() => {
     i16(65535)
     // Pre-defined
   ], [
-    VIDEO_CODEC_TO_CONFIGURATION_BOX[track.info.codec](track)
+    VIDEO_CODEC_TO_CONFIGURATION_BOX[track.info.codec](track),
+    // Extension NOVA 0.20 : nclx optionnel UNIQUEMENT si la source
+    // HEVC a été contrôlée dans les SPS/VUI comme BT.709 limité.
+    // Aucun autre export n'est étiqueté implicitement.
+    ...(track.info.colorMetadata === "bt709-limited" ?
+      [box("colr", [ascii("nclx"), u16(1), u16(1), u16(1), u8(0)])] : [])
   ]);
   var avcC = (track) => track.info.decoderConfig && box("avcC", [
     // For AVC, description is an AVCDecoderConfigurationRecord, so nothing else to do here
@@ -1458,6 +1491,11 @@ var Mp4Muxer = (() => {
       if (!Number.isInteger(options.video.height) || options.video.height <= 0) {
         throw new TypeError(`Invalid video height: ${options.video.height}. Must be a positive integer.`);
       }
+      if (options.video.colorMetadata !== void 0 &&
+          (options.video.codec !== "avc" ||
+           options.video.colorMetadata !== "bt709-limited")) {
+        throw new TypeError("NOVA colorMetadata: only AVC BT.709 limited supported");
+      }
       const videoRotation = options.video.rotation;
       if (typeof videoRotation === "number" && ![0, 90, 180, 270].includes(videoRotation)) {
         throw new TypeError(`Invalid video rotation: ${videoRotation}. Has to be 0, 90, 180 or 270.`);
@@ -1478,6 +1516,37 @@ var Mp4Muxer = (() => {
         throw new TypeError(
           `Invalid number of audio channels: ${options.audio.numberOfChannels}. Must be a positive integer.`
         );
+      }
+      // Extension NOVA : elst simple (même piste AAC, pas de vide, 1x).
+      if (options.audio.editDurationSeconds !== void 0 &&
+          (options.audio.codec !== "aac" ||
+           !Number.isInteger(options.audio.editMediaTime) ||
+           options.audio.editMediaTime < 0 ||
+           options.audio.editMediaTime > 0x7fffffff ||
+           !Number.isFinite(options.audio.editDurationSeconds) ||
+           options.audio.editDurationSeconds <= 0 ||
+           options.audio.editDurationSeconds > 12 ||
+           (options.audio.editMediaTime > 0 && options.audio.rollDistance == null))) {
+        throw new TypeError("Unsupported AAC priming edit list");
+      }
+      if (options.audio.editListVersion !== void 0 &&
+          (options.audio.editDurationSeconds === void 0 ||
+           ![0, 1].includes(options.audio.editListVersion))) {
+        throw new TypeError("Unsupported AAC edit-list version");
+      }
+      // Extension NOVA : vide de début (max 500 ms) + unique segment
+      // média. Seulement MP4 progressif ; MSE a des divergences connues.
+      if (options.audio.editGapSeconds !== void 0 &&
+          (options.audio.editDurationSeconds === void 0 ||
+           !Number.isFinite(options.audio.editGapSeconds) ||
+           options.audio.editGapSeconds < 0 || options.audio.editGapSeconds > 0.5 ||
+           options.fastStart === "fragmented")) {
+        throw new TypeError("Unsupported AAC leading empty edit");
+      }
+      // Extension NOVA : ne recopier que les groupes AAC roll de distance -1/0.
+      if (options.audio.rollDistance !== void 0 && (options.audio.codec !== "aac" ||
+          ![-1, 0].includes(options.audio.rollDistance))) {
+        throw new TypeError("Unsupported AAC roll pre-roll distance");
       }
       if (!Number.isInteger(options.audio.sampleRate) || options.audio.sampleRate <= 0) {
         throw new TypeError(
@@ -1559,6 +1628,7 @@ var Mp4Muxer = (() => {
           width: __privateGet(this, _options).video.width,
           height: __privateGet(this, _options).video.height,
           rotation: __privateGet(this, _options).video.rotation ?? 0,
+          colorMetadata: __privateGet(this, _options).video.colorMetadata ?? null,
           decoderConfig: null
         },
         // The fallback contains many common frame rates as factors
@@ -1583,6 +1653,11 @@ var Mp4Muxer = (() => {
           codec: __privateGet(this, _options).audio.codec,
           numberOfChannels: __privateGet(this, _options).audio.numberOfChannels,
           sampleRate: __privateGet(this, _options).audio.sampleRate,
+          rollDistance: __privateGet(this, _options).audio.rollDistance ?? null,
+          editMediaTime: __privateGet(this, _options).audio.editMediaTime ?? 0,
+          editDurationSeconds: __privateGet(this, _options).audio.editDurationSeconds ?? null,
+          editGapSeconds: __privateGet(this, _options).audio.editGapSeconds ?? 0,
+          editListVersion: __privateGet(this, _options).audio.editListVersion ?? 0,
           decoderConfig: null
         },
         timescale: __privateGet(this, _options).audio.sampleRate,
