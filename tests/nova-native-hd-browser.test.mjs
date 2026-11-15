@@ -221,6 +221,52 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   const psnr=Number(matches.at(-1)[1]);
   assert.ok(psnr>25,"Conversion BT.601->BT.709 trop différente : PSNR "+psnr);
 
+  // Simuler la particularité Safari : trame opaque HEVC sans accès YUV.
+  // Le décodeur matériel déclare BT.709, malgré la matrice source BT.601.
+  // Le rendu natif doit pouvoir exporter sans prétendre que la couleur
+  // de l'original est prouvée. Aucune source personnelle impliquée.
+  await page.reload();
+  await page.locator("#novaHdPanel summary").click();
+  await page.evaluate(()=>{
+   const original=NOVA_HD_COLOR.imagePourRendu;
+   NOVA_HD_COLOR.imagePourRendu=async(frame,evidence)=>{
+    const cs=frame.colorSpace;
+    const opaque={
+     format:null,
+     colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",
+      fullRange:cs.fullRange}
+    };
+    const checked=await original(opaque,evidence);
+    if(checked.proof.method!=="native-safari-sdr-bt709-display")
+     throw Error("Opaque Safari fallback not selected");
+    // Garder la vraie VideoFrame native pour que Canvas la dessine.
+    return {frame,owned:false,proof:checked.proof};
+   };
+  });
+  await page.locator("#file").setInputFiles(matrix601);
+  await page.waitForFunction(()=>!document.querySelector("#novaHdRun").disabled);
+  await page.locator("#novaHdRun").click();
+  await page.waitForFunction(()=>{
+   const t=document.querySelector("#novaHdStatus")?.textContent||"";
+   return !!document.querySelector("#novaHdSave")?.getAttribute("href")||
+    /Essai HD non abouti/.test(t);
+  },null,{timeout:100000});
+  const opaqueStatus=await page.locator("#novaHdStatus").textContent();
+  assert.match(opaqueStatus,/MP4 HD exporté/,opaqueStatus);
+  assert.match(opaqueStatus,/ATTENTION COULEURS.*BT.601.*BT.709/,
+   "Native Safari color mismatch must remain visible");
+  const opaqueDL=page.waitForEvent("download");
+  await page.locator("#novaHdSave").click();
+  const opaquePath=await (await opaqueDL).path();
+  const opaqueCheck=JSON.parse((await run("ffprobe",["-v","error",
+   "-show_streams","-of","json",opaquePath],{timeout:10000})).stdout);
+  const opaqueV=opaqueCheck.streams.find(x=>x.codec_type==="video");
+  const opaqueA=opaqueCheck.streams.find(x=>x.codec_type==="audio");
+  assert.equal(opaqueV.width,160);assert.equal(opaqueV.height,120);
+  assert.equal(Number(opaqueV.nb_frames),15);
+  assert.equal(opaqueA.codec_name,"aac");
+  assert.equal(opaqueV.color_space,"bt709");
+
   assert.deepEqual(failures,[]);
   assert.deepEqual(external,[]);
   assert.deepEqual(upload,[]);
