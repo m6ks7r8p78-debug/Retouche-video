@@ -22,7 +22,7 @@ async function originEstimate(){
 }
 function clearReport(){
  if(reportUrl){URL.revokeObjectURL(reportUrl);reportUrl=null}
- if(reportPanel)reportPanel.hidden=true;
+ if(reportPanel){reportPanel.hidden=true;reportPanel.open=false}
  if(reportLink){reportLink.hidden=true;reportLink.removeAttribute("href")}
 }
 function setReport(report){
