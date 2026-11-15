@@ -88,6 +88,10 @@ var Mp4Muxer = (() => {
     view.setUint32(4, value, false);
     return [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]];
   };
+  var i64 = (value) => {
+    view.setBigInt64(0, BigInt(value), false);
+    return [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]];
+  };
   var fixed_8_8 = (value) => {
     view.setInt16(0, 2 ** 8 * value, false);
     return [bytes[0], bytes[1]];
@@ -246,14 +250,17 @@ var Mp4Muxer = (() => {
   var trak = (track, creationTime) => box("trak", null, [
     tkhd(track, creationTime),
     track.info.type === "audio" && track.info.editDurationSeconds != null
-      ? box("edts", null, [fullBox("elst", 0, 0, [
+      ? box("edts", null, [fullBox("elst", track.info.editListVersion ?? 0, 0, [
           u32(track.info.editGapSeconds > 0 ? 2 : 1),
           track.info.editGapSeconds > 0 ? [
-            u32(intoTimescale(track.info.editGapSeconds, GLOBAL_TIMESCALE)),
-            i32(-1), fixed_16_16(1)
+            (track.info.editListVersion === 1 ? u64 : u32)(
+              intoTimescale(track.info.editGapSeconds, GLOBAL_TIMESCALE)),
+            (track.info.editListVersion === 1 ? i64 : i32)(-1),
+            fixed_16_16(1)
           ] : [],
-          u32(intoTimescale(track.info.editDurationSeconds, GLOBAL_TIMESCALE)),
-          i32(track.info.editMediaTime),
+          (track.info.editListVersion === 1 ? u64 : u32)(
+            intoTimescale(track.info.editDurationSeconds, GLOBAL_TIMESCALE)),
+          (track.info.editListVersion === 1 ? i64 : i32)(track.info.editMediaTime),
           fixed_16_16(1)
         ])]) : null,
     mdia(track, creationTime)
@@ -1512,6 +1519,11 @@ var Mp4Muxer = (() => {
            (options.audio.editMediaTime > 0 && options.audio.rollDistance == null))) {
         throw new TypeError("Unsupported AAC priming edit list");
       }
+      if (options.audio.editListVersion !== void 0 &&
+          (options.audio.editDurationSeconds === void 0 ||
+           ![0, 1].includes(options.audio.editListVersion))) {
+        throw new TypeError("Unsupported AAC edit-list version");
+      }
       // Extension NOVA : vide de début (max 500 ms) + unique segment
       // média. Seulement MP4 progressif ; MSE a des divergences connues.
       if (options.audio.editGapSeconds !== void 0 &&
@@ -1634,6 +1646,7 @@ var Mp4Muxer = (() => {
           editMediaTime: __privateGet(this, _options).audio.editMediaTime ?? 0,
           editDurationSeconds: __privateGet(this, _options).audio.editDurationSeconds ?? null,
           editGapSeconds: __privateGet(this, _options).audio.editGapSeconds ?? 0,
+          editListVersion: __privateGet(this, _options).audio.editListVersion ?? 0,
           decoderConfig: null
         },
         timescale: __privateGet(this, _options).audio.sampleRate,
