@@ -2,7 +2,7 @@
  * Prévisualisation géométrique approchée du GLB; non photoréaliste.
  */
 import './generateur.js';
-import {buildSyntheticFilmSequence} from './film-sequence-v02.mjs';
+import {buildSyntheticFilmSceneV03} from './film-contact-v03.mjs';
 import {readSyntheticGLB,sampleSyntheticPose,paintSyntheticScene} from './film-viewer-v03.mjs';
 
 const find=id=>document.querySelector(id);
@@ -76,7 +76,7 @@ create.addEventListener('click',()=>{
  url=null;scene=null;time=0;download.hidden=true;download.removeAttribute('href');
  steps.replaceChildren();limits.replaceChildren();
  try {
-   const output=buildSyntheticFilmSequence(prompt.value,globalThis.Retouche3DGenerator);
+   const output=buildSyntheticFilmSceneV03(prompt.value,globalThis.Retouche3DGenerator);
    if(output.status!=='apercu_partiel_glb_anime'){
      for(const scene of output.project.scenes)for(const step of scene.steps)add(steps,step.intent+' (non animé)');
      add(limits,output.reason);
