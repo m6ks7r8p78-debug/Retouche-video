@@ -1,0 +1,53 @@
+name: Cinema P24 — isolated Chromium and WebKit playback
+on:
+  push:
+    paths:
+      - 'studio-cinema/p24/**'
+      - '.github/workflows/ci-cinema-p24-browser.yml'
+  pull_request:
+    paths:
+      - 'studio-cinema/p24/**'
+      - '.github/workflows/ci-cinema-p24-browser.yml'
+  workflow_dispatch:
+jobs:
+  linux-engine-playback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install open-source offline image and browser test packages
+        run: python -m pip install --disable-pip-version-check 'numpy<3' 'opencv-python-headless>=4.9,<5' playwright
+      - name: Install Linux Chromium and WebKit test engines and dependencies
+        run: python -m playwright install --with-deps chromium webkit
+      - name: Install legal FFmpeg H264 AAC tools
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep 'libx264'
+          ffmpeg -hide_banner -encoders | grep -E '(^| )aac( |$)'
+      - name: Verify isolated preview markup, accessible controls and no tracking
+        run: python -m unittest discover -s studio-cinema/p24/tests -p 'test_p24_browser_static.py' -v
+      - name: Generate verified P19/P21 synthetic movement only
+        run: node studio-cinema/p22/src/build_p22_controls.cjs studio-cinema/p22/results/controls.json
+      - name: Render the unmodified P23 synthetic H264 AAC fixture
+        run: |
+          python studio-cinema/p23/src/temporal_blend.py --data studio-cinema/p22/results/controls.json --out studio-cinema/p24/results/proof --render-preview
+      - name: Validate independent Chromium and WebKit localhost playback and safe refusal
+        run: |
+          python studio-cinema/p24/src/p24_browser_smoke.py             --movie studio-cinema/p24/results/proof/P23_temporal_blend_synthetic_60fps.mp4             --out studio-cinema/p24/results/browser
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinema-p24-browser-linux-synthetic-proof
+          path: studio-cinema/p24/results/browser/
+          if-no-files-found: error
+          retention-days: 3
