@@ -90,6 +90,20 @@
       ]
     },
     {
+      "id": "nova-hd-sdr-matrices",
+      "label": "NOVA — compatibilité matrices vidéo SDR et correction WebCodecs native",
+      "branch": "chatgpt-nova-iphone-hd-sdr-matrices-v1",
+      "pr": 57,
+      "observation": "draft-pr-observed",
+      "interface": "Corriger les sources SDR à matrice 5/6/9 sans masquer leur provenance : colr+SPS/VUI+VideoFrame, reconditionnement YUV8 source uniquement si vérifiable, sortie BT709 et AAC",
+      "workBoundary": "experiences/nova-hd-color.js; experiences/nova-native-hd.js; tests/nova-hd-color.test.mjs; tests/nova-native-hd-browser.test.mjs",
+      "validationGap": "41/41 tests unitaires et 1/1 Chromium navigateur synthétique H264/AAC avec matrice BT601 vers sortie BT709 réussis (PSNR RGB seuil >25 dB), ZIP isolé généré; succès sur vidéo HEVC réelle iPhone toujours non prouvé",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/57",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43724274240"
+      ]
+    },
+    {
       "id": "smallmotion",
       "label": "SmallMotion / PWA / budgets",
       "branch": "preprod-retoucheproai-local-v1",
@@ -247,6 +261,12 @@
       "from": "nova-hd-color-evidence",
       "to": "nova",
       "topic": "Ne pas refuser une vidéo faute de colr complet : combiner SPS/VUI et VideoFrame.colorSpace, garder veto HDR/P3; validation HEVC Safari encore nécessaire avant intégration",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-hd-sdr-matrices",
+      "to": "nova",
+      "topic": "Matrice SDR BT601 5/6 ou BT2020 NCL 9 différente de BT709 : vérification colr+SPS+VideoFrame et correction YUV8 si accessible avant Canvas sRGB/BT709. Ne pas requalifier HDR/P3; tests synthétiques réussis, HEVC Safari non validé.",
       "state": "proposal"
     }
   ],
