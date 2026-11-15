@@ -295,3 +295,41 @@ test("NOVA 0.6 : source portrait 29,97 i/s, durée et trames conservées en sort
   await fs.rm(tmp,{recursive:true,force:true});
  }
 });
+
+
+test("NOVA 0.7 : MP4 AAC décalé physiquement et refus explicite de la désynchronisation",async()=>{
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-av-delay-")),src=path.join(tmp,"delayed.mp4"),app=server();
+ try{
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
+    "-f","lavfi","-i","testsrc2=size=160x90:rate=15:duration=1.4",
+    "-itsoffset","0.35","-f","lavfi","-i","sine=frequency=440:duration=1.0",
+    "-map","0:v","-map","1:a","-c:v","libx264","-pix_fmt","yuv420p",
+    "-c:a","aac","-movflags","+faststart","-y",src]);
+  await new Promise(r=>app.listen(0,"127.0.0.1",r));
+  const browser=await chromium.launch({headless:true,
+    ...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  try{
+   const page=await browser.newPage({viewport:{width:390,height:844}});
+   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
+   await page.locator("#file").setInputFiles(src);
+   const audit=await page.evaluate(async()=>{
+    const file=document.querySelector("#file").files[0];
+    const track=await NOVA_AVSYNC.analyser(file);
+    let rejected=false;
+    try{NOVA_AVSYNC.verifier(track,{durationSeconds:1.4})}catch(e){rejected=/départ audio décalé/.test(e.message)}
+    return {delayUs:track?.delayUs,rejected,edits:track?.edits};
+   });
+   assert.ok(audit.delayUs>=280000&&audit.delayUs<=450000,
+      "l'audio synthétique doit avoir un vrai offset de montage : "+JSON.stringify(audit));
+   assert.equal(audit.rejected,true);
+   await page.locator("#exportVideo").click();
+   await page.waitForFunction(()=>document.querySelector("#exportStatus").textContent.startsWith("Export refusé"),
+     null,{timeout:90000});
+   assert.match(await page.locator("#exportStatus").innerText(),/audio décalé|départ audio décalé/);
+   assert.equal(await page.locator("#downloadVideo").getAttribute("href"),null);
+  }finally{await browser.close()}
+ }finally{
+  if(app.listening)await new Promise(r=>app.close(r));
+  await fs.rm(tmp,{recursive:true,force:true});
+ }
+});
