@@ -1,0 +1,11 @@
+/* Retouche Cinema P14 - local evidence viewer validation (no media bytes in JSON). */
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.RetoucheP14=api;})(typeof window!=='undefined'?window:globalThis,function(){
+'use strict';
+const CHANNELS=['main','doigts','poignet','filtre','levres','joues','regard','paupières','torse','fumee','audio'];
+const OBSERVATIONS=['non_observable','approche','contact','maintien','retrait','inspiration_candidate','pause','expiration_candidate','changement','autre'];
+function validateReport(d){if(!d||d.schema!=='retouche-cinema-p14-visual-audio-candidates-v1'||!Array.isArray(d.results)||d.results.length>60||d.results.length<1)throw Error('Rapport P14 non valide');for(const [i,r] of d.results.entries()){if(typeof r.source_filename_PRIVATE!=='string'||!r.source_filename_PRIVATE||r.source_filename_PRIVATE.includes('/')||r.source_filename_PRIVATE.includes('\\'))throw Error('Nom source non fiable '+i);if(!Number.isFinite(r.start_s)||!Number.isFinite(r.end_s)||r.start_s<0||r.end_s<=r.start_s||r.end_s-r.start_s>12)throw Error('Fenêtre temporelle incorrecte');if(!Array.isArray(r.visual?.series)||r.visual.series.length>150)throw Error('Série visuelle invalide');if(!Array.isArray(r.audio?.rms)||r.audio.rms.length>200)throw Error('Série audio invalide');}return true;}
+function prepareExport(r,events){if(!r)throw Error('Aucun passage choisi');if(!Array.isArray(events)||events.length>200)throw Error('Trop d\'observations');for(const e of events){if(!CHANNELS.includes(e.channel)||!OBSERVATIONS.includes(e.observation)||!Number.isFinite(e.t_s)||e.t_s<r.start_s||e.t_s>r.end_s||e.note.length>400)throw Error('Annotation hors limites')}return{schema:'retouche-cinema-p14-provisional-annotations-v1',source_filename_PRIVATE:r.source_filename_PRIVATE,video_id:r.video_id,split:r.split,scene_group:r.scene_group,window:[r.start_s,r.end_s],observations:events,annotation_type:'provisional_manual',two_independent_reviews:false,confirmed_ground_truth:false,eligible_for_supervised_training:false,pixels_included:false,audio_included:false};}
+function safeValue(x){return Number.isFinite(x)?x:null;}
+return{CHANNELS,OBSERVATIONS,validateReport,prepareExport,safeValue};
+});
+
