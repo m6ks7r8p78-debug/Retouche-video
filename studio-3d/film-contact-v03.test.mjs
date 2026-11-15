@@ -53,3 +53,16 @@ test('ne revendique aucune physique ni vidéo et conserve la protection des réf
  assert.equal(blocked.status,'scenario_seulement');
  assert.equal(blocked.glb,null);
 });
+
+test('la géométrie de prise s’adapte aussi à un personnage masculin adulte',()=>{
+ const out=buildSyntheticFilmSceneV03(
+  "Un homme brun s'assoit dans un salon, boit du thé, pose sa tasse, puis parle.",generator);
+ const scene=readSyntheticGLB(out.glb);
+ const cup=index(scene,'tasse_unique_mobile');
+ const hand=index(scene,'tasse_en_main_groupe');
+ const at=out.timeline.find(x=>x.intent==='boire').start+.90;
+ const pose=sampleSyntheticPose(scene,at);
+ const delta=Math.hypot(...pose.world[hand].translation.map((v,i)=>v-pose.world[cup].translation[i]));
+ assert.ok(delta<.02);
+ assert.equal(out.photorealistic,false);
+});
