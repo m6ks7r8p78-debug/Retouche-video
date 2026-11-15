@@ -1527,13 +1527,24 @@ var Mp4Muxer = (() => {
          options.fastStart === "in-memory") ||
         (options.audio.windowed24Seconds === "opfs" &&
          options.fastStart === false);
+      const opfs48AACAllowed = options.audio.windowed48Seconds === "opfs" &&
+         options.fastStart === false &&
+         options.audio.windowed24Seconds === void 0;
       if (options.audio.windowed24Seconds !== void 0 &&
-          (!windowedAACAllowed || options.audio.codec !== "aac" ||
+          (!windowedAACAllowed || options.audio.windowed48Seconds !== void 0 ||
+           options.audio.codec !== "aac" ||
            !Number.isFinite(options.audio.editDurationSeconds) ||
            options.audio.editDurationSeconds > 24)) {
         throw new TypeError("Unsupported windowed AAC edit-list profile");
       }
-      const maxAacEditDuration = windowedAACAllowed ? 24 : 12;
+      if (options.audio.windowed48Seconds !== void 0 &&
+          (!opfs48AACAllowed || options.audio.codec !== "aac" ||
+           !Number.isFinite(options.audio.editDurationSeconds) ||
+           options.audio.editDurationSeconds <= 24 ||
+           options.audio.editDurationSeconds > 48)) {
+        throw new TypeError("Unsupported 48s OPFS AAC edit-list profile");
+      }
+      const maxAacEditDuration = opfs48AACAllowed ? 48 : windowedAACAllowed ? 24 : 12;
       // Extension NOVA : elst simple (même piste AAC, pas de vide, 1x).
       if (options.audio.editDurationSeconds !== void 0 &&
           (options.audio.codec !== "aac" ||
