@@ -182,3 +182,55 @@ test("NOVA : MP4 court exporté avec son préservé ou refus, puis MP4 sans son 
   await fs.rm(dir,{recursive:true,force:true});
  }
 });
+
+
+test("NOVA : décodage MP4 à fréquence variable et audit des images",async()=>{
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-vfr-"));
+ const src=path.join(tmp,"variable.mp4"),app=server();
+ try{
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
+    "-f","lavfi","-i","testsrc2=size=160x90:rate=30:duration=1.6",
+    "-vf","select='not(mod(n,2))+not(mod(n,5))'","-fps_mode","vfr",
+    "-c:v","libx264","-pix_fmt","yuv420p","-movflags","+faststart","-y",src]);
+  await new Promise(r=>app.listen(0,"127.0.0.1",r));
+  const browser=await chromium.launch({headless:true,...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  try{
+   const page=await browser.newPage({viewport:{width:390,height:844},acceptDownloads:true});
+   const errors=[];page.on("pageerror",e=>errors.push(e.message));
+   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
+   await page.locator("#file").setInputFiles(src);
+   const track=await page.evaluate(async()=>{
+    const info=await NOVA_DEMUX.analyser(document.querySelector("#file").files[0]);
+    if(!info)return null;
+    const pts=NOVA_PTS.planifier(info).nonnegative.map(x=>x.ptsUs);
+    const deltas=pts.slice(1).map((x,i)=>x-pts[i]);
+    return {count:pts.length,deltaKinds:new Set(deltas).size};
+   });
+   assert.ok(track?.count>=20,"samples VFR reconnus");
+   assert.ok(track.deltaKinds>1,"source réellement à cadence variable");
+   await page.locator("#allowSilent").check();
+   await page.locator("#exportVideo").click();
+   await page.waitForFunction(()=>{
+    const el=document.querySelector("#downloadVideo");
+    return !!el?.getAttribute("href")||document.querySelector("#exportStatus").textContent.startsWith("Export refusé");
+   },null,{timeout:90000});
+   const href=await page.locator("#downloadVideo").getAttribute("href");
+   assert.match(href||"",/^blob:/,await page.locator("#exportStatus").innerText());
+   assert.match(await page.locator("#exportStatus").innerText(),/PTS natifs/);
+   assert.match(await page.locator("#exportStatus").innerText(),/Cadence :/);
+   const req=page.waitForEvent("download");await page.locator("#downloadVideo").click();
+   const file=await req;
+   const {stdout}=await runBinary("ffprobe",["-v","error","-select_streams","v:0",
+     "-show_entries","stream=codec_name,duration,nb_frames,width,height","-of","json",await file.path()]);
+   const stream=JSON.parse(stdout).streams[0];
+   assert.equal(stream.codec_name,"h264");
+   assert.ok(+stream.nb_frames>=20&&+stream.nb_frames<=25);
+   assert.ok(+stream.duration>1.2&&+stream.duration<1.8);
+   assert.deepEqual(errors,[]);
+   await page.close();
+  }finally{await browser.close()}
+ }finally{
+  if(app.listening)await new Promise(r=>app.close(r));
+  await fs.rm(tmp,{recursive:true,force:true});
+ }
+});
