@@ -293,6 +293,15 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
   if(!c||c.kind!=="nclx"||c.primaries!==1||c.transfer!==1||
     c.matrix!==1||c.fullRange!==false)
    fail("MP4 final : colorimétrie BT.709 non confirmée");
+  // Le fait d'avoir reçu des chunks AAC ne prouve pas que le MP4 final
+  // comporte une piste audio correctement indexée. Relire le MP4 généré
+  // avec notre parseur indépendant et refuser un fichier sans audio.
+  let outputAudio;
+  try{outputAudio=await globalThis.NOVA_AAC_COPY.planifier(blob,{
+   durationSeconds:p.durationSeconds,signal})}
+  catch{fail("piste audio AAC du MP4 final non vérifiable")}
+  if(!outputAudio?.packets?.length)
+   fail("piste audio AAC absente du MP4 final");
   onProgress({stage:"complete",progress:1});
   return Object.freeze({blob,mode:"native-hd-classical",
    originalWidth:p.width,originalHeight:p.height,
