@@ -1,5 +1,7 @@
 const test=require('node:test'), assert=require('node:assert/strict');
-const c=require('../public/p10_consensus_core.js');
+const fs=require('node:fs'),path=require('node:path');
+const base=path.resolve(__dirname,'..');
+const c=require(fs.existsSync(path.join(base,'p10_consensus_core.js'))?'../p10_consensus_core.js':'../public/p10_consensus_core.js');
 const s={schema:'retouche-cinema-p9-private-human-annotations-v1',source:{local_filename:'demo-fictif.mp4',duration_s:8,video_id:'F001'},annotations:[{channel:'levres',phase:'contact',visibility:'observe',start_s:2,end_s:3,point:[.5,.5]}, {channel:'fumee',phase:'expiration',visibility:'observe',start_s:4,end_s:5,point:[.5,.55],smoke_origin:'mouth'}]};
 const copy=()=>JSON.parse(JSON.stringify(s));
 test('two identical annotations',()=>{const r=c.compare(copy(),copy());assert.equal(r.counts.matched,2);assert.equal(r.counts.disagreements,0)});
