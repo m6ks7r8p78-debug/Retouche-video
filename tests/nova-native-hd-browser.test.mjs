@@ -229,7 +229,7 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   await page.locator("#novaHdPanel summary").click();
   await page.evaluate(()=>{
    const original=NOVA_HD_COLOR.imagePourRendu;
-   NOVA_HD_COLOR.imagePourRendu=async(frame,evidence)=>{
+   window.NOVA_HD_COLOR={...NOVA_HD_COLOR,imagePourRendu:async(frame,evidence)=>{
     const cs=frame.colorSpace;
     const opaque={
      format:null,
@@ -241,7 +241,7 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
      throw Error("Opaque Safari fallback not selected");
     // Garder la vraie VideoFrame native pour que Canvas la dessine.
     return {frame,owned:false,proof:checked.proof};
-   };
+   }};
   });
   await page.locator("#file").setInputFiles(matrix601);
   await page.waitForFunction(()=>!document.querySelector("#novaHdRun").disabled);
