@@ -178,3 +178,41 @@ Cycle **expérimental sur `chatgpt-studio-nova-v01` uniquement**.
 2. Vérifier des fichiers tournés à 23,976 / 25 / 29,97 / 30 / 60 fps, de vraies rotations MP4 et des variantes AAC / VFR / HDR / edit lists.
 3. Construire un audit **des pistes audio sources** (PTS, offsets, délais AAC) avant d'affirmer une synchronisation frame-perfect.
 4. Obtenir un jeu de référence autorisé avec comparaisons perceptuelles et objective sans publication ; n'activer la montée 1080p/4K qu'après validation.
+
+
+## NOVA 0.7 — inspection de la piste audio MP4 source (15 novembre 2026)
+
+**Développement réel sur la branche isolée uniquement. Aucun changement de `main` ni déploiement.**
+
+### Problème corrigé
+
+`decodeAudioData()` fournit du PCM mais ne donne pas à l'application une chronologie fiable des `edit lists` de chaque piste. L'audit 0.6 portait sur les paquets AAC **de sortie**, et pouvait laisser passer une piste MP4 originale qui commence volontairement plus tard que la vidéo : un réencodage naïf aurait supprimé le décalage.
+
+### Ce qui est implémenté
+
+- `experiences/nova-avsync.js` lit localement la boîte `moov` (limitée à 12 Mio pour prévenir une allocation excessive), les pistes `soun`, `mdhd` (timescale), `stsd` (AAC `mp4a`), `stts` (durée d'échantillons) et `edts/elst` (délais et trims simples).
+- Le nouveau contrat **refuse explicitement** : plusieurs pistes sonores ambiguës, codecs source non AAC, edits complexes, décalage initial important, trim de priming trop long, piste audio trop courte ou structures MP4 invalides.
+- L'analyse du conteneur précède `audioDuFichier()` lorsque l'utilisateur demande un export **avec son** ; une erreur bloque tout l'export. Le choix explicite « sans son » ne déclenche pas cet audit.
+- Un décalage initial connu n'est **jamais** supprimé par une correction automatique non vérifiée.
+- L'audit renvoie des informations structurelles de source, sans lire ni sauvegarder le signal sonore et sans upload.
+
+### Bancs d'essai et preuves
+
+- `tests/nova-avsync.test.mjs` : source AAC simple, boîte moov en fin de fichier, priming court, montage à silence initial, trim trop important, durée trop courte, piste muette, pistes multiples, codec non AAC, edits complexes et fichiers tronqués.
+- `tests/nova-browser.test.mjs` : génération FFmpeg d'un **vrai MP4 H.264/AAC avec 350 ms de décalage audio**. Contrôle de l'edit-list détectée puis refus du fichier par le parcours d'export. Ce test ne diffuse aucun média privé.
+- **CI du commit `10c121b0d77f0721757039042efff0e9022929c7`**, run [43681882803](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43681882803) : 2 jobs success, **54/54 tests unitaires et 7/7 navigateur Chromium**.
+
+### Limites non résolues
+
+- Une analyse des tables de temps **ne garantit pas la synchronisation auditive perceptuelle** ni le comportement réel de l'amorçage AAC après réencodage : ce dernier peut introduire un délai additionnel. Des tests de boucle audio et d'écoute sur Safari iPhone sont nécessaires.
+- La voie PCM via `decodeAudioData()` reste un prototype conservateur ; elle ne gère pas les mixes multipistes, edits complexes, fragmentations, vidéo HDR, ni la copie directe AAC sans altération.
+- **Ni 4K/8K, ni validation iPhone réel** ; mêmes plafonds pilote que NOVA 0.6 (12 s, 60 Mo, 640 px, 15 i/s en sortie, sources Full HD en décodage PTS).
+- Une source refusée n'est pas automatiquement rendue muette. Seul l'utilisateur peut demander explicitement la sortie sans son.
+
+### Fondement et pistes suivantes
+
+- [W3C WebCodecs — définition du timestamp et audio priming](https://www.w3.org/TR/webcodecs/)
+- [MDN WebCodecs — transcodage et pass-through audio](https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API/Using_the_WebCodecs_API)
+- [QuickTime File Format — AAC priming](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFAppenG/QTFFAppenG.html)
+
+Prochaine étape : un test de synchronisation de bout en bout (impulsions audio + flashs vidéo synchronisés, FFprobe + analyse du PCM décodé) ; analyser le délai ajouté par l'encodeur AAC sur plusieurs environnements avant de prétendre à une préservation parfaite. Préparer ensuite une alternative de copie sans réencodage de l'audio AAC **uniquement** sur les sources avec chronologie de conteneur intégralement comprise.
