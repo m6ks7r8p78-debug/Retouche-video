@@ -227,18 +227,22 @@ test("actual NOVA AAC native module WebKit ES descriptor extraction works with s
   }
   close(){}
  }
- let decoded=0;
+ let decoded=0,internalFixtureError="";
  const native=phaseNative({
   decode:async()=>{decoded++;return makePCM()},
   capability:({SampleRate,channels})=>NATIVE.capability({
    AudioEncoderClass:Encoded,SampleRate,channels
   }),
-  planifier:(f,o,{decoder})=>NATIVE.planifier(f,o,{
-   EncoderClass:Encoded,DataClass:PCMData,decoder
-  })
+  planifier:async(f,o,{decoder})=>{
+   try{
+    return await NATIVE.planifier(f,o,{
+     EncoderClass:Encoded,DataClass:PCMData,decoder
+    });
+   }catch(e){internalFixtureError=String(e?.message||"unknown mock failure");throw e}
+  }
  });
  const r=await stage(native);
- assert.equal(r.status,CHECK.CODES.success);
+ assert.equal(r.status,CHECK.CODES.success,internalFixtureError);
  assert.equal(r.diagnostic_phase,"completed");
  assert.equal(decoded,1,"the original audio must be decoded exactly once");
  assert.ok(r.aac_lc_reencoded_chunk_count>=46);
