@@ -11,6 +11,7 @@ const root=path.resolve(fileURLToPath(new URL("../",import.meta.url)));
 const pkg=path.join(root,"node_modules/@hevcjs/core");
 const dist=path.join(pkg,"dist");
 const dest=path.join(root,"experiences/vendor/hevc");
+const licensePath=path.join(root,"experiences/LICENSE-hevcjs-MIT.txt");
 const version="1.8.0",licenseUrl="https://github.com/lid-labs/hevc.js/blob/main/LICENSE";
 const maxFile=2*1024*1024;
 // Empreintes indépendamment figées après la première CI et vérifiées
@@ -62,6 +63,10 @@ async function stage(){
  }
  await fs.rm(dest,{recursive:true,force:true});
  await fs.mkdir(dest,{recursive:true});
+ const license=await fs.readFile(licensePath);
+ if(!license.toString("utf8").includes("Copyright (c) 2025 Thibaut Lion"))
+  throw Error("Licence HEVC MIT officielle absente");
+ await fs.writeFile(path.join(dest,"LICENSE.txt"),license);
  const records=[];
  for(const rel of paths){
   if(!isFile(rel))throw Error("Chemin non autorisé");
@@ -84,6 +89,10 @@ async function verify(){
  if(data.library!=="@hevcjs/core"||data.version!==version||data.license!=="MIT"||
     !Array.isArray(data.assets)||data.assets.length<3||data.assets.length>24)
   throw Error("Manifest HEVC invalide");
+ const installedLicense=await fs.readFile(path.join(dest,"LICENSE.txt"));
+ const expectedLicense=await fs.readFile(licensePath);
+ if(!installedLicense.equals(expectedLicense))
+  throw Error("Notice licence HEVC modifiée ou absente");
  const seen=new Set();
  for(const item of data.assets){
   if(!isFile(item.path)||seen.has(item.path)||item.path.startsWith("/"))
