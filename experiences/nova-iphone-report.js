@@ -149,21 +149,87 @@ async function executer({file,moteur,arbitre,allowSilent=false,synthetic=false,s
  return Object.freeze({report:Object.freeze(record),
   outputBlob:record.result==="success"?processed?.blob:null});
 }
+/* Contrat strict de sortie : ne jamais diffuser une propriété ajoutée au
+ * rapport, même quand un plugin ou un autre labo appelle serialiser().
+ * Les nombres ne viennent que des champs explicitement énumérés.
+ */
+const PRIVACY=Object.freeze({
+ mediaUploaded:false,includesFileName:false,includesMediaContent:false,
+ includesUserAgent:false,includesGPS:false,automaticSharing:false
+});
+const LIMITATION="Only a physical Safari iPhone run can validate that device; no RSS/thermal proof";
+const CAVEAT="WASM capacity and optional JS heap are not iPhone RAM or thermal metrics";
+const ENV_KEYS=["secureContext","videoEncoder","videoDecoder","videoFrame",
+ "webAssembly","worker","audioEncoder","standalone"];
+const STAGE_KEYS=["preflight","audio","video","video-flush","aac-copy","mux","verify"];
+const ERROR_CODES=["cancelled","color-or-bitstream-rejected",
+ "audio-preservation-rejected","resource-budget-rejected",
+ "codec-or-browser-unavailable","timeline-rejected","export-failed"];
+const PHASE_CODES=["preflight","export","budget","source","audio",
+ "audioMode","video","verification","fini","complete"];
+function sourceForExport(s){
+ if(!s||typeof s!=="object")return null;
+ const color=s.color&&typeof s.color==="object"?{
+  primaries:count(s.color.primaries),
+  transfer:count(s.color.transfer),
+  matrix:count(s.color.matrix),
+  explicitFullRange:typeof s.color.explicitFullRange==="boolean"?
+   s.color.explicitFullRange:null
+ }:null;
+ return {
+  mimeCategory:safeMode(s.mimeCategory,["video","unknown"]),
+  inputBytes:count(s.inputBytes),
+  containerVideo:safeMode(s.containerVideo,["hevc","other-or-unknown"]),
+  width:count(s.width),height:count(s.height),
+  sampleCount:count(s.sampleCount),durationMs:rounded(s.durationMs),
+  color
+ };
+}
+function outputForExport(o){
+ if(!o||typeof o!=="object")return null;
+ const timing={};
+ for(const k of STAGE_KEYS)timing[k]=rounded(o.timingMs?.[k]);
+ return {
+  mode:safeMode(o.mode,["hevc-wasm"]),
+  audio:safeMode(o.audio,["aac-copy","aac-encode","silent"]),
+  outputWidth:count(o.outputWidth),outputHeight:count(o.outputHeight),
+  outputFps:count(o.outputFps),outputFrames:count(o.outputFrames),
+  outputBytes:count(o.outputBytes),observedDurationMs:rounded(o.observedDurationMs),
+  colorVerified:o.colorVerified===true,timingMs:timing,
+  pipelineElapsedMs:rounded(o.pipelineElapsedMs),
+  wasmPipelineMs:rounded(o.wasmPipelineMs),
+  wasmHeapCapacityPeakBytes:count(o.wasmHeapCapacityPeakBytes),
+  jsHeapObservedPeakBytes:count(o.jsHeapObservedPeakBytes),
+  mp4PayloadBytes:count(o.mp4PayloadBytes),mp4SizeBytes:count(o.mp4SizeBytes),
+  encoderQueuePeak:count(o.encoderQueuePeak),
+  inbandParameterSets:count(o.inbandParameterSets),
+  caveat:CAVEAT
+ };
+}
 function serialiser(report,advice=null){
  if(!report||report.schema!=="retoucheproai.nova.iphone-lab.v1")
   throw new TypeError("rapport NOVA iPhone invalide");
- // Le générateur ne sérialise que les champs de son propre objet ;
- // rejeter objets externes pour éviter d'y inclure des données privées.
- const s=JSON.stringify({
-  schema:report.schema,version:report.version,createdAt:report.createdAt,
-  privacy:report.privacy,environment:report.environment,
-  requestedAudio:report.requestedAudio,sourceKind:report.sourceKind,
-  source:report.source,output:report.output,
-  phase:report.phase,result:report.result,errorCode:report.errorCode,
-  elapsedMs:report.elapsedMs,limitation:report.limitation,
+ const env={};
+ for(const key of ENV_KEYS)env[key]=report.environment?.[key]===true;
+ const result=safeMode(report.result,["success","refused","cancelled"]);
+ const createdAt=typeof report.createdAt==="string"&&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(report.createdAt)&&
+  Number.isFinite(Date.parse(report.createdAt))?report.createdAt:null;
+ const serialized={
+  schema:"retoucheproai.nova.iphone-lab.v1",
+  version:VERSION,createdAt,privacy:{...PRIVACY},environment:env,
+  requestedAudio:safeMode(report.requestedAudio,["preserve","silent-explicit"]),
+  sourceKind:safeMode(report.sourceKind,["synthetic-generated","local-user-file"]),
+  source:sourceForExport(report.source),output:outputForExport(report.output),
+  phase:safeMode(report.phase,PHASE_CODES),result,
+  errorCode:result==="success"?null:
+   safeMode(report.errorCode,ERROR_CODES),
+  elapsedMs:rounded(report.elapsedMs),
+  limitation:LIMITATION,
   deviceAdvice:typeof NOVA_DEVICE_ADVICE==="object"&&NOVA_DEVICE_ADVICE?
    NOVA_DEVICE_ADVICE.publicFields(advice):null
- },null,2);
+ };
+ const s=JSON.stringify(serialized,null,2);
  if(s.length>14000)throw new RangeError("rapport trop volumineux");
  return s+"\n";
 }

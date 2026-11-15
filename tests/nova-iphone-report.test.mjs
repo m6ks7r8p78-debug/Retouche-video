@@ -118,3 +118,57 @@ test("NOVA 0.27 : annulation pendant lecture des métadonnées empêche toute v�
  assert.equal(validated,0);assert.equal(exported,0);
  assert.equal(report.result,"cancelled");assert.equal(outputBlob,null);
 });
+ 
+test("NOVA 0.28 : source, sortie, environnement et texte libre injectés ne sont jamais exportés",async()=>{
+ const {report}=await run();
+ const evil="PRIVATE_PERSON_157.mov GPS=45.52 device=iphone15";
+ const tampered={
+  ...report,version:evil,createdAt:evil,limitation:evil,phase:evil,
+  result:"success",errorCode:evil,requestedAudio:evil,sourceKind:evil,
+  privacy:{mediaUploaded:true,includesFileName:true,rawPrivate:evil},
+  environment:{...env,location:evil,identifier:evil,standalone:evil},
+  source:{...report.source,name:evil,location:evil,fileBytes:evil,
+   color:{...report.source.color,unknownField:evil,explicitFullRange:evil}},
+  output:{...report.output,userAgent:evil,rawPTS:evil,
+   caveat:evil,timingMs:{...report.output.timingMs,secretStage:evil}},
+  rawFile:evil
+ };
+ const encoded=LAB.serialiser(tampered);
+ assert.equal(encoded.includes(evil),false);
+ const clean=JSON.parse(encoded);
+ assert.equal(clean.version,"NOVA 0.24");
+ assert.equal(clean.createdAt,null);
+ assert.equal(clean.phase,"unknown");
+ assert.equal(clean.requestedAudio,"unknown");
+ assert.equal(clean.sourceKind,"unknown");
+ assert.equal(clean.privacy.mediaUploaded,false);
+ assert.equal(clean.privacy.includesFileName,false);
+ assert.equal(clean.environment.standalone,false);
+ assert.equal(clean.source.color.explicitFullRange,null);
+ assert.equal(clean.output.colorVerified,true);
+ assert.equal(clean.output.caveat.includes("WASM capacity"),true);
+ for(const nested of [clean.source,clean.source.color,clean.output,
+    clean.output.timingMs,clean.environment,clean.privacy])
+  assert.equal(Object.values(nested).some(v=>v===evil),false);
+ assert.equal(clean.output.rawPTS,undefined);
+ assert.equal(clean.output.timingMs.secretStage,undefined);
+ assert.equal(clean.environment.identifier,undefined);
+});
+test("NOVA 0.28 : codes d'erreur falsifiés ou résultats inconnus restent bornés",()=>{
+ const result=JSON.parse(LAB.serialiser({
+  schema:"retoucheproai.nova.iphone-lab.v1",
+  result:"success",source:{sampleCount:-13,durationMs:Infinity},
+  output:{mp4SizeBytes:NaN,outputFps:-1,colorVerified:"yes"},
+  environment:{videoEncoder:"enabled"},
+  createdAt:"malicious filename.mov",errorCode:"private-path"
+ }));
+ assert.equal(result.source.sampleCount,null);
+ assert.equal(result.source.durationMs,null);
+ assert.equal(result.output.mp4SizeBytes,null);
+ assert.equal(result.output.outputFps,null);
+ assert.equal(result.output.colorVerified,false);
+ assert.equal(result.environment.videoEncoder,false);
+ assert.equal(result.errorCode,null);
+ assert.equal(result.createdAt,null);
+ assert.equal(result.sourceKind,"unknown");
+});
