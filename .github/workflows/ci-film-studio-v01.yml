@@ -9,6 +9,8 @@ on:
       - 'studio-3d/film-project-v01.test.mjs'
       - 'studio-3d/film-preview-v01.mjs'
       - 'studio-3d/film-preview-v01.test.mjs'
+      - 'studio-3d/film-sequence-v02.mjs'
+      - 'studio-3d/film-sequence-v02.test.mjs'
       - '.github/workflows/ci-film-studio-v01.yml'
 jobs:
   scenario-contract:
@@ -22,4 +24,4 @@ jobs:
         with:
           node-version: '22'
       - name: Verifier le contrat de scenario sans medias prives
-        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs
+        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs
