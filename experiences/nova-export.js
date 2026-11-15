@@ -158,11 +158,12 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  // conteneur AVC déclare EXPLICITEMENT la plage limitée SDR BT.709.
  // Un nclc sans bit de plage ou un MP4 sans colr reste hors de cette preuve.
  // Le chemin approximatif, même choisi explicitement, n'est pas promu.
- const nativeH264Color709=!useHevcWasm&&!allowApproximate&&
-  !!probe&&/^avc[13]\./.test(probe.codec||"")&&
-  probe.color?.kind==="nclx"&&
-  probe.color.primaries===1&&probe.color.transfer===1&&
-  probe.color.matrix===1&&probe.color.fullRange===false;
+ let nativeH264Color709=false;
+ if(!useHevcWasm&&!allowApproximate&&probe&&/^avc[13]\./.test(probe.codec||"")&&
+    typeof globalThis.NOVA_AVC_VUI?.analyser==="function"){
+  try{nativeH264Color709=NOVA_AVC_VUI.analyser(probe).verified===true}
+  catch{nativeH264Color709=false}
+ }
  const verifiedColorPath=useHevcWasm||nativeH264Color709;
  // Garde-fou optionnel interne : l'interface ne peut pas relever la limite
  // de 24 Mio de payloads + MP4 final in-memory.
