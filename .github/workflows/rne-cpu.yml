@@ -39,7 +39,9 @@ on:
       - 'tests/test_rne18_observable_atlas.py'
       - 'tests/test_rne18_provenance_conflicts.py'
       - 'tests/test_rne19_part_provenance.py'
-      - 'tests/test_rne20_inverse_pose.py'
+      - 'tests/test_rne20_inverse_pose.py outils/rne/rne21/anchorage.py outils/rne/rne21/evidence_audit.py outils/rne/rne21/locked_evaluation.py outils/rne/rne21/audit_frozen.py outils/rne/rne21/export_inverse_glb.py tests/test_rne21_anchorage.py tests/test_rne21_evidence_audit.py'
+      - 'tests/test_rne21_anchorage.py'
+      - 'tests/test_rne21_evidence_audit.py'
       - '.github/workflows/rne-cpu.yml'
   workflow_dispatch:
 
@@ -68,7 +70,7 @@ jobs:
       - name: Installer dependances CPU (jamais de medias prives)
         run: |
           python -m pip install --quiet --disable-pip-version-check --index-url https://download.pytorch.org/whl/cpu torch
-          python -m pip install --quiet --disable-pip-version-check "numpy>=2,<3" opencv-python-headless
+          python -m pip install --quiet --disable-pip-version-check "numpy>=2,<3" opencv-python-headless "scipy>=1.14,<2"
       - name: Executer tous les tests RNE et garde-fous sur medias synthetiques
         run: |
           OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=2 python -m unittest discover -s tests -p 'test_rne*.py' -v
