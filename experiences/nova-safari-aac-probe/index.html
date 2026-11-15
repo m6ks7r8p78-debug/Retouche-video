@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; font-src 'none'; img-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
+<title>NOVA — test audio AAC iPhone, sans vidéo personnelle</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./style.css">
+<script defer src="./core.js"></script>
+<script defer src="./ui.js"></script>
+</head>
+<body>
+<main>
+<header><strong class="brand">✦ RETOUCHEPROAI / NOVA LAB</strong><span class="lab">TEST AUDIO</span></header>
+<section aria-labelledby="title" class="intro">
+<p class="eyebrow">DIAGNOSTIC DE COMPATIBILITÉ</p>
+<h1 id="title">Vérifier le son, avant l’export.</h1>
+<p>Ce test crée un son <strong>entièrement artificiel</strong> dans le navigateur, puis demande à Safari de l’encoder en AAC. Il n’utilise ni ton micro ni tes vidéos.</p>
+</section>
+<section class="card" aria-labelledby="test-title">
+<h2 id="test-title">Test AAC sur cet appareil</h2>
+<p>Il examine aussi si le navigateur annonce la prise en charge d’une configuration HEVC. Cela ne prouve pas encore qu’il peut lire ta vidéo.</p>
+<button id="run" type="button">Tester le codec AAC</button>
+<p class="status" id="status" role="status" aria-live="polite">Aucun test lancé.</p>
+<div id="result" hidden>
+ <p id="explanation" class="explanation"></p>
+ <label for="json">Rapport local à copier si tu souhaites le partager :</label>
+ <textarea id="json" rows="13" readonly spellcheck="false"></textarea>
+ <button id="copy" class="secondary" type="button">Copier mon rapport</button>
+ <p id="copy-status" class="status" aria-live="polite"></p>
+</div>
+</section>
+<section class="note">
+<h2>Ce que ce test ne fait pas</h2>
+<p>Il ne lit aucun fichier vidéo, ne vérifie pas le son de ta véritable vidéo HEVC et ne réalise pas d’export MP4. Un résultat positif ne garantit donc pas le succès du traitement NOVA.</p>
+<p><strong>Confidentialité :</strong> aucun son réel, vidéo, nom de fichier, identifiant d’appareil ou rapport n’est transmis par cette page. Les requêtes pour charger le site restent visibles par l’hébergeur HTTPS.</p>
+</section>
+<footer>Laboratoire indépendant · résultats synthétiques · original personnel intact</footer>
+</main>
+</body>
+</html>
