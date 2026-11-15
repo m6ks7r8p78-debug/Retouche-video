@@ -145,3 +145,60 @@ test("NOVA SDR : diagnostic JSON donne matrice colr et SPS anonymisées",()=>{
  assert.equal(r.expectedMatrix,"smpte170m");
  assert.ok(!JSON.stringify(r).includes("PRIVATE"));
 });
+
+test("Safari HEVC format=null : décodeur matériel BT709 avec source 601 produit un rendu natif déclaré non certifié",async()=>{
+ const src={...base,color:{kind:"nclx",primaries:1,transfer:1,matrix:6,fullRange:false}};
+ const info=COLOR.metadata(src);
+ assert.equal(info.expectedMatrix,"smpte170m");
+ const opaque={
+  format:null,
+  colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false},
+  timestamp:0
+ };
+ const result=await COLOR.imagePourRendu(opaque,info);
+ assert.equal(result.frame,opaque);
+ assert.equal(result.owned,false);
+ assert.equal(result.proof.method,"native-safari-sdr-bt709-display");
+ assert.equal(result.proof.sourceMismatch,true);
+ assert.equal(result.proof.colorFidelity,"uncertified-against-source");
+ assert.match(result.proof.warning,/Comparer les couleurs/);
+});
+test("Safari HEVC format=null : garder le refus HDR/P3, plage et primaires incohérentes",async()=>{
+ const src={...base,color:{kind:"nclx",primaries:1,transfer:1,matrix:6,fullRange:false}};
+ const evidence=COLOR.metadata(src);
+ for(const cs of [
+  {primaries:"bt2020",transfer:"hlg",matrix:"bt709",fullRange:false},
+  {primaries:"bt709",transfer:"pq",matrix:"bt709",fullRange:false},
+  {primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:true},
+  {primaries:"smpte170m",transfer:"bt709",matrix:"bt709",fullRange:false}
+ ]){
+  const opaque={format:null,colorSpace:cs};
+  await assert.rejects(()=>COLOR.imagePourRendu(opaque,evidence),
+    /NOVA HD couleur/);
+ }
+ const unverified=COLOR.metadata({...src,color:{kind:"nclx",primaries:2,
+  transfer:2,matrix:6,fullRange:false}});
+ await assert.rejects(()=>COLOR.imagePourRendu({format:null,
+  colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false}},
+  unverified),/non certifiable/);
+});
+test("Safari HEVC NV12 non copiable : recours natif uniquement si WebCodecs déclare NotSupportedError",async()=>{
+ const evidence=COLOR.metadata({...base,color:{...base.color,matrix:6}});
+ const cs={primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false};
+ const fr={format:"NV12",colorSpace:cs,codedRect:{x:0,y:0,width:128,height:96},
+  allocationSize:()=>20000,
+  copyTo:async()=>{const e=new Error("GPU protected");e.name="NotSupportedError";throw e}};
+ const result=await COLOR.imagePourRendu(fr,evidence,function DummyVideoFrame(){});
+ assert.equal(result.owned,false);
+ assert.equal(result.proof.sourceMismatch,true);
+ const other={...fr,copyTo:async()=>{throw Error("I/O issue")}};
+ await assert.rejects(()=>COLOR.imagePourRendu(other,evidence,function DummyVideoFrame(){}),
+  /I\/O issue/);
+});
+test("Safari opaque : matrice source BT2020 NCL ou gamut P3 ne peuvent pas emprunter l'exception 601",async()=>{
+ const i={...base,color:{kind:"nclx",primaries:1,transfer:1,matrix:9,fullRange:false}};
+ const ev=COLOR.metadata(i);
+ await assert.rejects(()=>COLOR.imagePourRendu({format:null,
+  colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false}},ev),
+  /non certifiable/);
+});
