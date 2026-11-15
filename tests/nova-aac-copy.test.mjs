@@ -7,7 +7,7 @@ const box=(type,...parts)=>{const bytes=Buffer.concat(parts),h=Buffer.alloc(8);h
 function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=null,sampleGroup=false,packetCount=3,editDurationMs=null,leadingEmptyMs=0,editListVersion=0,editFlags=0,rawEditMedia=null,rawEditDuration=null,asc=null,wrapped=false}={}){
  const actualASC=Buffer.from(asc||[0x11,0x90]);
  const dsi=Buffer.concat([Buffer.from([5,actualASC.length]),actualASC]);
- const dec=Buffer.concat([Buffer.from([4,13+dsi.length,0x40,0x15,0,0,0,0,1,0,0,1,0]),dsi]);
+ const dec=Buffer.concat([Buffer.from([4,13+dsi.length,0x40,0x15,0,0,0,0,1,0,0,0,1,0,0]),dsi]);
  const es=Buffer.concat([Buffer.from([3,3+dec.length+3,0,1,0]),dec,Buffer.from([6,1,2])]);
  const esds=box("esds",Buffer.alloc(4),wrapped?es:dsi);
  const entry=Buffer.alloc(36);entry.writeUInt32BE(36+esds.length,0);entry.write(sampleType,4);
