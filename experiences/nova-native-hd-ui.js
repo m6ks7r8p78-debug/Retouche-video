@@ -6,15 +6,17 @@
 "use strict";
 const $=id=>document.getElementById(id);
 const run=$("novaHdRun"),save=$("novaHdSave"),keep=$("novaHdOriginal"),
- reportLink=$("novaHdColorJson"),status=$("novaHdStatus"),panel=$("novaHdPanel");
+ reportLink=$("novaHdColorJson"),qualityLink=$("novaHdQualityJson"),
+ status=$("novaHdStatus"),panel=$("novaHdPanel");
 if(!run||!save||!keep||!status||!panel)return;
 const label="Essayer le traitement HD sans réduire la vidéo";
-let selected=null,controller=null,outputURL=null,originalURL=null,generation=0,reportURL=null;
+let selected=null,controller=null,outputURL=null,originalURL=null,generation=0,reportURL=null,qaURL=null;
 function revoke(){
  if(outputURL){URL.revokeObjectURL(outputURL);outputURL=null}
  if(originalURL){URL.revokeObjectURL(originalURL);originalURL=null}
  if(reportURL){URL.revokeObjectURL(reportURL);reportURL=null}
- for(const el of [save,keep,reportLink]){if(el){el.hidden=true;el.removeAttribute("href")}}
+ if(qaURL){URL.revokeObjectURL(qaURL);qaURL=null}
+ for(const el of [save,keep,reportLink,qualityLink]){if(el){el.hidden=true;el.removeAttribute("href")}}
 }
 function reset(){
  generation++;controller?.abort();controller=null;
@@ -43,6 +45,8 @@ run.addEventListener("click",async()=>{
  save.hidden=true;save.removeAttribute("href");
  if(reportURL){URL.revokeObjectURL(reportURL);reportURL=null}
  if(reportLink){reportLink.hidden=true;reportLink.removeAttribute("href")}
+ if(qaURL){URL.revokeObjectURL(qaURL);qaURL=null}
+ if(qualityLink){qualityLink.hidden=true;qualityLink.removeAttribute("href")}
  const my=generation,ctrl=new AbortController(),src=selected;
  controller=ctrl;run.textContent="Annuler l'essai HD";
  status.textContent="Décodage HEVC natif, restauration classique douce et export en cours…";
@@ -61,6 +65,12 @@ run.addEventListener("click",async()=>{
   outputURL=URL.createObjectURL(out.blob);
   save.href=outputURL;save.download=(src.name||"video").replace(/\.[^.]+$/,"")+
    "_NOVA_HD_experimental.mp4";save.hidden=false;
+  if(qualityLink&&out.qualityReport){
+   qaURL=URL.createObjectURL(new Blob([
+    JSON.stringify(out.qualityReport,null,2)+"\n"
+   ],{type:"application/json"}));
+   qualityLink.href=qaURL;qualityLink.hidden=false;
+  }
   status.textContent="MP4 HD exporté : "+out.originalWidth+" × "+
    out.originalHeight+", "+out.outputFrames+" images / "+
    out.sourceFrames+" source, cadence d'origine ~"+out.sourceFps+
@@ -69,8 +79,11 @@ run.addEventListener("click",async()=>{
    ". "+out.modifiedFrames+
    " images avec correction locale de lumière. "+
    (out.colorWarning?("ATTENTION COULEURS : "+out.colorWarning):
-    "Couleurs source et décodage contrôlés : "+
-    (out.decodedColorEvidence||out.sourceColorEvidence)+".")+
+    "Profil BT.709 du MP4 vérifié, fidélité à l'original non certifiée.")+
+   (out.qualityReport?(" Fin des paquets AAC / fin vidéo : "+
+    out.qualityReport.audio.lastAudioPacketMinusVideoDurationMs+
+    " ms (non assimilable à la synchro perceptuelle). "+
+    "Bilan JSON local disponible."):"")+
    " Vérifie visuellement la fidélité et écoute le son ; aucune restauration neuronale.";
  }catch(e){
   if(my===generation&&!ctrl.signal.aborted&&reportLink){
