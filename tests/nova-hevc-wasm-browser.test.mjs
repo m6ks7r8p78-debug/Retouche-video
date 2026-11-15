@@ -30,22 +30,38 @@ function server(){
    res.end(b)}catch{res.writeHead(404).end("Not found")}
  });
 }
-test("NOVA 0.17 : "+engineName+" décode HEVC MOV via WASM local et égale FFmpeg YUV",async(t)=>{
+for(const isVFR of [false,true])test("NOVA 0.18 : "+engineName+
+ (isVFR?" MOV HEVC VFR 30 B-frames PTS réels":" MOV HEVC CFR")+
+ " — décodage WASM image par image identique FFmpeg",async(t)=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),"nova-hevc-wasm-"));
  const source=path.join(dir,"source.mov"),app=server();let browser;
  try{
   await run("ffmpeg",["-hide_banner","-loglevel","error",
-   "-f","lavfi","-i","testsrc2=size=160x90:rate=15:duration=1.2",
+   "-f","lavfi","-i",isVFR?
+    "testsrc2=size=160x90:rate=30:duration=1.6":
+    "testsrc2=size=160x90:rate=15:duration=1.2",
+   ...(isVFR?["-vf","select='not(mod(n,2))+not(mod(n,7))'",
+    "-fps_mode","vfr","-use_editlist","0"]:[]),
    "-c:v","libx265","-preset","ultrafast","-threads","1",
    "-x265-params","pools=none:frame-threads=1:log-level=error:bframes=2",
    "-pix_fmt","yuv420p","-f","mov","-y",source],{timeout:60000});
   const {stdout:raw}=await run("ffmpeg",["-hide_banner","-loglevel","error",
    "-i",source,"-map","0:v:0","-vsync","0","-pix_fmt","yuv420p",
    "-f","rawvideo","-"],{encoding:null,maxBuffer:8*1024*1024});
+  const {stdout:ffFrames}=await run("ffprobe",["-v","error",
+   "-select_streams","v:0","-show_entries",
+   "frame=best_effort_timestamp_time","-of","json",source]);
+  const expectedPTS=(JSON.parse(ffFrames).frames||[]).map(x=>
+   Math.round(Number(x.best_effort_timestamp_time)*1e6));
+  if(isVFR){
+   const deltas=expectedPTS.slice(1).map((x,i)=>x-expectedPTS[i]);
+   assert.ok(new Set(deltas).size>1,"la source HEVC doit être réellement VFR");
+  }
   const expected=crypto.createHash("sha256").update(raw).digest("hex");
   const frameSize=160*90*3/2;
   const expectedFrames=raw.length/frameSize;
   assert.ok(Number.isInteger(expectedFrames)&&expectedFrames>=15);
+  assert.equal(expectedPTS.length,expectedFrames,"FFprobe doit horodater chaque frame");
   const expectedFrameHashes=Array.from({length:expectedFrames},(_,i)=>
    crypto.createHash("sha256").update(raw.subarray(i*frameSize,(i+1)*frameSize)).digest("hex"));
   await new Promise(ok=>app.listen(0,"127.0.0.1",ok));
@@ -67,6 +83,8 @@ test("NOVA 0.17 : "+engineName+" décode HEVC MOV via WASM local et égale FFmpe
   const actual=await page.evaluate(async()=>{
    const HEVCDecoder=(await import("/experiences/vendor/hevc/decoder-entry.js")).HEVCDecoder;
    const f=document.querySelector("#file").files[0];
+   const source=await NOVA_DEMUX.analyser(f);
+   const originalPTS=NOVA_PTS.planifier(source).nonnegative.map(x=>x.ptsUs);
    const before=performance.now();
    const r=await NOVA_HEVC_LAB.decoder(f,{HEVCDecoder,
     wasmBinaryUrl:"/experiences/vendor/hevc/wasm/hevc-decode.wasm"});
@@ -93,7 +111,7 @@ test("NOVA 0.17 : "+engineName+" décode HEVC MOV via WASM local et égale FFmpe
      streamed.push({hash,ptsUs});
     }});
    return {digest,frames:r.stamped.length,annexBBytes:r.annexBBytes,
-    streamed,streamMetrics:stream,
+    streamed,streamMetrics:stream,originalPTS,
     firstPTS:r.stamped[0].ptsUs,lastPTS:r.stamped.at(-1).ptsUs,
     dimensions:[r.info.encodedWidth,r.info.encodedHeight],
     elapsedMs:Math.round(performance.now()-before)};
@@ -104,6 +122,10 @@ test("NOVA 0.17 : "+engineName+" décode HEVC MOV via WASM local et égale FFmpe
   assert.equal(actual.streamMetrics.frames,expectedFrames);
   assert.deepEqual(actual.streamed.map(x=>x.hash),expectedFrameHashes,
    "stream feed/drain/flush doit reproduire chaque image FFmpeg sans accumulation");
+  assert.deepEqual(actual.streamed.map(x=>x.ptsUs),actual.originalPTS,
+   "les PTS décodés doivent être repris sans création artificielle");
+  assert.ok(actual.streamed.every((x,i)=>Math.abs(x.ptsUs-expectedPTS[i])<=2),
+   "horodatages HEVC VFR doivent correspondre à FFprobe à 2 microsecondes près");
   assert.equal(actual.streamMetrics.annexBBytes,actual.annexBBytes);
   assert.ok(actual.streamMetrics.peakChunkBytes<actual.annexBBytes,
    "le décodage flux ne doit jamais assembler le bitstream entier");
