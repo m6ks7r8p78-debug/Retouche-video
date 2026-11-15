@@ -1,0 +1,67 @@
+name: Retouche 3D — SmallMotion Worker First (experimental)
+on:
+  push:
+    branches:
+      - lab-3d-smallmotion-worker-first
+    paths:
+      - 'research/3d-smallmotion/**'
+      - 'index.html'
+      - '.github/workflows/retouche-smallmotion-worker.yml'
+  pull_request:
+    paths:
+      - 'research/3d-smallmotion/**'
+      - 'index.html'
+      - '.github/workflows/retouche-smallmotion-worker.yml'
+jobs:
+  private-by-default-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PYTHONPATH: research/3d-camera-v43:research/3d-multimotion:research/3d-depth-evidence:research/3d-smallmotion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only test dependencies
+        run: python -m pip install numpy opencv-python-headless pytest playwright
+      - name: Ensure supported synthetic video encoder and Chromium
+        run: |
+          if ! command -v ffmpeg >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y ffmpeg; fi
+          if ! command -v chromium >/dev/null && ! command -v google-chrome >/dev/null && ! command -v chromium-browser >/dev/null; then python -m playwright install --with-deps chromium; fi
+      - name: 139 original CPU-only research regressions
+        run: python -m pytest -q research/3d-camera-v43/tests research/3d-multimotion/tests research/3d-depth-evidence/tests research/3d-smallmotion/tests/test_smallmotion.py
+      - name: Keep original JavaScript and resource policy tests
+        run: |
+          node research/3d-smallmotion/tests/test_smallmotion_local.cjs
+          node research/3d-smallmotion/tests/test_resource_guard.cjs
+          node research/3d-smallmotion/tests/test_director_local.cjs
+      - name: Worker orchestration — abort timeout blocked worker parity
+        run: node research/3d-smallmotion/tests/test_worker_runner.cjs
+      - name: Execute exact classic Worker code with importScripts in Node thread
+        run: node research/3d-smallmotion/tests/test_worker_import.cjs
+      - name: Confirm opt-in index wiring, no export modification
+        run: |
+          python research/3d-smallmotion/tests/test_app_wiring.py
+          python research/3d-smallmotion/tests/test_budget_wiring.py
+          python research/3d-smallmotion/tests/test_worker_wiring.py
+      - name: Browser — two decoded synthetic frames, Worker and fallback
+        run: python research/3d-smallmotion/tests/browser_check.py
+      - name: Generate fully offline iPhone Worker diagnostic
+        run: python research/3d-smallmotion/build_worker_iphone_diagnostic.py
+      - name: Browser — offline blob Worker, CSP and manual JSON export
+        run: python research/3d-smallmotion/tests/test_worker_offline.py
+      - name: Browser — Worker parity, UI responsiveness and cancellation
+        run: python research/3d-smallmotion/tests/test_worker_browser.py
+      - name: Archive only synthetic diagnostic numbers
+        uses: actions/upload-artifact@v4
+        with:
+          name: smallmotion-worker-synthetic-only
+          path: |
+            research/3d-smallmotion/results/browser_check.json
+            research/3d-smallmotion/results/worker_offline_check.json
+            research/3d-smallmotion/results/worker_browser_check.json
+          if-no-files-found: error
