@@ -142,11 +142,21 @@ test("NOVA : MP4 court exporté avec son préservé ou refus, puis MP4 sans son 
     const pending=page.waitForEvent("download",{timeout:12000});
     await page.locator("#downloadVideo").click();
     const result=await pending;
-    const {stdout}=await runBinary("ffprobe",["-v","error","-show_entries","stream=codec_type",
+    const {stdout}=await runBinary("ffprobe",["-v","error","-show_entries",
+     "stream=codec_type,codec_name,duration,nb_frames,width,height,start_time",
      "-of","json",await result.path()]);
-    const types=JSON.parse(stdout).streams.map(s=>s.codec_type);
-    assert.ok(types.includes("video"),"flux vidéo MP4 attendu");
-    assert.equal(types.includes("audio"),!silent,"la piste sonore respecte la décision utilisateur");
+    const streams=JSON.parse(stdout).streams||[];
+    const v=streams.find(s=>s.codec_type==="video"),a=streams.find(s=>s.codec_type==="audio");
+    assert.ok(v,"flux vidéo MP4 attendu");
+    assert.equal(v.codec_name,"h264");
+    assert.equal(!!a,!silent,"la piste sonore respecte la décision utilisateur");
+    assert.ok(v.width<=640&&v.height<=640,"limite pilote respectée");
+    assert.ok(+v.duration>1&&+v.duration<1.5,"durée vidéo plausible");
+    assert.ok(+v.nb_frames>=16&&+v.nb_frames<=20,"quantité de trames attendue");
+    if(a){
+      assert.equal(a.codec_name,"aac");
+      assert.ok(Math.abs(+v.duration-(+a.duration))<.25,"écart audio/vidéo trop élevé");
+    }
    }
    assert.deepEqual(errors,[]);
    await page.close();
