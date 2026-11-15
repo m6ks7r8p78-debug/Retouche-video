@@ -19,7 +19,8 @@ const messages=Object.freeze({
  "unsupported-video-codec":"Ce chemin expérimental ne prend pas en charge le codec analysé.",
  "h264-unsafe-metadata":"H.264 : les métadonnées de présentation ne permettent pas encore un export fidèle.",
  "h264-pilot-limit":"H.264 : limites expérimentales dépassées (48 s avec OPFS, source 1080p ou nombre d'images trop élevé).",
- "h264-opfs-unavailable":"H.264 de 24 à 48 s : stockage local OPFS non disponible sur ce navigateur. Export refusé.",
+ "h264-opfs-unavailable":"H.264 : stockage local OPFS réellement inscriptible non disponible. Export refusé.",
+ "h264-hd720-requires-opfs":"Profil HD720 : cochez aussi l'écriture OPFS locale. Aucun export mémoire HD autorisé.",
  "h264-unsafe-color":"H.264 : colorimétrie SDR BT.709 non confirmée ; conversion automatique refusée.",
  "h264-timeline-incompatible":"H.264 : horodatages ou image initiale incompatibles avec le chemin PTS natif.",
  "h264-decoder-unavailable":"H.264 : le décodeur WebCodecs natif n'est pas disponible ici.",
@@ -120,7 +121,11 @@ button.addEventListener("click",async()=>{
  controller=ctl;button.textContent="Annuler le précontrôle";
  status.textContent="Lecture locale des métadonnées, des PTS et de la piste audio…";
  try{
-  const r=await NOVA_REAL_PREFLIGHT.inspect({file:chosen,signal:ctl.signal});
+  const r=await NOVA_REAL_PREFLIGHT.inspect({file:chosen,signal:ctl.signal,
+   outputProfile:document.getElementById("outputHd720")?.checked?
+    "h264-hd720-opfs-3s":"standard",
+   storageMode:document.getElementById("writeOpfs")?.checked?
+    "opfs":"memory"});
   if(id!==generation||ctl.signal.aborted)return;
   const json=NOVA_REAL_PREFLIGHT.serialiser(r);
   blobUrl=URL.createObjectURL(new Blob([json],{type:"application/json"}));

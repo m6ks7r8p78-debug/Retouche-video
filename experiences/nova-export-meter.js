@@ -8,7 +8,12 @@ var NOVA_EXPORT_METER=(()=>{
 const MiB=1048576,DEFAULT=24*MiB;
 const stages=["preflight","audio","video","video-flush","aac-copy","mux","verify","complete"];
 const fail=s=>{throw new Error("NOVA 0.22 budget export : "+s)};
-function create({maxEncodedBytes=DEFAULT,clock,readJsHeap}={}){
+function create({maxEncodedBytes=DEFAULT,clock,readJsHeap,
+  frameProfile="standard"}={}){
+ if(!["standard","h264-hd720-opfs-3s"].includes(frameProfile))
+  fail("profil de copie image invalide");
+ const maxFrameCopyBytes=frameProfile==="h264-hd720-opfs-3s"?
+  1280*720*16:640*360*16;
  if(!Number.isSafeInteger(maxEncodedBytes)||maxEncodedBytes<1024||maxEncodedBytes>DEFAULT)
   fail("limite encodée invalide (1 Kio à 24 Mio)");
  const now=typeof clock==="function"?clock:
@@ -64,7 +69,7 @@ function create({maxEncodedBytes=DEFAULT,clock,readJsHeap}={}){
  }
  function frame({queue=0,bufferBytes=0}={}){
   if(finished||!Number.isSafeInteger(queue)||queue<0||queue>1000||
-     !Number.isSafeInteger(bufferBytes)||bufferBytes<0||bufferBytes>640*360*16)
+     !Number.isSafeInteger(bufferBytes)||bufferBytes<0||bufferBytes>maxFrameCopyBytes)
    fail("statistiques image/encodeur invalides");
   frames++;peakVideoQueue=Math.max(peakVideoQueue,queue);
   peakFrameCopyBytes=Math.max(peakFrameCopyBytes,bufferBytes);

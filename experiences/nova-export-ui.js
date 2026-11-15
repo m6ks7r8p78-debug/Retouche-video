@@ -9,7 +9,7 @@ const panel=$("pilotVideo"),start=$("exportVideo"),silent=$("allowSilent"),
   hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText"),
   reportPanel=$("novaLocalExportReportPanel"),
   reportLink=$("novaLocalExportReportJson"),
-  opfs=$("writeOpfs");
+  opfs=$("writeOpfs"),hd720=$("outputHd720");
 if(!panel||!start||!silent||!download||!status||!fileInput)return;
 let file=null,controller=null,blobUrl=null,generation=0,releaseStored=null,
  reportUrl=null;
@@ -53,6 +53,7 @@ function clear(){
  if(hevcText)hevcText.textContent="";
  start.disabled=true;start.textContent="Exporter un MP4 restauré";panel.hidden=true;silent.checked=false;if(approx)approx.checked=false;
  if(opfs){opfs.checked=false;opfs.disabled=!globalThis.NOVA_OPFS_STREAM?.supported();}
+ if(hd720){hd720.checked=false;hd720.disabled=!globalThis.NOVA_OPFS_STREAM?.supported();}
 }
 function choisir(f){
  clear();file=null;
@@ -86,6 +87,7 @@ start.addEventListener("click",async()=>{
    file,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,
    allowSilent:silent.checked,allowApproximate:!!approx?.checked,signal:ctl.signal,
    storageMode:opfs?.checked?"opfs":"memory",
+   outputProfile:hd720?.checked?"h264-hd720-opfs-3s":"standard",
    onProgress:step=>{
     if(generation!==thisGen)return;
     lastStage=step.stage;

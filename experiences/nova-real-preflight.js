@@ -29,7 +29,7 @@ const codes=new Set(["ready-for-export-attempt","not-video","file-budget",
  "resource-budget","audio-not-preservable","analysis-unavailable","cancelled",
  "h264-unsafe-metadata","h264-pilot-limit","h264-unsafe-color",
  "h264-timeline-incompatible","h264-decoder-unavailable","h264-encoder-unavailable",
- "h264-opfs-unavailable"]);
+ "h264-opfs-unavailable","h264-hd720-requires-opfs"]);
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
 const count=x=>Number.isSafeInteger(x)&&x>=0?x:null;
 const small=x=>finite(x)&&x>=0&&x<=160?Math.round(x*10)/10:null;
@@ -87,7 +87,7 @@ function category(info){
         typeof c==="string"&&/^avc[13]\./.test(c)?"h264":"other-or-unknown";
 }
 async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
- getEnvironment,diagnose,h264Inspect}={}){
+ getEnvironment,diagnose,h264Inspect,outputProfile="standard",storageMode="memory"}={}){
  const r=state(file);
  const stopped=()=>signal?.aborted===true;
  if(stopped())return finish(r,"cancelled");
@@ -133,12 +133,15 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
    const fn=h264Inspect||globalThis.NOVA_H264_PATH?.inspect;
    if(typeof fn!=="function")return finish(r,"unsupported-video-codec");
    let h264;
-   try{h264=await fn({file,info,signal,plan,guard,audioPlan})}
+   try{h264=await fn({file,info,signal,plan,guard,audioPlan,
+      outputProfile,storageMode})}
    catch{return finish(r,stopped()?"cancelled":"analysis-unavailable")}
    if(stopped())return finish(r,"cancelled");
    if(h264?.schema!=="retoucheproai.nova.h264-path.v1"||
       !codes.has(h264.status))return finish(r,"analysis-unavailable");
    r.sourceEngine="webcodecs-h264-native-pts";
+   r.outputProfile=outputProfile==="h264-hd720-opfs-3s"?
+    "h264-hd720-opfs-3s":"standard";
    r.estimatedMiB=small(h264.estimatedMiB);
    if(h264.status==="ready-for-export-attempt"){
     if(h264.audio!=="aac-copy-verified"||!h264.proposal)
@@ -230,14 +233,20 @@ function serialiser(report){
    x=>blockingCodes.has(x)))].slice(0,4):[],
   advisories:Array.isArray(report.advisories)?[...new Set(report.advisories.filter(
    x=>advisoryCodes.has(x)))].slice(0,2):[],
+  outputProfile:report.outputProfile==="h264-hd720-opfs-3s"?
+    "h264-hd720-opfs-3s":"standard",
   pilotLimits:{codedPixelAreaMax:r.codec==="h264"?1920*1080:MAX_CODED_PIXELS,
    sourceFramesMax:r.codec==="h264"?5000:MAX_SOURCE_FRAMES,
    maxDurationMs:r.codec==="h264"?48000:MAX_SECONDS_US/1000,
    outputFpsMax:MAX_OUTPUT_FPS,
-   outputSideMax:640},
+   outputSideMax:report.outputProfile==="h264-hd720-opfs-3s"?1280:640},
   exportProposal:p&&[p.width,p.height,p.fps,p.frames].every(Number.isSafeInteger)&&
-    p.width>=2&&p.height>=2&&p.width<=640&&p.height<=640&&p.fps===15&&
-    p.frames>=1&&p.frames<=(r.codec==="h264"?720:180)?
+    p.width>=2&&p.height>=2&&p.fps===15&&
+    p.width<=(report.outputProfile==="h264-hd720-opfs-3s"?1280:640)&&
+    p.height<=(report.outputProfile==="h264-hd720-opfs-3s"?1280:640)&&
+    p.width*p.height<=(report.outputProfile==="h264-hd720-opfs-3s"?1280*720:640*640)&&
+    p.frames>=1&&p.frames<=(report.outputProfile==="h264-hd720-opfs-3s"?45:
+     r.codec==="h264"?720:180)?
     {width:p.width,height:p.height,fps:p.fps,frames:p.frames}:null,
   privacy:{mediaUploaded:false,rawMediaInReport:false,filenameInReport:false,
    automaticSharing:false,mediaModified:false},

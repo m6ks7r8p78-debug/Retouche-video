@@ -139,6 +139,7 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <details class="sourceAdvanced"><summary>Écriture progressive locale (expérimental)</summary>
 <p>Enregistrez temporairement le MP4 dans le stockage privé de ce navigateur, puis récupérez-le avec le lien de téléchargement habituel. Mode réservé aux vidéos H.264 BT.709 vérifiées de plus de 12 à 48 s avec piste AAC conservable. Obligatoire au-delà de 24 s. Test Safari iPhone physique non effectué. Le stockage OPFS peut persister après une fermeture brutale ; évitez tout fichier confidentiel dans ce laboratoire avant validation.</p>
 <label><input type="checkbox" id="writeOpfs"> Utiliser l'écriture progressive privée sur cet appareil (sans upload)</label>
+<label><input type="checkbox" id="outputHd720"> Essayer la sortie 720p réel (H.264 BT.709, source au moins 1280 × 720, durée 3 s maximum, AAC conservé et OPFS coché ; laboratoire non validé sur iPhone)</label>
 </details>
 <a id="downloadVideo" hidden>Enregistrer le fichier MP4</a>
 <div id="exportStatus" role="status" aria-live="polite">Aucun export lancé.</div>
