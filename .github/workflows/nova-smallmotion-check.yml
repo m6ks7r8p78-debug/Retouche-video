@@ -1,0 +1,68 @@
+name: NOVA SmallMotion - interface expérimentale isolée
+on:
+  push:
+    branches:
+      - chatgpt-nova-smallmotion-bridge-v1
+  pull_request:
+    branches:
+      - chatgpt-studio-nova-v01
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-smallmotion-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  bridge-unitaires:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe des nouveaux modules
+        run: |
+          node --check experiences/vendor/smallmotion/smallmotion-local.js
+          node --check experiences/nova-smallmotion-bridge.js
+          node --check experiences/nova-smallmotion-ui.js
+          node --check tests/nova-smallmotion-bridge.test.mjs
+          node --check tests/nova-smallmotion-browser.test.mjs
+      - name: Installer FFmpeg pour paquet de test sans média privé
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Tests NOVA et SmallMotion
+        run: node --test tests/nova-smallmotion-bridge.test.mjs tests/nova-iphone-preview.test.mjs tests/nova-decision.test.mjs tests/nova-iphone-report.test.mjs
+      - name: Générer aperçu isolé
+        run: node outils/build-nova-iphone-preview.mjs
+      - name: Archiver aperçu technique sans vidéo personnelle
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-smallmotion-preview
+          path: dist/nova-iphone-preview/
+          retention-days: 7
+          if-no-files-found: error
+  bridge-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Playwright
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: Installer FFmpeg si absent
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Tester l'import vidéo, deux images et aucun upload sur Chromium
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test tests/nova-smallmotion-browser.test.mjs

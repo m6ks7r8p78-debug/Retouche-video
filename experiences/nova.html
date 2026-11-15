@@ -139,6 +139,15 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 </details>
 
 </section>
+<details class="sourceAdvanced" id="novaMotionPanel">
+<summary>SmallMotion · mouvement local (recherche)</summary>
+<p>Compare deux images d'une vidéo sélectionnée, dans ce navigateur uniquement.
+Résultat consultatif : pas de preuve de geste, de profondeur ni de mouvement indépendant.
+Aucun traitement ne démarre sans appui, aucune modification ni transmission du média.</p>
+<button type="button" class="secondary" id="novaMotionRun" disabled>Analyser 2 images sans modifier</button>
+<div id="novaMotionStatus" role="status" aria-live="polite">Importez une courte vidéo compatible pour obtenir un diagnostic local.</div>
+<a id="novaMotionJson" hidden>Enregistrer le diagnostic mouvement JSON local</a>
+</details>
 <details class="sourceAdvanced" id="iphoneBenchPanel">
 <summary>Tester sur iPhone Safari · diagnostic local</summary>
 <p>Deux tests volontaires : clip HEVC/AAC synthétique (sans média personnel) ou courte vidéo HEVC locale. Le rapport JSON distingue la source et ne contient
@@ -377,5 +386,8 @@ async function sampleVideo(){
 })();
 </script>
 <script src="nova-export-ui.js"></script>
+<script src="./vendor/smallmotion/smallmotion-local.js"></script>
+<script src="nova-smallmotion-bridge.js"></script>
+<script src="nova-smallmotion-ui.js"></script>
 <script src="nova-iphone-lab-ui.js"></script>
 </body></html>

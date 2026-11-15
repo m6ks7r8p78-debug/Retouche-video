@@ -24,11 +24,12 @@ async function walk(dir){
  }
 }
 await walk("experiences/vendor/hevc");
+await walk("experiences/vendor/smallmotion");
 await fs.rm(out,{recursive:true,force:true});
 await fs.mkdir(out,{recursive:true});
 const manifest=[];
 for(const rel of paths){
- if(!/^(mp4-muxer\.js|experiences\/nova[\w.-]*\.(?:js|html)|experiences\/vendor\/hevc\/[\w./-]+)$/.test(rel))
+ if(!/^(mp4-muxer\.js|experiences\/nova[\w.-]*\.(?:js|html)|experiences\/vendor\/(?:hevc|smallmotion)\/[\w./-]+)$/.test(rel))
   throw Error("fichier non autorisé : "+rel);
  const from=path.join(root,rel),to=path.join(out,rel),bytes=await fs.readFile(from);
  await fs.mkdir(path.dirname(to),{recursive:true});
@@ -68,6 +69,8 @@ for(const script of scripts){
 }
 for(const required of [
  "experiences/nova-worker.js","experiences/nova-iphone-lab-ui.js",
+ "experiences/nova-smallmotion-bridge.js","experiences/nova-smallmotion-ui.js",
+ "experiences/vendor/smallmotion/smallmotion-local.js",
  "experiences/nova-iphone-report.js","experiences/vendor/hevc/wasm/hevc-decode.wasm",
  "experiences/vendor/hevc/wasm/hevc-decode.js",
  "experiences/vendor/hevc/decoder-entry.js",
