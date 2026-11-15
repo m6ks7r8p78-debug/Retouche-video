@@ -56,3 +56,72 @@ jobs:
           export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -x "$CHROME"
           node --test tests/nova-hd720-6s-browser.test.mjs tests/nova-hd720-output-browser.test.mjs tests/nova-hd720-color-av-browser.test.mjs tests/nova-opfs-stream-browser.test.mjs tests/nova-h264-windowed-long-browser.test.mjs
+  preview:
+    needs: [unit, browser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier outils de création de mire H.264 et HEVC
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep -q libx264
+          ffmpeg -hide_banner -encoders | grep -q libx265
+      - name: Construire le paquet HTTPS isolé et mire 720p 6s synthétique
+        run: node outils/build-nova-iphone-preview.mjs dist/nova-hd720-6s-iphone --with-hd720-6s
+      - name: Valider chaque SHA-256 et les deux pistes de la mire
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          import path from 'node:path';
+          import assert from 'node:assert/strict';
+          import {execFileSync} from 'node:child_process';
+          const root='dist/nova-hd720-6s-iphone';
+          const manifest=JSON.parse(fs.readFileSync(path.join(root,'asset-manifest.json'),'utf8'));
+          assert.equal(manifest.kind,'NOVA iPhone HTTPS preview, NOT DEPLOYED');
+          assert.equal(manifest.publication,'none');
+          assert.equal(manifest.privateMediaIncluded,false);
+          assert.equal(manifest.version,'0.24-hd720-6s-experimental');
+          for(const item of manifest.files){
+           assert.ok(!item.path.startsWith('/')&&!item.path.includes('..'),'Chemin externe interdit');
+           assert.ok(!/personal|private|SECRET|_157/i.test(item.path),'Média privé interdit');
+           const file=fs.readFileSync(path.join(root,item.path));
+           assert.equal(file.byteLength,item.bytes,'Taille non conforme '+item.path);
+           assert.equal(crypto.createHash('sha256').update(file).digest('hex'),
+            item.sha256,'Hash incorrect '+item.path);
+          }
+          const key='experiences/nova-hd720-6s-synthetic.mp4';
+          const fixture=manifest.files.find(x=>x.path===key);
+          assert.equal(fixture?.origin,'ffmpeg-synthetic-hd720-6s-only');
+          const media=JSON.parse(execFileSync('ffprobe',['-v','error','-show_streams','-of',
+           'json',path.join(root,key)],{encoding:'utf8'}));
+          const video=media.streams.find(x=>x.codec_type==='video'),
+            audio=media.streams.find(x=>x.codec_type==='audio');
+          assert.deepEqual([video.codec_name,video.width,video.height,video.avg_frame_rate],
+           ['h264',1280,720,'30/1']);
+          assert.equal(audio.codec_name,'aac');
+          assert.ok(Math.abs(Number(video.duration)-6)<0.15);
+          assert.ok(Math.abs(Number(audio.duration)-6)<0.15);
+          assert.equal(video.color_primaries,'bt709');
+          assert.equal(video.color_transfer,'bt709');
+          assert.equal(video.color_space,'bt709');
+          assert.equal(video.color_range,'tv');
+          assert.ok(fs.readFileSync(path.join(root,'index.html'),'utf8')
+           .includes('Télécharger la mire H.264/AAC 720p'));
+          console.log(JSON.stringify({status:'verified-preview-not-deployed',
+           files:manifest.files.length,fixtureBytes:fixture.bytes,
+           source:'synthetic-1280x720-30fps-6s-h264-aac-bt709',publicDeployment:false}));
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-HD720-6s-iPhone-HTTPS-PREVIEW-NON-DEPLOYE
+          path: dist/nova-hd720-6s-iphone/
+          if-no-files-found: error
+          retention-days: 7
