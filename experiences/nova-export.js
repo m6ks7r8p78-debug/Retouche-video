@@ -148,7 +148,7 @@ function transformateur(moteur,arbitre){
  return {traiter,fermer};
 }
 async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=false,onProgress=()=>{},signal,
-  maxEncodedBytes,storageMode="memory"}={}){
+  maxEncodedBytes,storageMode="memory",outputProfile="standard"}={}){
  if(!file||typeof file.arrayBuffer!=="function"||!moteur?.restituer||!arbitre?.arbitrer)throw new TypeError("Fichier et moteurs NOVA requis");
  if(typeof VideoEncoder==="undefined"||typeof VideoFrame==="undefined"||typeof Mp4Muxer==="undefined")
    throw new Error("WebCodecs ou muxer MP4 indisponible sur cet appareil");
@@ -187,6 +187,15 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  // choisi l'OPFS local; le MP4 en RAM et HEVC gardent leurs anciens plafonds.
  if(!["memory","opfs"].includes(storageMode))throw new Error("Mode de stockage MP4 inconnu");
  const useOpfs=storageMode==="opfs";
+ if(!["standard","h264-hd720-opfs-3s"].includes(outputProfile))
+  throw new Error("NOVA : profil de sortie inconnu");
+ const hd720=outputProfile==="h264-hd720-opfs-3s";
+ if(hd720&&(!useOpfs||!nativeH264Color709||allowSilent||allowApproximate||
+   !Number.isSafeInteger(probe?.durationUs)||probe.durationUs>3000000||
+   probe.durationUs<1||
+   Math.min(probe.dw,probe.dh)<720||
+   Math.max(probe.dw,probe.dh)<1280))
+  throw new Error("NOVA HD720 : H.264 BT.709 1280×720+, ≤3 s, AAC et OPFS obligatoires");
  const windowedH264=nativeH264Color709&&
    Number.isSafeInteger(probe?.durationUs)&&probe.durationUs>12000000&&
    probe.durationUs<=(useOpfs?48000000:24000000);
@@ -194,15 +203,16 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  if(!useOpfs&&nativeH264Color709&&probe?.durationUs>24000000&&
     probe.durationUs<=48000000)
   throw new RangeError("Au-delà de 24 secondes, activer explicitement l'écriture progressive OPFS");
- if(useOpfs&&(!windowedH264||allowSilent||allowApproximate||
+ if(useOpfs&&(!(windowedH264||hd720)||allowSilent||allowApproximate||
     !globalThis.NOVA_OPFS_STREAM?.supported()))
-  throw new Error("Écriture OPFS réservée au H.264 SDR >12–48 s vérifié avec copie AAC");
+  throw new Error("Écriture OPFS réservée au H.264 SDR vérifié avec copie AAC");
  if(useOpfs&&!(await NOVA_OPFS_STREAM.probe({signal})))
   throw new Error("Écriture OPFS refusée : accès réel au stockage privé indisponible");
  // Garde-fou optionnel interne : l'interface ne peut pas relever la limite
  // de 24 Mio de payloads + MP4 final in-memory.
- const exportMeter=useHevcWasm||windowedH264?
-  NOVA_EXPORT_METER.create({maxEncodedBytes}):null;
+ const exportMeter=useHevcWasm||windowedH264||hd720?
+  NOVA_EXPORT_METER.create({maxEncodedBytes,
+   frameProfile:hd720?"h264-hd720-opfs-3s":"standard"}):null;
  const media=useHevcWasm?null:document.createElement("video");
  if(media){
   media.muted=true;media.playsInline=true;media.preload="auto";
@@ -220,7 +230,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   const sourceWidth=hevcMeta?.width??media.videoWidth;
   const sourceHeight=hevcMeta?.height??media.videoHeight;
   const settings=plan({duration:sourceDuration,width:sourceWidth,height:sourceHeight,
-    bytes:file.size,profile:extendedOpfs?"h264-opfs-48s":
+    bytes:file.size,profile:hd720?"h264-hd720-opfs-3s":
+    extendedOpfs?"h264-opfs-48s":
     windowedH264?"h264-windowed-24s":undefined});
   if(!globalThis.NOVA_GUARD)throw new Error("Garde-fous mémoire NOVA indisponibles");
   const budget=NOVA_GUARD.exigerBudget({sourceBytes:file.size,
@@ -266,7 +277,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     onProgress({stage:"source",mode:"approximate"});
   }
   const config={codec:"avc1.42E01F",width:settings.width,height:settings.height,
-    framerate:settings.fps,bitrate:Math.min(2_500_000,Math.max(550_000,settings.width*settings.height*settings.fps*.28)),
+    framerate:settings.fps,bitrate:hd720?4_000_000:
+     Math.min(2_500_000,Math.max(550_000,settings.width*settings.height*settings.fps*.28)),
     avc:{format:"avc"},latencyMode:"quality"};
   if(!(await VideoEncoder.isConfigSupported(config)).supported)throw new Error("H.264 non disponible pour ce pilote");
   onProgress({stage:"audio",progress:0});
@@ -382,7 +394,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    // Convertir réellement les pixels en YCbCr I420 BT.709 plage limitée.
    const frame=verifiedColorPath?
      NOVA_COLOR709.videoFrame(processed.data,processed.width,processed.height,
-      entry.timestamp,entry.duration):
+      entry.timestamp,entry.duration,hd720?"h264-hd720-opfs-3s":"standard"):
      new VideoFrame(canvas,{timestamp:entry.timestamp,duration:entry.duration});
    try{videoEnc.encode(frame,{keyFrame:entry.keyFrame||forceKeyFrame})}
    finally{frame.close()}
@@ -390,7 +402,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     bufferBytes:processed.data.byteLength+settings.width*settings.height*3/2});
    if(videoEnc.encodeQueueSize>5)await NOVA_GUARD.attendreEncodeur(videoEnc,{maxQueue:3,signal});
    if(error)throw error;
-   if(opfsSink&&(entry.index+1)%30===0){
+   if(opfsSink&&(entry.index+1)%(hd720?15:30)===0){
     await videoEnc.flush();
     if(error)throw error;
     await opfsSink.drain();
