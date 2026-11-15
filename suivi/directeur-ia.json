@@ -47,15 +47,17 @@
     "RNE15: 50 tests synthétiques locaux, 450 scènes appariées. Nouveau garde-fou n'empêche aucun défaut supplémentaire par rapport à RNE14 et refuse 1249 zones correctes en plus. Rejet; nouveau filtre de preuve appariée ajouté.",
     "RNE16 ANCRE: 9592 paramètres, modèle original CNN double branche entraîné de zéro sur 450 exemples exclusivement synthétiques, 280 étapes. +0,288 dB sur 150 cas synthétiques initiaux après correction confiance 7x7; sur second générateur gelé, 26 pertes >0,5 dB et petit texte en recul. Promotion refusée; 40 tests locaux verts.",
     "RNE17 AEGIS: 2305-param residual gate trained on 600 private-data-free synthetic scenes; dev 180: 7→0 severe; locked 270: 16→3 severe, mean -0.048dB vs bicubic; learned not better than fixed 0.70 => REJECTED, 41 synthetic tests PASS.",
-    "RNE18 OBSERVABLE3D: 3D synthetic view evidence atlas; UV observed 21.1%/47.1%/76.0% with 1/4/10 views, 24% unknown left. Calibrated camera and geometry are provided by simulator; 47 tests PASS, 8 independent procedural textures exposed forged UV calibration. NOT a human 3D reconstruction."
+    "RNE18 OBSERVABLE3D: 3D synthetic view evidence atlas; UV observed 21.1%/47.1%/76.0% with 1/4/10 views, 24% unknown left. Calibrated camera and geometry are provided by simulator; 47 tests PASS, 8 independent procedural textures exposed forged UV calibration. NOT a human 3D reconstruction.",
+    "RNE19 OBSERVABLE ARTICULE: simulateur 3D synthétique de 11 pièces, contact géométrique main-objet, profondeur/occlusion, 2 GLB, atlas partiels, 50 nouveaux tests + 47 regressions RNE18 PASS. Générique GitHub sans médias privés, aucune reconstruction réelle."
   ],
   "prochaines_etapes": [
-    "Construct separate synthetic articulated 3D ground-truth scenes: person-like head/torso/arms/hands + held objects, with correct visibility and contacts. Measure UV coverage by body part and unseen regions.",
-    "Recover camera pose, depth and articulated pose from RGB with a verifiable independent estimation pipeline; NEVER pass simulator GT to inference; quantify calibration errors and mistaken geometry.",
-    "Provide separate masks for observed / contested / never observed / AI-inferred surfaces; AI-generated hidden sides must never be mislabeled as actual identity.",
-    "Check rights/privacy and conditions for authorized personal historical video inference and model training; keep 41 recent uploads strictly excluded from training and calibration.",
-    "Benchmark on authorized public articulated multi-view data and independent subjects before testing user videos, measuring identity drift, hands, occlusions, false observed evidence and 3D geometry uncertainty.",
-    "Do not merge the draft PR, publish weights/media, deploy to retoucheproai.com, or claim iPhone Safari performance without respective validation; CI remote to verify."
+    "Ne pas présenter les GLB synthétiques connus du simulateur comme des personnes reconstruites depuis vidéo. Séparer géométrie source 100 % connue et atlas UV partiellement observé.",
+    "Apprendre à segmenter des parties, estimer pose et profondeur depuis des seules images, puis contrôler sur notre simulateur où les vérités sont disponibles.",
+    "Tester de véritables mouvements multi-personne, main-objet, occlusions et ambiguïtés sur données publiques sous licence compatible, puis seulement envisager les médias historiques autorisés.",
+    "Préserver les 41 vidéos récentes hors entraînement, calibration de seuils et mise au point ; les utiliser plus tard dans un protocole strictement préenregistré si souhaité.",
+    "Proposer un viewer 3D adapté iPhone, distinguer GLB de USDZ et tester réellement sur Safari avant tout engagement de compatibilité.",
+    "Conserver RNE 0.4 et ANCRE en tant que références expérimentales distinctes ; pas de déploiement ni de fusion automatique.",
+    "Confirmer exécution distante GitHub Actions ; rapporter clairement tout problème de CI."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -66,16 +68,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-15",
     "objets": [
-      "outils/rne/rne18/observable_atlas.py",
-      "outils/rne/rne18/bench_observability.py",
-      "outils/rne/rne18/stress_provenance.py",
-      "tests/test_rne18_observable_atlas.py",
-      "tests/test_rne18_provenance_conflicts.py",
-      "RETOUCHE_NEURAL_ENGINE_18.md",
+      "outils/rne/rne19/part_provenance.py",
+      "tests/test_rne19_part_provenance.py",
+      "RETOUCHE_NEURAL_ENGINE_19.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "47 synthetic tests passed in isolated GH-layout plus 10 synthetic camera views and 8 independent texture stress samples",
-    "statut_ci": "a_verifier"
+    "preuve_locale": "50 tests articulated 3D, 47 tests historiques RNE18, 2 GLB round trip; 18 tests public écrits (CI remote non vérifiée)",
+    "statut_ci": "a_verifier",
+    "observations": "aucun média privé ni checkpoint publié; nouveau modèle de mannequin synthétique et atlas distincts"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1922,5 +1922,103 @@
     "main_merged": false,
     "production_deployed": false,
     "github_ci_remote": "unverified"
+  },
+  "jalon_neural_engine_19": {
+    "date": "2026-11-15",
+    "status": "synthetic articulated 3D simulator and per-part evidence atlas complete, RESEARCH ONLY",
+    "synthetic_geometry": {
+      "objects": 11,
+      "parts": [
+        "torso",
+        "head",
+        "left_upper_arm",
+        "left_forearm",
+        "left_hand",
+        "right_upper_arm",
+        "right_forearm",
+        "right_hand",
+        "held_object",
+        "left_leg",
+        "right_leg"
+      ],
+      "camera_pose_uv_depth_visibility_known_exactly_from_simulator": true,
+      "models_exported": [
+        "RNE19_personnage_synthetique_objet_tenu.glb",
+        "RNE19_personnage_synthetique_objet_relache.glb"
+      ],
+      "model_type": "static 11-part procedural GLB, not a rigged or inferred human",
+      "held_contact_frames": 7,
+      "released_no_contact_frames": 5,
+      "contact_analytic_3d": true
+    },
+    "experiment": {
+      "synthetic_rendered_frames": 12,
+      "atlas_per_part_pixels": [
+        64,
+        128
+      ],
+      "observed_fraction_by_views": {
+        "1": 0.15558,
+        "4": 0.29498,
+        "8": 0.52024,
+        "12": 0.60147
+      },
+      "corroborated_fraction_by_views": {
+        "1": 0,
+        "4": 0.14547,
+        "8": 0.31206,
+        "12": 0.44088
+      },
+      "unknown_fraction_after_12": 0.39853,
+      "uv_head_bad_calibration_shift": 0.13,
+      "head_contested_correct": 0,
+      "head_contested_bad": 635,
+      "eight_alternate_synthetic_texture_seeds": 8,
+      "false_calibration_extra_conflicts": [
+        580,
+        590,
+        598,
+        592,
+        598,
+        581,
+        592,
+        584
+      ],
+      "naive_shared_uv_atlas_mixed_part_fraction": 0.93764,
+      "warning": "synthetic UV coverage not physically weighted surface area; all geometry and contact supplied, not estimated from video; counterfeit consistent calibration can evade color conflict"
+    },
+    "validation": {
+      "main_new_local_tests": "50/50 PASS, including GLB round trip",
+      "old_rne18_local_regression": "47/47 PASS",
+      "public_generic_provenance_tests": "18 authored and added to CI; remote result not verified",
+      "independent_real_human_validation": false,
+      "iphone_safari_tested": false
+    },
+    "files_public": [
+      "outils/rne/rne19/part_provenance.py",
+      "tests/test_rne19_part_provenance.py",
+      "RETOUCHE_NEURAL_ENGINE_19.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "additional_private_archive_files": [
+      "articulated_observable.py",
+      "export_synthetic_glb.py",
+      "benchmark_articulated.py",
+      "test_articulated_observable.py",
+      "2 GLB synthetic models",
+      "2 synthetic PNG previews",
+      "JSON metric report",
+      "test logs"
+    ],
+    "private_archive": "RetoucheProAI_RNE19_OBSERVABLE_Articule_Synthetique.zip",
+    "privacy": {
+      "historical_157_used": false,
+      "recent_41_used": false,
+      "personal_media_published": false,
+      "private_weights_published": false
+    },
+    "product_deployed": false,
+    "production_merge": false,
+    "real_people_reconstructed": false
   }
 }
