@@ -163,3 +163,27 @@ test("NOVA 0.28 : annulation manuelle laisse seulement un reçu local "+engineNa
   assert.equal(await page.locator("#iphoneBenchSynthetic").isEnabled(),true);
  });
 });
+
+test("NOVA 0.28 : sélection native Fichiers fonctionne sans événement du pont export "+engineName,async()=>{
+ await preview(async page=>{
+  // Le relais optionnel du module export n'est pas une dépendance vitale
+  // pour rendre disponible le bouton de diagnostic.
+  await page.evaluate(()=>{
+   const original=window.dispatchEvent.bind(window);
+   window.dispatchEvent=function(event){
+    if(event?.type==="nova:source-selected")return true;
+    return original(event);
+   };
+  });
+  await page.locator("#file").setInputFiles({
+   name:"sample-local.MOV",mimeType:"video/quicktime",
+   buffer:Buffer.from([0,0,0,12,102,116,121,112,113,116,32,32])
+  });
+  await page.waitForFunction(()=>document.querySelector("#iphoneBenchRun")?.disabled===false,
+   null,{timeout:5000});
+  assert.equal(await page.locator("#iphoneBenchRun").isEnabled(),true);
+  assert.match(await page.locator("#iphoneBenchStatus").innerText(),/Prêt/);
+  assert.equal(await page.locator("#iphoneBenchJson").getAttribute("href"),null);
+  assert.equal(await page.locator("#iphoneBenchInterruptionJson").getAttribute("href"),null);
+ });
+});

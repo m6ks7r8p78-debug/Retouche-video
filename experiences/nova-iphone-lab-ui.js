@@ -35,12 +35,20 @@ function reset(){
  run.textContent=runLabel;
  status.textContent="Importez une vidéo HEVC ou essayez le clip synthétique sans média privé.";
 }
-window.addEventListener("nova:source-selected",event=>{
+function sourceSelected(f){
  reset();
- const f=event.detail?.file;
  if(!NOVA_IPHONE_REPORT.videoFile(f)||f.size>60*1048576)return;
  file=f;run.disabled=false;
  status.textContent="Prêt : aucune analyse, conversion ou transmission n'a démarré.";
+}
+window.addEventListener("nova:source-selected",event=>
+ sourceSelected(event.detail?.file));
+// La sélection iPhone reste disponible même si le pont de l'interface
+// d'export ne rediffuse pas l'événement CustomEvent inter-laboratoires.
+// Le test vérifie ce parcours indépendamment du pont.
+$("file")?.addEventListener("change",event=>{
+ const f=event.target.files?.[0]||null;
+ if(f!==file)sourceSelected(f);
 });
 function linkBlob(blob,label,element){
  const url=URL.createObjectURL(blob);
