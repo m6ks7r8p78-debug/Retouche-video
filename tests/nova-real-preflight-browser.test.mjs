@@ -88,9 +88,11 @@ test("NOVA 0.25: vidéo HEVC/AAC admissible puis H264 refusé sans exporter ni r
   const b=page.waitForEvent("download");
   await page.locator("#novaRealPreflightJson").click();
   const second=JSON.parse(await fs.readFile(await (await b).path(),"utf8"));
-  assert.equal(second.status,"unsupported-video-codec");
   assert.equal(second.source.codec,"h264");
-  assert.equal(second.readyForExportAttempt,false);
+  assert.notEqual(second.status,"unsupported-video-codec",
+   "H264 valide ne doit plus être rejeté comme codec étranger au pilote");
+  assert.equal(second.readyForExportAttempt,false,
+   "La mire SmallMotion sans AAC ne doit pas être annoncée comme export audio sûr");
   assert.equal(second.exportProposal,null);
   assert.ok(!JSON.stringify(second).includes("nova-smallmotion-synthetic.mp4"));
   // Simulation UI uniquement : données entièrement synthétiques, aucune
