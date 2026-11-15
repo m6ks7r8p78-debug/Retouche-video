@@ -9,6 +9,62 @@ const MAX_BYTES=60*1048576;
 // Bornes de NOVA_HEVC_RENDER.metadata : restituées sans les relever.
 const MAX_CODED_PIXELS=640*360, MAX_SOURCE_FRAMES=90, MAX_SECONDS_US=12000000;
 const MAX_OUTPUT_FPS=15;
+// Diagnostic COLORIMÉTRIQUE LOCAL en liste blanche, distinct du verdict.
+const colorClasses=new Set(["absent-colr","unknown-colr","hdr-pq-hlg",
+ "wide-gamut-primaries","full-range","unspecified-tags","non-bt709-tags",
+ "hevc-over8bit","bt709-tags"]);
+const numericTag=v=>Number.isSafeInteger(v)&&v>=0&&v<=65535?v:null;
+const bitDepth=v=>Number.isSafeInteger(v)&&v>=8&&v<=16?v:null;
+function evidenceCouleur(info){
+ const c=info?.color;
+ const container=c?.kind==="nclc"||c?.kind==="nclx"?c.kind:
+    c==null?"absent":"other";
+ const primaries=numericTag(c?.primaries),transfer=numericTag(c?.transfer),
+  matrix=numericTag(c?.matrix),fullRange=typeof c?.fullRange==="boolean"?c.fullRange:null;
+ const hevc=/^(hvc1|hev1)\\./.test(info?.codec||"");
+ const e={container,primaries,transfer,matrix,fullRange,
+   classification:"absent-colr",hevcSps:hevc?"not-confirmed":"not-applicable",
+   lumaBits:null,chromaBits:null};
+ if(hevc&&globalThis.NOVA_HEVC_ANNEXB?.configuration&&
+    globalThis.NOVA_HEVC_VUI?.lireSPS){
+  try{
+   const cfg=globalThis.NOVA_HEVC_ANNEXB.configuration(info.desc);
+   const sps=cfg.parameterSets.filter(x=>((x[0]>>1)&63)===33);
+   if(sps.length===1){
+    const meta=globalThis.NOVA_HEVC_VUI.lireSPS(sps[0]);
+    e.lumaBits=bitDepth(meta.lumaBits);
+    e.chromaBits=bitDepth(meta.chromaBits);
+    // Ne certifier les couleurs HEVC que via l'audit complet.
+    if(globalThis.NOVA_HEVC_VUI.analyser(info)?.verified===true)
+      e.hevcSps="verified";
+   }
+  }catch{/* SPS incomplet ou incohérent : aucune promotion de la source */}
+ }
+ if(container==="absent")e.classification="absent-colr";
+ else if(container==="other")e.classification="unknown-colr";
+ else if(transfer===16||transfer===18)e.classification="hdr-pq-hlg";
+ else if([9,11,12].includes(primaries))e.classification="wide-gamut-primaries";
+ else if(fullRange===true)e.classification="full-range";
+ else if(e.lumaBits!==null&&e.lumaBits>8||
+    e.chromaBits!==null&&e.chromaBits>8)e.classification="hevc-over8bit";
+ else if(primaries===2||transfer===2||matrix===2||
+    primaries===null||transfer===null||matrix===null)
+  e.classification="unspecified-tags";
+ else if(primaries===1&&transfer===1&&matrix===1)
+  e.classification="bt709-tags";
+ else e.classification="non-bt709-tags";
+ return e;
+}
+function safeColorEvidence(e){
+ if(!e||typeof e!=="object")return null;
+ const container=["nclc","nclx","absent","other"].includes(e.container)?e.container:"other";
+ const classification=colorClasses.has(e.classification)?e.classification:"unknown-colr";
+ return {container,primaries:numericTag(e.primaries),transfer:numericTag(e.transfer),
+  matrix:numericTag(e.matrix),fullRange:typeof e.fullRange==="boolean"?e.fullRange:null,
+  classification,hevcSps:["not-applicable","not-confirmed","verified"].includes(e.hevcSps)?
+   e.hevcSps:"not-confirmed",
+  lumaBits:bitDepth(e.lumaBits),chromaBits:bitDepth(e.chromaBits)};
+}
 const nativeReasons=new Set(["not-evaluated","module-missing","source-contract-unverified",
  "decoder-unavailable","encoder-unavailable","aac-analysis-unavailable",
  "aac-copy-unavailable","native-ready"]);
@@ -48,6 +104,7 @@ function state(file){
  return {schema:"retoucheproai.nova.real-preflight.v1",version:1,
   status:"analysis-unavailable",readyForExportAttempt:false,
   source:source(file),audio:"not-tested",nativeReason:"not-evaluated",
+  colorEvidence:null,
   estimatedMiB:null,
   exportProposal:null,blockers:[],advisories:[],
   privacy:{mediaUploaded:false,rawMediaInReport:false,filenameInReport:false,
@@ -96,6 +153,8 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
   if(stopped())return finish(r,"cancelled");
   if(!info)return finish(r,"container-unreadable");
   r.source.codec=category(info);
+  // Lecture locale des TAGS, et du SPS/VUI s’il est vérifiable ; aucune image.
+  r.colorEvidence=evidenceCouleur(info);
   r.source.width=count(info.dw);
   r.source.height=count(info.dh);
   r.source.durationMs=finite(info.durationUs)&&info.durationUs>=0?
@@ -216,6 +275,7 @@ function serialiser(report){
     r.estimatedSourceFps<1000?Math.round(r.estimatedSourceFps*10)/10:null},
   audio:report.audio==="aac-copy-verified"?"aac-copy-verified":"not-tested",
   nativeReason:nativeReasons.has(report.nativeReason)?report.nativeReason:"not-evaluated",
+  colorEvidence:safeColorEvidence(report.colorEvidence),
   estimatedMiB:small(report.estimatedMiB),
   blockers:Array.isArray(report.blockers)?[...new Set(report.blockers.filter(
    x=>blockingCodes.has(x)))].slice(0,4):[],
