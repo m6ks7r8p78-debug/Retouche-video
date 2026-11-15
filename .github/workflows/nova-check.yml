@@ -58,3 +58,24 @@ jobs:
           export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -x "$CHROME"
           node --test tests/nova-browser.test.mjs
+
+  webkit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer WebKit et dépendances Linux (navigateur gratuit)
+        run: |
+          npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.55.0
+          npx playwright install --with-deps webkit
+      - name: Vérifier FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Tester le vrai moteur WebKit Linux (ne remplace pas Safari iPhone)
+        run: node --test tests/nova-webkit.test.mjs
