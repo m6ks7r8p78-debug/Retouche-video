@@ -383,6 +383,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   exportMeter?.stage("verify");
   onProgress({stage:"verification",progress:1});
   const validation=await verifierMp4(blob,settings,signal);
+  if(signal?.aborted)throw new Error("Export annulé");
   // Le MP4 de sortie doit porter réellement la boîte colr nclx
   // BT.709 + plage limitée si la source HEVC a été contrôlée.
   // Aucun succès n'est déclaré si le muxer ne la conserve pas.
@@ -390,6 +391,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   if(useHevcWasm){
     if(signal?.aborted)throw new Error("Export annulé");
     const output=await NOVA_DEMUX.analyser(blob);
+    if(signal?.aborted)throw new Error("Export annulé");
     const color=output?.color;
     if(!color||color.kind!=="nclx"||color.primaries!==1||
        color.transfer!==1||color.matrix!==1||color.fullRange!==false)
@@ -397,10 +399,13 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     colorAudit=Object.freeze({...color,qualification:
       "boîte nclx vérifiée, cohérence du SPS H.264 à contrôler séparément"});
   }
+  if(signal?.aborted)throw new Error("Export annulé");
   exportMeter?.stage("complete");
   const pipelineAudit=exportMeter?.snapshot()??null;
   if(hevcDiagnostics)hevcDiagnostics=Object.freeze({...hevcDiagnostics,pipelineAudit});
+  if(signal?.aborted)throw new Error("Export annulé");
   onProgress({stage:"fini",progress:1});
+  if(signal?.aborted)throw new Error("Export annulé");
   return {blob,plan:settings,validation,colorAudit,hevcDiagnostics,pipelineAudit,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:sourceMode==="hevc-wasm"?"HEVC MIT WASM local, PTS MOV et sortie CFR":sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"

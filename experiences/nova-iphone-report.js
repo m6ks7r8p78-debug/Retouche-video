@@ -106,6 +106,7 @@ async function executer({file,moteur,arbitre,allowSilent=false,synthetic=false,s
  };
  let processed=null;
  try{
+  if(signal?.aborted)throw new Error("Export annulé");
   if(!file||typeof file.slice!=="function"||!Number.isSafeInteger(file.size)||
      file.size<1||file.size>60*1048576)
    throw new Error("budget fichier source incorrect");
@@ -117,6 +118,8 @@ async function executer({file,moteur,arbitre,allowSilent=false,synthetic=false,s
    throw new Error("WebCodecs/VideoEncoder ou WebAssembly indisponible");
   const probing=probeFile||((f)=>NOVA_DEMUX.analyser(f));
   const info=await probing(file);
+  // Ne plus inspecter SPS/VUI si Safari a interrompu le probe MOV.
+  if(signal?.aborted)throw new Error("Export annulé");
   record.source=sourceSummary(file,info);
   if(!info||!/^(hvc1|hev1)\./.test(info.codec||""))
    throw new Error("HEVC H.265 pilote uniquement");

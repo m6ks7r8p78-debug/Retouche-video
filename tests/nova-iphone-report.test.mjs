@@ -99,3 +99,22 @@ test("NOVA 0.24 : la source synthétique est tracée sans identifier l'appareil"
  assert.equal(data.privacy.automaticSharing,false);
  assert.ok(!JSON.stringify(data).includes(input.name));
 });
+
+test("NOVA 0.27 : signal déjà annulé interdit le probe et l'export",async()=>{
+ const ctrl=new AbortController();ctrl.abort();let probed=0,exported=0;
+ const {report,outputBlob}=await run({signal:ctrl.signal,
+  probeFile:async()=>{probed++;return track},
+  exporter:async()=>{exported++;return fakeResult}});
+ assert.equal(probed,0);assert.equal(exported,0);
+ assert.equal(report.result,"cancelled");assert.equal(report.errorCode,"cancelled");
+ assert.equal(outputBlob,null);
+});
+test("NOVA 0.27 : annulation pendant lecture des métadonnées empêche toute vérification SPS",async()=>{
+ const ctrl=new AbortController();let validated=0,exported=0;
+ const {report,outputBlob}=await run({signal:ctrl.signal,
+  probeFile:async()=>{ctrl.abort();return track},
+  validateSource:()=>{validated++},
+  exporter:async()=>{exported++;return fakeResult}});
+ assert.equal(validated,0);assert.equal(exported,0);
+ assert.equal(report.result,"cancelled");assert.equal(outputBlob,null);
+});
