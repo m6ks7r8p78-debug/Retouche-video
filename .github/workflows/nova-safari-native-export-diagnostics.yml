@@ -77,7 +77,7 @@ jobs:
           cd dist/nova-iphone-preview
           zip -q -X -r ../../NOVA_Safari_export_natif_diagnostic.zip .
           cd ../..
-          unzip -t NOVA_HEVC_natif_synthetique_iPhone.zip >/dev/null
+          unzip -t NOVA_Safari_export_natif_diagnostic.zip >/dev/null
       - uses: actions/upload-artifact@v4
         with:
           name: NOVA-Safari-export-natif-diagnostic-HTTPS-manuel
