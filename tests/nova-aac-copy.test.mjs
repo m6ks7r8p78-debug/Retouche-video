@@ -69,7 +69,7 @@ test("NOVA AAC copy : refuse les samples pointant sur moov plutôt que mdat",asy
  await assert.rejects(AAC.planifier(fixture({wrongOffset:20}),{durationSeconds:.06}),/en dehors du fichier|Copie AAC prudente/);
 });
 test("NOVA AAC copy : refuse les métadonnées de priming en sample groups non transférées",async()=>{
- await assert.rejects(AAC.planifier(fixture({sampleGroup:true}),{durationSeconds:.06}),/groupes d'échantillons AAC/);
+ await assert.rejects(AAC.planifier(fixture({sampleGroup:true}),{durationSeconds:.06}),/groupes AAC incomplets|groupes d'échantillons AAC/);
 });
 
 test("NOVA AAC copy : recopie le groupe roll=-1 sur un fichier compatible",async()=>{
