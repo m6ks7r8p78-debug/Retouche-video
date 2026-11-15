@@ -129,9 +129,11 @@ test("NOVA no-op native SDR pipeline: RGB bars stay natural, no exaggerated cont
   const actual=levels(await decodeRgb(outfile));
   const differences=actual.map((v,i)=>Number((v-pre[i]).toFixed(2)));
   const maxDiff=Math.max(...differences.map(Math.abs));
-  // Every bar is INSIDE its own region. >14 RGB code values in a no-op
-  // pipeline would violate the natural-color promise beyond codec noise.
-  assert.ok(maxDiff<=14,
+  console.log("NOVA_BT709_RAMP_CODES "+JSON.stringify({
+   reference:pre,output:actual,diff:differences,maxDiff}));
+  // No-op, tagged BT.709 8-bit ramp: losses are codec rounding, never
+  // accept a second gamma transfer (~15 code units in dark mids).
+  assert.ok(maxDiff<=8,
    "BT709-to-Canvas-to-BT709 drift in no-op path: "+JSON.stringify({reference:pre,output:actual,
     diff:differences,maxDiff}));
   const ff=JSON.parse((await run("ffprobe",["-v","error","-show_streams",
