@@ -96,9 +96,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Contrôler HEVC WASM du dépôt sans installer npm ni charger de CDN
+      - name: Contrôler HEVC WASM versionné dans Git
+        run: node outils/nova-hevc-assets.mjs verify
+      - name: Installer FFmpeg de référence seulement si absent du runner
         run: |
-          node outils/nova-hevc-assets.mjs verify
-          test -x "$(command -v ffmpeg)"
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
       - name: Décoder HEVC Annex B directement depuis Git avec Node WASM et FFmpeg
         run: node --test tests/nova-hevc-offline.test.mjs
