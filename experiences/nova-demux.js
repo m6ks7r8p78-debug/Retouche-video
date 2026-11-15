@@ -72,6 +72,7 @@ async function analyser(file){
     const hd=find(trak.s,trak.e,["mdia","hdlr"])[0];if(!hd||tp(hd.s+8)!=="vide")continue;
     const mh=find(trak.s,trak.e,["mdia","mdhd"])[0];if(!mh)return null;
     const ts=buf[mh.s]===1?dv.getUint32(mh.s+20):dv.getUint32(mh.s+12);
+    const mediaTicks=buf[mh.s]===1?Number(dv.getBigUint64(mh.s+24)):dv.getUint32(mh.s+16);
     const th=find(trak.s,trak.e,["tkhd"])[0];
     if(!th||![0,1].includes(buf[th.s]))return null;
     const mo=th.s+(buf[th.s]===1?52:40),mt=[];
@@ -151,6 +152,8 @@ async function analyser(file){
       if(!editSupported||editMediaTime<0||!Number.isSafeInteger(editMediaTime))return null;
     }
     if(ns<1||ns>5000||!Number.isFinite(ts)||ts<=0||dv.getUint32(stsd.s+4)!==1)return null;
+    const durationUs=Number.isSafeInteger(mediaTicks)&&mediaTicks>editMediaTime&&ts>0?
+      Math.round((mediaTicks-editMediaTime)*1000000/ts):null;
     const ptsUs=new Array(ns);
     for(let i=0;i<ns;i++){
       if(!Number.isSafeInteger(so[i])||!Number.isSafeInteger(sz[i])||sz[i]<=0||
@@ -162,7 +165,7 @@ async function analyser(file){
     // reproduites exactement par l'export expérimental.
     const orientation=analyserOrientation(W,H,mt);
     if(!orientation)return null;
-    return {codec,desc,W,H,ts,ns,so,sz,cts,dts,key,ptsUs,editMediaTime,
+    return {codec,desc,W,H,ts,ns,so,sz,cts,dts,key,ptsUs,editMediaTime,durationUs,
       pixelAspect,color,
       ...orientation,source:"mp4-tables"};
   }
