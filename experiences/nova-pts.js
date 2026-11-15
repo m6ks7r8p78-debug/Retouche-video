@@ -65,6 +65,7 @@ async function creer(file,{signal}={}){
   throw new Error("Démultiplexeur NOVA indisponible");
  const info=await NOVA_DEMUX.analyser(file);
  if(!info)throw new Error("MP4 non pris en charge par le lecteur à PTS (tables ou edit list)");
+ NOVA_DEMUX.exigerPresentationFidele(info);
  if(signal?.aborted)throw new Error("Export annulé");
  const timeline=planifier(info);
  const cfg={codec:info.codec,...(info.desc?{description:info.desc}:{}),

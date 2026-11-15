@@ -140,9 +140,11 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  // Diagnostic HEVC avant le lecteur HTML : canPlayType et les métadonnées
  // ne prouvent pas que VideoDecoder peut extraire les vraies images.
  // Aucun téléchargement externe ni repli WASM non validé.
- if(!allowApproximate&&globalThis.NOVA_DEMUX&&typeof VideoDecoder==="function"){
+ if(globalThis.NOVA_DEMUX&&typeof NOVA_DEMUX.analyser==="function"){
   const probe=await NOVA_DEMUX.analyser(file);
-  if(probe&&/^(hvc1|hev1)\./.test(probe.codec)){
+  if(probe)NOVA_DEMUX.exigerPresentationFidele(probe);
+  if(!allowApproximate&&typeof VideoDecoder==="function"&&
+     probe&&/^(hvc1|hev1)\./.test(probe.codec)){
    let supported=false;
    try{supported=!!(await VideoDecoder.isConfigSupported({
     codec:probe.codec,description:probe.desc,

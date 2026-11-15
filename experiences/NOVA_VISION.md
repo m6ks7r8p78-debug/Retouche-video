@@ -452,3 +452,10 @@ Nouveau banc `tests/nova-iphone-cadence.test.mjs` : génération FFmpeg de fichi
 **Alternatives libres à évaluer** : décodage local `libde265` via WebAssembly (LGPL, coût mémoire/CPU et obligations de redistribution à auditer), `wasmpeg` (FFmpeg/WASM LGPL selon build, conteneurs divers ; intégration et comportement iOS à éprouver), et `ffmpeg.wasm` (selon compilation, GPL si modules GPL activés). Aucun succès de décodage iPhone ni accélération WebGPU ne doit être annoncé sans benchmark réel, et aucun de ces projets ne constitue actuellement un repli intégré.
 
 **Toujours interdits** : fusion de la PR #3, production, publication de médias privés. Aucune confirmation Safari iOS physique ; pas de restauration IA neuronale ni 4K/8K. Plafonds du pilote inchangés.
+
+
+## Cycle NOVA 0.16 — garde-fous colorimétrie / aspect (travail expérimental)
+
+Le démultiplexeur inspecte les boîtes `colr` (nclc/nclx, primaires, courbe de transfert et matrice) et `pasp` (sample aspect ratio) des pistes MP4/MOV reconnues. NOVA refuse explicitement les profils HDR/PQ/HLG, les primaires larges (BT.2020/P3), les colorimétries non prises en charge, les signaux full-range explicitement marqués et les pixels non carrés, car le chemin actuel Canvas 2D -> H.264 n'offre pas un round-trip fiable de ces métadonnées. La protection s'applique **même en mode de décodage temporel approximatif**.
+
+Ce contrôle **n'est pas une restauration HDR ni un parseur complet des VUI du bitstream** : des fichiers sans boîtes `colr` peuvent néanmoins transporter des informations de couleur au niveau des séquences. Le nouveau contrôle interdit les conversions silencieuses connues, mais ne certifie pas le rendu fidèle des autres sources. Aucun nouveau codec HEVC n'est intégré. CI du commit à vérifier avant annonce de succès.

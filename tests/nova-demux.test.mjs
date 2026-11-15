@@ -46,3 +46,19 @@ test("NOVA 0.15 : les translations tkhd sont canonisées ou explicitement refus�
  ])assert.equal(DEMUX.analyserOrientation(160,90,invalid),null,
   "ne jamais ignorer une translation de présentation inattendue");
 });
+
+test("NOVA 0.16 : ne pas exporter silencieusement HDR, P3 ou pixels anamorphiques",()=>{
+ const base={pixelAspect:{h:1,v:1},color:{kind:"nclc",primaries:1,transfer:1,matrix:1,fullRange:null}};
+ assert.equal(DEMUX.exigerPresentationFidele(base),true);
+ assert.equal(DEMUX.exigerPresentationFidele({pixelAspect:null,color:null}),true);
+ for(const different of [
+  {pixelAspect:{h:4,v:3},color:base.color},
+  {pixelAspect:{h:1,v:1},color:{...base.color,transfer:16}},
+  {pixelAspect:{h:1,v:1},color:{...base.color,transfer:18}},
+  {pixelAspect:{h:1,v:1},color:{...base.color,primaries:9}},
+  {pixelAspect:{h:1,v:1},color:{...base.color,primaries:12}},
+  {pixelAspect:{h:1,v:1},color:{...base.color,matrix:9}},
+  {pixelAspect:{h:1,v:1},color:{...base.color,kind:"prof"}},
+  {pixelAspect:{h:1,v:1},color:{...base.color,fullRange:true}}
+ ])assert.throws(()=>DEMUX.exigerPresentationFidele(different),/non préservable/);
+});

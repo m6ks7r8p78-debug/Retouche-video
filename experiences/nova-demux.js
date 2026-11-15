@@ -35,6 +35,24 @@ function analyserOrientation(W,H,m){
  return Object.freeze({mat:[A,B,C,D,tx,ty],dw,dh,
    mirrored:A*D-B*C<0,oriented:dw!==W||dh!==H});
 }
+// Le pipeline NOVA rend sur Canvas 2D et encode SDR sans reporter colr/pasp.
+ // Ne jamais changer silencieusement une géométrie anamorphique ou un signal
+ // HDR/large gamut identifié par des métadonnées ISO-BMFF explicites.
+function exigerPresentationFidele(info){
+ if(!info||typeof info!=="object")throw new TypeError("Métadonnées de présentation MP4 requises");
+ const sar=info.pixelAspect;
+ if(sar&&sar.h!==sar.v)
+  throw new Error("Pixels non carrés (pasp) : géométrie source non préservable par cet export NOVA");
+ const color=info.color;
+ if(color){
+  const safe=color.kind==="nclc"||color.kind==="nclx";
+  if(!safe||![1,2].includes(color.primaries)||
+      ![1,2,13].includes(color.transfer)||![1,2,6].includes(color.matrix)||
+      color.fullRange===true)
+   throw new Error("Couleur HDR, gamut étendu ou profil colr non préservable en SDR : export refusé pour éviter une altération silencieuse");
+ }
+ return true;
+}
 async function analyser(file){
   const rd=async(a,b)=>new DataView(await file.slice(a,b).arrayBuffer());
   let off=0,moov=null;
@@ -67,6 +85,27 @@ async function analyser(file){
     if(!["avc1","avc3","hvc1","hev1","vp09"].includes(et))return null;
     const W=dv.getUint16(ent+32),H=dv.getUint16(ent+34);
     const ch=kids(ent+86,ee);let codec,desc;
+    // Boîtes optionnelles ISO-BMFF dans l'entrée d'échantillon.
+    const pasp=ch.find(k=>k.t==="pasp"),colr=ch.find(k=>k.t==="colr");
+    let pixelAspect=null,color=null;
+    if(pasp){
+      if(pasp.e-pasp.s<8)return null;
+      const h=dv.getUint32(pasp.s),v=dv.getUint32(pasp.s+4);
+      if(!h||!v)return null;
+      pixelAspect={h,v};
+    }
+    if(colr){
+      if(colr.e-colr.s<4)return null;
+      const kind=tp(colr.s);
+      if(kind==="nclx"||kind==="nclc"){
+        if(colr.e-colr.s<(kind==="nclx"?11:10))return null;
+        color={kind,primaries:dv.getUint16(colr.s+4),
+          transfer:dv.getUint16(colr.s+6),matrix:dv.getUint16(colr.s+8),
+          fullRange:kind==="nclx"?!!(buf[colr.s+10]&128):null};
+      }else{
+        color={kind}; // ICC ou forme inconnue : conservateur
+      }
+    }
     if(et.startsWith("avc")){
       const c=ch.find(k=>k.t==="avcC");if(!c)return null;
       const h=x=>x.toString(16).padStart(2,"0");codec="avc1."+h(buf[c.s+1])+h(buf[c.s+2])+h(buf[c.s+3]);desc=buf.slice(c.s,c.e);
@@ -124,10 +163,11 @@ async function analyser(file){
     const orientation=analyserOrientation(W,H,mt);
     if(!orientation)return null;
     return {codec,desc,W,H,ts,ns,so,sz,cts,dts,key,ptsUs,editMediaTime,
+      pixelAspect,color,
       ...orientation,source:"mp4-tables"};
   }
   return null;
 }
-return Object.freeze({analyser,analyserOrientation});
+return Object.freeze({analyser,analyserOrientation,exigerPresentationFidele});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_DEMUX;
