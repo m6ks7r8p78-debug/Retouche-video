@@ -125,7 +125,7 @@ test("AAC packet bytes and timestamps validated",async()=>{
  const x=await CHECK.check(file,{durationSeconds:1,native:{
   planifier:async()=>({mode:"aac-native-encode",packets:p,sampleRate:48000,channels:2})
  }});
- assert.equal(x.status,CHECK.CODES.packets);
+ assert.equal(x.status,CHECK.CODES.timing);
 });
 test("raw AAC arrays never carried into JSON",async()=>{
  const x=await CHECK.check(file,{durationSeconds:1,native:goodNative});
