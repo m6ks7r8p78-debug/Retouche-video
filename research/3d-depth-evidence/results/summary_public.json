@@ -1,0 +1,123 @@
+{
+  "schema": "retouche-depthmotion-synthetic-summary-v1",
+  "model_claims": "none",
+  "baseline_reference_sha256": {
+    "baseline_multimotion.py": "29a639595ea171f994d17f6dff9781979a1282841f109f75824d9e543a55dd80",
+    "baseline_scenes.py": "5f1a43ef6c3ba48f11451ca44ce831046fc5a01d88b6c041f0a1684492eeb36b"
+  },
+  "runs": [
+    {
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "result": {
+        "expected_independent_cases": [
+          "broad_object",
+          "local_object",
+          "two_depths_mimic"
+        ],
+        "expected_static_cases": [
+          "occlusion",
+          "single_plane",
+          "two_depths",
+          "two_depths_compressed",
+          "two_depths_low_delta",
+          "two_depths_rotated"
+        ],
+        "expected_abstain_cases": [
+          "blank",
+          "two_depths_cut"
+        ],
+        "true_candidate_on_independent": 24,
+        "false_candidate_on_static": 0,
+        "static_explained": 72,
+        "abstain_on_expected_abstain": 24,
+        "miss_independent": 12,
+        "total_cases": 132
+      },
+      "runtime_ms": {
+        "batch_median_median": 81.78,
+        "batch_p95_max": 114.61,
+        "note": "timings are per-batch summaries, not pooled timings"
+      }
+    },
+    {
+      "seeds": [
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111
+      ],
+      "result": {
+        "expected_independent_cases": [
+          "broad_object",
+          "local_object",
+          "two_depths_mimic"
+        ],
+        "expected_static_cases": [
+          "occlusion",
+          "single_plane",
+          "two_depths",
+          "two_depths_compressed",
+          "two_depths_low_delta",
+          "two_depths_rotated"
+        ],
+        "expected_abstain_cases": [
+          "blank",
+          "two_depths_cut"
+        ],
+        "true_candidate_on_independent": 24,
+        "false_candidate_on_static": 0,
+        "static_explained": 72,
+        "abstain_on_expected_abstain": 24,
+        "miss_independent": 12,
+        "total_cases": 132
+      },
+      "runtime_ms": {
+        "batch_median_median": 76.41999999999999,
+        "batch_p95_max": 113.35,
+        "note": "timings are per-batch summaries, not pooled timings"
+      }
+    }
+  ],
+  "ablations": {
+    "false_motion_from_wrong_depth_per_12_seeds": [
+      12,
+      12
+    ],
+    "missed_motion_on_40pc_cam_translation_per_12_seeds": [
+      10,
+      11
+    ],
+    "camera_bias_abstentions_per_12_seeds": [
+      2,
+      1
+    ]
+  },
+  "warnings": [
+    "procedural synthetic data",
+    "perfect oracle when nominal",
+    "not real-world accuracy",
+    "no neural inference",
+    "no human or 3D validation"
+  ]
+}
