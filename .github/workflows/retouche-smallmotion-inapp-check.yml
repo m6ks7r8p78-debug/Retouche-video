@@ -1,0 +1,46 @@
+name: Retouche 3D SmallMotion — in-app local bridge (experimental)
+on:
+  push:
+    branches:
+      - lab-3d-smallmotion-inapp-local-v1
+    paths:
+      - 'research/3d-smallmotion/**'
+      - 'index.html'
+      - '.github/workflows/retouche-smallmotion-inapp-check.yml'
+  pull_request:
+    paths:
+      - 'research/3d-smallmotion/**'
+      - 'index.html'
+      - '.github/workflows/retouche-smallmotion-inapp-check.yml'
+jobs:
+  local-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only browser test dependencies
+        run: python -m pip install numpy opencv-python-headless playwright
+      - name: Ensure synthetic MP4 encoder and browser
+        run: |
+          if ! command -v ffmpeg >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y ffmpeg; fi
+          if ! command -v chromium >/dev/null && ! command -v google-chrome >/dev/null && ! command -v chromium-browser >/dev/null; then python -m playwright install --with-deps chromium; fi
+      - name: Existing SmallMotion JS tests (unchanged)
+        run: node research/3d-smallmotion/tests/test_smallmotion_local.cjs
+      - name: Local director bridge unit assertions
+        run: node research/3d-smallmotion/tests/test_director_local.cjs
+      - name: Validate experimental index wiring and unchanged selectors
+        run: python research/3d-smallmotion/tests/test_app_wiring.py
+      - name: Browser test — actual synthetic H264 import, two real decoded images
+        run: python research/3d-smallmotion/tests/browser_check.py
+      - name: Save synthetic-only outcome
+        uses: actions/upload-artifact@v4
+        with:
+          name: smallmotion-inapp-synthetic-only
+          path: research/3d-smallmotion/results/browser_check.json
+          if-no-files-found: error
