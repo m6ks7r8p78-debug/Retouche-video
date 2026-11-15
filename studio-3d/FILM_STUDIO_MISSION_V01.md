@@ -60,3 +60,27 @@ Un adulte de 18 à 75 ans et plus décrit librement son film en français ou fou
 1. Contact main-objet mesuré, prise/dépôt continus, vraie cinématique articulée pour l’assise.
 2. Visualiseur local en navigateur Safari avec inspection et performance iPhone.
 3. Continuité multi-personnages et multi-plans, dialogues audibles puis sortie MP4 avec consentements distincts.
+
+
+## Film Studio v0.3 — preview local + continuité d’ancrage (15 novembre 2026)
+
+### Modifications réalisées
+- film-viewer-v03.mjs lit les vrais blocs JSON/BIN et pistes LINEAR d’un GLB glTF 2.0 **synthétique**. Animation échantillonnée dans les temps source, hiérarchie de matrices de transformation 4×4 conforme au modèle TRS ; rendu **approché** des volumes sphériques sur Canvas 2D, sans bibliothèque ni réseau. Ce n’est **pas** un vrai rendu maillage GPU ou photoréaliste.
+- film-studio-v03.html / film-ui-v03.mjs : champ texte, bouton de création, visualisation sur écran mobile, lecture/pause, frise navigable et pivot tactile, export explicite du GLB. Lorsque le scénario est refusé, le précédent lien d’export est retiré. Aucune photo ou vidéo réelle importée.
+- generateur.js : correction importante du type glTF des canaux de **translation** (VEC3, et non VEC4), sans changement pour rotation VEC4 et scale VEC3.
+- film-contact-v03.mjs : réutilise l’avatar stylisé et son squelette ; remplace les copies visibles de tasse par **une seule tasse** à translation animée ; résout la portée du bras droit par IK analytique plane, adapte le point de saisie aux épaules de l’acteur, échantillonne la trajectoire à 40 Hz et mesure l’écart tasse–ancrage main à 20 Hz. Refus contrôlé si l’écart excède 0,18 m. Il s’agit d’un **point d’ancrage mathématique** : aucune collision, préhension des doigts ou physique réelle démontrée.
+- Le visualiseur supporte les matrices 4×4 et l’échelle non uniforme du torse assis ; cette correction était nécessaire pour éviter un écart artificiel au calcul du point de prise.
+- tests film-viewer-v03.test.mjs, film-ui-v03.test.mjs, film-contact-v03.test.mjs.
+
+### Résultat de la CI
+Run GitHub Actions 43734295024 : **34 tests Node réussis sur 34**, SHA 05b055abc4a65240033fa95ac9d62fafe18bab69. Tests de structure GLB, sampling, projections Canvas avec contexte simulé, navigation et export de l’interface via DOM simulé, refus, calcul d’ancrage pour acteur féminin et masculin. Aucun navigateur physique ni GPU n’est testé par ces seules suites.
+
+### Limites strictes
+- Pas de film MP4, pas de voix, pas de photo/vidéo → avatar, pas de rendu réaliste, pas de communication réseau, pas d’IA générative entraînée, pas de gestion multi-personnages.
+- La projection Canvas 2D ne remplace pas un moteur 3D réel : maillage, illumination, occlusions, profondeur et formes peuvent diverger du GLB interprété par une application 3D complète.
+- L’IK et la continuité de l’ancrage ne prouvent ni la tenue correcte de la tasse par les doigts, ni l’absence d’intersections. La posture assise demeure simplifiée.
+- Vérification de Safari physique sur l’iPhone cible : **non réalisée** ; contrôle visuel humain : **non réalisé** ; prototype **non déployé**.
+- Les 157 vidéos privées, visages, voix et droits de référence ne sont pas impliqués dans cette CI ou cette branche. PR en brouillon, aucune fusion vers main.
+
+### Prochain contrôle avant toute diffusion
+Effectuer un test navigateur effectif de la page locale, puis inspection visuelle/glTF dans un véritable moteur 3D ; comparer stabilité, doigts/objets, collisions et ressources. Déployer uniquement après revue et validation du chemin iPhone.
