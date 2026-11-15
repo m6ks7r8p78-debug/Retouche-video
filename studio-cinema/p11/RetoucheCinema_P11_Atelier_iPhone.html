@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#191c21"><title>Retouche Cinema — Gestes P11</title>
+<style>
+:root{--ink:#24272b;--muted:#6c7177;--card:#fff;--canvas:#f6f4f1;--line:#e7e4df;--terracotta:#ac624b;--olive:#677869}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--canvas);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",Arial,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.48;cursor:not-allowed}header{background:#1d2125;color:#f8f6f3;padding:17px 25px}header .mark{max-width:1160px;margin:auto;display:flex;align-items:center;gap:13px}header strong{font-size:16px;letter-spacing:-.5px}header small{margin-left:auto;color:#b6b8b9;font-size:11px;letter-spacing:1.1px;text-transform:uppercase}header .r{border:1px solid #64676c;border-radius:40px;padding:3px 9px;font-size:11px;color:#d3d2cf}
+main{max-width:1160px;margin:auto;padding:26px 20px 60px}.eyebrow{color:var(--terracotta);font-size:11px;letter-spacing:2px;font-weight:750;text-transform:uppercase}.intro{display:grid;grid-template-columns:1.65fr 1fr;gap:20px;align-items:end;padding:20px 0 30px}.intro h1{font-family:Georgia,"Times New Roman",serif;font-size:clamp(34px,4vw,59px);font-weight:400;line-height:1.06;letter-spacing:-1.8px;margin:10px 0 14px}.intro p{max-width:650px;color:var(--muted);font-size:15px;margin:0}.intro aside{padding:22px 24px;border-left:2px solid var(--terracotta);background:#f0ebe5}.intro aside b{font:26px Georgia,serif}.intro aside p{font-size:13px;margin:8px 0 0}.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:18px;align-items:start}.pane{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 2px 14px #332b2408;min-width:0}.pane h2{font:24px Georgia,serif;margin:0 0 6px}.pane .desc{color:var(--muted);font-size:13px;margin:0 0 16px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#5a6265}.field input,.field select,.field textarea{width:100%;padding:10px 11px;background:#faf9f7;border:1px solid #d9d6d0;border-radius:7px;color:var(--ink);outline-offset:2px}.field textarea{min-height:65px;resize:vertical}.wide{grid-column:1/-1}.fileinput{display:flex;align-items:center;gap:10px;min-width:0}.fileinput label{border:1px solid #c7c2bb;background:#fff;border-radius:6px;cursor:pointer;padding:9px 12px;color:#333;display:inline-flex;font-weight:600;font-size:12px}.fileinput input{position:absolute;opacity:0;width:1px;height:1px}.fileinput span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--muted)}.controls{display:flex;flex-wrap:wrap;gap:8px;margin:13px 0}.btn{background:#262d30;color:#fff;border:1px solid #262d30;padding:10px 15px;border-radius:7px;font-size:13px;font-weight:700}.btn.secondary{background:#fff;color:#292f31;border-color:#d1cbc2}.btn.copper{background:#a45e4a;border-color:#a45e4a}.divider{height:1px;background:var(--line);margin:19px 0}.tag{display:inline-block;border-radius:18px;padding:4px 9px;font-weight:700;color:#76644e;background:#f1e8de;font-size:10px;letter-spacing:.3px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:13px 0}.stat{border-right:1px solid var(--line);padding-right:6px}.stat:last-child{border:0}.stat b{font-family:Georgia,serif;display:block;font-size:28px;font-weight:400;line-height:1.2}.stat span{font-size:11px;color:var(--muted)}video{width:100%;display:block;background:#171a1b;border-radius:9px;min-height:165px;max-height:390px;object-fit:contain}#canvas{width:100%;height:200px;display:block;border:1px solid var(--line);border-radius:9px;background:#fdfcfb;cursor:crosshair;touch-action:pan-y}.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#5f6668;margin:7px 0 0}.dot{height:8px;width:8px;border-radius:50%;display:inline-block;margin-right:5px}.browndot{background:#a45e4a}.greendot{background:#607e69}.anchors{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0}.anchor{border:1px solid #dad4cc;border-radius:30px;background:#fff;padding:6px 10px;font-size:11px;color:#555;cursor:pointer}.anchor:hover{background:#f5ede6}#status{font-size:12px;min-height:30px;color:#6a6257;margin:7px 0;overflow-wrap:anywhere}.events{display:flex;flex-direction:column;gap:6px;max-height:215px;overflow:auto}.event{padding:9px 11px;background:#f8f7f5;border-left:3px solid #aca39c;border-radius:4px;font-size:12px}.foot{font-size:12px;color:#777;line-height:1.65;margin:24px 0}.subtle{color:#888;font-size:12px}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.danger{color:#9a4a3b!important}
+@media(max-width:850px){main{padding:18px 12px 50px}.intro,.layout{display:block}.intro{padding:13px 5px 22px}.intro aside{margin-top:16px;padding:15px}.pane{padding:15px;margin-bottom:12px}.fields{gap:8px}.intro h1{letter-spacing:-1.2px}header{padding:13px 15px}header small{display:none}.summary b{font-size:25px}#canvas{height:177px}.fileinput{display:block}.fileinput span{display:block;margin:5px 2px;min-height:16px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important}}
+</style></head><body>
+<header><div class="mark"><strong>Retouche<span style="color:#dfb6a2">Cinema</span></strong><span class="r">LAB / P11</span><small>RECHERCHE PRIVÉE · HORS LIGNE</small></div></header>
+<main>
+<section class="intro"><div><span class="eyebrow">Laboratoire du mouvement humain</span><h1>Observer le geste.<br>Comprendre ses détails.</h1><p>Étudier chaque transition réelle — main, doigts, lèvres, joues, regard, souffle — avant d'apprendre à nos personnages fictifs à bouger naturellement.</p></div><aside><b>Pas d'illusion de 60 i/s.</b><p>Les courbes montrent des déplacements approximatifs entre images sources. Elles ne prouvent ni un contact avec les lèvres ni une respiration. Seule une annotation examinée peut établir ces gestes.</p></aside></section>
+<div class="layout"><div>
+<section class="pane"><h2>01 / Ouvrir une référence</h2><p class="desc">Choisis ton dossier P11 privé (JSON), puis la vidéo correspondante depuis Fichiers. Aucune donnée ne quitte cet appareil.</p>
+<div class="fields"><div class="wide fileinput"><label for="datafile">Importer mes mesures P11</label><input id="datafile" type="file" accept=".json,application/json"><span id="dataname">Démonstration fictive activée</span></div><div class="wide fileinput"><label for="videofile">Ouvrir une vidéo locale</label><input id="videofile" type="file" accept="video/*,.mp4,.mov"><span id="videoname">Aucune vidéo ouverte</span></div><label class="field wide" for="tasklist">Passage à examiner<select id="tasklist"></select></label></div>
+<div class="summary"><div class="stat"><b id="nclips">1</b><span>Passages du dossier</span></div><div class="stat"><b id="nframes">0</b><span>Transitions mesurées</span></div><div class="stat"><b id="faces">—</b><span>Visage approximatif</span></div></div>
+<video id="video" controls playsinline preload="metadata" aria-label="Vidéo locale de référence"></video>
+<div class="controls"><button class="btn secondary" id="half">Ralentir à 0,5×</button><button class="btn secondary" id="normal">Vitesse normale</button><button class="btn secondary" id="back">− 1 image*</button><button class="btn secondary" id="forward">+ 1 image*</button></div>
+<p class="subtle">* Déplacement selon la cadence source renseignée. Le navigateur peut chercher l'image-clé décodable la plus proche.</p>
+<div id="status" role="status" aria-live="polite">Aucune vidéo personnelle chargée. Exemple de courbe fictif.</div></section>
+<section class="pane"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><h2>02 / Examiner le mouvement</h2><p class="desc">Activité locale relative (pixels réduits). Une courbe n'est pas une preuve anatomique.</p></div><span class="tag">REPÈRES APPROXIMATIFS</span></div>
+<canvas id="canvas" aria-label="Courbes de mouvement, cliquez pour choisir un instant"></canvas><div class="legend"><span><i class="dot browndot"></i>Mouvement général</span><span><i class="dot greendot"></i>Zone de la bouche approximative</span></div>
+<div id="anchors" class="anchors"></div><p class="subtle">Appuie sur un point de la courbe ou un repère pour avancer dans la vidéo. Les maxima peuvent venir du cadrage, des cheveux ou d'un mouvement quelconque.</p></section>
+</div><div>
+<section class="pane"><h2>03 / Annoter ce que tu vois</h2><p class="desc">Décris uniquement les gestes visibles. Quand les mouvements des joues ou la respiration ne sont pas certains, marque « incertain ».</p>
+<div class="fields"><label class="field wide" for="reviewer">Identifiant de relecteur (pseudonyme)<input id="reviewer" maxlength="80" placeholder="Ex. relecteur-01" autocomplete="off"></label>
+<label class="field" for="channel">Partie observée<select id="channel"></select></label><label class="field" for="phase">Action<select id="phase"></select></label>
+<label class="field" for="visibility">Visibilité<select id="visibility"><option value="observe">Observé</option><option value="incertain">Incertain</option><option value="non_visible">Non visible</option></select></label><label class="field" for="duration">Durée (secondes)<input id="duration" type="number" min="0.03" step="0.05" max="15" value="0.25"></label>
+<label class="field wide" for="note">Observation<textarea id="note" maxlength="2000" placeholder="Ex. le filtre touche les lèvres ; les joues restent difficiles à distinguer."></textarea></label></div>
+<div class="controls"><button class="btn copper" id="save">Ajouter l'observation à cet instant</button><button class="btn secondary" id="export">Exporter mes annotations (JSON)</button></div>
+<p class="subtle">L'heure de début correspond au temps actuel de la vidéo. Pour conserver des annotations indépendantes, chaque évaluateur exporte son propre fichier.</p><div class="divider"></div>
+<div style="display:flex;justify-content:space-between;align-items:center"><strong>Observations de cette session</strong><span id="nnotes" class="tag">0</span></div><div id="events" class="events" style="margin-top:13px"><p class="subtle">Aucune observation enregistrée.</p></div></section>
+<section class="pane"><h2>Ce que l'outil ne fait pas</h2><p class="desc">Il ne reconnaît pas automatiquement une inspiration, ne confirme pas l'âge et ne crée pas une vidéo photoréaliste. Aucun passage n'est marqué prêt pour l'entraînement sans contrôle indépendant.</p><span class="tag">ANNOTATIONS = EN ATTENTE DE REVUE</span></section>
+</div></div><p class="foot">Retouche Cinema P11 · Tous les traitements de cette page sont locaux. Les fichiers JSON exportés peuvent contenir des identifiants et horodatages sensibles : conserve-les dans un emplacement privé. Démonstration et application expérimentales ; Safari iPhone physique non encore validé.</p>
+</main>
+<script>
+/* P11 public annotation UI core. No network, no private media included. */
+(function(global){'use strict';
+const CHANNELS=['main','doigts','poignet','cigarette','filtre','levres','joues','regard','paupieres','tete','torse','fumee','audio','autre'];
+const PHASES=['preparation','approche','contact','inspiration','maintien','retrait','pause','expiration','dispersion','regard_camera','clignement','autre'];
+const VISIBILITY=['observe','incertain','non_visible'];
+function validNumber(n){return typeof n==='number' && Number.isFinite(n)}
+function importData(doc){
+ if (!doc || doc.schema!=='retouche-cinema-p11-private-review-dossier-v1' ||
+ !Array.isArray(doc.tasks)||!Array.isArray(doc.probes)||doc.tasks.length!==doc.probes.length||doc.tasks.length>500) throw Error('Dossier P11 invalide');
+ const pairs=new Set();
+ for(let i=0;i<doc.tasks.length;i++){
+   const t=doc.tasks[i], p=doc.probes[i];
+   if(!/^V\d{3}$/.test(t.video_id)||t.video_id!==p.video_id ||t.split!==p.split||
+     t.scene_group!==p.scene_group ||!validNumber(t.start_s)||!validNumber(t.end_s)||
+     t.start_s<0||t.end_s<=t.start_s||!Array.isArray(p.observations))throw Error('Passages non concordants');
+   const key=[t.video_id,t.start_s,t.end_s].join(':');if(pairs.has(key))throw Error('Passage dupliqué');pairs.add(key);
+ }
+ return doc;
+}
+function addObservation({videoId, start, end, channel, phase, visibility, note, reviewerId}){
+ if(!/^V\d{3}$/.test(videoId) ||!validNumber(start)||!validNumber(end)||start<0||end<=start||end>14400)throw Error('Temps invalides');
+ if(!CHANNELS.includes(channel)||!PHASES.includes(phase)||!VISIBILITY.includes(visibility))throw Error('Catégorie invalide');
+ if(typeof reviewerId!=='string'||reviewerId.trim().length<2||reviewerId.length>80)throw Error('Identifiant de relecteur requis');
+ if(typeof note!=='string'||note.length>2000)throw Error('Note invalide');
+ return {channel,phase,visibility,start_s:Number(start.toFixed(3)),end_s:Number(end.toFixed(3)),note:note.trim(),reviewer_id:reviewerId.trim(),point:null,manual:true,
+  smoke_origin:'unknown',second_reviewer:'PENDING',inference_not_ground_truth:true};
+}
+function exportReview({task,reviewerId,observations}){
+ if(!task||!/^V\d{3}$/.test(task.video_id)||!Array.isArray(observations))throw Error('Passage invalide');
+ if(!observations.every(x=>x.reviewer_id===reviewerId))throw Error('Observations de relecteurs différents');
+ return {schema:'retouche-cinema-p11-human-review-export-v1',privacy:'PRIVATE_METADATA_ONLY_NO_MEDIA',
+    reviewer_id:reviewerId,source:{video_id:task.video_id,split:task.split,scene_group:task.scene_group,
+      start_s:task.start_s,end_s:task.end_s},
+    annotations:observations,source_pixels_or_audio_exported:false,
+    independent_human_review_confirmed:false,smoking_action_verified:false,
+    age_adult_verified:false,training_eligible:false};
+}
+global.P11Core={CHANNELS,PHASES,VISIBILITY,importData,addObservation,exportReview};
+})(typeof module!=='undefined'&&module.exports?module.exports:window);
+
+</script>
+<script>
+(function(){'use strict';
+const C=window.P11Core, el=id=>document.getElementById(id);
+const demo={schema:'retouche-cinema-p11-private-review-dossier-v1',tasks:[{video_id:'V000',private_filename:'EXEMPLE_FICTIF_SANS_VIDEO.mp4',start_s:0,end_s:3,split:'train',scene_group:0,motion_review_anchors:[{t_s:.6,motion_p90_px:5},{t_s:1.4,motion_p90_px:2},{t_s:2.2,motion_p90_px:6}]}],probes:[{video_id:'V000',split:'train',scene_group:0,source_fps:24,face_box_found_approximate:true,compared_pairs:8,observations:[.3,.6,.9,1.2,1.5,1.8,2.1,2.4].map((t,i)=>({t_s:t,flow_p90:[1.2,4.5,2.5,3.2,1.7,2.8,6.3,2.1][i],regions:{mouth_approx:{motion_p90_px:[0.2,.4,.8,1.1,.6,1.5,1.7,.3][i]}}}))}]};
+let dossier=demo, selected=0,notes=[],videoURL=null;
+const setStatus=(msg,bad=false)=>{el('status').textContent=msg;el('status').classList.toggle('danger',bad)};
+function currentTask(){return dossier.tasks[selected]}
+function currentProbe(){return dossier.probes[selected]}
+function putOptions(id,arr){el(id).innerHTML='';for(const v of arr){const o=document.createElement('option');o.value=v;o.textContent=v.replace(/_/g,' ');el(id).appendChild(o)}}
+putOptions('channel',C.CHANNELS);putOptions('phase',C.PHASES);
+function refreshTasks(){let list=el('tasklist');list.innerHTML='';dossier.tasks.forEach((t,i)=>{const o=document.createElement('option');o.value=i;o.textContent=t.video_id+' · '+t.start_s.toFixed(2)+'–'+t.end_s.toFixed(2)+' s · '+t.split;list.add(o)});selected=0;showTask()}
+function showTask(){const t=currentTask(),p=currentProbe();el('nclips').textContent=dossier.tasks.length;el('nframes').textContent=p.observations.length;el('faces').textContent=p.face_box_found_approximate?'OUI':'NON';
+ const a=el('anchors');a.innerHTML='';for(const h of t.motion_review_anchors||[]){const b=document.createElement('button');b.className='anchor';b.textContent=h.t_s.toFixed(2)+' s';b.onclick=()=>jump(h.t_s);a.appendChild(b)};
+ notes=[];renderNotes();draw();setStatus('Passage '+t.video_id+' — ces courbes ne représentent que des mouvements mesurés.');
+ if(el('videofile').files.length && el('videofile').files[0].name !== t.private_filename && t.video_id!=='V000')setStatus('Attention : le nom de la vidéo ouverte ne correspond pas au passage sélectionné.',true);
+}
+function jump(t){const v=el('video');if(v.src){v.currentTime=Math.max(0,Math.min(t,Number.isFinite(v.duration)?v.duration:t));setStatus('Position sélectionnée : '+t.toFixed(2)+' s')}else setStatus('Choisis la vidéo originale pour atteindre '+t.toFixed(2)+' s.')}
+function draw(){let cv=el('canvas'),rect=cv.getBoundingClientRect();if(!rect.width)return;let scale=window.devicePixelRatio||1;cv.width=Math.round(rect.width*scale);cv.height=Math.round(rect.height*scale);const ctx=cv.getContext('2d');ctx.scale(scale,scale);
+ const w=rect.width,h=rect.height,pad=25,series=currentProbe().observations||[];ctx.clearRect(0,0,w,h);ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
+ for(let g=0;g<5;g++){let y=pad+(h-2*pad)*g/4;ctx.strokeStyle='#e9e5e0';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-pad,y);ctx.stroke()}
+ const ta=currentTask(),low=ta.start_s,high=ta.end_s||low+1;let max=Math.max(1,...series.map(o=>o.flow_p90||0),...series.map(o=>(o.regions?.mouth_approx||{}).motion_p90_px||0))*1.08;
+ function line(color,getValue){ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();let started=false;for(const o of series){const n=getValue(o);if(n==null||!Number.isFinite(n))continue;let x=pad+(o.t_s-low)/(high-low)*(w-2*pad),y=h-pad-n/max*(h-2*pad);if(!started){ctx.moveTo(x,y);started=true}else ctx.lineTo(x,y)}ctx.stroke()}
+ line('#aa6753',o=>o.flow_p90);line('#637f70',o=>o.regions?.mouth_approx?.motion_p90_px);
+ ctx.fillStyle='#697174';ctx.font='11px -apple-system, Arial';ctx.fillText(low.toFixed(2)+' s',pad,h-6);ctx.fillText(high.toFixed(2)+' s',w-pad-40,h-6);ctx.fillText('Mouvements, unités relatives',pad+5,17);
+}
+function renderNotes(){const box=el('events');box.innerHTML='';el('nnotes').textContent=notes.length;if(!notes.length){const p=document.createElement('p');p.className='subtle';p.textContent='Aucune observation enregistrée.';box.appendChild(p);return}for(const n of notes){const e=document.createElement('div');e.className='event';e.textContent=n.start_s.toFixed(2)+'–'+n.end_s.toFixed(2)+' s · '+n.channel+' / '+n.phase+' ('+n.visibility+')'+(n.note?' — '+n.note:'');box.appendChild(e)}}
+el('datafile').addEventListener('change',async function(){const f=this.files?.[0];if(!f)return;try{if(f.size>70e6)throw Error('Dossier trop volumineux');const j=JSON.parse(await f.text());dossier=C.importData(j);el('dataname').textContent=f.name;refreshTasks();setStatus(dossier.tasks.length+' passages chargés en local. Aucune vidéo transférée.')}catch(e){dossier=demo;refreshTasks();setStatus('Impossible de charger le dossier : '+e.message,true)}});
+el('videofile').addEventListener('change',function(){const f=this.files?.[0];if(!f)return;if(videoURL)URL.revokeObjectURL(videoURL);videoURL=URL.createObjectURL(f);el('video').src=videoURL;el('videoname').textContent=f.name;setStatus(f.name===currentTask().private_filename?'Vidéo correspondante ouverte localement.':'Vérifie que cette vidéo correspond au passage sélectionné.');});
+el('tasklist').addEventListener('change',function(){selected=Number(this.value);showTask()});
+el('half').onclick=()=>el('video').playbackRate=.5;el('normal').onclick=()=>el('video').playbackRate=1;
+for(const [id,n] of [['back',-1],['forward',1]])el(id).onclick=()=>{const fps=currentProbe().source_fps||24;let v=el('video');if(v.src)v.currentTime=Math.max(0,Math.min(v.duration||1e6,v.currentTime+n/fps));};
+el('canvas').addEventListener('click',event=>{const rect=el('canvas').getBoundingClientRect(),x=(event.clientX-rect.left-25)/(rect.width-50),t=currentTask();jump(t.start_s+Math.min(1,Math.max(0,x))*(t.end_s-t.start_s))});
+el('save').onclick=()=>{try{const vid=currentTask().video_id;const v=el('video');if(!v.src&&vid!=='V000')throw Error('Ouvre d’abord la vidéo correspondante');if(vid!=='V000' && el('videofile').files?.[0]?.name!==currentTask().private_filename)throw Error('Vidéo non correspondante : vérifie son nom avant toute annotation.');const t=v.src?v.currentTime:currentTask().start_s;const len=Number(el('duration').value);if(!Number.isFinite(len)||len<=0||len>15)throw Error('Durée invalide');const a=C.addObservation({videoId:vid,start:t,end:Math.min(t+len,v.src&&Number.isFinite(v.duration)?v.duration:14400),channel:el('channel').value,phase:el('phase').value,visibility:el('visibility').value,note:el('note').value,reviewerId:el('reviewer').value});notes.push(a);renderNotes();setStatus('Observation enregistrée localement, non validée indépendamment.')}catch(e){setStatus(e.message,true)}};
+el('export').onclick=()=>{try{const report=C.exportReview({task:currentTask(),reviewerId:el('reviewer').value.trim(),observations:notes});if(!notes.length)throw Error('Ajoute au moins une observation avant export');const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='retouche-P11-'+currentTask().video_id+'-annotation-privee.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setStatus('Annotations exportées : observations provisoires, sans pixels ni son.')}catch(e){setStatus(e.message,true)}};
+window.addEventListener('resize',draw);refreshTasks();
+})();
+</script></body></html>
