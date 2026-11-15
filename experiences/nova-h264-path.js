@@ -28,8 +28,10 @@ const result=(status,{proposal=null,estimatedMiB=null,audio="not-tested",sourceF
  });
 const safe=n=>Number.isSafeInteger(n)&&n>0;
 function colorSafe(c){
- return !!c&&["nclc","nclx"].includes(c.kind)&&c.primaries===1&&
-  c.transfer===1&&c.matrix===1&&c.fullRange!==true;
+ // nclc ne renseigne pas la plage (full/limited) : aucune certification
+ // colorimétrique sans nclx explicitement limité dans ce chemin pilote.
+ return !!c&&c.kind==="nclx"&&c.primaries===1&&
+  c.transfer===1&&c.matrix===1&&c.fullRange===false;
 }
 async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
  avsyncAnalyze,avsyncVerify,checkDecoder,checkEncoder,sourceAudit}={}){
