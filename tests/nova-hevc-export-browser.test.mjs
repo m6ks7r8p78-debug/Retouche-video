@@ -133,6 +133,10 @@ for(const inputFPS of [30,60])test(
   assert.match(diagnostic,/Export audiovisuel complet/);
   assert.match(diagnostic,/Payload H.264 : [1-9][0-9]* octets ; AAC : [1-9][0-9]* octets/);
   assert.match(diagnostic,/queue encodage max/);
+  assert.match(diagnostic,/précontrôle [0-9]+ ms, audio [0-9]+ ms, vidéo\/restauration [0-9]+ ms/);
+  assert.ok(!diagnostic.includes("NaN")&&!diagnostic.includes("undefined"),
+   "diagnostics de phases du vrai export complets");
+  t.diagnostic("NOVA 0.22 pipeline navigateur "+inputFPS+"fps : "+diagnostic);
   const pending=page.waitForEvent("download");
   await page.locator("#downloadVideo").click();
   const dl=await pending,output=await dl.path();
