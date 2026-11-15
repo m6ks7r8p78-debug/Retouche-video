@@ -1,4 +1,4 @@
-name: Film Studio - contrat experimental v0.1
+name: Film Studio - scenario et GLB v0.2
 on:
   push:
     branches:
@@ -11,6 +11,9 @@ on:
       - 'studio-3d/film-preview-v01.test.mjs'
       - 'studio-3d/film-sequence-v02.mjs'
       - 'studio-3d/film-sequence-v02.test.mjs'
+      - 'studio-3d/film-ui-v02.mjs'
+      - 'studio-3d/film-ui-v02.test.mjs'
+      - 'studio-3d/film-studio-v02.html'
       - '.github/workflows/ci-film-studio-v01.yml'
 jobs:
   scenario-contract:
@@ -24,4 +27,4 @@ jobs:
         with:
           node-version: '22'
       - name: Verifier le contrat de scenario sans medias prives
-        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs
+        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs
