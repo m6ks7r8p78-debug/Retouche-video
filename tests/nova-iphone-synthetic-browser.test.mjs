@@ -91,6 +91,34 @@ test("NOVA 0.24 : un clic charge le clip HEVC/AAC synthétique sans upload ni vi
    assert.equal(mp4Link,null,"aucun MP4 si l'environnement refuse le pilote");
    assert.equal(typeof report.errorCode,"string");
   }
+  // Vérification sur trois exports réels du même MOV synthétique.
+  // Aucun rapport n'est chargé depuis les fichiers privés du propriétaire.
+  await page.locator("#iphoneBenchStabilityRun").click();
+  await page.waitForFunction(()=>
+    !!document.querySelector("#iphoneBenchStabilityJson")?.getAttribute("href")||
+    (document.querySelector("#iphoneBenchStabilityStatus")?.textContent||"").includes("Série interrompue"),
+    null,{timeout:120000});
+  assert.match(await page.locator("#iphoneBenchStabilityJson").getAttribute("href")||"",/^blob:/);
+  const stabilityPending=page.waitForEvent("download");
+  await page.locator("#iphoneBenchStabilityJson").click();
+  const stability=JSON.parse(await fs.readFile(await (await stabilityPending).path(),"utf8"));
+  assert.equal(stability.schema,"retoucheproai.nova.synthetic-stability.v1");
+  assert.equal(stability.completed,3);
+  assert.equal(stability.succeeded,3);
+  assert.ok(["three-synthetic-runs-consistent","caution"].includes(stability.status));
+  assert.equal(stability.sourceKind,"synthetic-generated");
+  assert.equal(stability.realMediaTested,false);
+  assert.equal(stability.physicalIphoneCertified,false);
+  assert.equal(stability.uploadsPerformed,false);
+  assert.equal(stability.automaticSettingsChange,false);
+  assert.equal(stability.totalRamKnown,false);
+  assert.equal(stability.thermalMeasured,false);
+  assert.ok(stability.elapsedMedianMs>0);
+  assert.equal(JSON.stringify(stability).includes("NOVA_synthetic_HEVC_AAC.mov"),false);
+  t.diagnostic("NOVA 0.26 : stabilité des 3 conversions synthétiques (Linux) "+
+   JSON.stringify({result:stability.status,medianeMs:stability.elapsedMedianMs,
+    minMs:stability.elapsedMinMs,maxMs:stability.elapsedMaxMs,
+    wasmCapacitySpreadBytes:stability.wasmCapacitySpreadBytes}));
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
   assert.ok(overflow<4,"interface utilisable sur largeur iPhone");
   assert.deepEqual(errors,[]);

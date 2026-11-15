@@ -28,3 +28,8 @@ Le rapport contient `sourceKind = synthetic-generated` pour l’essai sans médi
 ### Vérification indépendante de l'archive
 
 Un second banc de NOVA 0.24 reconstruit le paquet statique **dans un dossier temporaire autonome**, puis lance le laboratoire dans Chromium et WebKit Linux à partir de ce seul dossier. Il vérifie le parcours photo et l'export de rapport depuis un vrai MOV HEVC/AAC de test, l'absence de ressource manquante et l'absence de requête externe. Il ne doit pas être confondu avec un test physique Safari iPhone.
+
+
+## NOVA 0.26 — trois essais synthétiques successifs, sans média personnel
+
+Le panneau avancé propose désormais « Vérifier la stabilité · 3 essais synthétiques ». Cette action **volontaire** ouvre une seule fois le clip HEVC/AAC synthétique, réalise jusqu'à trois exports locaux séquentiels et fournit **uniquement un petit rapport JSON agrégé** : succès/refus, médiane/minimum/maximum du temps de pipeline, écart de **capacité** du tas WASM et plage de taille MP4. Elle ne conserve ni média personnel, ni nom de fichier, ni les MP4 des essais successifs. **Ce test ne mesure ni fuite RAM/RSS, ni température, ni batterie, et ne certifie pas un iPhone physique**. Une variation importante déclenche un avis de prudence, non un changement de profil. Sur refus ou annulation, aucun résultat de stabilité n'est revendiqué. Le rapport reste local, exporté uniquement au clic.
