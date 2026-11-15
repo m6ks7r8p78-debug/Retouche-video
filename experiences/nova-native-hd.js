@@ -130,11 +130,15 @@ async function frameToOutput(frame,info,canvas,moteur,arbitre,duration,evidence)
   ctx.drawImage(prepared.frame,0,0,info.W,info.H);
   ctx.setTransform(1,0,0,1,0,0);
   const img=ctx.getImageData(0,0,w,h);
+  // Deux petits relevés échantillonnés sur UNE trame, pas de copie des
+  // pixels dans le bilan JSON. Ne modifie pas le traitement qui fonctionne.
+  const lightBefore=globalThis.NOVA_HD_QA.avant(img.data);
   const restored=moteur.restituer(img,{size:256,arbitre});
   if(!restored?.data||restored.data.length!==img.data.length||
      !restored?.bilan)fail("restauration classique invalide");
+  const luminosity=globalThis.NOVA_HD_QA.apres(restored.data,lightBefore);
   return {out:rgba709(restored.data,w,h,frame.timestamp,duration),
-   modified:!!restored.bilan.intervention,colorProof};
+   modified:!!restored.bilan.intervention,colorProof,luminosity};
  }finally{if(prepared.owned)prepared.frame.close()}
 }
 async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
@@ -203,6 +207,8 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  const decoded=new Map();
  let encoder,decoder,failed=null,sent=0,encoded=0,encodedBytes=0,modified=0,closed=false;
  let confirmedColor=null,colorsNotSourceVerified=0;
+ const lightAudit={frames:0,samples:0,totalAbsDelta:0,
+  totalSignedDelta:0,strongFrames:0};
  const started=clock();
  const check=()=>{if(signal?.aborted)fail("annulé");if(failed)throw failed};
  try{
@@ -251,6 +257,11 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
      confirmedColor=result.colorProof.method;
      if(result.colorProof.sourceMismatch)colorsNotSourceVerified++;
      modified+=Number(result.modified);
+     lightAudit.frames++;
+     lightAudit.samples+=result.luminosity.samples;
+     lightAudit.totalAbsDelta+=result.luminosity.meanAbsDelta;
+     lightAudit.totalSignedDelta+=result.luminosity.meanSignedDelta;
+     lightAudit.strongFrames+=Number(result.luminosity.meanAbsDelta>.08);
      try{encoder.encode(result.out,{keyFrame:next===0||next%90===0})}
      finally{result.out.close()}
      next++;sent++;
@@ -303,12 +314,23 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
   catch{fail("piste audio AAC du MP4 final non vérifiable")}
   if(!outputAudio?.packets?.length)
    fail("piste audio AAC absente du MP4 final");
+  // Bilan sur les VRAIES métadonnées du MP4 relu et les paquets AAC
+  // effectivement remuxés. Aucun média ni nom de fichier dans l'objet.
+  if(!globalThis.NOVA_HD_QA?.bilan)fail("analyseur QA local absent");
+  const qualityReport=globalThis.NOVA_HD_QA.bilan({
+   source:info,output:checkOut,outputAudio,sourceFps:p.sourceFps,
+   modifiedFrames:modified,colorMismatchFrames:colorsNotSourceVerified,
+   luminosity:lightAudit
+  });
+  if(!qualityReport.video.dimensionsPreserved||
+     !qualityReport.video.frameCountPreserved)
+   fail("bilan QA : dimensions ou nombre d'images altérés");
   onProgress({stage:"complete",progress:1});
   return Object.freeze({blob,mode:"native-hd-classical",
    originalWidth:p.width,originalHeight:p.height,
    sourceFrames:p.sourceFrames,outputFrames:checkOut.ns,
    durationSeconds:p.durationSeconds,sourceFps:p.sourceFps,
-   modifiedFrames:modified,audioMode:audio.mode,
+   modifiedFrames:modified,qualityReport,audioMode:audio.mode,
    audioQualification:audio.qualification,outputBytes:blob.size,
    sourceColorEvidence:p.colorEvidence.kind,decodedColorEvidence:confirmedColor,
    colorFidelity:colorsNotSourceVerified?
@@ -319,7 +341,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
     "Le MP4 reproduit le rendu natif décodé sans certifier l'identité "+
     "colorimétrique de la source : comparer l'export à l'original.":null,
    elapsedMs:Math.round(clock()-started),
-   disclaimer:"Traitement classique doux, pas de reconstruction neuronale, visuel et audio à vérifier sur iPhone"});
+   disclaimer:"Traitement classique doux : profil de sortie BT.709 audité mais fidélité à l'original non certifiée ; image et synchronisation à comparer."});
  }finally{
   closed=true;for(const frame of decoded.values())try{frame.close()}catch{}
   decoded.clear();
