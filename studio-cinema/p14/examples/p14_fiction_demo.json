@@ -1,0 +1,503 @@
+{
+  "schema": "retouche-cinema-p14-visual-audio-candidates-v1",
+  "private": false,
+  "contains_original_media": false,
+  "contains_private_metadata": false,
+  "total_passages": 1,
+  "total_decoded_frames": 36,
+  "face_candidate_frames": 33,
+  "audio_available_passages": 1,
+  "results": [
+    {
+      "video_id": "FICTION",
+      "split": "demo",
+      "scene_group": "fictional",
+      "source_filename_PRIVATE": "fiction-demo.mp4",
+      "start_s": 0.0,
+      "end_s": 3.0,
+      "sample_hz": 12,
+      "pixels_or_pcm_exported": false,
+      "landmark_inference_executed": false,
+      "human_event_labels": 0,
+      "breathing_detected": false,
+      "hand_contact_detected": false,
+      "visual": {
+        "frames_analyzed": 36,
+        "frames_with_face_candidate": 33,
+        "continuous_face_pairs": 30,
+        "face_coverage": 0.9167,
+        "relative_change_is_not_lip_aperture": true,
+        "series": [
+          {
+            "t_approx_s": 0.0,
+            "face_candidate": false,
+            "regions": {
+              "mouth_approx": 0.05,
+              "cheek_left_approx": 0.03,
+              "cheek_right_approx": 0.03,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.0833,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05218,
+              "cheek_left_approx": 0.03019,
+              "cheek_right_approx": 0.03035,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.1667,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05797,
+              "cheek_left_approx": 0.03074,
+              "cheek_right_approx": 0.03133,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.25,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.06534,
+              "cheek_left_approx": 0.03159,
+              "cheek_right_approx": 0.03278,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.3333,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.07172,
+              "cheek_left_approx": 0.03261,
+              "cheek_right_approx": 0.03444,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.4167,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.07487,
+              "cheek_left_approx": 0.03368,
+              "cheek_right_approx": 0.03602,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.5,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.07371,
+              "cheek_left_approx": 0.03467,
+              "cheek_right_approx": 0.03725,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.5833,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.06863,
+              "cheek_left_approx": 0.03544,
+              "cheek_right_approx": 0.03792,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.6667,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.06141,
+              "cheek_left_approx": 0.0359,
+              "cheek_right_approx": 0.0379,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.75,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05457,
+              "cheek_left_approx": 0.03599,
+              "cheek_right_approx": 0.03721,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.8333,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.0505,
+              "cheek_left_approx": 0.03569,
+              "cheek_right_approx": 0.03596,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 0.9167,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05062,
+              "cheek_left_approx": 0.03505,
+              "cheek_right_approx": 0.03437,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.0,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.0549,
+              "cheek_left_approx": 0.03415,
+              "cheek_right_approx": 0.03271,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.0833,
+            "face_candidate": false,
+            "regions": {
+              "mouth_approx": 0.06183,
+              "cheek_left_approx": 0.0331,
+              "cheek_right_approx": 0.03128,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.1667,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.06899,
+              "cheek_left_approx": 0.03203,
+              "cheek_right_approx": 0.03032,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.25,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.07389,
+              "cheek_left_approx": 0.0311,
+              "cheek_right_approx": 0.03,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.3333,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.07481,
+              "cheek_left_approx": 0.0304,
+              "cheek_right_approx": 0.03038,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.4167,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.07143,
+              "cheek_left_approx": 0.03004,
+              "cheek_right_approx": 0.03138,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.5,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.06493,
+              "cheek_left_approx": 0.03006,
+              "cheek_right_approx": 0.03284,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.5833,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05758,
+              "cheek_left_approx": 0.03045,
+              "cheek_right_approx": 0.0345,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.6667,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05195,
+              "cheek_left_approx": 0.03117,
+              "cheek_right_approx": 0.03608,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.75,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05001,
+              "cheek_left_approx": 0.03213,
+              "cheek_right_approx": 0.03729,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.8333,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05243,
+              "cheek_left_approx": 0.0332,
+              "cheek_right_approx": 0.03793,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 1.9167,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05836,
+              "cheek_left_approx": 0.03424,
+              "cheek_right_approx": 0.03789,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.0,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.06575,
+              "cheek_left_approx": 0.03512,
+              "cheek_right_approx": 0.03717,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.0833,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.072,
+              "cheek_left_approx": 0.03573,
+              "cheek_right_approx": 0.0359,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.1667,
+            "face_candidate": false,
+            "regions": {
+              "mouth_approx": 0.07493,
+              "cheek_left_approx": 0.03599,
+              "cheek_right_approx": 0.0343,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.25,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.07352,
+              "cheek_left_approx": 0.03587,
+              "cheek_right_approx": 0.03265,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.3333,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.06826,
+              "cheek_left_approx": 0.03538,
+              "cheek_right_approx": 0.03123,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.4167,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.06099,
+              "cheek_left_approx": 0.03458,
+              "cheek_right_approx": 0.03029,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.5,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05425,
+              "cheek_left_approx": 0.03358,
+              "cheek_right_approx": 0.03,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.5833,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05039,
+              "cheek_left_approx": 0.03251,
+              "cheek_right_approx": 0.0304,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.6667,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05076,
+              "cheek_left_approx": 0.0315,
+              "cheek_right_approx": 0.03143,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.75,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.05523,
+              "cheek_left_approx": 0.03068,
+              "cheek_right_approx": 0.03291,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.8333,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.06225,
+              "cheek_left_approx": 0.03016,
+              "cheek_right_approx": 0.03457,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          },
+          {
+            "t_approx_s": 2.9167,
+            "face_candidate": true,
+            "regions": {
+              "mouth_approx": 0.06935,
+              "cheek_left_approx": 0.03,
+              "cheek_right_approx": 0.03613,
+              "eyes_approx": null,
+              "face_approx": null
+            },
+            "mouth_relative_to_cheeks": null
+          }
+        ]
+      },
+      "audio": {
+        "audio_available": true,
+        "rms": [
+          0.022,
+          0.022,
+          0.022,
+          0.022,
+          0.022,
+          0.02201,
+          0.02204,
+          0.02214,
+          0.0224,
+          0.02303,
+          0.02432,
+          0.02661,
+          0.03009,
+          0.03454,
+          0.03913,
+          0.04267,
+          0.044,
+          0.04267,
+          0.03913,
+          0.03454,
+          0.03009,
+          0.02661,
+          0.02432,
+          0.02303,
+          0.0224,
+          0.02214,
+          0.02204,
+          0.02201,
+          0.022,
+          0.022
+        ],
+        "audio_is_breath_classified": false
+      }
+    }
+  ]
+}

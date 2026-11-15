@@ -1,0 +1,56 @@
+{
+  "schema_version": "cinema-p3-dialogue-v01",
+  "project_kind": "dialogue_timing_only",
+  "video_manifest_schema": "cinema-p2-render-v01",
+  "total_duration_seconds": 6,
+  "format": "16:9",
+  "source_mode": "text",
+  "voice_engine": "offline_not_connected",
+  "rendered_audio": null,
+  "consent": {
+    "reference_media_included": false,
+    "voice_cloning_allowed": false,
+    "remote_transfer_approved": false,
+    "training_allowed": false
+  },
+  "shots": [
+    {
+      "shot_id": "shot_01",
+      "start_seconds": 0,
+      "duration_seconds": 3,
+      "character_ids": [
+        "character_01"
+      ]
+    },
+    {
+      "shot_id": "shot_02",
+      "start_seconds": 3,
+      "duration_seconds": 3,
+      "character_ids": [
+        "character_01"
+      ]
+    }
+  ],
+  "lines": [
+    {
+      "line_id": "line_shot_01",
+      "shot_id": "shot_01",
+      "speaker_id": "character_01",
+      "start_seconds": 0.3,
+      "end_seconds": 2.8,
+      "text": "Bonjour.",
+      "voice": "fr",
+      "status": "not_generated"
+    },
+    {
+      "line_id": "line_shot_02",
+      "shot_id": "shot_02",
+      "speaker_id": "character_01",
+      "start_seconds": 3.3,
+      "end_seconds": 5.8,
+      "text": "Allô.",
+      "voice": "fr",
+      "status": "not_generated"
+    }
+  ]
+}

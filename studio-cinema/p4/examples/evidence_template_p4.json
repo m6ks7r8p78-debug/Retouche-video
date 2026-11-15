@@ -1,0 +1,16 @@
+{
+  "schema_version": "cinema-p4-evidence-v01",
+  "media_transfer_approved": false,
+  "instructions": "Annoter les régions relatives [x,y,largeur,hauteur] dans [0,1] ; passer transition=continuous uniquement si cadrages comparables. Ajouter SHA-256 originaux par clip. Aucune identité certifiée.",
+  "clip_sha256": {},
+  "checks": [
+    {
+      "check_id": "review_001",
+      "from_clip": "shot_01_part_01",
+      "to_clip": "shot_02_part_01",
+      "entity_id": "character_01",
+      "transition": "cut",
+      "regions": null
+    }
+  ]
+}

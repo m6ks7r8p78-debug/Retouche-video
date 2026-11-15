@@ -1,0 +1,74 @@
+{
+  "schema": "retouche-cinema-p9-private-human-annotations-v1",
+  "privacy": "METADATA_ONLY_LOCAL_NO_MEDIA",
+  "source": {
+    "local_filename": "DEMO_FICTION.mp4",
+    "video_id": "SYN-001",
+    "duration_s": 8.0
+  },
+  "eligibility": {
+    "adult_evidence": "unknown",
+    "ready_for_training": false
+  },
+  "annotations": [
+    {
+      "channel": "main",
+      "phase": "approche",
+      "visibility": "observe",
+      "start_s": 1.0,
+      "end_s": 2.0,
+      "point": [
+        0.35,
+        0.55
+      ]
+    },
+    {
+      "channel": "levres",
+      "phase": "contact",
+      "visibility": "observe",
+      "start_s": 2.0,
+      "end_s": 3.6,
+      "point": [
+        0.5,
+        0.38
+      ]
+    },
+    {
+      "channel": "levres",
+      "phase": "inspiration",
+      "visibility": "incertain",
+      "start_s": 2.4,
+      "end_s": 3.6,
+      "point": [
+        0.5,
+        0.38
+      ]
+    },
+    {
+      "channel": "main",
+      "phase": "retrait",
+      "visibility": "observe",
+      "start_s": 3.6,
+      "end_s": 4.1,
+      "point": [
+        0.4,
+        0.54
+      ]
+    },
+    {
+      "channel": "fumee",
+      "phase": "expiration",
+      "visibility": "observe",
+      "start_s": 4.2,
+      "end_s": 5.4,
+      "point": [
+        0.51,
+        0.38
+      ],
+      "smoke_origin": "mouth"
+    }
+  ],
+  "no_pixels_exported": true,
+  "no_audio_exported": true,
+  "identity_proven": false
+}

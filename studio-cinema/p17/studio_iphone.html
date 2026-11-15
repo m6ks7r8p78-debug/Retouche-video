@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#151619">
+<title>Retouche Cinema P17 · Studio de jeu</title>
+<style>
+:root{color-scheme:dark;--bg:#111215;--surface:#1c1d21;--surface2:#26272b;--border:#37383d;--muted:#afb0b6;--fg:#f3f0eb;--accent:#e6aa8b;--green:#9cd9c0;--warning:#f2ca8c}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 83% -25%,#333038,#111215 48%);color:var(--fg);font:15px/1.45 -apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}.page{max-width:1240px;margin:0 auto;padding:22px 22px 80px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:25px;border-bottom:1px solid var(--border)}.brand{letter-spacing:.15em;font-size:11px;text-transform:uppercase;font-weight:700;color:#eee} .brand em{color:var(--accent);font-style:normal} .version{font-size:11px;color:var(--muted);border:1px solid var(--border);padding:7px 10px;border-radius:30px}h1{font-size:clamp(30px,6vw,57px);letter-spacing:-.045em;font-weight:550;line-height:1.03;margin:27px 0 12px;max-width:750px}h1 span{font-family:Georgia,serif;color:var(--accent);font-style:italic;font-weight:400} .subtitle{max-width:750px;color:#c3c0bf;margin:0 0 28px;font-size:15px}.layout{display:grid;grid-template-columns:minmax(280px,370px) 1fr;gap:19px;align-items:start}.panel{background:var(--surface);border:1px solid var(--border);border-radius:17px;padding:22px;min-width:0}.eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 15px}.section-title{font-size:20px;font-weight:550;margin:0 0 9px}.desc{color:var(--muted);font-size:13px;margin:0 0 19px}label{display:block;color:#e1dfda;font-size:13px;margin:13px 0 6px;font-weight:600}input[type=text],select{width:100%;border:1px solid var(--border);background:#121317;color:var(--fg);border-radius:10px;padding:12px;min-height:45px} .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.slide{padding:4px 0 10px;border-bottom:1px solid #34353b}.slidehead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}.slide label{margin:0;font-size:13px}.slide output{color:var(--accent);font-variant-numeric:tabular-nums;font-size:12px}input[type=range]{width:100%;margin-top:10px;accent-color:var(--accent)}.action{background:var(--accent);color:#221812;border:none;border-radius:11px;min-height:47px;padding:10px 15px;font-weight:700;width:100%;margin-top:20px}.secondary{background:transparent;color:var(--fg);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-height:42px}.buttonrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.pill{display:inline-block;padding:5px 9px;border:1px solid #5a524b;border-radius:99px;color:var(--accent);font-size:11px;letter-spacing:.02em}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:17px 0}.summary>div{background:var(--surface2);border:1px solid var(--border);padding:12px;border-radius:11px}.number{display:block;font-size:25px;letter-spacing:-.04em;font-variant-numeric:tabular-nums}.summary small{color:var(--muted);font-size:11px}.empty{min-height:190px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:10px;color:var(--muted);border:1px dashed #4c4b51;border-radius:13px;padding:20px}.empty strong{color:var(--fg);font-size:17px}.timeline{display:flex;gap:3px;width:100%;height:16px;margin:14px 0 7px;border-radius:6px;overflow:hidden}.timeline span{background:var(--accent);opacity:.55;border-radius:2px}.clip{border:1px solid var(--border);border-radius:13px;padding:15px;margin:11px 0;background:#202126}.clip-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.clip-top strong{font-size:15px}.clip time{font-size:12px;color:var(--muted);white-space:nowrap}.clip p{margin:7px 0;color:#c4c2c2;font-size:12px}.beat{padding:7px 0;border-top:1px solid #37383e;font-size:12px;color:#e1dbd7}.beat span{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:6px}.warning{background:#403629;border:1px solid #776145;color:#ffe0ab;padding:10px;border-radius:8px;font-size:12px;margin-top:9px}.modules{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}.module{padding:12px;border:1px solid var(--border);background:var(--surface2);border-radius:12px}.module strong{display:block;font-size:13px}.module small{display:block;color:var(--muted);font-size:11px;margin:5px 0}.state{color:var(--warning);font-size:11px}.note{color:var(--muted);font-size:12px;margin-top:14px}#status{min-height:18px;color:var(--green);font-size:12px;margin-top:8px}footer{border-top:1px solid var(--border);margin-top:22px;padding-top:16px;color:var(--muted);font-size:12px}details{border-top:1px solid var(--border);margin-top:15px;padding-top:13px}summary{cursor:pointer;color:#e8ddcf;font-size:13px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.55 ui-monospace,monospace;color:#bebfca;background:#101114;border:1px solid var(--border);padding:13px;border-radius:9px;max-height:310px;overflow:auto} @media(max-width:800px){.page{padding:17px 14px 70px}header{padding-bottom:17px}.layout{grid-template-columns:1fr}.panel{padding:18px}.modules{grid-template-columns:1fr 1fr}.subtitle{font-size:14px}.summary{gap:6px}.summary>div{padding:9px}.number{font-size:21px}}@media(prefers-reduced-motion:no-preference){.action:hover,.secondary:hover{filter:brightness(1.07)}}
+</style></head>
+<body><main class="page"><header><div class="brand">RETOUCHE <em>CINEMA</em> / LAB</div><div class="version">P17 · PROTOTYPE HORS LIGNE</div></header>
+<h1>La présence,<br><span>plan par plan.</span></h1><p class="subtitle">Composer une direction d’acteur cohérente et préparer les clips de cinéma, en réutilisant des modules existants sans annoncer de rendu vidéo inexistant.</p>
+<div class="layout"><section class="panel" aria-label="Paramètres de scène"><div class="eyebrow">01 — Composer</div><h2 class="section-title">Le personnage et la scène</h2><p class="desc">Personnage adulte fictif uniquement. Aucun média envoyé ou lu par l’application.</p>
+<label for="scene">Scène</label><select id="scene"><option value="smoking">Cigarette · regard, contact, respiration</option><option value="coffee">Café · main, tasse, lèvres</option><option value="conversation">Conversation · regard, réponses, pauses</option><option value="walk">Marche · posture, déplacement, regard</option></select>
+<label for="character">Description</label><input id="character" type="text" maxlength="200" value="Femme adulte fictive, cheveux bruns, tenue élégante, lumière naturelle" />
+<div class="two"><div><label for="duration">Durée</label><select id="duration"><option value="12">12 secondes</option><option value="15" selected>15 secondes</option><option value="20">20 secondes</option><option value="30">30 secondes</option><option value="45">45 secondes</option><option value="60">60 secondes</option></select></div><div><label for="format">Format</label><select id="format"><option value="9:16" selected>9:16 · iPhone</option><option value="16:9">16:9 · Cinéma</option></select></div></div>
+<div class="two"><div><label for="fps">Export visé</label><select id="fps"><option value="30">30 i/s</option><option value="45">45 i/s</option><option value="60" selected>60 i/s</option></select></div><div><label for="maxclip">Durée des clips</label><select id="maxclip"><option value="3">3 secondes</option><option value="4">4 secondes</option><option value="5" selected>5 secondes</option></select></div></div>
+<div class="eyebrow" style="margin-top:23px">02 — Direction artistique</div>
+<div id="sliders"></div><button id="generate" class="action" type="button">Préparer le film</button><div id="status" role="status" aria-live="polite"></div>
+</section><section class="panel" aria-label="Plan de réalisation"><div class="eyebrow">03 — Atelier P17</div><h2 class="section-title">Découpage et continuité</h2><p class="desc">P16 définit le jeu ; P2 découpe les plans ; P17 traduit chaque geste dans la chronologie propre à chaque clip.</p>
+<div id="results"><div class="empty"><strong>Ton film commence ici.</strong><span>Choisis le jeu du personnage et appuie sur « Préparer le film ».</span></div></div>
+<div class="eyebrow" style="margin-top:25px">04 — Modules d’autres laboratoires</div>
+<div class="modules"><div class="module"><strong>NOVA · export</strong><small>Cadence, audit A/V, colorimétrie</small><span class="state">Non connecté · audit distinct</span></div><div class="module"><strong>CameraGuard · mouvement</strong><small>Compensation 2D et abstention</small><span class="state">Non connecté · validation requise</span></div><div class="module"><strong>SmallMotion · PWA</strong><small>Mise à jour sans interrompre le montage</small><span class="state">Règle préparée · non active</span></div><div class="module"><strong>Moteur vidéo GPU</strong><small>Générer des poses originales</small><span class="state">Absent dans ce prototype</span></div></div>
+<p class="note">Futur raccordement prévu par modules isolés et tests de compatibilité. Tous les exports sont des descriptions JSON, pas des films déjà générés.</p>
+</section></div><footer>RETOUCHE CINEMA LAB · Essai local uniquement · Aucune télémétrie, aucun compte, aucune transmission de média · P17 n’est pas déployé sur retoucheproai.com</footer></main>
+<script>
+/* Retouche Cinema AI — P16: directed screen presence + observed gestures.
+ * Pure deterministic planner & human annotation data contract, no ML/identity inference.
+ * CommonJS and browser. Fictional adult scene synthesis is storyboard JSON only.
+ */
+(function(root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.RetouchePresenceP16 = api;
+})(typeof self !== 'undefined' ? self : globalThis, function () {
+'use strict';
+const VERSION = 'retouche-cinema-p16-presence-v1';
+const SCENES = Object.freeze({
+  smoking: {label:'Une bouffée de cigarette', object:'cigarette', verb:'tenir, porter aux lèvres, inspirer, retirer, expirer'},
+  coffee: {label:'Boire un café', object:'tasse', verb:'approcher la tasse, boire, reposer'},
+  conversation: {label:'Conversation', object:'aucun', verb:'écouter, répondre, marquer une pause'},
+  walk: {label:'Marche', object:'aucun', verb:'se déplacer et croiser le regard de la caméra'}
+});
+const INTENTS = Object.freeze({
+  sensualite: {label:'Regard langoureux / sensualité', short:'Langueur', cues:['gaze_hold','eyes_soft','mouth_soft','slow_blink'], note:'Regard posé, paupières détendues, bouche souple : ne pas figer les yeux.'},
+  dominance: {label:'Autorité / présence dominante', short:'Autorité', cues:['steady_posture','gaze_hold','chin_raise','precise_hands'], note:'Assurance sans agressivité : posture stable, gestes maîtrisés, contact visuel assumé.'},
+  elegance: {label:'Classe / élégance', short:'Élégance', cues:['precise_hands','shoulders_relax','subtle_smile','chin_raise'], note:'Moins d’emphase, davantage de précision et de fluidité du geste.'},
+  charme: {label:'Charme / complicité caméra', short:'Charme', cues:['gaze_return','subtle_smile','mouth_soft','slow_blink'], note:'Créer un échange vivant : petits retours de regard, sourire discret, micro-variation.'},
+  mystere: {label:'Mystère / réserve', short:'Mystère', cues:['gaze_away','gaze_return','head_tilt','stillness'], note:'Laisser une courte hésitation et une variation dans la direction du regard.'}
+});
+const CUES = Object.freeze({
+  gaze_hold: {label:'Regard soutenu vers la caméra', domain:'yeux'},
+  gaze_away: {label:'Regard qui s’éloigne', domain:'yeux'},
+  gaze_return: {label:'Retour du regard vers la caméra', domain:'yeux'},
+  eyes_soft: {label:'Paupières légèrement détendues', domain:'yeux'},
+  slow_blink: {label:'Clignement naturel et lent', domain:'yeux'},
+  chin_raise: {label:'Léger relèvement du menton', domain:'tête'},
+  head_tilt: {label:'Inclinaison subtile de la tête', domain:'tête'},
+  subtle_smile: {label:'Début de sourire discret', domain:'visage'},
+  mouth_soft: {label:'Lèvres relâchées', domain:'lèvres'},
+  lip_press: {label:'Lèvres brièvement pressées', domain:'lèvres'},
+  lip_lick: {label:'Langue qui humidifie brièvement les lèvres', domain:'lèvres'},
+  lip_bite: {label:'Mordillement discret des lèvres', domain:'lèvres'},
+  precise_hands: {label:'Doigts et poignet précis', domain:'main'},
+  hand_travel: {label:'Trajectoire continue de la main', domain:'main'},
+  steady_posture: {label:'Posture assurée', domain:'corps'},
+  shoulders_relax: {label:'Épaules détendues', domain:'corps'},
+  stillness: {label:'Pause vivante, non figée', domain:'corps'},
+  mouth_contact: {label:'Contact du filtre avec les lèvres', domain:'objet'},
+  inhale_lips: {label:'Aspiration visible aux lèvres (candidat)', domain:'respiration'},
+  breath_sound: {label:'Respiration audible (candidat)', domain:'audio'},
+  smoke_mouth: {label:'Fumée apparaissant à la bouche', domain:'fumée'}
+});
+const CUE_IDS = Object.freeze(Object.keys(CUES));
+const LEVELS = Object.freeze(Object.keys(INTENTS));
+const OBSERVATION_EVIDENCE = Object.freeze(['visible','audible','uncertain','not_visible']);
+const REPORT_IMPACT = Object.freeze(['non_evalue','faible','modere','fort']);
+function num(x,n) {if(typeof x!=='number'||!Number.isFinite(x))throw new Error('Valeur numérique invalide: '+n);return x;}
+function bounds(v, min, max, name) {num(v,name);if(v<min||v>max)throw new Error(name+' hors limites');return v;}
+function round(v){return Number(v.toFixed(3));}
+function validateSpec(input){
+  if(!input||typeof input!=='object'||Array.isArray(input))throw new Error('Spécification manquante');
+  if(input.fictional_adult!==true)throw new Error('La direction générée est réservée aux personnages adultes fictifs');
+  if(!Object.prototype.hasOwnProperty.call(SCENES,input.scene))throw new Error('Scène inconnue');
+  const duration_s=bounds(input.duration_s,6,60,'duration_s');
+  const strengths={};for(const k of LEVELS)strengths[k]=bounds(input.strengths?.[k]??0,0,5,k);
+  return {fictional_adult:true,scene:input.scene,duration_s,strengths};
+}
+function buildPlan(input) {
+  const spec=validateSpec(input);const d=spec.duration_s,beats=[], guard=new Set();
+  function beat(id,p1,p2,channel,text,cues) {
+    if(guard.has(id))throw new Error('Duplicate beat');guard.add(id);
+    const start=round(d*p1),end=round(d*p2);
+    if(end<=start)throw new Error('Zero-length beat');
+    beats.push({id,start_s:start,end_s:end,layer:channel,direction:text,cues:cues.slice(),status:'planned_not_rendered'});
+  }
+  beat('establish',0,.16,'corps','Installer l’équilibre du corps. Conserver des micro-mouvements respiratoires, sans arrêt sur image.',['steady_posture','shoulders_relax']);
+  if(spec.scene==='smoking'){
+    beat('hand_path',.14,.36,'main','Déplacer la cigarette vers les lèvres dans une trajectoire continue : doigts, poignet et coude restent liés.',['hand_travel','precise_hands']);
+    beat('lip_contact',.36,.46,'objet','Le filtre touche les lèvres ; l’ouverture s’ajuste progressivement sans traverser l’objet.',['mouth_contact','mouth_soft']);
+    beat('inhale',.46,.67,'respiration','Conserver le contact. Faire évoluer subtilement lèvres et joues ; respiration perceptible si elle est visible ou audible, sans fumée expirée.',['mouth_contact','inhale_lips','breath_sound']);
+    beat('release',.67,.76,'main','Desserrer la bouche et éloigner progressivement la cigarette sans saut de position.',['hand_travel','mouth_soft']);
+    beat('transition',.76,.83,'visage','Conserver un léger temps de transition variable, sans imposer une longue pause universelle.',['stillness']);
+    beat('exhale',.83,1,'fumée','Expirer : démarrer la fumée à la bouche, puis suivre sa dispersion. Le son peut suivre la sortie d’air, pas la précéder automatiquement.',['smoke_mouth','breath_sound']);
+  } else if(spec.scene==='coffee') {
+    beat('reach',.16,.4,'main','Prendre la tasse avec une prise stable et porter l’objet à la bouche.',['hand_travel','precise_hands']);
+    beat('drink',.4,.69,'visage','Incliner la tasse et adapter les lèvres sans déplacer l’objet instantanément.',['mouth_soft','precise_hands']);
+    beat('lower',.69,1,'main','Reposer la tasse en suivant une trajectoire continue.',['hand_travel','precise_hands']);
+  } else if(spec.scene==='walk') {
+    beat('motion',.16,.82,'corps','Faire avancer corps, jambes et bras avec variations naturelles du rythme.',['steady_posture','precise_hands']);
+    beat('turn',.74,1,'yeux','Laisser le regard revenir vers l’objectif sans rotation brusque de la tête.',['gaze_return','head_tilt']);
+  } else {
+    beat('listen',.16,.52,'visage','Écouter, laisser vivre les yeux et les lèvres en dehors des mots.',['eyes_soft','mouth_soft']);
+    beat('answer',.52,.82,'visage','Parler en liant respiration, articulation et regard.',['mouth_soft','gaze_hold']);
+    beat('response',.82,1,'visage','Terminer la phrase ; laisser une réaction et un changement discret de regard.',['gaze_return','subtle_smile']);
+  }
+  for(const [key,intent] of Object.entries(INTENTS)) {
+    const strength=spec.strengths[key]; if(strength<1)continue;
+    const cueSet=intent.cues;
+    const position={sensualite:[.23,.56],dominance:[.16,.64],elegance:[.26,.74],charme:[.58,.87],mystere:[.27,.58]}[key];
+    beat('acting_'+key,position[0],position[1],'direction_'+key,
+      intent.note + (strength>=4?' Intensité forte, tout en gardant de petits changements vivants.':' Jeu retenu, sans pose exagérée.'),cueSet);
+  }
+  // A held gaze and a glance away are compatible only when their intervals are explicitly distinct.
+  // These overlapping style beats are acting intentions, NOT simultaneous physical proof.
+  beats.sort((a,b)=>a.start_s-b.start_s||a.id.localeCompare(b.id));
+  return {schema:VERSION,kind:'fictional_actor_direction',project_status:'storyboard_only',
+    fictional_adult:true,source_video_used:false,model_executed:false,rendered_frames:0,
+    fps_requested:60,generated_unique_frames:0,scene:spec.scene,duration_s:d,
+    artistic_intent:spec.strengths,beats,
+    notes:['Les directions se superposent ; synchroniser main, lèvres, regard et respiration dans le moteur vidéo.',
+      'Les effets sensuel, dominant ou séduisant sont des objectifs artistiques, pas des intentions vérifiées chez les références réelles.',
+      '60 images encodées/s ne prouvent pas 60 poses originales/s.']};
+}
+function validateObservation(o,maxDuration) {
+  if(!o||typeof o!=='object'||Array.isArray(o))throw new Error('Observation absente');
+  if(!CUES[o.cue])throw new Error('Repère inconnu');
+  bounds(o.start_s,0,maxDuration,'start_s');bounds(o.end_s,0,maxDuration,'end_s');
+  if(o.end_s<=o.start_s)throw new Error('Intervalle invalide');
+  if(!OBSERVATION_EVIDENCE.includes(o.evidence))throw new Error('Nature de la preuve invalide');
+  if(o.cue==='breath_sound'&&o.evidence==='visible')throw new Error('Son ne peut pas être prouvé par image seule');
+  if(o.cue!=='breath_sound'&&o.evidence==='audible')throw new Error('Indice visuel ne peut pas être prouvé par audio seul');
+  if(!['A','B'].includes(o.reviewer))throw new Error('Relecteur invalide');
+  if(o.notes!==undefined&&typeof o.notes!=='string')throw new Error('Notes invalides');
+  return {cue:o.cue,start_s:round(o.start_s),end_s:round(o.end_s),evidence:o.evidence,
+    reviewer:o.reviewer,notes:(o.notes||'').slice(0,400)};
+}
+function validateViewerRating(r){
+  if(!r||typeof r!=='object')throw new Error('Avis invalide');
+  if(!['A','B'].includes(r.reviewer))throw new Error('Relecteur invalide');
+  if(!LEVELS.includes(r.dimension))throw new Error('Dimension artistique inconnue');
+  bounds(r.score,0,5,'score');
+  if(r.assessment!=='subjective_viewer_impression')throw new Error('Une note de présence est une impression de spectateur');
+  return {reviewer:r.reviewer,dimension:r.dimension,score:r.score,
+    assessment:'subjective_viewer_impression',notes:String(r.notes||'').slice(0,400)};
+}
+function validateReview(doc){
+  if(!doc||doc.schema!==VERSION||doc.kind!=='private_manual_review'||doc.allow_network!==false||doc.export_media!==false)throw new Error('Schéma ou confidentialité invalides');
+  if(!doc.source_name||typeof doc.source_name!=='string'||doc.source_name.length>256)throw new Error('Nom de média requis');
+  bounds(doc.duration_s,.1,86400,'duration_s');
+  if(!Array.isArray(doc.observations)||doc.observations.length>10000)throw new Error('Observations invalides');
+  if(!Array.isArray(doc.viewer_ratings)||doc.viewer_ratings.length>1000)throw new Error('Avis invalides');
+  const observations=doc.observations.map(o=>validateObservation(o,doc.duration_s));
+  const viewer_ratings=doc.viewer_ratings.map(validateViewerRating);
+  if(doc.automatic_intent_inference||doc.automatic_arousal_inference||doc.ready_for_training)throw new Error('Attribution automatique d’intention interdite');
+  return {schema:VERSION,kind:'private_manual_review',source_name:doc.source_name,duration_s:doc.duration_s,
+    allow_network:false,export_media:false,observations,viewer_ratings,
+    evidence_type:'human_observations_and_subjective_ratings',
+    reviewed_by_two_independent_people_verified:false,ready_for_training:false,
+    automatic_intent_inference:false,automatic_arousal_inference:false};
+}
+function newReview(sourceName,duration){return validateReview({schema:VERSION,kind:'private_manual_review',source_name:sourceName,duration_s:duration,
+  allow_network:false,export_media:false,observations:[],viewer_ratings:[]});}
+function compareRatings(review){const d=validateReview(review),out=[];
+  for(const dim of LEVELS){const a=d.viewer_ratings.filter(x=>x.dimension===dim&&x.reviewer==='A');
+   const b=d.viewer_ratings.filter(x=>x.dimension===dim&&x.reviewer==='B');
+   if(!a.length||!b.length)continue;
+   const x=a[a.length-1].score,y=b[b.length-1].score;
+   out.push({dimension:dim,first:x,second:y,delta:Math.abs(x-y),consensus:'not_a_fact_about_subject'});
+  }
+  return {ratings:out,independent_reviewers_verified:false,psychological_intention_inferred:false,
+    audience_response_universal:false};
+}
+return {VERSION,SCENES,INTENTS,CUES,CUE_IDS,LEVELS,OBSERVATION_EVIDENCE,REPORT_IMPACT,
+  validateSpec,buildPlan,validateObservation,validateViewerRating,validateReview,newReview,compareRatings};
+});
+
+</script>
+<script>
+/* Retouche Cinema AI P2 — text-only render plan: deterministic, offline, no network, no media bytes. */
+(function(root,factory){const api=factory(); if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.RetoucheCinemaRenderPlan=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+ 'use strict';
+ const VERSION='cinema-p2-render-v01', MAX_CLIPS=120, MAX_SHOTS=16, MAX_SECONDS=600, MAX_PROMPT=3000;
+ const MIN_CHUNK=1, MAX_CHUNK=5;
+ function assert(condition,message){if(!condition)throw new Error(message)}
+ function safeText(v,n){return String(v??'').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'').slice(0,n)}
+ function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0)}
+ function sanitizeProject(source){
+  assert(source&&typeof source==='object'&&!Array.isArray(source),'Projet absent');
+  assert(Array.isArray(source.shots)&&source.shots.length>=1&&source.shots.length<=MAX_SHOTS,'Nombre de plans invalide');
+  assert(Array.isArray(source.characters)&&source.characters.length>=1&&source.characters.length<=8,'Personnages invalides');
+  assert(['text','photo','video'].includes(source.mode),'Mode invalide');
+  if(source.mode!=='text') assert(source.has_rights_confirmed===true,'Droits sur les références non confirmés');
+  const format=source.format==='9:16'?'9:16':'16:9',ch=new Map();
+  source.characters.forEach(c=>{
+    assert(c&&/^character_[A-Za-z0-9_]{1,64}$/.test(c.id),'Identifiant de personnage invalide');
+    assert(!ch.has(c.id),'Personnage dupliqué');
+    ch.set(c.id,{id:c.id,description:safeText(c.description,240),fictional:c.identity_source==='fictional'});
+  });
+  const props=new Map();(source.props||[]).forEach(p=>{if(p&&typeof p.id==='string'&&/^[a-zA-Z0-9_\-]{1,80}$/.test(p.id)) props.set(p.id,safeText(p.label,120))});
+  const ids=new Set(),shots=[];let duration=0;
+  for(const s of source.shots){
+    assert(s&&/^shot_[A-Za-z0-9_]{1,64}$/.test(s.id),'Identifiant de plan invalide');
+    assert(!ids.has(s.id),'Plan dupliqué');ids.add(s.id);
+    assert(typeof s.action==='string'&&s.action.trim().length>=3,'Action manquante');
+    assert(Number.isInteger(s.duration_seconds)&&s.duration_seconds>=1&&s.duration_seconds<=120,'Durée de plan invalide');
+    assert(Array.isArray(s.character_ids)&&s.character_ids.every(id=>ch.has(id)),'Personnage non répertorié');
+    assert(Array.isArray(s.prop_ids)&&s.prop_ids.length<=30,'Objets invalides');
+    duration+=s.duration_seconds;
+    shots.push({id:s.id,action:safeText(s.action,700),dialogue:safeText(s.dialogue,500),location:safeText(s.location,100),camera:safeText(s.camera,80),character_ids:s.character_ids.slice(),prop_ids:s.prop_ids.filter(p=>props.has(p)).slice(0,30),duration_seconds:s.duration_seconds});
+  }
+  assert(duration<=MAX_SECONDS,'Projet supérieur à dix minutes');
+  return {format,mode:source.mode,characters:[...ch.values()],props:[...props].map(([id,label])=>({id,label})),shots,total_duration_seconds:duration};
+ }
+ function promptFor(shot,data){
+  const cast=shot.character_ids.map(id=>data.characters.find(c=>c.id===id)).filter(Boolean);
+  const clothing=cast.map(c=>`${c.id} : ${c.description}`).join('; ');
+  const objects=shot.prop_ids.map(id=>data.props.find(p=>p.id===id)?.label||id).join(', ');
+  const text=[
+   'Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.',
+   `Lieu : ${shot.location||'Décor à définir'}. Cadrage : ${shot.camera||'Plan moyen'}.`,
+   `Personnages (identifiants permanents) : ${clothing}.`,
+   `Action à filmer : ${shot.action.trim()}.`,
+   objects?`Objets à conserver entre les plans : ${objects}.`:'',
+   shot.dialogue?`Texte de dialogue (ne pas ajouter d’autres répliques) : « ${shot.dialogue} ».`:''
+  ].filter(Boolean).join('\n');
+  assert(text.length<=MAX_PROMPT,'Description de plan trop longue');return text;
+ }
+ function splitSeconds(s,maxChunk){const n=Math.ceil(s/maxChunk); const base=Math.floor(s/n),extra=s% n;return Array.from({length:n},(_,i)=>base+(i<extra?1:0));}
+ function makeRenderManifest(source,{maxClipSeconds=5}={}){
+  assert(Number.isInteger(maxClipSeconds)&&maxClipSeconds>=MIN_CHUNK&&maxClipSeconds<=MAX_CHUNK,'Durée maximale de clip invalide');
+  const d=sanitizeProject(source);const clips=[];let at=0;
+  for(const shot of d.shots){
+   const durations=splitSeconds(shot.duration_seconds,maxClipSeconds);
+   for(let i=0;i<durations.length;i++){
+    const id=`${shot.id}_part_${String(i+1).padStart(2,'0')}`;
+    const seed=hash(`${shot.id}:${i}:${shot.action}:${d.format}`)%2147483646+1;
+    clips.push({clip_id:id,shot_id:shot.id,part:i+1,parts:durations.length,sequence:clips.length+1,start_seconds:at,duration_seconds:durations[i],format:d.format,seed,
+      prompt:promptFor(shot,d),continuity:{character_ids:shot.character_ids.slice(),prop_ids:shot.prop_ids.slice(),previous_clip_id:clips.at(-1)?.clip_id||null},status:'not_submitted',output:null});
+    at+=durations[i];
+   }
+  }
+  assert(clips.length<=MAX_CLIPS,'Nombre de clips supérieur à 120');
+  const sourceNote=d.mode==='text'?'Description textuelle fictive':'Référence média utilisée par le storyboard, non incluse dans cette demande de rendu';
+  return {schema_version:VERSION,project_kind:'render_plan_only',created_by:'Retouche Cinema Director P2',source_mode:d.mode,reference_note:sourceNote,
+   model_engine:'not_connected',rendered_video:null,total_duration_seconds:d.total_duration_seconds,format:d.format,
+   consent:{project_rights_confirmed:d.mode==='text'||source.has_rights_confirmed===true,remote_transfer_approved:false,training_allowed:false,reference_media_included:false,requires_explicit_activation:true},
+   shots:d.shots.map(s=>({id:s.id,duration_seconds:s.duration_seconds,character_ids:s.character_ids.slice(),prop_ids:s.prop_ids.slice()})),
+   characters:d.characters.map(c=>({id:c.id,description:c.description,fictional:c.fictional})),objects:d.props,
+   clips};
+ }
+ function validateRenderManifest(m){
+  assert(m&&m.schema_version===VERSION,'Schéma de rendu non pris en charge');
+  assert(m.model_engine==='not_connected'&&m.rendered_video===null,'Plan de rendu modifié');
+  assert(m.consent?.reference_media_included===false&&m.consent?.remote_transfer_approved===false&&m.consent?.training_allowed===false,'Consentements invalides');
+  assert(Array.isArray(m.clips)&&m.clips.length>=1&&m.clips.length<=MAX_CLIPS,'Clips invalides');
+  let at=0;const ids=new Set();for(const c of m.clips){
+   assert(c&&typeof c.clip_id==='string'&&/^shot_[A-Za-z0-9_]+_part_\d+$/.test(c.clip_id),'ID clip invalide');
+   assert(!ids.has(c.clip_id),'Clip dupliqué');ids.add(c.clip_id);
+   assert(Number.isInteger(c.duration_seconds)&&c.duration_seconds>=1&&c.duration_seconds<=MAX_CHUNK,'Durée de clip invalide');
+   assert(c.start_seconds===at,'Synchronisation de clips invalide');at+=c.duration_seconds;
+   assert(typeof c.prompt==='string'&&c.prompt.length>=10&&c.prompt.length<=MAX_PROMPT,'Prompt clip invalide');
+   assert(c.status==='not_submitted'&&c.output===null,'État de rendu impossible');
+   assert(c.continuity&&Array.isArray(c.continuity.character_ids),'Continuité invalide');
+  }
+  assert(at===m.total_duration_seconds&&at<=MAX_SECONDS,'Durée de film incohérente');
+  return true;
+ }
+ return {VERSION,MAX_CLIP_SECONDS:MAX_CHUNK,makeRenderManifest,validateRenderManifest,sanitizeProject,splitSeconds,hash};
+});
+
+</script>
+<script>
+/* Retouche Cinema P17 — clip-level direction from P16 performance cues and P2 render plans.
+ * No model execution, media reads, network transfer, identity estimation or audience inference.
+ * Author: Retouche Cinema AI research prototype.
+ */
+(function(root, factory){
+  const api=factory(); if(typeof module==='object' && module.exports)module.exports=api;
+  else root.RetoucheP17=api;
+})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const VERSION='retouche-cinema-p17-directed-clips-v1';
+const SCENES=['smoking','coffee','conversation','walk'];
+const sceneActions={
+  smoking:'Personnage adulte fictif : porte une cigarette aux lèvres, aspire doucement, retire puis expire la fumée.',
+  coffee:'Personnage adulte fictif : prend une tasse, boit une gorgée puis repose la tasse.',
+  conversation:'Personnage adulte fictif : écoute et répond avec pauses et expressions naturelles.',
+  walk:'Personnage adulte fictif : marche d’un pas naturel, croise le regard de la caméra puis poursuit sa marche.'
+};
+const sceneProps={smoking:{id:'prop_cigarette',label:'une cigarette fictive, même géométrie et prise entre plans'},coffee:{id:'prop_tasse',label:'la même tasse entre tous les plans'}};
+const round=(x)=>Math.round(x*1000)/1000;
+function ensure(ok,msg){if(!ok)throw new Error(msg)}
+function printable(s,max=180){ensure(typeof s==='string'&&s.trim().length>0,'Texte requis');return s.replace(/[\u0000-\u001f]/g,' ').trim().slice(0,max)}
+function overlaps(a,b){return a.start_s<b.end_s-1e-6 && b.start_s<a.end_s-1e-6}
+function localizeBeat(beat,clip){const a=Math.max(beat.start_s,clip.start_seconds),b=Math.min(beat.end_s,clip.start_seconds+clip.duration_seconds);
+  if(b<=a+1e-6)return null;
+  return {id:beat.id,layer:beat.layer,local_start_s:round(a-clip.start_seconds),local_end_s:round(b-clip.start_seconds),absolute_start_s:round(a),absolute_end_s:round(b),cues:beat.cues.slice(),direction:beat.direction};
+}
+function cueConflict(beatA,beatB){
+  const a=beatA.cues,b=beatB.cues;
+  const pair=(x,y)=>(a.includes(x)&&b.includes(y))||(a.includes(y)&&b.includes(x));
+  if(pair('gaze_hold','gaze_away'))return 'regard_fixe_et_detourne';
+  if(pair('mouth_contact','lip_lick'))return 'langue_et_filtre_simultanes';
+  if(pair('mouth_contact','lip_bite'))return 'mordillement_et_filtre_simultanes';
+  return null;
+}
+function inspectLayerConflicts(beats){
+  const conflicts=[],seen=new Set();
+  for(let i=0;i<beats.length;i++)for(let j=i+1;j<beats.length;j++){
+    const a=beats[i],b=beats[j];if(!overlaps({start_s:a.local_start_s,end_s:a.local_end_s},{start_s:b.local_start_s,end_s:b.local_end_s}))continue;
+    const type=cueConflict(a,b);if(!type)continue;
+    const key=[a.id,b.id,type].sort().join(':');if(seen.has(key))continue;seen.add(key);
+    conflicts.push({code:type,between:[a.id,b.id],local_overlap_start_s:round(Math.max(a.local_start_s,b.local_start_s)),local_overlap_end_s:round(Math.min(a.local_end_s,b.local_end_s)),requires_human_review:true});
+  }
+  return conflicts;
+}
+function planProject(spec, P16, P2){
+  ensure(P16&&typeof P16.buildPlan==='function'&&P2&&typeof P2.makeRenderManifest==='function','Modules P16 et P2 requis');
+  ensure(spec&&SCENES.includes(spec.scene),'Scène P17 non reconnue');
+  ensure(Number.isInteger(spec.duration_s)&&spec.duration_s>=6&&spec.duration_s<=60,'Durée entière entre 6 et 60 secondes requise');
+  const character=printable(spec.character_description||'Femme adulte fictive, apparence cohérente, tenue simple, mouvements naturels.',240);
+  const scene=P16.buildPlan({fictional_adult:spec.fictional_adult,scene:spec.scene,duration_s:spec.duration_s,strengths:spec.strengths});
+  const prop=sceneProps[spec.scene];
+  const src={mode:'text',format:spec.format==='9:16'?'9:16':'16:9',characters:[{id:'character_01',description:character,identity_source:'fictional'}],
+    props:prop?[prop]:[],shots:[{id:'shot_01',duration_seconds:spec.duration_s,character_ids:['character_01'],prop_ids:prop?[prop.id]:[],
+    action:sceneActions[spec.scene],camera:spec.camera||'Plan moyen stable, légère profondeur de champ',location:spec.location||'Décor neutre avec lumière naturelle',dialogue:''}]};
+  const maxClipSeconds=spec.maxClipSeconds??5;
+  const manifest=P2.makeRenderManifest(src,{maxClipSeconds});P2.validateRenderManifest(manifest);
+  const clips=[];
+  for(const clip of manifest.clips){
+    const active=scene.beats.map(b=>localizeBeat(b,clip)).filter(Boolean);
+    const conflicts=inspectLayerConflicts(active);
+    const starts=clip.start_seconds,ends=starts+clip.duration_seconds;
+    const cuts=scene.beats.filter(b=>b.start_s<ends-1e-6&&b.end_s>ends+1e-6);
+    const prev=scene.beats.filter(b=>b.start_s<starts-1e-6&&b.end_s>starts+1e-6);
+    const prompts=active.map(b=>`${b.local_start_s.toFixed(2)}–${b.local_end_s.toFixed(2)} s [${b.layer}] ${b.direction}`);
+    const text=[clip.prompt,'Direction du jeu (chronologie LOCALE de ce clip, en secondes) :',...prompts,
+      'Conserver la même personne fictive, les objets, leur position et les expressions entre clips. Aucune nouvelle identité ni variation de vêtements.',
+      'Ne pas confondre 60 images vidéo encodées avec 60 poses originales/s. Ne pas sauter la trajectoire main→objet→bouche.'];
+    const prompt=text.join('\n');ensure(prompt.length<=3000,`Prompt trop long sur ${clip.clip_id}; réduire le nombre de couches.`);
+    clips.push({clip_id:clip.clip_id,shot_id:clip.shot_id,start_seconds:starts,duration_seconds:clip.duration_seconds,
+      original_seed:clip.seed,character_ids:clip.continuity.character_ids.slice(),object_ids:clip.continuity.prop_ids.slice(),
+      source_prompt:clip.prompt,prompt,active_beats:active,continuity_from_previous_clip:prev.map(x=>x.id),
+      continuity_into_next_clip:cuts.map(x=>x.id),needs_reference_frame_from_prior_clip:prev.length>0,
+      known_conflicts:conflicts,quality_gate:conflicts.length?'review_required':'not_tested',
+      render_status:'not_submitted',rendered_video:null,actual_unique_generated_frames:0});
+  }
+  const issues=clips.flatMap(c=>c.known_conflicts.map(x=>({...x,clip_id:c.clip_id})));
+  const renderClips=manifest.clips.map((c,i)=>({...c,prompt:clips[i].prompt}));
+  const renderManifest={...manifest,clips:renderClips,created_by:'Retouche Cinema AI P17 + P2',reference_note:'Plan de fiction textuelle seulement; aucune image de référence incluse'};
+  P2.validateRenderManifest(renderManifest);
+  const result={schema:VERSION,storyboard_only:true,fictional_adult:true,remote_transfer_approved:false,source_media_included:false,model_engine:'not_connected',
+    render_status:'not_submitted',rendered_video:null,requested_fps:60,unique_frames_generated:0,scene:spec.scene,duration_s:spec.duration_s,
+    p16_version:scene.schema,p2_version:manifest.schema_version,character_description:character,acting_plan:scene,
+    p2_render_manifest:renderManifest,clips,issue_count:issues.length,issues,
+    warnings:['Les contradictions de regard sont proposées pour revue, pas corrigées silencieusement.','Aucun modèle génératif n’a été lancé; tous les clips sont des consignes.',
+      'L’effet de charme ou d’autorité est une direction de jeu, non une vérité sur une personne filmée.']};
+  validateDirectedProject(result,P2);
+  return result;
+}
+function validateDirectedProject(p,P2){
+  ensure(p&&p.schema===VERSION&&p.storyboard_only===true&&p.fictional_adult===true,'Schéma P17 invalide');
+  ensure(p.remote_transfer_approved===false&&p.source_media_included===false&&p.rendered_video===null&&p.model_engine==='not_connected','Données privées ou rendu imprévu');
+  ensure(p.unique_frames_generated===0&&Array.isArray(p.clips)&&p.clips.length>0,'Frames inventées');
+  P2.validateRenderManifest(p.p2_render_manifest);
+  let at=0;
+  for(let i=0;i<p.clips.length;i++){
+    const c=p.clips[i];ensure(c.start_seconds===at && c.duration_seconds>0,'Horodatage P17 invalide');
+    ensure(c.clip_id===p.p2_render_manifest.clips[i].clip_id,'Clips non alignés');
+    ensure(c.render_status==='not_submitted' && c.rendered_video===null,'Faux résultat');
+    for(const b of c.active_beats){ensure(b.local_start_s>=0&&b.local_end_s<=c.duration_seconds+.001&&b.local_end_s>b.local_start_s,'Beat hors durée')}
+    at+=c.duration_seconds;
+  }
+  ensure(at===p.duration_s,'Durée incohérente');return true;
+}
+return {VERSION,planProject,inspectLayerConflicts,localizeBeat,cueConflict,validateDirectedProject};
+});
+
+</script>
+<script>
+/* Retouche Cinema P17 — cross-lab capability handoff.
+ * NOVA, CameraGuard/MultiMotion, and SmallMotion/PWA features are optional,
+ * separately validated experimental branches, NOT bundled runtime dependencies.
+ * Never fabricates quality, rendering, synchronization or identity proof.
+ */
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.RetoucheP17CrossLab=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const VERSION='retouche-cinema-p17-crosslab-v1';
+const SOURCES=Object.freeze({
+  nova:{branch:'chatgpt-studio-nova-v01',pr:3,features:['audio_timeline_audit','HEVC_SDR_BT709_conversion','AAC_H264_MP4_export'],activation:'separate_test_required'},
+  camera:{branch:'lab-3d-v43-camera-evidence',features:['camera_motion_similarity_2d','motion_abstention'],activation:'separate_test_required'},
+  pwa:{branch:'lab-3d-smallmotion-pwa-safe-update-v1',pr:26,features:['service_worker_wait_for_idle_clients','preserve_active_edits'],activation:'separate_test_required'}
+});
+function ok(x,m){if(!x)throw new Error(m)}
+function exportRequirements(p,{fps=60,format='9:16'}={}){
+  ok(p?.storyboard_only===true&&p?.rendered_video===null&&p?.model_engine==='not_connected','Projet P17 de fiction non rendu requis');
+  ok([24,30,45,60].includes(fps),'Cadence non autorisée');
+  ok(['16:9','9:16'].includes(format),'Format incorrect');
+  const clips=p.clips.map(c=>({id:c.clip_id,start_s:c.start_seconds,duration_s:c.duration_seconds,
+    source_generated_unique_frames:0,encoded_fps_target:fps,
+    audio_alignment_status:'not_measured',color_space_status:'not_measured',camera_motion_status:'not_measured',
+    can_export_without_render:false}));
+  return {schema:VERSION,kind:'requirements_only',profile:'iPhone_H264_AAC_SDR_BT709',fps_target:fps,format,
+    color_conformance:'NOVA requires independent color/codec audit',audio_synchronization:'NOVA requires independent AV-sync audit',
+    image_originality:'0 generated frames; target fps does not establish novel motion',
+    pwa_update_policy:{skipWaiting_on_install:false,wait_for_active_clients:true,source:'SmallMotion PR #26 (policy only)'},
+    modules_available_in_this_bundle:{nova:false,camera:false,pwa_service_worker:false,video_generator:false},
+    modules_researched:SOURCES,clips,remote_upload:false,source_media_attached:false,
+    export_video_now:false};
+}
+function inspectMotionReport(report){
+  if(report==null)return {status:'not_executed',source:'CameraGuard',can_confirm_contact:false};
+  ok(report&&typeof report==='object'&&!Array.isArray(report),'Motion report malformed');
+  ok(['synthetic','real_unvalidated'].includes(report.origin),'CameraGuard source must remain unvalidated');
+  ok(['measured_2d_only','abstained','failed'].includes(report.status),'No 3D or anatomical claims');
+  ok(report.identity_proven!==true&&report.hand_contact_proven!==true,'No identity or contact proof');
+  return {status:report.status,source:'CameraGuard',can_confirm_contact:false,
+    validated_on_real_humans:false,notes:'2D camera compensation can abstain; does not recognize hands or lips'};
+}
+function inspectNovaAudit(audit){
+  if(audit==null)return {status:'not_executed',source:'NOVA'};
+  ok(audit&&typeof audit==='object'&&!Array.isArray(audit),'Invalid NOVA report');
+  ok(audit.executed===true&&audit.provenance==='nova_runtime','NOVA audit must be executed, not inferred');
+  ok(typeof audit.av_sync_verified==='boolean'&&typeof audit.bt709_verified==='boolean','Missing AV/color findings');
+  return {status:(audit.av_sync_verified&&audit.bt709_verified)?'technical_checks_passed':'requires_review',
+    source:'NOVA',av_sync_verified:audit.av_sync_verified,bt709_verified:audit.bt709_verified,
+    lip_sync_verified:false,notes:'AV container synchronization does not prove animated lips match dialogue'};
+}
+function runNovaDecision(novaDecision,source,candidates,options={}){
+  ok(novaDecision&&typeof novaDecision.arbitrer==='function','NOVA_DECISION provider not connected');
+  // Calls the real injected NOVA decision module if supplied; does not clone or simulate it.
+  const result=novaDecision.arbitrer(source,candidates,{autoriserGeneration:options.autoriserGeneration===true});
+  ok(result&&typeof result.choisi==='string'&&result.validationHumaineObligatoire===true,'Unexpected NOVA decision result');
+  return {source:'NOVA_DECISION (injected)',execution:'real_provider_call',decision:result,
+    real_world_fidelity_proven:false,model_generated_frames:0};
+}
+function buildHandoff(p,settings={},evidence={}){
+  const out=exportRequirements(p,settings);
+  const motion=inspectMotionReport(evidence.motion);
+  const nova=inspectNovaAudit(evidence.nova);
+  return {...out,motion_audit:motion,nova_audit:nova,
+    needs_human_review:(p.issue_count>0)||(motion.status==='abstained')||(nova.status==='requires_review'),
+    consent:{remote_transfer_approved:false,training_allowed:false,media_bytes_included:false}};
+}
+return {VERSION,SOURCES,exportRequirements,inspectMotionReport,inspectNovaAudit,runNovaDecision,buildHandoff};
+});
+
+</script>
+<script>
+(function(){'use strict';const P16=window.RetouchePresenceP16,P2=window.RetoucheCinemaRenderPlan,P17=window.RetoucheP17,X=window.RetoucheP17CrossLab;
+const strengths=[['sensualite','Langueur / sensualité',4],['dominance','Présence dominante',3],['elegance','Classe / élégance',4],['charme','Charme / complicité',3],['mystere','Mystère',2]];
+const sliders=document.getElementById('sliders');for(const [id,label,value] of strengths){let row=document.createElement('div');row.className='slide';row.innerHTML='<div class="slidehead"><label for="s_'+id+'">'+label+'</label><output for="s_'+id+'" id="v_'+id+'">'+value+' / 5</output></div><input aria-label="'+label+'" type="range" id="s_'+id+'" min="0" max="5" step="1" value="'+value+'">';sliders.appendChild(row);row.querySelector('input').addEventListener('input',e=>row.querySelector('output').textContent=e.target.value+' / 5');}
+let project=null,handoff=null;const $=id=>document.getElementById(id);const root=$('results');function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=String(text);return e}function add(parent,tag,cls,text){const e=el(tag,cls,text);parent.appendChild(e);return e}function download(name,value){const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json;charset=utf-8'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),5000)}
+function render(){root.replaceChildren();const heading=add(root,'div','pill','CONSIGNES PRÉPARÉES — AUCUNE VIDÉO GÉNÉRÉE');const counters=add(root,'div','summary');for(const [n,label] of [[project.clips.length,'clips prévus'],[project.acting_plan.beats.length,'gestes chronologiques'],[project.issue_count,'contradictions à revoir']]){const box=add(counters,'div');add(box,'span','number',n);add(box,'small','',label)}
+const timeline=add(root,'div','timeline');timeline.setAttribute('aria-label','Découpage en clips');for(const c of project.clips){const s=add(timeline,'span');s.style.flex=c.duration_seconds; s.title=c.clip_id+' '+c.duration_seconds+' s';}
+let prev=el('div','note','Chaque clip conserve le même personnage et les mêmes objets. Les gestes qui traversent une coupe sont explicitement rappelés.');root.appendChild(prev);
+for(const c of project.clips){const card=add(root,'article','clip');const title=add(card,'div','clip-top');add(title,'strong','Plan '+c.clip_id.replace(/.*part_/,'') );add(title,'time',''+c.start_seconds+'–'+(c.start_seconds+c.duration_seconds)+' s');add(card,'p','Personnage constant · '+c.active_beats.length+' actions simultanées'+(c.needs_reference_frame_from_prior_clip?' · Continuité du plan précédent':''));const shown=c.active_beats.slice(0,6);for(const b of shown){const be=add(card,'div','beat');add(be,'span','',b.local_start_s.toFixed(2)+'–'+b.local_end_s.toFixed(2)+' s');be.append(document.createTextNode(b.direction));}if(c.active_beats.length>6)add(card,'p','+'+(c.active_beats.length-6)+' autres actions dans le manifeste JSON.');if(c.known_conflicts.length){const codes=[...new Set(c.known_conflicts.map(q=>q.code))];add(card,'div','warning',codes.length+' conflit(s) de jeu à revoir : '+codes.join(', '));}}
+const actions=add(root,'div','buttonrow');const projectBtn=add(actions,'button','secondary','Exporter le projet P17');projectBtn.type='button';projectBtn.addEventListener('click',()=>download('retouche_cinema_P17_plan.json',project));const manifestBtn=add(actions,'button','secondary','Exporter les instructions P2');manifestBtn.type='button';manifestBtn.addEventListener('click',()=>download('retouche_cinema_P17_clips_P2.json',project.p2_render_manifest));const auditBtn=add(actions,'button','secondary','Exporter le contrat inter-laboratoires');auditBtn.type='button';auditBtn.addEventListener('click',()=>download('retouche_cinema_P17_controles.json',handoff));const details=add(root,'details');add(details,'summary','','Exemple d’instructions du premier clip');add(details,'pre','',project.clips[0].prompt);
+}
+$('generate').addEventListener('click',()=>{const strength={};for(const [id] of strengths)strength[id]=Number($('s_'+id).value);try{project=P17.planProject({fictional_adult:true,scene:$('scene').value,duration_s:Number($('duration').value),format:$('format').value,character_description:$('character').value,maxClipSeconds:Number($('maxclip').value),strengths:strength},P16,P2);handoff=X.buildHandoff(project,{fps:Number($('fps').value),format:$('format').value});render();$('status').textContent='Projet préparé localement, sans aucune génération vidéo ni transfert.';}catch(e){$('status').textContent='Impossible de préparer ce projet : '+e.message;root.replaceChildren();project=null;handoff=null;}});
+})();
+</script></body></html>

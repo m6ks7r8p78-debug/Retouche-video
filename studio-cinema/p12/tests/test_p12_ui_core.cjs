@@ -1,0 +1,12 @@
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const p=require('../p12_ui_core.js');
+const points=p.addAnchor([],'lip_upper',[.5,.48]);
+test('manual point kept with explicit provenance',()=>{assert.equal(points[0].origin,'manual_human_estimate')});
+test('privacy and supervision off by default',()=>{const x=p.project('fiction.webm',0,3,points,30);assert.equal(x.publish_source,false);assert.equal(x.ready_for_supervised_training,false)});
+test('adding same label replaces instead of duplicates',()=>{assert.equal(p.addAnchor(points,'lip_upper',[.55,.48]).length,1)});
+test('reject invalid coordinate',()=>assert.throws(()=>p.addAnchor([],'filter',[3,.6])));
+test('reject invalid label',()=>assert.throws(()=>p.addAnchor([],'person_identity',[.5,.5])));
+test('reject source mismatch',()=>assert.throws(()=>p.checkImport(p.project('a.webm',0,3,points,30),'b.webm')));
+test('JSON contains no media bytes',()=>{let x=JSON.stringify(p.project('fiction.webm',0,3,points,30));assert.ok(!x.includes('data:video')&&!x.includes('base64'))});
+test('cannot claim model detection',()=>{let x=p.project('fiction.webm',0,3,points,30);x.model_inference_claimed=true;assert.throws(()=>p.validate(x))});

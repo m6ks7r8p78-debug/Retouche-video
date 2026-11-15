@@ -1,0 +1,286 @@
+{
+  "schema": "retouche-cinema-p7-gesture-qa-v1",
+  "source_type": "synthetic_generated_keyframes",
+  "fictional_adult": true,
+  "human_reviewed": false,
+  "annotations_are_manual_estimates": true,
+  "coordinates": "manual_approximation_normalized_2d_not_detected",
+  "keyframes": [
+    {
+      "index": 1,
+      "phase": "idle",
+      "duration_s": 0.42,
+      "gaze_camera": true,
+      "lip_contact": false,
+      "lip_shape": "relaxed",
+      "cheek_motion": "not_applicable",
+      "smoke": "none",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.4,
+        0.84
+      ],
+      "fingers_xy": [
+        0.37,
+        0.86
+      ]
+    },
+    {
+      "index": 2,
+      "phase": "raise",
+      "duration_s": 0.58,
+      "gaze_camera": true,
+      "lip_contact": false,
+      "lip_shape": "relaxed",
+      "cheek_motion": "not_applicable",
+      "smoke": "none",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.45,
+        0.7
+      ],
+      "fingers_xy": [
+        0.43,
+        0.71
+      ]
+    },
+    {
+      "index": 3,
+      "phase": "raise",
+      "duration_s": 0.68,
+      "gaze_camera": true,
+      "lip_contact": false,
+      "lip_shape": "relaxed",
+      "cheek_motion": "not_applicable",
+      "smoke": "none",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.49,
+        0.58
+      ],
+      "fingers_xy": [
+        0.46,
+        0.61
+      ]
+    },
+    {
+      "index": 4,
+      "phase": "seal",
+      "duration_s": 0.52,
+      "gaze_camera": true,
+      "lip_contact": true,
+      "lip_shape": "narrowed",
+      "cheek_motion": "not_applicable",
+      "smoke": "none",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.52,
+        0.55
+      ],
+      "fingers_xy": [
+        0.45,
+        0.61
+      ]
+    },
+    {
+      "index": 5,
+      "phase": "inhale",
+      "duration_s": 0.55,
+      "gaze_camera": true,
+      "lip_contact": true,
+      "lip_shape": "sealed",
+      "cheek_motion": "unconfirmed",
+      "smoke": "none",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.52,
+        0.55
+      ],
+      "fingers_xy": [
+        0.45,
+        0.61
+      ]
+    },
+    {
+      "index": 6,
+      "phase": "inhale",
+      "duration_s": 0.6,
+      "gaze_camera": true,
+      "lip_contact": true,
+      "lip_shape": "sealed",
+      "cheek_motion": "unconfirmed",
+      "smoke": "tip_wisp",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.52,
+        0.55
+      ],
+      "fingers_xy": [
+        0.45,
+        0.61
+      ]
+    },
+    {
+      "index": 7,
+      "phase": "inhale",
+      "duration_s": 0.6,
+      "gaze_camera": true,
+      "lip_contact": true,
+      "lip_shape": "sealed",
+      "cheek_motion": "unconfirmed",
+      "smoke": "tip_wisp",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.52,
+        0.55
+      ],
+      "fingers_xy": [
+        0.45,
+        0.61
+      ]
+    },
+    {
+      "index": 8,
+      "phase": "release",
+      "duration_s": 0.55,
+      "gaze_camera": true,
+      "lip_contact": false,
+      "lip_shape": "relaxed",
+      "cheek_motion": "not_applicable",
+      "smoke": "none",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.42,
+        0.59
+      ],
+      "fingers_xy": [
+        0.39,
+        0.61
+      ]
+    },
+    {
+      "index": 9,
+      "phase": "hold",
+      "duration_s": 0.5,
+      "gaze_camera": false,
+      "lip_contact": false,
+      "lip_shape": "relaxed",
+      "cheek_motion": "not_applicable",
+      "smoke": "none",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.32,
+        0.83
+      ],
+      "fingers_xy": [
+        0.29,
+        0.83
+      ]
+    },
+    {
+      "index": 10,
+      "phase": "exhale_onset",
+      "duration_s": 0.55,
+      "gaze_camera": true,
+      "lip_contact": false,
+      "lip_shape": "relaxed",
+      "cheek_motion": "not_applicable",
+      "smoke": "mouth_wisp",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.28,
+        0.84
+      ],
+      "fingers_xy": [
+        0.25,
+        0.83
+      ],
+      "smoke_xy": [
+        0.52,
+        0.56
+      ]
+    },
+    {
+      "index": 11,
+      "phase": "exhale",
+      "duration_s": 0.62,
+      "gaze_camera": true,
+      "lip_contact": false,
+      "lip_shape": "relaxed",
+      "cheek_motion": "not_applicable",
+      "smoke": "mouth_plume",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.25,
+        0.85
+      ],
+      "fingers_xy": [
+        0.22,
+        0.85
+      ],
+      "smoke_xy": [
+        0.45,
+        0.56
+      ]
+    },
+    {
+      "index": 12,
+      "phase": "smoke_drift",
+      "duration_s": 0.76,
+      "gaze_camera": true,
+      "lip_contact": false,
+      "lip_shape": "relaxed",
+      "cheek_motion": "not_applicable",
+      "smoke": "mouth_plume",
+      "mouth_xy": [
+        0.53,
+        0.55
+      ],
+      "filter_xy": [
+        0.24,
+        0.86
+      ],
+      "fingers_xy": [
+        0.21,
+        0.85
+      ],
+      "smoke_xy": [
+        0.39,
+        0.47
+      ]
+    }
+  ]
+}

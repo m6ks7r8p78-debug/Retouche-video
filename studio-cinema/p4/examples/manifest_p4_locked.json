@@ -1,0 +1,105 @@
+{
+  "schema_version": "cinema-p2-render-v01",
+  "project_kind": "render_plan_only",
+  "created_by": "Retouche Cinema Director P2",
+  "source_mode": "text",
+  "reference_note": "Description textuelle fictive",
+  "model_engine": "not_connected",
+  "rendered_video": null,
+  "total_duration_seconds": 6,
+  "format": "16:9",
+  "consent": {
+    "project_rights_confirmed": true,
+    "remote_transfer_approved": false,
+    "training_allowed": false,
+    "reference_media_included": false,
+    "requires_explicit_activation": true
+  },
+  "shots": [
+    {
+      "id": "shot_01",
+      "duration_seconds": 3,
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": [
+        "tasse"
+      ]
+    },
+    {
+      "id": "shot_02",
+      "duration_seconds": 3,
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": [
+        "telephone"
+      ]
+    }
+  ],
+  "characters": [
+    {
+      "id": "character_01",
+      "description": "femme adulte",
+      "fictional": true
+    }
+  ],
+  "objects": [
+    {
+      "id": "tasse",
+      "label": "tasse"
+    },
+    {
+      "id": "telephone",
+      "label": "telephone"
+    }
+  ],
+  "clips": [
+    {
+      "clip_id": "shot_01_part_01",
+      "shot_id": "shot_01",
+      "part": 1,
+      "parts": 1,
+      "sequence": 1,
+      "start_seconds": 0,
+      "duration_seconds": 3,
+      "format": "16:9",
+      "seed": 1920673340,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte.\nAction à filmer : Une femme entre dans un café.\nObjets à conserver entre les plans : tasse.\nTexte de dialogue (ne pas ajouter d’autres répliques) : « Bonjour. ».\nMémoire visuelle à respecter pour les plans suivants (description utilisateur, non garantie d’identité) : character_01 : cheveux bruns; manteau rouge; tasse blanche.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "tasse"
+        ],
+        "previous_clip_id": null
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_02_part_01",
+      "shot_id": "shot_02",
+      "part": 1,
+      "parts": 1,
+      "sequence": 2,
+      "start_seconds": 3,
+      "duration_seconds": 3,
+      "format": "16:9",
+      "seed": 1881072436,
+      "prompt": "Plan cinématographique cohérent, mouvements naturels, continuité stricte des sujets, cadrage stable.\nLieu : cafe. Cadrage : Plan rapproché.\nPersonnages (identifiants permanents) : character_01 : femme adulte.\nAction à filmer : La femme répond au téléphone.\nObjets à conserver entre les plans : telephone.\nTexte de dialogue (ne pas ajouter d’autres répliques) : « Allô. ».\nMémoire visuelle à respecter pour les plans suivants (description utilisateur, non garantie d’identité) : character_01 : cheveux bruns; manteau rouge; tasse blanche.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [
+          "telephone"
+        ],
+        "previous_clip_id": "shot_01_part_01"
+      },
+      "status": "not_submitted",
+      "output": null
+    }
+  ]
+}

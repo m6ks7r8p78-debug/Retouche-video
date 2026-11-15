@@ -1,0 +1,88 @@
+{
+  "schema_version": "cinema-p2-render-v01",
+  "project_kind": "render_plan_only",
+  "created_by": "Retouche Cinema Director P2",
+  "source_mode": "text",
+  "reference_note": "Démo fictive, aucune photo",
+  "model_engine": "not_connected",
+  "rendered_video": null,
+  "total_duration_seconds": 6,
+  "format": "16:9",
+  "consent": {
+    "project_rights_confirmed": true,
+    "reference_media_included": false,
+    "remote_transfer_approved": false,
+    "training_allowed": false,
+    "requires_explicit_activation": true
+  },
+  "shots": [
+    {
+      "id": "shot_01",
+      "duration_seconds": 3,
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": []
+    },
+    {
+      "id": "shot_02",
+      "duration_seconds": 3,
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": []
+    }
+  ],
+  "characters": [
+    {
+      "id": "character_01",
+      "description": "personnage adulte fictif",
+      "fictional": true
+    }
+  ],
+  "objects": [],
+  "clips": [
+    {
+      "clip_id": "shot_01_part_01",
+      "shot_id": "shot_01",
+      "part": 1,
+      "parts": 1,
+      "sequence": 1,
+      "start_seconds": 0,
+      "duration_seconds": 3,
+      "format": "16:9",
+      "seed": 12345,
+      "prompt": "Plan de café fictif, adulte dit bonjour, cadrage stable.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [],
+        "previous_clip_id": null
+      },
+      "status": "not_submitted",
+      "output": null
+    },
+    {
+      "clip_id": "shot_02_part_01",
+      "shot_id": "shot_02",
+      "part": 1,
+      "parts": 1,
+      "sequence": 2,
+      "start_seconds": 3,
+      "duration_seconds": 3,
+      "format": "16:9",
+      "seed": 12346,
+      "prompt": "Même personnage fictif au café, décroche son téléphone, cadrage stable.",
+      "continuity": {
+        "character_ids": [
+          "character_01"
+        ],
+        "prop_ids": [],
+        "previous_clip_id": "shot_01_part_01"
+      },
+      "status": "not_submitted",
+      "output": null
+    }
+  ]
+}

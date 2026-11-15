@@ -1,0 +1,63 @@
+{
+  "schema_version": "cinema-p4-bible-v01",
+  "project_kind": "text_only_continuity_bible",
+  "original_media_embedded": false,
+  "photos_uploaded": false,
+  "training_allowed": false,
+  "video_model_connected": false,
+  "identity_verified": false,
+  "characters": [
+    {
+      "id": "character_01",
+      "source": "fictional",
+      "description": "femme adulte",
+      "appearance_note": "cheveux bruns; manteau rouge; tasse blanche",
+      "identity_proven": false,
+      "appearance_reference_media_embedded": false
+    }
+  ],
+  "clips": [
+    {
+      "clip_id": "shot_01_part_01",
+      "shot_id": "shot_01",
+      "sequence": 1,
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": [
+        "tasse"
+      ],
+      "visual_rendered": false,
+      "continuity_verified": false
+    },
+    {
+      "clip_id": "shot_02_part_01",
+      "shot_id": "shot_02",
+      "sequence": 2,
+      "character_ids": [
+        "character_01"
+      ],
+      "prop_ids": [
+        "telephone"
+      ],
+      "visual_rendered": false,
+      "continuity_verified": false
+    }
+  ],
+  "edges": [
+    {
+      "from_clip": "shot_01_part_01",
+      "to_clip": "shot_02_part_01",
+      "shared_character_ids": [
+        "character_01"
+      ],
+      "props_absent_in_next_plan": [
+        "tasse"
+      ],
+      "transition_assumption": "cut_until_verified",
+      "status": "needs_review",
+      "identity_proven": false
+    }
+  ],
+  "notice": "Notes textuelles, absence de preuve d’identité; le rendu vidéo et les visages restent à évaluer séparément."
+}

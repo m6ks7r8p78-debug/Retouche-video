@@ -1,0 +1,27 @@
+name: Cinema P19 — 60 Hz control consistency
+on:
+  pull_request:
+    paths:
+      - 'studio-cinema/p19/**'
+      - 'studio-cinema/p18/**'
+      - 'studio-cinema/p17/**'
+      - 'studio-cinema/p16/**'
+      - 'studio-cinema/p2/**'
+      - '.github/workflows/ci-cinema-p19.yml'
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run P18 + P19 unit and regression tests
+        run: node --test studio-cinema/p19/tests/test_p19.cjs studio-cinema/p18/tests/test_p18_motion.cjs
+      - name: Generate motion controls and verify no pixels are claimed
+        run: |
+          node studio-cinema/p19/src/build_p19_dataset.cjs --fps=60
+          node -e 'const g=require("./studio-cinema/p19/src/p19_micro_motion_generator.js");const s=g.generate();if(s.sample_count!==480||s.photographic_frames_generated!==0||g.auditTrajectories(s).status!=="synthetic_controls_candidate")process.exit(1)'
