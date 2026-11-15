@@ -46,3 +46,19 @@ Cette révision prolonge la PR #23 en conservant **exactement** l'accueil de la 
 Script reproductible : `check_ux.py` (Chromium, Pillow ; FFmpeg pour vidéo H264 synthétique). Testé localement sur six tailles d'écran : import de deux PNG, comparaison clavier, réglages et remise à zéro, PNG exporté modifié, réouverture du premier projet avec ses paramètres, aucun débordement horizontal ni erreur JS. Test vidéo : lecture, 0,5×, retour 1×, export bloqué. **Safari iPhone physique, VoiceOver, performances sur grands médias non testés.**
 
 Aucun Directeur IA, modèle de restauration, suppression AR, traitement ou export vidéo réel n'est ajouté. `main`, la PWA et retoucheproai.com demeurent inchangés. Ne pas fusionner ni déployer sans validation explicite de l'utilisateur.
+
+
+## Révision UX : historique Annuler / Rétablir (15 novembre 2026)
+
+**Aucun changement du design de l'accueil.** Deux petites commandes ↶ / ↷ apparaissent exclusivement dans le panneau optionnel de précision, superposé à la photo ou à la vidéo. Pas de nouveaux boutons sur l'écran principal.
+
+- Annulation et rétablissement des corrections photo locales (Lumière, Contraste, Couleurs), de l'action automatique locale et de la remise à zéro. Les gestes continus sur la molette sont regroupés en **une seule action**.
+- Historique distinct par média, **32 actions maximum** ; après changement de projet dans la session, l'historique associé est retrouvé.
+- Vidéo : annuler/rétablir le **ralenti de lecture uniquement**. L'export vidéo reste désactivé.
+- Commandes accessibles au clavier (flèches sur la molette ; Ctrl/Cmd+Z, Ctrl/Cmd+Maj+Z). Les boutons sans action possible sont désactivés et libellés.
+- L'original n'est jamais altéré ; les corrections sont locales, **sans modèle IA**. Historique perdu lors de la fermeture/rechargement de la page : aucune persistance.
+- Tests Chromium effectués sur **320×700, 375×812, 390×844, 430×932, 768×1024, 1024×768**, sans erreur JavaScript ni débordement horizontal détectés, avec deux PNG, export modifié, retour d'un projet, molette souris/clavier, remise à zéro annulable. H264 synthétique : 0,5× -> 1× -> 0,5× ; export indisponible.
+- Comparaison pixel à pixel de l'accueil HTML, avant import, avec la PR #25 : **0 pixel différent** sur 320, 390, 430 et 768 px dans Chromium, mêmes conditions de capture. Ce résultat ne prouve pas une identité parfaite avec la maquette 3D artistique originale.
+- Script de vérification : `check_history.py`. Safari physique iPhone, VoiceOver, HEIC et charge mémoire sur grands médias **non testés**.
+
+**PR en brouillon seulement.** Ni `main`, ni les moteurs IA, ni la PWA, ni le site public ne sont modifiés. Aucune fusion/publication sans accord explicite et tests d'intégration.
