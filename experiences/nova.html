@@ -128,11 +128,11 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <section class="card"><small>02 / Le contrôle</small><h2>Preuves, pas promesses.</h2><div id="metrics"><div class="metric"><span>Source</span><strong>—</strong></div><div class="metric"><span>Décision</span><strong>En attente</strong></div></div>
 <button class="secondary" id="save" disabled>Exporter l'aperçu PNG</button>
 <section class="pilot" id="pilotVideo" hidden>
-<strong>Export MP4 court — pilote expérimental</strong>
+<strong>Export MP4 — pilote expérimental (H.264 vérifié jusqu'à 24 s)</strong>
 <p>12 secondes maximum, 640 pixels, 15 images/seconde. Vérifiez toujours le fichier final.</p>
 <button class="primary" id="exportVideo" disabled>Exporter un MP4 restauré</button>
 <details class="sourceAdvanced"><summary>Compatibilité des vidéos</summary>
-<p>NOVA utilise les horodatages MP4 natifs. Pour HEVC, le pilote impose un décodage WebAssembly local avec audit de couleur ; l'option approximative ne contourne jamais ces contrôles. Pour certains autres fichiers, un décodage approximatif peut doubler ou manquer des images.</p>
+<p>NOVA conserve les horodatages MP4 natifs : HEVC reste limité à 12 s. Pour H.264 SDR BT.709 vérifié, le pilote traite jusqu'à 24 s en fenêtres vidéo continues, sans recoller des pistes AAC. Les plafonds de résolution et de mémoire restent actifs. L'option approximative peut doubler ou manquer des images et n'autorise pas le mode long.</p>
 <label><input type="checkbox" id="allowApproximate"> Autoriser le décodage approximatif pour cet export</label>
 </details>
 <label><input type="checkbox" id="allowSilent"> J'accepte explicitement un export <b>sans son</b> si je le choisis. Sinon, l'export est interrompu lorsque l'audio ne peut pas être conservé.</label>
@@ -197,6 +197,7 @@ Conservez le son par défaut ; « sans son » reste un choix explicite.</p>
 <script src="nova-guard.js"></script>
 <script src="nova-avsync.js"></script>
 <script src="nova-aac-copy.js"></script>
+<script src="nova-windows.js"></script>
 <script src="nova-export.js"></script>
 <script>
 (()=>{

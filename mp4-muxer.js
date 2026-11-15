@@ -1517,6 +1517,18 @@ var Mp4Muxer = (() => {
           `Invalid number of audio channels: ${options.audio.numberOfChannels}. Must be a positive integer.`
         );
       }
+      // Durée étendue UNIQUEMENT pour le pipeline H264 à fenêtres (24 s),
+      // AAC bitstream unique et MP4 progressif en mémoire. Le chemin standard
+      // garde strictement sa limite de 12 s.
+      if (options.audio.windowed24Seconds !== void 0 &&
+          (options.audio.windowed24Seconds !== true ||
+           options.audio.codec !== "aac" ||
+           options.fastStart !== "in-memory" ||
+           !Number.isFinite(options.audio.editDurationSeconds) ||
+           options.audio.editDurationSeconds > 24)) {
+        throw new TypeError("Unsupported windowed AAC edit-list profile");
+      }
+      const maxAacEditDuration = options.audio.windowed24Seconds === true ? 24 : 12;
       // Extension NOVA : elst simple (même piste AAC, pas de vide, 1x).
       if (options.audio.editDurationSeconds !== void 0 &&
           (options.audio.codec !== "aac" ||
@@ -1525,7 +1537,7 @@ var Mp4Muxer = (() => {
            options.audio.editMediaTime > 0x7fffffff ||
            !Number.isFinite(options.audio.editDurationSeconds) ||
            options.audio.editDurationSeconds <= 0 ||
-           options.audio.editDurationSeconds > 12 ||
+           options.audio.editDurationSeconds > maxAacEditDuration ||
            (options.audio.editMediaTime > 0 && options.audio.rollDistance == null))) {
         throw new TypeError("Unsupported AAC priming edit list");
       }

@@ -45,7 +45,7 @@ async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
   if(!safe(w)||!safe(h)||!safe(n)||!safe(d)||
      !safe(info.dw)||!safe(info.dh))
     return result("h264-unsafe-metadata");
-  if(w%2||h%2||w*h>1920*1080||n>5000||d>12000000)
+  if(w%2||h%2||w*h>1920*1080||n>5000||d>24000000)
     return result("h264-pilot-limit");
   if(info.pixelAspect?.h!==undefined&&
      (!safe(info.pixelAspect.h)||!safe(info.pixelAspect.v)||
@@ -70,10 +70,12 @@ async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
    if(!Array.isArray(timed?.nonnegative)||!timed.nonnegative.length)
     return result("h264-timeline-incompatible");
    const durationSeconds=d/1e6;
-   settings=planFn({duration:durationSeconds,width:info.dw,height:info.dh,bytes:file.size});
+   settings=planFn({duration:durationSeconds,width:info.dw,height:info.dh,
+    bytes:file.size,profile:d>12000000?"h264-windowed-24s":undefined});
    if(!Number.isSafeInteger(settings.fps)||settings.fps!==15||
       !safe(settings.width)||!safe(settings.height)||!safe(settings.frames)||
-      settings.frames>180)return result("h264-pilot-limit");
+      settings.frames>(d>12000000?360:180))
+    return result("h264-pilot-limit");
    const timeAudit=checkTime({
     ptsUs:timed.nonnegative.map(p=>p.ptsUs),durationSeconds,fps:settings.fps
    });

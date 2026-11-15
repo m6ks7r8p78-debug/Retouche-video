@@ -230,11 +230,12 @@ function serialiser(report){
    x=>advisoryCodes.has(x)))].slice(0,2):[],
   pilotLimits:{codedPixelAreaMax:r.codec==="h264"?1920*1080:MAX_CODED_PIXELS,
    sourceFramesMax:r.codec==="h264"?5000:MAX_SOURCE_FRAMES,
-   maxDurationMs:MAX_SECONDS_US/1000,outputFpsMax:MAX_OUTPUT_FPS,
+   maxDurationMs:r.codec==="h264"?24000:MAX_SECONDS_US/1000,
+   outputFpsMax:MAX_OUTPUT_FPS,
    outputSideMax:640},
   exportProposal:p&&[p.width,p.height,p.fps,p.frames].every(Number.isSafeInteger)&&
     p.width>=2&&p.height>=2&&p.width<=640&&p.height<=640&&p.fps===15&&
-    p.frames>=1&&p.frames<=180?
+    p.frames>=1&&p.frames<=(r.codec==="h264"?360:180)?
     {width:p.width,height:p.height,fps:p.fps,frames:p.frames}:null,
   privacy:{mediaUploaded:false,rawMediaInReport:false,filenameInReport:false,
    automaticSharing:false,mediaModified:false},
