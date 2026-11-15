@@ -6,6 +6,29 @@
  */
 var NOVA_DEMUX=(()=>{
 "use strict";
+/* Orientation iPhone : seulement les matrices orthogonales de 90 degrés,
+ * y compris miroir. Refuser sans inventer d'autres pixels les matrices
+ * avec shear, perspective, mise à l'échelle ou valeurs imprécises.
+ */
+function analyserOrientation(W,H,m){
+ if(!Number.isInteger(W)||!Number.isInteger(H)||W<2||H<2||
+    !Array.isArray(m)||m.length!==9||!m.every(Number.isFinite))return null;
+ const near=(v,x)=>Math.abs(v-x)<2/65536;
+ if(!near(m[2],0)||!near(m[5],0)||!near(m[8],1))return null;
+ const [a,b,,c,d]=m;
+ const q=[a,b,c,d].map(x=>Math.round(x));
+ if(q.some((x,i)=>![-1,0,1].includes(x)||!near([a,b,c,d][i],x)))return null;
+ const [A,B,C,D]=q;
+ if(Math.abs(A*D-B*C)!==1||Math.abs(A)+Math.abs(B)!==1||
+    Math.abs(C)+Math.abs(D)!==1)return null;
+ const corners=[[0,0],[W,0],[0,H],[W,H]];
+ const xs=corners.map(([x,y])=>A*x+C*y),ys=corners.map(([x,y])=>B*x+D*y);
+ const minx=Math.min(...xs),miny=Math.min(...ys);
+ const dw=Math.max(...xs)-minx,dh=Math.max(...ys)-miny;
+ if(dw<2||dh<2||dw*dh!==W*H)return null;
+ return Object.freeze({mat:[A,B,C,D,-minx,-miny],dw,dh,
+   mirrored:A*D-B*C<0,oriented:dw!==W||dh!==H});
+}
 async function analyser(file){
   const rd=async(a,b)=>new DataView(await file.slice(a,b).arrayBuffer());
   let off=0,moov=null;
@@ -87,14 +110,15 @@ async function analyser(file){
       ptsUs[i]=Math.round((cts[i]-editMediaTime)*1000000/ts);
       if(!Number.isSafeInteger(ptsUs[i]))return null;
     }
-    // rotation : on applique la matrice du fichier
-    const [a,b,,c,d,,tx,ty]=mt;
-    const xs=[0,W,0,W].map((x,i)=>a*x+c*(i<2?0:H)),ys=[0,W,0,W].map((x,i)=>b*x+d*(i<2?0:H));
-    const minx=Math.min(...xs),miny=Math.min(...ys),dw=Math.round(Math.max(...xs)-minx),dh=Math.round(Math.max(...ys)-miny);
-    return {codec,desc,W,H,ts,ns,so,sz,cts,dts,key,ptsUs,editMediaTime,mat:[a,b,c,d,-minx,-miny],dw,dh,source:"mp4-tables"};
+    // Seules les matrices de présentation orthogonales peuvent être
+    // reproduites exactement par l'export expérimental.
+    const orientation=analyserOrientation(W,H,mt);
+    if(!orientation)return null;
+    return {codec,desc,W,H,ts,ns,so,sz,cts,dts,key,ptsUs,editMediaTime,
+      ...orientation,source:"mp4-tables"};
   }
   return null;
 }
-return Object.freeze({analyser});
+return Object.freeze({analyser,analyserOrientation});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_DEMUX;
