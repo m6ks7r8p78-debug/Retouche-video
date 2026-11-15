@@ -44,7 +44,8 @@ start.addEventListener("click",async()=>{
     if(generation!==thisGen)return;
     if(step.stage==="audio")msg("Décodage et validation de la piste audio…");
     if(step.stage==="video")msg("Encodage MP4 : "+Math.round(step.progress*100)+" % ("+step.frame+"/"+step.total+" images)");
-    if(step.stage==="fini")msg("Assemblage MP4 terminé. Vérifiez la lecture avant partage.");
+    if(step.stage==="verification")msg("MP4 assemblé : contrôle de lisibilité et de durée sur cet appareil…");
+    if(step.stage==="fini")msg("MP4 lisible selon les métadonnées locales. Vérifiez l'image et le son avant partage.");
    }
   });
   if(ctl.signal.aborted||generation!==thisGen)return;
@@ -55,7 +56,7 @@ start.addEventListener("click",async()=>{
   download.hidden=false;
   msg("MP4 prêt : "+result.plan.width+" × "+result.plan.height+", "+
     (result.hasAudio?"audio AAC réencodé":"sans son, selon votre choix")+
-    ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Export temporel expérimental, à vérifier.");
+    ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Métadonnées contrôlées : "+result.validation.width+" × "+result.validation.height+", "+result.validation.duration.toFixed(2)+" s. Vérifiez l’image et le son.");
  }catch(err){
   if(generation===thisGen)msg(ctl.signal.aborted?"Export annulé. Aucun fichier créé.":"Export refusé : "+(err?.message||"erreur inconnue"));
  }finally{
