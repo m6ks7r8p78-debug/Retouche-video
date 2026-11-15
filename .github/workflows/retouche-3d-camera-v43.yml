@@ -1,0 +1,27 @@
+name: Retouche 3D Camera Evidence v4.3 (experiment)
+on:
+  push:
+    branches:
+      - lab-3d-v43-camera-evidence
+    paths:
+      - 'research/3d-camera-v43/**'
+      - '.github/workflows/retouche-3d-camera-v43.yml'
+  pull_request:
+    paths:
+      - 'research/3d-camera-v43/**'
+      - '.github/workflows/retouche-3d-camera-v43.yml'
+jobs:
+  synthetic-python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only dependencies
+        run: python -m pip install numpy opencv-python-headless pytest
+      - name: Run reproducible tests
+        run: python -m pytest -q research/3d-camera-v43/tests
+      - name: Run synthetic benchmark (no historical private baseline)
+        run: python research/3d-camera-v43/benchmark_v43.py --seeds 3
