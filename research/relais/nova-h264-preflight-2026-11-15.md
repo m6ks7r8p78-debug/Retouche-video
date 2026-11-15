@@ -13,6 +13,7 @@ Le moteur `NOVA_NATIVE_HD` de la PR #47 accepte en principe HEVC et H.264 via `V
 - Sépare les limites de l'ancien décodeur HEVC WebAssembly des limites du chemin HD natif.
 - Ne requiert WebAssembly que pour le repli HEVC historique.
 - Signale `native-hd-unavailable` si la voie native H.264 n'est pas validée, et `audio-not-preservable` si AAC ne peut pas être copié. Aucune sortie faussement « restaurée ».
+- Motif de phase technique **explicite et sans fuite** dans le JSON local (`nativeReason`) : module absent, source non vérifiable, décodeur indisponible, encodeur indisponible, analyse AAC indisponible ou copie AAC impossible. Les messages d'exception natifs, chemins, noms de médias et détails personnels sont exclus de la sérialisation. Message lisible sur l'écran de précontrôle.
 - Conserve le rapport JSON à liste blanche, sans nom de média, pixels ou données privées.
 - Ajoute des tests H.264 natif avec absence de WebAssembly, refus du décodeur, refus AAC et contrôle du repli HEVC.
 
