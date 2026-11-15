@@ -8,6 +8,12 @@ var NOVA_NATIVE_HD=(()=>{
 "use strict";
 const MiB=1048576, MAX_PIXELS=2200000, MAX_FRAMES=360, MAX_BYTES=60*MiB;
 const MAX_US=12000000, MAX_ENCODED=32*MiB;
+// Safari peut délivrer des VideoFrame réordonnées avant PTS=0 : ne pas
+// bloquer dès 5 images. Fenêtre bornée en fonction des pixels d\'origine.
+const FIRST_FRAME_LOOKAHEAD=16, DECODE_BUFFER_BYTES=96*MiB;
+function bufferLimit(plan){
+ return Math.max(8,Math.min(24,Math.floor(DECODE_BUFFER_BYTES/(plan.width*plan.height*4))));
+}
 const fail=s=>{throw new Error("NOVA HD : "+s)};
 const safe=n=>Number.isSafeInteger(n);
 const codes=["avc1.640028","avc1.4d4028","avc1.42e028","avc1.42e01f"];
@@ -200,8 +206,10 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    }:{})}});
  const canvas=document.createElement("canvas");canvas.width=p.width;canvas.height=p.height;
  const ranks=new Map(p.ptsUs.map((time,i)=>[time,i]));
- const decoded=new Map();
+ const decoded=new Map(),bufferMax=bufferLimit(p);
+ const feedThreshold=Math.max(6,bufferMax-2);
  let encoder,decoder,failed=null,sent=0,encoded=0,encodedBytes=0,modified=0,closed=false;
+ let peakDecoded=0,receivedFrames=0;
  let confirmedColor=null,colorsNotSourceVerified=0;
  const started=clock();
  const check=()=>{if(signal?.aborted)fail("annulé");if(failed)throw failed};
@@ -220,8 +228,11 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    if(rank===undefined||decoded.has(rank)){
     fr.close();failed=new Error("PTS décodé absent ou en double");return;
    }
-   if(decoded.size>=7){fr.close();failed=new Error("tampon décodeur HD saturé");return}
+   if(decoded.size>=bufferMax){
+    fr.close();failed=new Error("réordonnancement HD hors budget mémoire");return;
+   }
    decoded.set(rank,fr);
+   receivedFrames++;peakDecoded=Math.max(peakDecoded,decoded.size);
   },error:e=>{failed=e}});
   decoder.configure(decCfg);
   const frames=p.ptsUs;
@@ -233,7 +244,11 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
   let fed=0,next=0,stalled=clock();
   while(next<p.sourceFrames){
    check();
-   while(fed<p.sourceFrames&&decoded.size<5&&decoder.decodeQueueSize<4&&fed<next+8){
+   // Fournir jusqu\'à 16 échantillons avant la PREMIÈRE image, puis
+   // conserver la fenêtre prudente de huit échantillons du pipeline.
+   const lookahead=next===0?Math.min(p.sourceFrames,FIRST_FRAME_LOOKAHEAD):8;
+   while(fed<p.sourceFrames&&decoded.size<feedThreshold&&
+     decoder.decodeQueueSize<4&&fed<next+lookahead){
     const offset=info.so[fed],len=info.sz[fed];
     if(!safe(offset)||!safe(len)||len<1||offset+len>file.size)
      fail("échantillon source tronqué");
@@ -311,6 +326,8 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    modifiedFrames:modified,audioMode:audio.mode,
    audioQualification:audio.qualification,outputBytes:blob.size,
    sourceColorEvidence:p.colorEvidence.kind,decodedColorEvidence:confirmedColor,
+   decodedFramesReceived:receivedFrames,decoderBufferPeak:peakDecoded,
+   decoderBufferLimit:bufferMax,
    colorFidelity:colorsNotSourceVerified?
     "native-display-only-not-source-certified":"source-matrix-audited",
    colorMismatchFrames:colorsNotSourceVerified,
