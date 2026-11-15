@@ -318,6 +318,51 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   assert.equal(rgbxProbe.streams.find(x=>x.codec_type==="video").width,160);
   assert.equal(rgbxProbe.streams.find(x=>x.codec_type==="audio").codec_name,"aac");
 
+  // Safari iPhone : la source MOV peut annoncer nclc 1/1/6 sans info de
+  // plage. Cette source n'est PAS certifiée fidèle : rendre ce que Safari
+  // annonce afficher avec avertissement, jamais requalifier la source.
+  await page.reload();
+  await page.locator("#novaHdPanel summary").click();
+  assert.match(await page.locator("#novaHdFrameAuditBuild").textContent(),
+   /1\\/1\\/6.*0\\.34/);
+  await page.evaluate(()=>{
+   const demux=NOVA_DEMUX.analyser;
+   window.NOVA_DEMUX.analyser=async file=>{
+    const i=await demux(file);
+    return file instanceof File&&i?{...i,color:{kind:"nclc",
+     primaries:1,transfer:1,matrix:6,fullRange:null}}:i;
+   };
+   const original=NOVA_HD_COLOR.imagePourRendu;
+   window.NOVA_HD_COLOR={...NOVA_HD_COLOR,imagePourRendu:async(frame,evidence)=>{
+    const surrogate={format:"RGBX",colorSpace:{primaries:"bt709",
+     transfer:"bt709",matrix:"bt709",fullRange:false}};
+    const simulated=await original(surrogate,evidence);
+    if(simulated.proof.sourceRangeVerified!==false||
+       simulated.proof.colorFidelity!=="uncertified-against-source")
+     throw Error("Unknown MOV range must not be certified");
+    return {frame,owned:false,proof:simulated.proof};
+   }};
+  });
+  await page.locator("#file").setInputFiles(matrix601);
+  await page.waitForFunction(()=>!document.querySelector("#novaHdRun").disabled);
+  await page.locator("#novaHdRun").click();
+  await page.waitForFunction(()=>{
+   const msg=document.querySelector("#novaHdStatus")?.textContent||"";
+   return !!document.querySelector("#novaHdSave")?.getAttribute("href")||
+    /Essai HD non abouti/.test(msg);
+  },null,{timeout:100000});
+  const unknownRangeStatus=await page.locator("#novaHdStatus").textContent();
+  assert.match(unknownRangeStatus,/MP4 HD exporté/,unknownRangeStatus);
+  assert.match(unknownRangeStatus,/ATTENTION COULEURS.*Plage source absente/,unknownRangeStatus);
+  const outDL=page.waitForEvent("download");
+  await page.locator("#novaHdSave").click();
+  const unknownRangeOutput=await (await outDL).path();
+  const probed=JSON.parse((await run("ffprobe",["-v","error","-show_streams",
+   "-of","json",unknownRangeOutput],{timeout:10000})).stdout);
+  assert.equal(probed.streams.find(x=>x.codec_type==="video").nb_frames,"15");
+  assert.equal(probed.streams.find(x=>x.codec_type==="video").color_space,"bt709");
+  assert.equal(probed.streams.find(x=>x.codec_type==="audio").codec_name,"aac");
+
   assert.deepEqual(failures,[]);
   assert.deepEqual(external,[]);
   assert.deepEqual(upload,[]);
