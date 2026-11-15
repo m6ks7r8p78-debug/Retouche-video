@@ -128,6 +128,9 @@ try:
   }''',timeout=16000)
   keys=a.evaluate('async()=>await caches.keys()')
   assert 'retouche-v84' in keys and 'retouche-v85' in keys,keys
+  debug_js='''async()=>{const reg=await navigator.serviceWorker.getRegistration();return {active:reg.active?.state,waiting:reg.waiting?.state||null,installing:reg.installing?.state||null,controller:navigator.serviceWorker.controller?.state||null,caches:await caches.keys(),release:document.documentElement.dataset.release}}'''
+  print('DEBUG_AFTER_WAIT_A',a.evaluate(debug_js),flush=True)
+  print('DEBUG_AFTER_WAIT_B',b.evaluate(debug_js),flush=True)
   assert a.evaluate('async()=>!!(await navigator.serviceWorker.getRegistration()).waiting')
   for page in [a,b]:
    assert page.evaluate('window.__unsavedEditorState?.unexportedEdits')==7
