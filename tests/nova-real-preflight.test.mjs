@@ -60,6 +60,7 @@ test("MP4 invalide et H264 sans moteur natif : pas de faux export favorable",asy
  assert.equal(h264.source.codec,"h264");
  assert.equal(h264.status,"native-hd-unavailable");
  assert.equal(h264.readyForExportAttempt,false);
+ assert.equal(h264.nativeReason,"module-missing");
  assert.ok(!AUDIT.serialiser(broken).includes("PRIVATE_FILE"));
 });
 test("HDR/P3 ou PTS ambigu : refus fidèle avant toute tentative AAC",async()=>{
@@ -208,6 +209,7 @@ test("NOVA HD H264 : précontrôle natif positif sans WebAssembly et sans ancien
    audioPlan:async()=>({mode:"aac-copy",packets:[{offset:5,size:20}]})
   }));
   assert.equal(r.status,"ready-for-native-hd-attempt");
+  assert.equal(r.nativeReason,"native-ready");
   assert.equal(r.source.codec,"h264");
   assert.equal(r.readyForExportAttempt,true);
   assert.deepEqual(r.blockers,[]);
@@ -238,6 +240,7 @@ test("NOVA HD H264 : codec natif indisponible ou AAC absent n'est jamais annonc�
   };
   const bad=await AUDIT.inspect(options(optionsNative));
   assert.equal(bad.status,"native-hd-unavailable");
+  assert.equal(bad.nativeReason,"decoder-unavailable");
   assert.equal(bad.readyForExportAttempt,false);
   assert.equal(bad.audio,"not-tested");
   const safe=JSON.parse(AUDIT.serialiser(bad));
@@ -248,6 +251,7 @@ test("NOVA HD H264 : codec natif indisponible ou AAC absent n'est jamais annonc�
    ...optionsNative,audioPlan:async()=>({mode:"silent",packets:[]})
   }));
   assert.equal(audioBad.status,"audio-not-preservable");
+  assert.equal(audioBad.nativeReason,"aac-copy-unavailable");
   assert.equal(audioBad.readyForExportAttempt,false);
   assert.equal(audioBad.audio,"not-tested");
  }finally{
@@ -267,5 +271,54 @@ test("Précontrôle : WebAssembly absent bloque uniquement le repli HEVC histori
   assert.equal(r.readyForExportAttempt,false);
  }finally{
   if(saved!==undefined)globalThis.NOVA_NATIVE_HD=saved;
+ }
+});
+
+test("NOVA HD : les motifs de refus restent précis, bornés et sans informations privées",async()=>{
+ const saved=globalThis.NOVA_NATIVE_HD;
+ const info={...track,codec:"avc1.4d4028",W:1920,H:1088,
+  dw:1088,dh:1920,ns:195,durationUs:6500000};
+ const base={
+  analyse:()=>({width:1088,height:1920,sourceFrames:195,
+   sourceFps:30,durationSeconds:6.5}),
+  configDecoder:async()=>({codec:"avc1"}),
+  configEncoder:async()=>({codec:"avc1"})
+ };
+ try{
+  const scenarios=[
+   ["source-contract-unverified",{...base,analyse:()=>{
+     throw Error("SECRET/PRIVATE-user.mov unsupported source")}}],
+   ["decoder-unavailable",{...base,configDecoder:async()=>{
+     throw Error("SECRET/PRIVATE-user.mov decoder exception")}}],
+   ["encoder-unavailable",{...base,configEncoder:async()=>{
+     throw Error("SECRET/PRIVATE-user.mov encoder exception")}}]
+  ];
+  for(const [expected,hd] of scenarios){
+   globalThis.NOVA_NATIVE_HD=hd;
+   const r=await AUDIT.inspect(options({
+    probe:async()=>info,validate:()=>{throw Error("HEVC validator called")}
+   }));
+   assert.equal(r.status,"native-hd-unavailable");
+   assert.equal(r.nativeReason,expected);
+   const serialized=AUDIT.serialiser(r);
+   assert.equal(JSON.parse(serialized).nativeReason,expected);
+   assert.ok(!serialized.includes("PRIVATE"));
+   assert.ok(!serialized.includes("SECRET"));
+   assert.ok(!serialized.includes(file.name));
+  }
+  globalThis.NOVA_NATIVE_HD=base;
+  const audioError=await AUDIT.inspect(options({
+   probe:async()=>info,audioPlan:async()=>{throw Error("PRIVATE_AUDIO_PATH")}
+  }));
+  assert.equal(audioError.status,"native-hd-unavailable");
+  assert.equal(audioError.nativeReason,"aac-analysis-unavailable");
+  const safe=JSON.parse(AUDIT.serialiser({
+   ...audioError,nativeReason:"../../../PRIVATE_FOLDER/raw.mov"
+  }));
+  assert.equal(safe.nativeReason,"not-evaluated");
+  assert.ok(!JSON.stringify(safe).includes("PRIVATE"));
+ }finally{
+  if(saved===undefined)delete globalThis.NOVA_NATIVE_HD;
+  else globalThis.NOVA_NATIVE_HD=saved;
  }
 });
