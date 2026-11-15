@@ -31,6 +31,17 @@ function details(report){
  const reasons=Array.isArray(report?.blockers)?report.blockers:[];
  const src=report?.source||{},limits=report?.pilotLimits||{};
  const items=[];
+ // Motif technique strictement catégorisé; jamais d'exception native brute
+ // (susceptible de contenir un chemin, une information privée ou un codec).
+ const nativeDetail=Object.freeze({
+  "module-missing":"Le module de traitement HD natif n'est pas chargé.",
+  "source-contract-unverified":"Le format source, la couleur, l'orientation ou les horodatages ne satisfont pas le contrat HD vérifiable.",
+  "decoder-unavailable":"Le décodeur natif pour ce codec n'est pas confirmé sur cet appareil.",
+  "encoder-unavailable":"L'encodeur H.264 natif ne peut pas être confirmé sur cet appareil.",
+  "aac-analysis-unavailable":"Le précontrôle de la piste audio AAC est indisponible ou a échoué.",
+  "aac-copy-unavailable":"La copie intégrale de la piste AAC d'origine n'est pas vérifiable."
+ })[report?.nativeReason];
+ if(nativeDetail)items.push(nativeDetail);
  if(reasons.includes("coded-pixels-over-limit")){
   const w=src.width,h=src.height;
   const dims=Number.isSafeInteger(w)&&Number.isSafeInteger(h)?w+" × "+h+" ; ":"";
