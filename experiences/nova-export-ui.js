@@ -7,9 +7,34 @@ const $=id=>document.getElementById(id);
 const panel=$("pilotVideo"),start=$("exportVideo"),silent=$("allowSilent"),
   download=$("downloadVideo"),status=$("exportStatus"),fileInput=$("file"),drop=$("drop"),approx=$("allowApproximate"),
   hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText"),
+  reportPanel=$("novaLocalExportReportPanel"),
+  reportLink=$("novaLocalExportReportJson"),
   opfs=$("writeOpfs");
 if(!panel||!start||!silent||!download||!status||!fileInput)return;
-let file=null,controller=null,blobUrl=null,generation=0,releaseStored=null;
+let file=null,controller=null,blobUrl=null,generation=0,releaseStored=null,
+ reportUrl=null;
+async function originEstimate(){
+ try{
+  if(typeof navigator.storage?.estimate!=="function")return null;
+  const e=await navigator.storage.estimate();
+  return {usage:e.usage,quota:e.quota};
+ }catch{return null}
+}
+function clearReport(){
+ if(reportUrl){URL.revokeObjectURL(reportUrl);reportUrl=null}
+ if(reportPanel){reportPanel.hidden=true;reportPanel.open=false}
+ if(reportLink){reportLink.hidden=true;reportLink.removeAttribute("href")}
+}
+function setReport(report){
+ if(!reportPanel||!reportLink||
+    typeof globalThis.NOVA_LOCAL_EXPORT_REPORT?.serialize!=="function")return;
+ const json=NOVA_LOCAL_EXPORT_REPORT.serialize(report);
+ clearReport();
+ reportUrl=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+ reportLink.href=reportUrl;
+ reportLink.download="NOVA_diagnostic_ressources_local.json";
+ reportLink.hidden=false;reportPanel.hidden=false;
+}
 function releaseTemp(){
  if(!releaseStored)return;
  const dispose=releaseStored;releaseStored=null;
@@ -22,6 +47,7 @@ function clear(){
  if(controller){controller.abort();controller=null}
  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null}
  releaseTemp();
+ clearReport();
  download.hidden=true;download.removeAttribute("href");
  if(hevcPanel)hevcPanel.hidden=true;
  if(hevcText)hevcText.textContent="";
@@ -48,8 +74,12 @@ start.addEventListener("click",async()=>{
  if(controller){controller.abort();start.disabled=true;msg("Annulation de l'export…");return}
  if(!file)return;
  const ctl=new AbortController(),thisGen=generation;
+ let lastStage="unverified";
  controller=ctl;start.textContent="Annuler l'export";
- download.hidden=true;
+ if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null}
+ releaseTemp();
+ clearReport();
+ download.hidden=true;download.removeAttribute("href");
  msg("Vérification des codecs et du son…");
  try{
   const result=await NOVA_EXPORT.exporter({
@@ -58,6 +88,7 @@ start.addEventListener("click",async()=>{
    storageMode:opfs?.checked?"opfs":"memory",
    onProgress:step=>{
     if(generation!==thisGen)return;
+    lastStage=step.stage;
     if(step.stage==="budget")msg("Protection mémoire : "+step.estimatedMiB+" Mio estimés / "+step.limitMiB+" Mio de budget pilote…");
     if(step.stage==="storage")msg("Écriture MP4 progressive dans le stockage privé du navigateur (aucun envoi réseau)…");
     if(step.stage==="source")msg(step.mode==="hevc-wasm"?
@@ -120,6 +151,12 @@ start.addEventListener("click",async()=>{
   download.href=blobUrl;
   download.download=(file.name||"video").replace(/\.[^.]+$/,"")+"_NOVA_pilote.mp4";
   download.hidden=false;
+  try{
+   const report=NOVA_LOCAL_EXPORT_REPORT.success(result,{
+    storageEstimate:await originEstimate()
+   });
+   if(generation===thisGen)setReport(report);
+  }catch{}
   msg("MP4 prêt"+(result.storageMode==="opfs-local-stream"?
     " (écrit progressivement en stockage privé local)":"")+
     (result.windowPlan?
@@ -129,7 +166,15 @@ start.addEventListener("click",async()=>{
     ", "+(result.sourceMode==="hevc-wasm"?"HEVC WASM local à PTS source":result.sourceMode==="pts"?"PTS natifs":"recherche approximative") +
     ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Métadonnées contrôlées : "+result.validation.width+" × "+result.validation.height+", "+result.validation.duration.toFixed(2)+" s."+ (result.trace?" Cadence : "+result.trace.repetitions+" répétitions et "+result.trace.sautsDeSource+" images source sautées lors de la conversion.":"")+" Vérifiez l’image et le son.");
  }catch(err){
-  if(generation===thisGen)msg(ctl.signal.aborted?"Export annulé. Aucun fichier créé.":"Export refusé : "+(err?.message||"erreur inconnue"));
+  if(generation===thisGen){
+   msg(ctl.signal.aborted?"Export annulé. Aucun fichier créé.":"Export refusé : "+(err?.message||"erreur inconnue"));
+   try{
+    setReport(NOVA_LOCAL_EXPORT_REPORT.failure({
+     storageMode:opfs?.checked?"opfs":"memory",
+     stage:lastStage,storageEstimate:await originEstimate()
+    }));
+   }catch{}
+  }
  }finally{
   if(controller===ctl){
    controller=null;start.disabled=false;start.textContent="Exporter un MP4 restauré";

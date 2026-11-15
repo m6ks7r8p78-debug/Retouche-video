@@ -118,6 +118,16 @@ for(const seconds of [20,24,36,48])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 l
    const refused=await page.locator("#exportStatus").innerText();
    assert.match(refused,/Au-delà de 24 secondes, activer explicitement/);
    assert.equal(await page.locator("#downloadVideo").getAttribute("href"),null);
+   const failurePanel=page.locator("#novaLocalExportReportPanel");
+   assert.equal(await failurePanel.isHidden(),false);
+   await failurePanel.locator("summary").click();
+   const failurePending=page.waitForEvent("download");
+   await page.locator("#novaLocalExportReportJson").click();
+   const anonymousFailure=JSON.parse(await fs.readFile(
+    await (await failurePending).path(),"utf8"));
+   assert.equal(anonymousFailure.status,"local-export-refused-or-cancelled");
+   assert.equal(anonymousFailure.privacy.filenameRecorded,false);
+   assert.ok(!JSON.stringify(anonymousFailure).includes("source-longue"));
   }
   await page.locator("details:has(#writeOpfs) summary").click();
   assert.equal(await page.locator("#writeOpfs").isDisabled(),false,
@@ -133,6 +143,20 @@ for(const seconds of [20,24,36,48])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 l
   assert.match(status,new RegExp(Math.ceil(seconds/6)+" fenêtres vidéo, une piste AAC continue"));
   assert.match(status,/écrit progressivement en stockage privé local/);
   assert.match(status,/AAC original copié/);
+  const successPanel=page.locator("#novaLocalExportReportPanel");
+  assert.equal(await successPanel.isHidden(),false);
+  await successPanel.locator("summary").click();
+  const reportPending=page.waitForEvent("download");
+  await page.locator("#novaLocalExportReportJson").click();
+  const anonymousSuccess=JSON.parse(await fs.readFile(
+   await (await reportPending).path(),"utf8"));
+  assert.equal(anonymousSuccess.status,"local-mp4-created");
+  assert.equal(anonymousSuccess.output.frames,seconds*15);
+  assert.equal(anonymousSuccess.output.durationSeconds,seconds);
+  assert.equal(anonymousSuccess.opfs.streamUsed,true);
+  assert.equal(anonymousSuccess.privacy.filenameRecorded,false);
+  assert.equal(anonymousSuccess.totalDeviceMemoryMeasured,false);
+  assert.ok(!JSON.stringify(anonymousSuccess).includes("source-longue"));
   const windows=await page.evaluate(()=>window.__nova_test_progress);
   assert.deepEqual(windows.map(w=>[w.index,w.startMs,w.endMs]),
    Array.from({length:Math.ceil(seconds/6)},(_,i)=>[
@@ -152,6 +176,45 @@ for(const seconds of [20,24,36,48])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 l
   assert.match(opfsEntries[0],/^export-[a-f0-9]{32}\.mp4$/);
   assert.ok(!opfsEntries[0].includes("source-longue"),
    "Le nom privé de l'utilisateur n'est pas copié dans OPFS");
+  // Test utilisateur du vrai bouton "Vérifier" puis "Effacer".
+  // Vieillissement simulé de l'horloge de page : AUCUN utilisateur réel
+  // ni fichier source n'est modifié ; le seuil produit reste 1 heure.
+  await page.evaluate(async()=>{
+   const dir=await (await navigator.storage.getDirectory())
+    .getDirectoryHandle("nova-opfs-local-v1");
+   const orphan=await dir.getFileHandle("export-"+"a".repeat(32)+".mp4",
+    {create:true});
+   const w=await orphan.createWritable();
+   await w.write(new Uint8Array([1,2,3,4]));await w.close();
+   window.__novaOriginalDateNow=Date.now;
+   const current=Date.now();
+   Date.now=()=>current+2*3600000;
+  });
+  await page.locator("#novaOpfsRecoveryPanel summary").click();
+  assert.equal(await page.locator("#novaOpfsRecoveryClean").isDisabled(),true);
+  await page.locator("#novaOpfsRecoveryScan").click();
+  await page.waitForFunction(()=>
+   document.querySelector("#novaOpfsRecoveryStatus").textContent
+    .includes("1 fichier(s) temporaire(s)"),null,{timeout:20000});
+  const inventory=await page.locator("#novaOpfsRecoveryStatus").innerText();
+  assert.match(inventory,/1 actif\(s\)/);
+  assert.ok(!inventory.includes("source-longue"));
+  assert.equal(await page.locator("#novaOpfsRecoveryClean").isDisabled(),false);
+  await page.locator("#novaOpfsRecoveryClean").click();
+  await page.waitForFunction(()=>
+   document.querySelector("#novaOpfsRecoveryStatus").textContent
+    .includes("1 ancien(s) fichier(s) temporaire(s) effacé(s)"),
+   null,{timeout:20000});
+  await page.evaluate(()=>{Date.now=window.__novaOriginalDateNow});
+  const remaining=await page.evaluate(async()=>{
+   const dir=await (await navigator.storage.getDirectory())
+    .getDirectoryHandle("nova-opfs-local-v1");
+   const names=[];for await(const [name] of dir.entries())names.push(name);
+   return names;
+  });
+  assert.equal(remaining.length,1);
+  assert.equal(remaining[0],opfsEntries[0],
+   "Le MP4 encore accessible au téléchargement doit rester intact");
   const data=await ffprobe(output,["-show_streams"]);
   const video=data.streams.filter(x=>x.codec_type==="video");
   const audio=data.streams.filter(x=>x.codec_type==="audio");
