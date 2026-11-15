@@ -40,7 +40,7 @@ syntheticButton.addEventListener("click",async()=>{
   if(!response.ok)throw Error("Mire de test absente");
   const blob=await response.blob();
   if(ctrl.signal.aborted||token!==version)return;
-  if(blob.size<1000||blob.size>250000||!blob.type.startsWith("video/"))
+  if(blob.size<1000||blob.size>250000)
    throw Error("Fichier synthétique non conforme");
   const file=new File([blob],"NOVA_mire_synthetique_H264.mp4",{type:"video/mp4"});
   updateFile(file,true);
