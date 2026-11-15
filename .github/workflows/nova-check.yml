@@ -20,9 +20,10 @@ jobs:
       - name: Syntaxe du module et de l'interface
         run: |
           node --check experiences/nova-decision.js
-          node -e "const fs=require('fs'),vm=require('vm');const s=fs.readFileSync('experiences/nova.html','utf8');const code=s.match(/<script>([\\s\\S]*?)<\\/script>/);if(!code)throw Error('inline script absent');new vm.Script(code[1]);console.log('NOVA inline JS valid');"
+          node --check experiences/nova-zones.js
+          node -e "const fs=require('fs'),vm=require('vm');const s=fs.readFileSync('experiences/nova.html','utf8');const a=s.indexOf('<script>');const b=s.indexOf('</script>',a);if(a<0||b<0)throw Error('script absent');new vm.Script(s.slice(a+8,b));console.log('NOVA inline JS valid');"
       - name: Garde-fous NOVA
-        run: node --test tests/nova-decision.test.mjs
+        run: node --test tests/nova-decision.test.mjs tests/nova-zones.test.mjs
   navigateur:
     runs-on: ubuntu-latest
     timeout-minutes: 12
