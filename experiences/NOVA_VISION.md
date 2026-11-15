@@ -282,3 +282,29 @@ Prochaine étape : un test de synchronisation de bout en bout (impulsions audio 
 4. Puis seulement permettre Full HD/4K après validation mémoire/performance, sans forcer le moteur neuronal.
 
 Références : [MDN — pass-through WebCodecs](https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API/Using_the_WebCodecs_API), [MDN — disponibilité des encodeurs AAC](https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API/Codec_selection), [Apple — priming AAC](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFAppenG/QTFFAppenG.html).
+
+
+## NOVA 0.10 — VFR + B-frames + audio AAC et groupes d'amorçage (15 novembre 2026)
+
+### Avancement réel et mesurable
+
+1. **Couplage des problèmes difficiles dans un seul MP4 synthétique.** `tests/nova-browser.test.mjs` génère un MP4 160×90 avec audio AAC, cadence vidéo variable, images réordonnées par B-frames, flashs et impulsions sonores. Le banc vérifie les deltas PTS multiples et les PTS décodage/présentation non monotones en ordre d'échantillons. La vidéo exportée est réellement produite par NOVA en Chromium Linux, sans `AudioEncoder`, avant FFprobe et décodage des signaux.
+2. **Mesures initiales VFR+B+AAC.** Sur le run [43684972098](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43684972098) (avant amélioration de la métadonnée de préchargement) : source avec **34 trames**, **4 intervalles distincts**, **95 paquets AAC de sortie égaux aux paquets source** ; les 2 repères sonores et les 2 flashs restent au même PTS avant/après : **0 ms d'offset ajouté, 0 ms de dérive mesurée** dans ce scénario. CI : 67/67 unitaires, 10/10 navigateur, 0 ignoré.
+3. **Durcissement de la lecture de paquets AAC.** `nova-aac-copy.js` analyse maintenant **toutes les boîtes MP4 de premier niveau** avec une limite de 2 048, collecte chaque région `mdat`, et refuse tout paquet audio dont les octets tomberaient en dehors des données médias, même si les offsets restent à l'intérieur du fichier. Les `mdat` après `moov` (faststart) restent valides.
+4. **Préchargement AAC `roll` préservé lorsque simple et vérifiable.** FFmpeg produit souvent `sgpd/sbgp` de type `roll` avec distance `-1` pour une piste AAC. Ces groupes n'étaient pas précédemment recopiés, ce qui peut être problématique pour le décodage à l'ouverture ou après recherche. Le nouveau lecteur refuse les groupes incomplets, complexes ou étrangers, mais accepte `roll` distance -1 ou 0 avec **une description de groupe et une affectation à tous les échantillons**. L'extension ciblée de `mp4-muxer.js` écrit les mêmes groupes `sgpd/sbgp` en sortie ; `nova-export.js` transmet la distance validée.
+5. **Contrôles structurels supplémentaires.** Les tests unitaires vérifient que des références vers `moov` ne sont pas prises pour des paquets `mdat`, et que les groupes partiels sont refusés. Les tests Chromium exigent aussi la présence correcte des groupes AAC `roll` dans les deux exports, sans altération des empreintes SHA-256 des paquets AAC.
+
+### Vérification et limites
+
+- Validation structurelle du groupe `roll` ne prouve **pas** la synchronisation auditive parfaite sur Safari iPhone, ni l'amorçage gapless pour tous les lecteurs.
+- **Les `elst` avec priming, trims non nuls, éditions multiples, groupes `roll` complexes ou source en HE-AAC restent hors voie sans réencodage**. Le système ne gomme jamais ces temps, et refuse l'export sonore si aucun chemin sûr n'est disponible.
+- La sortie reste limitée à 640 px / 15 images/s, 12 secondes et 60 Mo ; aucun test matériel réel iPhone. Aucun média privé n'est utilisé dans cette CI.
+- La branche `chatgpt-studio-nova-v01` et la PR #3 restent en brouillon ; **aucune fusion, publication, ni déploiement**.
+
+### Recherche de solutions gratuites pour le prochain obstacle
+
+- Apple documente les groupes `roll`, `sgpd/sbgp` et l'`elst` dans la représentation de l'amorçage AAC : [documentation Apple](https://developer.apple.com/documentation/quicktime-file-format/using_track_structures_to_represent_encode_delay_explictly).
+- Le projet libre **Mediabunny** (licence **MPL-2.0**, ne pas confondre avec MIT) a travaillé sur la détection de l'encoder delay, la correction de priming AAC et le cas Safari fin octobre/début novembre 2026 : [dépôt](https://github.com/Vanilagy/mediabunny), [ticket technique #444](https://github.com/Vanilagy/mediabunny/issues/444). **Piste à comparer sous tests**, pas dépendance déjà intégrée ou solution iPhone certifiée.
+- L'architecture d'export reste locale et gratuite. Les choix futurs doivent être motivés par essais end-to-end, respect des licences, mémoire iPhone et confidentialité.
+
+*La validation CI du HEAD documenté et le statut précis des tests sont consignés dans la PR GitHub. Une CI verte ne prouve pas la qualité perceptuelle ou la synchronisation universelle.*
