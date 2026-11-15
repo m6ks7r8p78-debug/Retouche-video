@@ -92,3 +92,24 @@ test("NOVA AV : l'elst raccourcit la durée réellement présentable",async()=>{
 test("NOVA AV : interdit les edit lists référençant une fin sonore inexistante",async()=>{
  await assert.rejects(AV.analyser(movie({tracks:[track({edit:[[1400,1024]]})]})),/dépassant/);
 });
+
+test("NOVA AV : silence intentionnel de début permis uniquement en copie AAC vérifiée",async()=>{
+ const f=movie({tracks:[track({edit:[[250,-1],[1000,1024]]})]});
+ const a=await AV.analyser(f);
+ assert.equal(a.delayUs,250000);
+ assert.equal(a.trimUs,21333);
+ assert.equal(a.presentationEndUs,1250000);
+ assert.throws(()=>AV.verifier(a,{durationSeconds:1.23}),/départ audio décalé/);
+ const v=AV.verifier(a,{durationSeconds:1.23,allowLeadingGap:true});
+ assert.equal(v.aligned,true);
+ assert.throws(()=>AV.verifier(a,{
+   durationSeconds:1.23,allowLeadingGap:true,videoStartUs:150000
+ }),/première image trop tardive/);
+});
+test("NOVA AV : aucun contournement pour un délai audio initial de 501ms",async()=>{
+ const f=movie({tracks:[track({edit:[[501,-1],[700,1024]]})]});
+ const a=await AV.analyser(f);
+ assert.throws(()=>AV.verifier(a,{
+  durationSeconds:1.15,allowLeadingGap:true
+ }),/supérieur à 500 ms/);
+});
