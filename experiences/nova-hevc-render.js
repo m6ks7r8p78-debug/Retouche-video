@@ -1,5 +1,7 @@
 /* NOVA 0.19 — Adaptateur local HEVC -> VideoFrame I420 -> Canvas.
- * Pilote SDR BT.709 limité EXPLICITEMENT marqué en colr : pas d'HDR/P3.
+ * Pilote SDR dont les composantes BT.709 sont signalées dans colr.
+ * Attention : nclc ne contient PAS l'indicateur full-range (plage vidéo
+ * limitée supposée, non déduite des VUI HEVC) ; aucune promesse HDR/P3.
  * Le décodeur MIT est versionné dans experiences/vendor/hevc.
  * Les trames sont traitées en flux, sans enregistrer toute la séquence.
  */
@@ -15,7 +17,7 @@ function metadata(info){
  const c=info.color;
  if(!c||!["nclc","nclx"].includes(c.kind)||c.primaries!==1||
      c.transfer!==1||c.matrix!==1||c.fullRange===true)
-  fail("colorimétrie BT.709 SDR limitée explicitement signalée requise ; sans HDR/P3");
+  fail("paramètres colorimétriques BT.709 SDR requis ; pas de HDR/P3 ni de pleine plage identifiée");
  if(!Number.isSafeInteger(info.durationUs)||info.durationUs<=0||
     info.durationUs>12e6||info.W*info.H>640*360||
     info.W%2||info.H%2||info.ns<1||info.ns>90)
