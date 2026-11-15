@@ -98,3 +98,19 @@ test("AAC natif : refuse réencodage si l'utilisateur annule",async()=>{
   {EncoderClass:EncoderMock,DataClass:AudioDataMock,
    decoder:async()=>makePCM()}),/annulée/);
 });
+
+test("AAC natif Safari : durée EncodedAudioChunk nullable reconstruite depuis 1024 samples",async()=>{
+ class NoDuration extends EncoderMock{
+  encode(input){
+   this.output({timestamp:input.timestamp,duration:null,byteLength:4,
+    copyTo(buf){buf.set([1,2,3,4])}},{
+    decoderConfig:{description:NATIVE.asc(input.sampleRate,input.channels)}
+   });
+  }
+ }
+ const report=await NATIVE.planifier(file,{durationSeconds:1},
+  {EncoderClass:NoDuration,DataClass:AudioDataMock,decoder:async()=>makePCM()});
+ assert.equal(report.mode,"aac-native-encode");
+ assert.ok(report.packets.every(p=>p.duration>0));
+ assert.ok(report.packets.at(-1).timestamp+report.packets.at(-1).duration>=995000);
+});
