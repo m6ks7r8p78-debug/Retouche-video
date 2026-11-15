@@ -8,11 +8,11 @@ const moduleRoot=path.resolve(__dirname,'..');
 const root=fs.existsSync(path.resolve(moduleRoot,'../../sw.js'))?path.resolve(moduleRoot,'../..'):moduleRoot;
 const src=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 const C=src.match(/const C="([^"]+)"/)[1];
-assert.equal(C,'retouche-v84');
+assert.equal(C,'retouche-v86');
 assert.ok(!src.includes('self.skipWaiting('),'never take over running tabs');
 const originalClients=new Map([['editor',{fileOpen:true,exportPending:true}],['second',{fileOpen:true,exportPending:false}]]);
 const cachesMap=new Map([
- ['retouche-v83',new Map([['index.html','v83'],['research/3d-smallmotion/smallmotion-worker.js','old_worker']])],
+ ['retouche-v85',new Map([['index.html','v83'],['research/3d-smallmotion/smallmotion-worker.js','old_worker']])],
  ['retouche-modeles-v1',new Map([['weights','preserve']])],
  ['radar-cache',new Map([['test','preserve']])]
 ]);
@@ -30,19 +30,19 @@ async function invoke(type){let pending;handler[type]({waitUntil:p=>pending=p});
 (async()=>{
  await invoke('install');
  assert.equal(observed.skips,0);
- assert.ok(cachesMap.has('retouche-v83') && cachesMap.has('retouche-v84'));
+ assert.ok(cachesMap.has('retouche-v85') && cachesMap.has('retouche-v86'));
  assert.equal(originalClients.get('editor').exportPending,true);
- assert.equal(cachesMap.get('retouche-v83').get('index.html'),'v83');
+ assert.equal(cachesMap.get('retouche-v85').get('index.html'),'v83');
  // The browser will not fire activate until all clients using v83 are gone.
  originalClients.delete('second');
  assert.equal(originalClients.size,1);
- assert.ok(cachesMap.has('retouche-v83'));
+ assert.ok(cachesMap.has('retouche-v85'));
  originalClients.delete('editor');
  assert.equal(originalClients.size,0);
  await invoke('activate');
  assert.equal(observed.claims,1);
- assert.equal(cachesMap.has('retouche-v83'),false);
- assert.equal(cachesMap.has('retouche-v84'),true);
+ assert.equal(cachesMap.has('retouche-v85'),false);
+ assert.equal(cachesMap.has('retouche-v86'),true);
  assert.equal(cachesMap.get('retouche-modeles-v1').get('weights'),'preserve');
  assert.ok(cachesMap.has('radar-cache'));
  console.log('Service Worker safe update policy: 12 assertions passed');
