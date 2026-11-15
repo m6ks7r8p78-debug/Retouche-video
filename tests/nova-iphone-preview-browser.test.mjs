@@ -101,8 +101,16 @@ test("NOVA 0.24 : MOV HEVC+AAC depuis archive autonome vers JSON local, "+browse
    "-colorspace","bt709","-movflags","+write_colr+faststart",
    "-c:a","aac","-b:a","128k","-y",media],{timeout:60000});
   await withSite(async({page})=>{
-   await page.locator("#file").setInputFiles(media);
+   // Spécifier le type MIME du vrai clip FFmpeg : Playwright peut
+   // attribuer application/octet-stream à .mov selon l'OS Linux.
+   // Safari/Fichiers sans MIME est testé séparément en unitaire.
+   await page.locator("#file").setInputFiles({
+    name:"private-not-share.mov",mimeType:"video/quicktime",
+    buffer:await fs.readFile(media)
+   });
    await page.locator("#iphoneBenchPanel summary").click();
+   await page.waitForFunction(()=>document.querySelector("#iphoneBenchRun")?.disabled===false,
+    null,{timeout:15000});
    assert.equal(await page.locator("#iphoneBenchRun").isEnabled(),true);
    await page.locator("#iphoneBenchRun").click();
    await page.waitForFunction(()=>!!document.querySelector("#iphoneBenchJson")?.getAttribute("href"),
