@@ -46,9 +46,14 @@ await execFileAsync("ffmpeg",[
  "-f","lavfi","-i","color=c=gray:s=160x90:r=15:d=1",
  "-f","lavfi","-i","sine=frequency=660:sample_rate=48000:duration=1",
  "-map","0:v:0","-map","1:a:0",
+ // Le générateur lavfi color annonce parfois primaires/transfert non spécifiés
+ // dans colr MOV, malgré les options libx265. Fixer les tags de TRAME avant
+ // l\'encodage évite un faux refus HD sans affaiblir l\'audit BT.709/VUI.
+ "-vf","setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709",
  "-c:v","libx265","-preset","ultrafast","-threads","1",
  "-x265-params","pools=none:frame-threads=1:log-level=error:bframes=0:keyint=15:colorprim=bt709:transfer=bt709:colormatrix=bt709:range=limited",
- "-pix_fmt","yuv420p","-color_primaries","bt709",
+ "-pix_fmt","yuv420p","-tag:v","hvc1",
+ "-color_primaries","bt709",
  "-color_trc","bt709","-colorspace","bt709",
  "-c:a","aac","-b:a","16k","-ac","1",
  "-movflags","+write_colr","-f","mov","-y",target
