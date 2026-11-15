@@ -31,6 +31,8 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 .viewer canvas,.viewer video{position:absolute;width:100%;height:100%;object-fit:contain}
 .viewer #after{clip-path:inset(0 50% 0 0)}
 .viewer #zonesOverlay{pointer-events:none;z-index:7}
+.viewer #videoAfter{pointer-events:none;z-index:2;clip-path:inset(0 50% 0 0)}
+.viewer #video{z-index:1}
 .maskBar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 18px 14px;background:#111b17;color:#b1c4b7;font-size:11px}
 .maskToggle{padding:7px 11px;background:#22392b;border:1px solid #497455;border-radius:12px;color:#c8ffd8;font-size:12px;font-weight:750}
 #split{position:absolute;inset:0 auto 0 50%;width:2px;background:#d4ffdf;pointer-events:none;z-index:5;box-shadow:0 0 0 1px #0009}
@@ -97,6 +99,7 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <canvas id="before" hidden aria-label="Image d'origine"></canvas><canvas id="after" hidden aria-label="Proposition restaurée"></canvas>
 <canvas id="zonesOverlay" hidden aria-label="Carte des régions adaptées"></canvas>
 <video id="video" playsinline preload="metadata" controls hidden aria-label="Vidéo importée"></video>
+<canvas id="videoAfter" hidden aria-label="Prévisualisation locale améliorée de la vidéo"></canvas>
 <div id="split" hidden></div><span class="labelOnCanvas" id="labBefore" hidden>ORIGINAL</span><span class="labelOnCanvas afterLab" id="labAfter" hidden>PROPOSITION</span>
 <div id="empty"><div class="symbol">▧</div><strong>Déposez votre média ici.</strong><p>Photo ou vidéo locale. Rien n'est envoyé à un serveur par ce prototype.</p></div>
 </div>
@@ -118,16 +121,19 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 </div>
 <script src="nova-decision.js"></script>
 <script src="nova-zones.js"></script>
+<script src="nova-video.js"></script>
 <script>
 (()=>{
 "use strict";
 const $=s=>document.querySelector(s),file=$("#file"),before=$("#before"),after=$("#after"),video=$("#video"),
   frames=$("#frames"),status=$("#status"),metrics=$("#metrics"),save=$("#save"),run=$("#run");
-let kind=null,source=null,objectURL=null,lastModified=null,latestFile=null,frameSeq=0;
+let kind=null,source=null,objectURL=null,lastModified=null,latestFile=null,frameSeq=0,videoPreview=null;
 const txt=(node,t)=>node.textContent=t;
 const fmt=n=>Number.isFinite(n)?n.toFixed(3):"—";
 const setStatus=t=>txt(status,t);
 function reset(){
+  if(videoPreview){videoPreview.detruire();videoPreview=null}
+  $("#videoAfter").hidden=true;
   frameSeq++;source=null;lastModified=null;save.disabled=true;run.disabled=true;
   before.hidden=after.hidden=video.hidden=true;$("#split").hidden=true;$("#labBefore").hidden=$("#labAfter").hidden=true;
   $("#zonesOverlay").hidden=true;$("#showZones").hidden=true;$("#showZones").setAttribute("aria-pressed","false");txt($("#zoneInfo"),"Comparaison originale, sans reconstruction");
@@ -162,7 +168,7 @@ function traiter(src,mode){
 }
 function ecart(a,b){let sum=0,count=0;const step=Math.max(4,Math.floor(a.data.length/200000/4)*4);for(let i=0;i<a.data.length;i+=step){sum+=Math.abs(a.data[i]-b.data[i]);count++}return sum/Math.max(1,count)/255}
 function drawOutput(imgData,target){target.width=imgData.width;target.height=imgData.height;target.getContext("2d").putImageData(imgData,0,0)}
-function compareAt(v){after.style.clipPath="inset(0 "+(100-v)+"% 0 0)";$("#split").style.left=v+"%"}
+function compareAt(v){after.style.clipPath="inset(0 "+(100-v)+"% 0 0)";$("#videoAfter").style.clipPath="inset(0 "+(100-v)+"% 0 0)";$("#split").style.left=v+"%"}
 function drawZoneOverlay(zones){
  const canvas=$("#zonesOverlay");canvas.width=before.width;canvas.height=before.height;
  const ctx=canvas.getContext("2d");ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -234,7 +240,23 @@ run.addEventListener("click",async()=>{
    txt($("#zoneInfo"),bilan.modifiees+" / "+bilan.total+" régions adaptées · original conservé ailleurs");
    txt($("#modeReport"),"NOVA Mosaïque v0.2 : éclaircissement local non génératif, interpolé entre régions. Analyse régionale par proxies. Export = aperçu PNG de "+before.width+" × "+before.height+". Aucun vrai détail perdu n'est reconstitué. Contrôle humain obligatoire.");
    setStatus(bilan.intervention?"Mosaïque calculée. Affichez les zones pour vérifier où NOVA est intervenu.":"Aucune région adaptée : l'original reste inchangé.");
-  } else await sampleVideo();
+  } else {
+    if(videoPreview){videoPreview.detruire();videoPreview=null}
+    await sampleVideo();
+    if(kind==="video"&&video.readyState>=2){
+      videoPreview=NOVA_VIDEO.creer({video,canvas:$("#videoAfter"),moteur:NOVA_ZONES,arbitre:NOVA_DECISION,
+        widthMax:320,intervalMs:220,
+        onFrame:report=>{if(report.numero===1||report.numero%15===0)
+           txt($("#zoneInfo"),"Aperçu vidéo local "+report.largeur+" × "+report.hauteur+" · "+report.bilan.modifiees+" zones adaptées sur cette image");},
+        onError:err=>setStatus("Aperçu vidéo indisponible : "+(err.message||"erreur de décodage"))});
+      videoPreview.lancer();
+      $("#compare").disabled=false;$("#split").hidden=false;
+      $("#labBefore").hidden=$("#labAfter").hidden=false;
+      txt($("#zoneInfo"),"Aperçu vidéo local à faible résolution, non exportable");
+      txt($("#modeReport"),"Prévisualisation vidéo NOVA Mosaïque seulement : une image analysée environ toutes les 220 ms en basse résolution. Lecture et son natifs. Aucune modification ni export du fichier original, aucun détail manquant reconstruit. Le rendu final exige encore une intégration au pipeline WebCodecs.");
+      setStatus("Lecture vidéo prête. Appuyez sur ▶ puis glissez AVANT/APRÈS pour comparer.");
+    }
+   }
  } catch(err){setStatus("Analyse interrompue : "+(err?.message||"erreur inconnue"))}
  finally{run.disabled=false}
 });
@@ -281,7 +303,8 @@ async function sampleVideo(){
  metrics.replaceChildren();meta("Instants analysés",String(results.length));meta("Variation de lumière",fmt(vari));
  meta("Traitement appliqué","Aucun");meta("Prochaine étape",vari>.19?"Traitement par zones à explorer":"Analyse plus fine nécessaire");
  txt($("#modeReport"),"Les cinq instants sont des sondages de luminance, PAS une véritable détection de scènes. L'application principale garde son encodeur vidéo. Aucun transfert ni entraînement effectué.");
- setStatus("Bande temporelle créée. Touchez un instant pour le retrouver dans la vidéo.");
+ try{await seek(0)}catch{} // revenir au début après les 5 prélèvements
+ setStatus("Bande temporelle créée. La vidéo est prête pour un aperçu local.");
 }
 })();
 </script>
