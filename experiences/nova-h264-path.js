@@ -52,9 +52,9 @@ async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
   // Le précontrôle >24s ne doit jamais approuver un navigateur incapable
   // d'ouvrir la sortie OPFS. Une source H.264 sans couleur fiable reste refusée.
   if(d>24000000){
-   const available=checkOpfs||(()=>globalThis.NOVA_OPFS_STREAM?.supported?.());
+   const available=checkOpfs||(()=>globalThis.NOVA_OPFS_STREAM?.probe?.({signal}));
    let ok=false;
-   try{ok=available()===true}catch{}
+   try{ok=(await available())===true}catch{}
    if(!ok)return result("h264-opfs-unavailable");
   }
   if(info.pixelAspect?.h!==undefined&&
