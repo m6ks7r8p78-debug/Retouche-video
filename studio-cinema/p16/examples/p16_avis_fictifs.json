@@ -1,0 +1,40 @@
+{
+  "schema": "retouche-cinema-p16-presence-v1",
+  "kind": "private_manual_review",
+  "source_name": "exemple_fictif.mp4",
+  "duration_s": 12,
+  "allow_network": false,
+  "export_media": false,
+  "observations": [
+    {
+      "cue": "gaze_hold",
+      "start_s": 1,
+      "end_s": 4,
+      "evidence": "visible",
+      "reviewer": "A",
+      "notes": "Contact visuel durable, note seulement observable."
+    }
+  ],
+  "viewer_ratings": [
+    {
+      "reviewer": "A",
+      "dimension": "sensualite",
+      "score": 4,
+      "assessment": "subjective_viewer_impression",
+      "notes": ""
+    },
+    {
+      "reviewer": "B",
+      "dimension": "sensualite",
+      "score": 3,
+      "assessment": "subjective_viewer_impression",
+      "notes": ""
+    }
+  ],
+  "evidence_type": "human_observations_and_subjective_ratings",
+  "reviewed_by_two_independent_people_verified": false,
+  "ready_for_training": false,
+  "automatic_intent_inference": false,
+  "automatic_arousal_inference": false
+}
+
