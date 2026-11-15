@@ -39,7 +39,8 @@ test("NOVA 0.26 : annulation avant prochain essai ne crée aucune réussite trom
  const r=await S.run({signal:ac.signal,execute:async()=>{
   count++;ac.abort();return {report:report(180)};
  }});
- assert.equal(count,1);assert.equal(r.status,"incomplete");assert.equal(r.completed,1);
+ assert.equal(count,1);assert.equal(r.status,"abstain");assert.equal(r.completed,1);
+ assert.equal(r.interrupted,true);assert.equal(r.failureReason,"run-cancelled");
 });
 test("NOVA 0.26 : variation extrême -> avertissement, pas promesse de performance",()=>{
  const r=S.summary([report(100),report(150),report(1200)]);
@@ -64,4 +65,39 @@ test("NOVA 0.26 : aucune vidéo personnelle ni champ libre dans le rapport",asyn
  assert.throws(()=>S.summary([{...report(100),sourceKind:"local-user-file"}]),/synthétiques/);
  await assert.rejects(S.run({execute:async()=>{},runs:4}),/trois essais/);
  assert.throws(()=>S.serialize({schema:"invalid"}),/non valide/);
+});
+
+test("NOVA 0.27 : annulation pendant le troisième export invalide trois succès provisoires",async()=>{
+ const ac=new AbortController();let count=0;
+ const r=await S.run({signal:ac.signal,execute:async()=>{
+  count++;if(count===3)ac.abort();return {report:report(100+count)};
+ }});
+ assert.equal(count,3);assert.equal(r.completed,3);assert.equal(r.succeeded,3);
+ assert.equal(r.status,"abstain");assert.equal(r.interrupted,true);
+ assert.equal(r.outputConsistent,false);assert.equal(r.failureReason,"run-cancelled");
+ const j=JSON.parse(S.serialize(r));assert.equal(j.status,"abstain");
+ assert.equal(j.outputConsistent,false);assert.equal(j.physicalIphoneCertified,false);
+});
+test("NOVA 0.27 : annulation préalable ou pendant progression ne démarre aucun export",async()=>{
+ for(const cancelOnProgress of [false,true]){
+  const ac=new AbortController();let calls=0;
+  if(!cancelOnProgress)ac.abort();
+  const r=await S.run({signal:ac.signal,onProgress:()=>ac.abort(),
+   execute:async()=>{calls++;return {report:report(200)}}});
+  assert.equal(calls,0);assert.equal(r.completed,0);
+  assert.equal(r.status,"abstain");assert.equal(r.interrupted,true);
+  assert.equal(r.failureReason,"run-cancelled");
+ }
+});
+test("NOVA 0.27 : sérialisation malicieuse ne reflète pas les champs privés",()=>{
+ const s=S.summary([report(201),report(198),report(205)]);
+ const injected={...s,status:"PRIVATE.mov",failureReason:"GPS 3.4",
+  caveat:"email private@example.com",sourceKind:"secret.webm",
+  userAgent:"DevicePrivate",location:"home"};
+ const text=S.serialize(injected);
+ for(const forbidden of ["PRIVATE.mov","GPS 3.4","private@example.com",
+  "secret.webm","DevicePrivate","home"])assert.ok(!text.includes(forbidden));
+ const j=JSON.parse(text);
+ assert.equal(j.status,"abstain");assert.equal(j.sourceKind,"synthetic-generated");
+ assert.equal(j.physicalIphoneCertified,false);assert.equal(j.uploadsPerformed,false);
 });
