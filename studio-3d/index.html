@@ -1,0 +1,341 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark"><meta name="theme-color" content="#0a101c"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"/><title>Retouche 3D · Studio personnages v1.9</title><style>
+:root{color-scheme:dark;--bg:#080e17;--surface:#121c2b;--line:#27384a;--txt:#e9f3fc;--muted:#98adc1;--accent:#a8d9ed;--lime:#a9ebd5}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 70% -15%,#20354c 0,transparent 42%),#080e17;color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif}button,textarea{font:inherit}button{cursor:pointer}button:focus-visible,textarea:focus-visible{outline:2px solid #b6e4f5;outline-offset:2px}.wrap{max-width:1250px;margin:0 auto;padding:18px 20px 45px}.header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 0 32px}.brand{display:flex;align-items:center;gap:11px;font-size:14px;font-weight:740;letter-spacing:-.02em}.logo{display:grid;place-items:center;border-radius:13px;background:linear-gradient(135deg,#153b51,#366a7e);color:#def6ff;width:40px;height:40px;font-size:23px}.brand small{display:block;font-size:10px;font-weight:650;letter-spacing:.11em;color:#89afbc;margin-top:5px}.privacy{font-size:11px;color:#9fdfc7;border:1px solid #37584e;border-radius:100px;padding:8px 11px;white-space:nowrap;background:#12362d44}.intro{margin-bottom:25px}.kicker{letter-spacing:.16em;text-transform:uppercase;font-size:10px;color:#8acde5;font-weight:760}.intro h1{font-size:clamp(34px,5vw,58px);max-width:780px;letter-spacing:-.05em;line-height:1.04;font-weight:790;margin:10px 0 14px}.intro h1 em{font-style:normal;color:#a7ddeb}.intro p{max-width:760px;color:var(--muted);font-size:14px;line-height:1.7;margin:0}.layout{display:grid;grid-template-columns:minmax(300px,.85fr) minmax(0,1.4fr);gap:16px}.panel{background:linear-gradient(160deg,#152335,#101b2a 70%);border:1px solid #263a4d;border-radius:21px;overflow:hidden}.pad{padding:21px}.panel h2{font-size:14px;letter-spacing:-.01em;margin:0 0 12px}.meta{font-size:11px;color:var(--muted);line-height:1.55;margin-bottom:12px}textarea{display:block;width:100%;min-height:172px;resize:vertical;line-height:1.58;font-size:14px;padding:15px;background:#0a1522;border:1px solid #32485b;border-radius:12px;color:#e6f2ff}textarea::placeholder{color:#67879d}.examples{display:flex;gap:7px;flex-wrap:wrap;margin:13px 0 16px}.chip{background:#192c3e;border:1px solid #365064;color:#b5d4e5;padding:9px 10px;border-radius:10px;font-size:11px}.chip:hover{background:#26455c}.primary{background:#ade0ef;border:1px solid #d3f6ff;color:#102734;border-radius:12px;font-weight:760;padding:14px 15px;width:100%;min-height:48px}.primary:hover{background:#c2e9f5}.support{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.secondary{background:#1d3144;border:1px solid #3c566c;color:#d4e6f6;padding:13px 10px;border-radius:11px;font-size:12px;font-weight:700;min-height:45px}.support button:disabled{opacity:.42;cursor:default}.alert{font-size:11px;line-height:1.55;color:#f0caa0;margin-top:15px;padding:12px;border:1px solid #6c5844;background:#35281944;border-radius:11px}.note{border-top:1px solid #283d4e;margin-top:21px;padding-top:18px;color:#819bae;font-size:11px;line-height:1.68}.stage{display:flex;flex-direction:column;min-width:0}.stagehead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:17px 19px;border-bottom:1px solid #28394a}.stagehead b{font-size:13px}.stagehead small{color:#96b4c4;font-size:11px}.stagebody{position:relative;min-height:525px;flex:1;background:radial-gradient(ellipse 70% 65% at 55% 47%,#2c455f66,#0c1624 66%,#09121f);overflow:hidden}.stage canvas{width:100%;height:100%;position:absolute;inset:0;touch-action:none;cursor:grab}.stage canvas:active{cursor:grabbing}.stageTip{position:absolute;bottom:14px;left:15px;color:#6b93a8;font-size:11px;pointer-events:none}.stageBtn{position:absolute;right:13px;bottom:13px;background:#11263bd9;color:#c3e2f0;border:1px solid #36576d;padding:10px 14px;border-radius:10px;font-size:11px;z-index:3}.summary{border-top:1px solid #263b51;padding:17px 20px 21px;background:#111f2e}.facts{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}.fact{color:#b9ddec;border:1px solid #3b5667;background:#21364a;border-radius:8px;padding:6px 9px;font-size:11px}.status{font-size:12px;color:#8db4c1;line-height:1.6;min-height:33px}.status.error{color:#f9af9b}.stats{display:flex;justify-content:space-between;gap:15px;border-top:1px solid #243a4e;padding-top:12px;margin-top:12px;font-size:11px;color:#90aab8}.stats strong{color:#e0f2f9}.foot{color:#6f8ba1;font-size:11px;line-height:1.65;max-width:760px;margin-top:20px}.foot a{color:#8bd4ec}.mobileTag{color:#aee4ce}@media(max-width:850px){.layout{grid-template-columns:1fr}.stage{grid-row:1}.stagebody{min-height:430px}.wrap{padding:14px 13px 35px}.intro h1{font-size:38px}.header{padding-bottom:21px}.privacy{font-size:10px}.pad{padding:17px}.intro{margin-bottom:19px}.stagebody{height:435px;flex:auto}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto;transition:none!important}}
+.animRow{display:grid;grid-template-columns:1.2fr 1fr;gap:10px;margin-top:10px}.animRow label{font-size:11px;color:#9cbbd2;display:flex;flex-direction:column;gap:7px}.animRow select{background:#0a1522;color:#e6f2ff;border:1px solid #395266;border-radius:10px;padding:11px;width:100%;font-size:12px;min-height:43px}.animRow input{width:100%;accent-color:#99dcee;min-height:23px}.animRow output{display:inline;color:#b8dfed}.limitations{background:#49311b55;border:1px solid #96724b;border-radius:11px;color:#f5d6b0;font-size:12px;line-height:1.5;padding:11px;margin-top:11px}.limitations[hidden]{display:none}@media(max-width:385px){.animRow{grid-template-columns:1fr}}
+.scenario{margin:15px 0 4px;padding:13px;border:1px solid #38536a;background:#102032;border-radius:12px}.scenarioLabel{font-weight:720;color:#d6effa;font-size:12px;margin-bottom:9px}.timelineSteps{display:flex;flex-wrap:wrap;gap:7px}.step{font-size:11px;color:#b7d7e7;background:#213b51;border:1px solid #365b74;border-radius:7px;padding:7px 9px}.step.active{border-color:#acddea;background:#33566b;color:white}.seekLabel{margin-top:12px;display:flex;justify-content:space-between;gap:8px;color:#a7c5d4;font-size:11px}#progress{display:block;width:100%;accent-color:#ace0f0;margin-top:8px;touch-action:pan-y}.importBtn{width:100%;margin-top:8px}.alert{line-height:1.6}
+</style></head><body><div class="wrap"><header class="header"><div class="brand"><span class="logo" aria-hidden="true">⬡</span><div>Retouche 3D AI<small>STUDIO PERSONNAGES · V1.9</small></div></div><div class="privacy">● Prototype local · privé</div></header><section class="intro"><div class="kicker">Créez un personnage par vos mots</div><h1>Imaginez-le.<br><em>Donnez-lui une forme.</em></h1><p>Décrivez l'apparence, la tenue et un geste. Ce prototype génère sur place un personnage <strong>3D stylisé et articulé</strong> avec plusieurs animations exportables au format GLB. Il ne crée pas encore de portrait photoréaliste ni de copie d'une personne réelle.</p></section>
+<main class="layout"><section class="panel"><div class="pad"><h2>1. Décrivez votre personnage adulte</h2><p class="meta">Un seul champ suffit. La version actuelle comprend les cheveux, yeux, vêtements, lunettes et des gestes simples : fumer (main choisie), saluer, marcher sur place, incliner la tête, cligner des yeux, sourire, respirer et enchaîner les actions dans le bon ordre. Les demandes non prises en charge sont signalées.</p><textarea id="prompt" aria-label="Description du personnage">Une femme adulte blonde aux yeux verts, élégante, en robe noire, qui fume lentement de la main gauche puis cligne des yeux, sourit, salue de la main et marche.</textarea><div class="examples" aria-label="Exemples"><button class="chip" data-preset="Une femme adulte blonde aux yeux verts, élégante, en robe noire, qui fume lentement de la main gauche puis cligne des yeux, sourit, salue de la main et marche.">Blonde · robe · cigarette</button><button class="chip" data-preset="Un homme adulte brun, classe en costume bleu, souriant, avec des lunettes, qui salue.">Homme · costume</button><button class="chip" data-preset="Un adulte aux cheveux roux, en pantalon, qui marche et salue.">Marche · salut</button><button class="chip" data-preset="Une femme adulte rousse, chic et charmante, veste rouge, cheveux longs.">Rousse · veste</button><button class="chip" data-preset="Une femme adulte brune avec lunettes, en robe noire, qui fume deux fois de la main gauche, salue puis refume lentement.">Deux bouffées · salut · encore</button><button class="chip" data-preset="Un homme adulte élégant en costume noir qui fume un cigare puis marche.">Cigare · marche</button><button class="chip" data-preset="Une femme adulte rousse avec lunettes, qui cligne des yeux deux fois, sourit puis respire calmement.">Expressions · respiration</button></div><button id="generate" type="button" class="primary">Créer mon personnage 3D</button><div class="animRow"><label for="animation">Animation<select id="animation" aria-label="Choisir une animation"></select></label><label for="speed">Vitesse <output id="speedLabel">1,0×</output><input type="range" id="speed" min="0.5" max="2" step="0.25" value="1"/></label></div><div class="scenario"><div class="scenarioLabel">Scénario compris, dans l'ordre demandé</div><div id="timelineSteps" class="timelineSteps" role="list"></div><label class="seekLabel" for="progress">Position dans l'animation <output id="timeLabel">0,0 s</output></label><input type="range" id="progress" min="0" max="1000" step="1" value="0" aria-label="Avancer dans l'animation"></div><div class="support"><button class="secondary" id="download" disabled>Exporter le modèle GLB</button><button class="secondary" id="exportJson" disabled>Exporter la fiche JSON</button></div><button type="button" class="secondary importBtn" id="openImport">Importer une fiche JSON sauvegardée</button><input id="importJson" type="file" accept=".json,application/json" hidden><div id="unhandled" class="limitations" hidden></div><div class="alert">Création stylisée à partir de formes paramétriques. Les actions sont stylisées : tenir une cigarette, un cigare ou une pipe, porter la main à la bouche, représenter des volutes de fumée, saluer et marcher sur place. Les répétitions et leur ordre sont interprétés par règles. Pas de simulation réaliste. Personnages adultes uniquement.</div><div class="note"><b>La bibliothèque privée des 157 vidéos reste séparée.</b> Aucune vidéo, photo ou identité n'est chargée dans ce studio. Les avatars réellement reconstruits à partir de tes sources conserveront leurs propres fiches et versions.</div></div></section>
+<section class="panel stage"><div class="stagehead"><div><b>2. Prévisualisez en 3D</b><div><small>Glisser pour pivoter • pincez pour zoomer</small></div></div><small class="mobileTag">Sans envoi réseau</small></div><div class="stagebody" id="stageBody"><canvas id="view" role="img" aria-label="Aperçu 3D stylisé du personnage généré"></canvas><div class="stageTip">Personnage synthétique • pas une reconstruction vidéo</div><button class="stageBtn" id="toggleAnimation" type="button">▶ Animer</button></div><div class="summary"><div class="facts" id="facts"></div><div class="status" id="status" role="status" aria-live="polite">Prêt pour la première création.</div><div class="stats"><span>Maillage : <strong id="statsMesh">—</strong></span><span>Animations : <strong id="statsAnim">—</strong></span><span>Export : <strong>GLB 2.0</strong></span></div></div></section></main><p class="foot">Cette étape développe la voie « personnages originaux ». La reconstruction 3D fidèle des personnes filmées demeure une recherche distincte. Le modèle exporté est un GLB articulé par nœuds (sans skinning de surface), avec animations simples, et n'a pas été entraîné sur les 157 vidéos.</p></div>
+<script>
+/* Retouche 3D AI Lab v1.9 — original adult procedural characters, 100% local.
+   Neither neural inference nor reconstruction of a real filmed person.
+   Browser/Node UMD, no external assets or requests. */
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;root.Retouche3DGenerator=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
+'use strict';
+const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+function parsePrompt(raw){
+ const text=String(raw||'').trim();if(!text||text.length>4000)throw Error('Description requise (maximum 4 000 caractères).');
+ const s=normalize(text); const ageTokens=s.match(/\b(\d{1,2})\s*(?:ans|years? old)\b/);
+ if((ageTokens&&Number(ageTokens[1])<18)||/\b(enfant|mineur|mineure|adolescent|adolescente|ado|teen|child|little girl|little boy|fillette|garconnet|bebe|fillettes)\b/.test(s))
+   throw Error('Ce prototype crée uniquement des personnages explicitement adultes (18 ans et plus).');
+ const gender=/\b(homme|masculin|monsieur|man|male)\b/.test(s)?'homme':/\b(femme|feminin|woman|female|dame)\b/.test(s)?'femme':'neutre';
+ const hair=/\b(blond|blonde|blonds|blondes|blondie)\b/.test(s)?'blond':/\b(brun|brune|bruns|brunes|chatain|chatains)\b/.test(s)?'brun':/\b(roux|rousse|auburn)\b/.test(s)?'roux':/\b(cheveux noirs?|chevelure noire|black hair)\b/.test(s)?'noir':'brun';
+ const longHair=/cheveux\s+(longs?|mi[- ]longs?)/.test(s)||/longue chevelure|long hair/.test(s)||gender==='femme'&&!/cheveux\s+courts?|short hair/.test(s);
+ const clothes=/\b(robe|dress)\b/.test(s)?'robe':/\b(costume|smoking|suit|tailleur|veste)\b/.test(s)?'costume':/\b(jean|decontract|casual|t[- ]shirt|tshirt|pantalon)\b/.test(s)?'casual':'elegant';
+ const elegant=/\b(classe|elegant|elegante|chic|charme|charmant|charmante|sexy|aguicheur|aguicheuse|raffine)\b/.test(s);
+ const smokeRequested=/\b(fume|fumant|fumante|fumer|cigarette|cigare|pipe)\b/.test(s);
+ const smoke=smokeRequested&&!/\b(ne fume pas|sans cigarette|sans fumer|non fumeur|non fumeuse)\b/.test(s);
+ const smokeHand=/\b(main gauche|dans sa main gauche|de la main gauche)\b/.test(s)?'gauche':'droite';
+ const tobacco=smoke?(/\bcigare\b/.test(s)?'cigare':/\bpipe\b/.test(s)?'pipe':'cigarette'):null;
+ const wave=/\b(salue|saluer|saluant|bonjour|coucou|waving|wave)\b/.test(s)||/fait signe|agite la main/.test(s);
+ const walk=/\b(marche|marcher|marchant|walking|walk|promene|promener)\b/.test(s);
+ const tilt=/\b(penche|pencher|inclin(?:e|er)) (?:legerement )?(?:la |sa )?tete\b/.test(s);
+ const smokeStyle=smoke?(/\b(lentement|doucement|nonchalant|nonchalante|lent|lente|slowly)\b/.test(s)?'lent':/\b(rapide|rapidement|vite|quickly)\b/.test(s)?'rapide':'standard'):null;
+ const blink=/\b(cligne|cligner|clignant|clignement|recligne|recligner|blink|blinking)\b/.test(s);
+ const smileAction=/\b(sourit|sourire|souriant|souriante|smile|smiling)\b/.test(s);
+ const breathe=/\b(respire|respirer|respiration|inspire|inspirer|expire|expirer|breath|breathe)\b/.test(s);
+ const glasses=/\b(lunettes|glasses)\b/.test(s);
+ const smiles=/\b(sourire|souriant|souriante|jolie|charmant|charmante|aguicheur|aguicheuse|joyeux|joyeuse|sourit|smiling)\b/.test(s);
+ const outfitSegment=(s.match(/(?:robe|costume|veste|tenue|tailleur|pantalon|t[- ]shirt|chemise|dress|suit)\W+(?:(?:de couleur|en)\W+)?(?:noire?|rouge|bordeaux|bleue?|marine|blanche?|white|black|red|blue)/)||[])[0]||'';
+ const outfitColor=/rouge|bordeaux|red/.test(outfitSegment)?'rouge':/bleu|marine|blue/.test(outfitSegment)?'bleu':/blanc|white/.test(outfitSegment)?'blanc':/noir|black/.test(outfitSegment)?'noir':'marine';
+ const eyes=/yeux\s+(?:de couleur\s+)?verts?|green eyes/.test(s)?'vert':/yeux\s+(?:de couleur\s+)?bleus?|blue eyes/.test(s)?'bleu':/yeux\s+(?:de couleur\s+)?noirs?|dark eyes/.test(s)?'sombre':'brun';
+ const skinTone=/peau\s+(?:tres\s+)?foncee?/.test(s)?'foncee':/peau\s+(?:mate|olive)/.test(s)?'mate':/peau\s+claire?/.test(s)?'claire':'standard';
+ // Extraire les occurrences dans leur ordre, sans inventer les gestes non reconnus.
+ // « deux fois » après un geste duplique cette étape (max 3 répétitions) ; les autres
+ // réapparitions explicites restent des étapes distinctes.
+ const events=[];
+ const patterns=[
+  ['fumer',/\b(fume|fumer|fumant|fumante|cigarette|cigare|pipe|refume|refumer)\b/g,smoke],
+  ['saluer',/\b(salue|saluer|saluant|bonjour|coucou|waving|wave)\b|fait signe|agite la main/g,wave],
+  ['marcher',/\b(marche|marcher|marchant|walking|walk|promene|promener)\b/g,walk],
+  ['incliner',/\b(penche|pencher|inclin(?:e|er)) (?:legerement )?(?:la |sa )?tete\b/g,tilt],
+  ['cligner',/\b(cligne|cligner|clignant|clignement|recligne|recligner|blink|blinking)\b/g,blink],
+  ['sourire',/\b(sourit|sourire|souriant|souriante|smile|smiling)\b/g,smileAction],
+  ['respirer',/\b(respire|respirer|respiration|inspire|inspirer|expire|expirer|breath|breathe)\b/g,breathe]
+ ];
+ for(const [name,re,enabled] of patterns){if(!enabled)continue;let m;
+  while((m=re.exec(s))!==null){const tail=s.slice(m.index+m[0].length,m.index+m[0].length+35);
+   const repetition=tail.match(/^\s*(?:(?:des?\s+yeux|de la main)\s*)?(?:a nouveau\s*)?(?:\b(2|3|deux|trois)\s*fois\b)/);
+   const count=repetition?({'2':2,'3':3,'deux':2,'trois':3}[repetition[1]]):1;
+   for(let j=0;j<count;j++)events.push({name,index:m.index,repeat:j,token:m[0]});
+   if(m.index===re.lastIndex)re.lastIndex++;
+  }
+ }
+ events.sort((a,b)=>a.index-b.index||a.repeat-b.repeat);
+ // Éviter un double comptage dans « fume une cigarette » ou « salue, fait signe ».
+ // Une conjonction temporelle explicite préserve les gestes réellement répétés.
+ const dedup=[];
+ for(const ev of events){const prev=dedup[dedup.length-1];
+   const between=prev&&s.slice(prev.index,ev.index);
+   if(prev&&prev.name===ev.name&&ev.repeat===0&&ev.index!==prev.index&&ev.index-prev.index<36&&
+      !/\b(puis|ensuite|apres|encore|nouveau)\b/.test(between||'')&&!/\brefume(?:r)?\b/.test(ev.token))continue;
+   dedup.push(ev);
+ }
+ const actions=dedup.map(x=>x.name).slice(0,12);
+ const truncated=dedup.length>12;
+ if(actions.length===0)actions.push('pose');
+ const matched=[];
+ if(/\b(femme|homme|man|woman|dame)\b/.test(s))matched.push('type adulte');
+ if(/blond|brun|rousse|roux|chatain|cheveux noir/.test(s))matched.push('cheveux');
+ if(/robe|costume|veste|jean|pantalon|casual|decontract/.test(s))matched.push('tenue');
+ if(elegant)matched.push('style');if(glasses)matched.push('lunettes');if(/yeux\s+(verts?|bleus?|noirs?)/.test(s))matched.push('yeux');if(/peau (mate|claire|foncee)/.test(s))matched.push('teint');
+ if(smoke)matched.push('geste de fumer'+(smokeStyle!=='standard'?' ('+smokeStyle+')':''));if(wave)matched.push('salut');if(walk)matched.push('marche sur place');if(tilt)matched.push('inclinaison de tête');if(blink)matched.push('clignement des yeux');if(smileAction)matched.push('sourire animé');if(breathe)matched.push('respiration stylisée');if(smoke)matched.push('main '+smokeHand);
+ const unhandled=[];
+ if(/photoreal|hyperreal|ultrareal|comme une vraie photo|realisme absolu/.test(s))unhandled.push('photoréalisme non disponible');
+ if(/parle|parler|discute|voix|dialogue|chant|chante/.test(s))unhandled.push('parole et voix non générées');
+ if(/danse|danser|dance|dancing/.test(s))unhandled.push('danse non animée');
+ if(/assis|assise|s.asseoit|se couche|allonge|allongee/.test(s))unhandled.push('position assise/allongée non disponible');
+ if(/decor|arriere.plan|ville|plage|salon|restaurant/.test(s))unhandled.push('décor non créé');
+ if(/reprodui|exactement comme|identique a une personne/.test(s))unhandled.push('copie fidèle de personne non disponible');
+ if(truncated)unhandled.push('scénario limité à 12 gestes dans ce prototype');
+ if([/\bcigarette\b/,/\bcigare\b/,/\bpipe\b/].filter(re=>re.test(s)).length>1)unhandled.push('changement de type de cigarette/cigare/pipe au fil du scénario non disponible');
+ return {adult:true,ageLabel:'adulte 18+',gender,hair,longHair,clothes,elegant,smoke,wave,walk,tilt,blink,smileAction,breathe,smokeHand,smokeStyle,tobacco,actions,glasses,smiles,outfitColor,eyes,skinTone,matched,unhandled,originalText:text,
+  disclaimer:'Personnage synthétique stylisé, créé par formes paramétriques. Aucune identité réelle ni anatomie fidèle.'};
+}
+function build(config){
+ const c=typeof config==='string'?parsePrompt(config):config;
+ if(!c||!c.adult)throw Error('Configuration adulte requise.');
+ const hairColors={blond:[.83,.66,.32,1],brun:[.24,.13,.10,1],roux:[.65,.22,.10,1],noir:[.09,.085,.105,1]};
+ const clothing={noir:[.10,.11,.15,1],marine:[.15,.24,.40,1],bleu:[.14,.29,.63,1],rouge:[.62,.16,.23,1],blanc:[.86,.87,.88,1]};
+ const materials=[
+   {name:'peau_synthetique',color:({standard:[.81,.57,.43,1],claire:[.91,.73,.61,1],mate:[.66,.43,.29,1],foncee:[.38,.24,.18,1]}[c.skinTone]||[.81,.57,.43,1])},
+   {name:'cheveux_'+c.hair,color:hairColors[c.hair]||hairColors.brun},
+   {name:'tenue_'+c.outfitColor,color:clothing[c.outfitColor]||clothing.marine},
+   {name:'ombre_yeux',color:[.075,.075,.09,1]},
+   {name:'blanc_yeux',color:[.96,.95,.90,1]},
+   {name:'levres',color:[.57,.19,.27,1]},
+   {name:'chaussures',color:[.13,.11,.13,1]},
+   {name:'cigarette',color:[.93,.90,.79,1]},
+   {name:'braise',color:[.98,.32,.12,1]},
+   {name:'chemise',color:[.91,.92,.96,1]},
+   {name:'verres',color:[.34,.53,.61,1]},
+   {name:'iris_'+c.eyes,color:({brun:[.30,.21,.12,1],bleu:[.18,.47,.66,1],vert:[.21,.47,.31,1],sombre:[.08,.08,.09,1]}[c.eyes]||[.30,.21,.12,1])},
+   {name:'fumee_synthetique',color:[.79,.87,.90,.28]}
+ ];
+ const nodeList=[];const meshes=[];
+ function node(name,parent=null,t=[0,0,0],scale=null,mat=null){
+   const n={name,translation:t.slice()};if(scale){n.scale=scale.slice();n.mesh=0;n.extras={materialIndex:mat===null?0:mat};}
+   let id=nodeList.push(n)-1;if(parent!==null)nodeList[parent].children=(nodeList[parent].children||[]).concat([id]);return id;
+ }
+ const root=node('synthetic_adult_root');
+ const legSpan=c.gender==='femme'?.13:.16;
+ const torsoY=c.gender==='femme'?1.32:1.32;
+ const torsoW=c.gender==='femme'?.245:.28;
+ const torso=node('torse',root,[0,torsoY,0],[torsoW,.37,.15],c.clothes==='costume'?2:2);
+ node('bassin',root,[0,1.0,0],[c.gender==='femme'?.275:.24,.18,.16],2);
+ if(c.clothes==='robe')node('robe_jupe',root,[0,0.96,0],[.315,.37,.205],2);
+ if(c.clothes==='costume'||c.clothes==='elegant')node('chemise',root,[0,1.38,.142],[.10,.22,.016],9);
+ node('cou',root,[0,1.66,0],[.085,.145,.085],0);
+ // Le pivot de tête est distinct de son volume : les traits et cheveux suivent la rotation.
+ const head=node('tete_pivot',root,[0,1.83,0]);
+ node('tete_volume',head,[0,0,0],[.185,.222,.177],0);
+ node('coiffure_calotte',head,[0,.175,-.022],[.197,.122,.192],1);
+ const length=c.longHair?.30:.12;
+ for(let j=0;j<5;j++){
+   const x=-.15+j*.075;node('meche_'+j,head,[x,.12-length*.38,-.095],[.052,length,.075],1);
+ }
+ const eyes={};const eyebrows={};
+ for(const [side,sgn] of [['gauche',-1],['droite',1]]){
+   const eye=node('oeil_pivot_'+side,head,[sgn*.080,.024,.157]);
+   node('oeil_'+side,eye,[0,0,0],[.040,.031,.016],4);
+   node('iris_'+side,eye,[0,0,.017],[.016,.020,.009],11);
+   eyes[side]=eye;
+   eyebrows[side]=node('sourcil_'+side,head,[sgn*.083,.093,.157],[.054,.012,.013],1);
+ }
+ node('nez',head,[0,-.045,.173],[.034,.053,.038],0);
+ const mouth=node('bouche_pivot',head,[0,-.099,.164]);
+ node('bouche',mouth,[0,0,0],[c.smiles?.071:.055,.013,.012],5);
+ if(c.glasses){node('lunette_gauche',head,[-.081,.028,.18],[.07,.047,.012],10);node('lunette_droite',head,[.081,.028,.18],[.07,.047,.012],10);node('pont_lunette',head,[0,.031,.181],[.027,.012,.011],3);}
+ const puffs=[];
+ if(c.smoke){for(let i=0;i<3;i++)puffs.push(node('fumee_volute_'+(i+1),head,[.025+(i-1)*.032,-.078+i*.065,.22+i*.022],[.0001,.0001,.0001],12));}
+ const limb={};
+ for(const [side,sgn] of [['gauche',-1],['droite',1]]){
+   const sh=node('epaule_'+side,root,[sgn*(torsoW+.047),1.51,0]);
+   node('bras_haut_'+side,sh,[0,-.19,0],[.092,.245,.095],c.clothes==='robe'?0:2);
+   const el=node('coude_'+side,sh,[0,-.41,0]);
+   node('avant_bras_'+side,el,[0,-.18,0],[.08,.212,.084],c.clothes==='robe'?0:2);
+   const wr=node('poignet_'+side,el,[0,-.41,0]);
+   node('main_'+side,wr,[0,-.063,0],[.09,.12,.073],0);
+   limb[side]={shoulder:sh,elbow:el,wrist:wr};
+   if(side===c.smokeHand&&c.smoke){
+    if(c.tobacco==='pipe'){node('pipe_tuyau',wr,[.02,-.105,.050],[.021,.083,.022],3);node('pipe_foyer',wr,[.02,-.195,.057],[.047,.042,.045],3);node('pipe_braise',wr,[.02,-.230,.057],[.027,.008,.027],8);}
+    else{const cigar=c.tobacco==='cigare';node('cigarette_tige',wr,[.02,-.130,.053],[cigar?.031:.017,.10,cigar?.029:.017],cigar?3:7);node('cigarette_braise',wr,[.02,-.223,.053],[cigar?.027:.018,.013,cigar?.027:.018],8);}
+   }
+   const hip=node('hanche_'+side,root,[sgn*legSpan,.89,0]);
+   node('cuisse_'+side,hip,[0,-.24,0],[.112,.31,.114],c.clothes==='robe'?0:2);
+   const knee=node('genou_'+side,hip,[0,-.50,0]);limb[side].hip=hip;limb[side].knee=knee;node('mollet_'+side,knee,[0,-.22,0],[.091,.29,.095],0);
+   node('chaussure_'+side,knee,[0,-.49,.095],[.105,.095,.21],6);
+ }
+ const quat=angle=>[0,0,Math.sin(angle/2),Math.cos(angle/2)];
+ function track(node,times,angles){return {node,times,path:'rotation',values:angles.map(quat),rotation:angles.map(quat)};}
+ function scaleTrack(node,times,values){return {node,times,path:'scale',values:values.map(x=>x.slice())};}
+ const animations=[];const poseT=[0,1.5,3.0,4.5];
+ animations.push({name:'pose',label:'Pose douce + clignement',duration:4.5,channels:[
+  track(head,poseT,[0,.045,-.045,0]),track(limb.gauche.shoulder,poseT,[0,.055,-.055,0]),
+  ...Object.values(eyes).map(id=>scaleTrack(id,[0,1.04,1.11,1.20,3.29,3.36,3.45,4.5],[[1,1,1],[1,1,1],[1,.075,1],[1,1,1],[1,1,1],[1,.075,1],[1,1,1],[1,1,1]]))
+ ]});
+ if(c.smoke){const hand=limb[c.smokeHand];const duration=c.smokeStyle==='lent'?7:c.smokeStyle==='rapide'?3.3:5;
+  const ts=[0,.15*duration,.38*duration,.58*duration,.80*duration,duration];
+  animations.push({name:'fumer',label:'Porter à la bouche (stylisé)',duration,channels:[
+   track(hand.shoulder,ts,[0,c.smokeHand==='gauche'?.38:-.38,c.smokeHand==='gauche'?1.14:-1.14,c.smokeHand==='gauche'?1.14:-1.14,c.smokeHand==='gauche'?.38:-.38,0]),
+   track(hand.elbow,ts,[0,c.smokeHand==='gauche'?.70:-.70,c.smokeHand==='gauche'?2.03:-2.03,c.smokeHand==='gauche'?2.03:-2.03,c.smokeHand==='gauche'?.70:-.70,0]),
+   track(hand.wrist,ts,[0,c.smokeHand==='gauche'?.1:-.1,c.smokeHand==='gauche'?.22:-.22,c.smokeHand==='gauche'?.22:-.22,c.smokeHand==='gauche'?.1:-.1,0]),
+   track(head,ts,[0,0,-.05,-.05,0,0]),
+   scaleTrack(mouth,ts,[[1,1,1],[1,1,1],[.90,1.42,1],[.82,2.05,1],[1,1,1],[1,1,1]]),
+   ...Object.values(eyes).map(id=>scaleTrack(id,ts,[[1,1,1],[1,1,1],[1,.7,1],[1,.64,1],[1,1,1],[1,1,1]])),
+   ...puffs.map((id,i)=>scaleTrack(id,ts,[[.0001,.0001,.0001],[.0001,.0001,.0001],[.0001,.0001,.0001],[.020+i*.007,.033+i*.013,.016+i*.006],[.045+i*.007,.070+i*.015,.040+i*.008],[.0001,.0001,.0001]]))
+  ]});
+ }
+ if(c.wave){const ts=[0,.5,1.0,1.4,1.8,2.2,2.65,3.1];
+  animations.push({name:'saluer',label:'Saluer de la main',duration:3.1,channels:[
+    track(limb.droite.shoulder,ts,[0,-.7,-1.45,-1.45,-1.45,-1.45,-.7,0]),
+    track(limb.droite.elbow,ts,[0,-.5,-1.22,-.92,-1.25,-.92,-.5,0]),
+    track(limb.droite.wrist,ts,[0,0,-.15,.22,-.22,.20,0,0])
+  ]});
+ }
+ if(c.walk){const ts=[0,.4,.8,1.2,1.6,2.0,2.4];
+  animations.push({name:'marcher',label:'Marcher sur place',duration:2.4,channels:[
+    track(limb.droite.hip,ts,[0,.22,0,-.22,0,.22,0]),
+    track(limb.gauche.hip,ts,[0,-.22,0,.22,0,-.22,0]),
+    track(limb.droite.knee,ts,[0,.17,.28,.09,0,.17,0]),
+    track(limb.gauche.knee,ts,[0,.12,0,.18,.29,.12,0]),
+    track(limb.droite.shoulder,ts,[0,-.13,0,.13,0,-.13,0]),
+    track(limb.gauche.shoulder,ts,[0,.13,0,-.13,0,.13,0])
+  ]});
+ }
+ if(c.tilt){const ts=[0,.5,1.25,1.9,2.4,3.0];animations.push({name:'incliner',label:'Incliner la tête',duration:3,channels:[track(head,ts,[0,-.15,-.22,.16,.12,0])]});}
+ if(c.blink){const ts=[0,.35,.44,.53,.9,1.13,1.23,1.35,1.8];
+  animations.push({name:'cligner',label:'Cligner des yeux',duration:1.8,channels:Object.values(eyes).map(id=>scaleTrack(id,ts,[[1,1,1],[1,1,1],[1,.065,1],[1,1,1],[1,1,1],[1,.065,1],[1,.065,1],[1,1,1],[1,1,1]]))});
+ }
+ if(c.smileAction){const ts=[0,.4,.85,1.55,2.4,3.2];
+  animations.push({name:'sourire',label:'Sourire (stylisé)',duration:3.2,channels:[
+   scaleTrack(mouth,ts,[[1,1,1],[1.2,.95,1],[1.48,.78,1],[1.48,.78,1],[1.2,.95,1],[1,1,1]]),
+   ...Object.values(eyes).map(id=>scaleTrack(id,ts,[[1,1,1],[1,.95,1],[1,.86,1],[1,.86,1],[1,.95,1],[1,1,1]])),
+   track(eyebrows.gauche,ts,[0,.07,.14,.14,.07,0]),track(eyebrows.droite,ts,[0,-.07,-.14,-.14,-.07,0])
+  ]});
+ }
+ if(c.breathe){const ts=[0,.7,1.5,2.2,3.1,4.0],base=torsoW;
+  animations.push({name:'respirer',label:'Respirer (torse stylisé)',duration:4.0,channels:[
+    scaleTrack(torso,ts,[[base,.37,.15],[base*1.025,.374,.155],[base*1.065,.382,.164],[base*1.065,.382,.164],[base*1.01,.371,.152],[base,.37,.15]])
+  ]});
+ }
+ // Séquence temporelle : chaque geste revient à la pose neutre ; 250 ms de transition.
+ // Les pistes de chaque articulation sont complétées à 0 lorsque l'action n'agit pas dessus.
+ let timeline=[];
+ if(c.actions.length>1){
+   let cursor=0;const gap=.25;
+   for(const name of c.actions){const clip=animations.find(a=>a.name===name);if(!clip)continue;
+     timeline.push({action:name,label:clip.label,start:cursor,end:cursor+clip.duration,duration:clip.duration});cursor+=clip.duration+gap;
+   }
+   const keys=[...new Set(timeline.flatMap(t=>animations.find(a=>a.name===t.action).channels.map(ch=>ch.node+':'+(ch.path||'rotation'))))].sort();
+   const tracks=keys.map(key=>{const [idString,path]=key.split(':'),id=Number(idString),times=[],values=[];
+     const identity=path==='scale'?(nodeList[id].scale||[1,1,1]).slice():[0,0,0,1];
+     function push(t,v){if(times.length&&Math.abs(times[times.length-1]-t)<1e-7){values[values.length-1]=v.slice();return;}times.push(t);values.push(v.slice());}
+     push(0,identity);
+     for(const step of timeline){const clip=animations.find(a=>a.name===step.action),ch=clip.channels.find(v=>v.node===id&&(v.path||'rotation')===path);
+       push(step.start,identity);
+       if(ch){for(let i=0;i<ch.times.length;i++)push(step.start+ch.times[i],(ch.values||ch.rotation)[i]);}
+       push(step.end,identity);push(step.end+gap,identity);
+     }
+     return {node:id,path,times,values,...(path==='rotation'?{rotation:values}:{})};
+   });
+   const duration=timeline[timeline.length-1].end;
+   animations.push({name:'scenario',label:'Scénario complet ('+timeline.map(t=>t.action).join(' → ')+')',duration,channels:tracks});
+ }
+ const selectedAnimation=timeline.length?'scenario':animations.find(a=>a.name===c.actions[0])?.name||'pose';
+ return {nodes:nodeList,materials,animations,channels:animations[0].channels,selectedAnimation,config:c,timeline,meshes,scene:0};
+}
+function sphereGeometry(lat=10,lon=16){let pos=[],norm=[],ind=[];
+ for(let j=0;j<=lat;j++){let phi=Math.PI*j/lat;for(let i=0;i<=lon;i++){let theta=2*Math.PI*i/lon;let x=Math.sin(phi)*Math.cos(theta),y=Math.cos(phi),z=Math.sin(phi)*Math.sin(theta);pos.push(x,y,z);norm.push(x,y,z);}}
+ for(let j=0;j<lat;j++)for(let i=0;i<lon;i++){let a=j*(lon+1)+i,b=a+lon+1;ind.push(a,b,a+1,b,b+1,a+1)}
+ return {pos,norm,ind};
+}
+function encodeGLB(model){
+ const g=sphereGeometry(),buffers=[],views=[],accessors=[];
+ let bytes=[],pos=0;
+ function write(bytesIn,target){const arr=bytesIn instanceof Uint8Array?bytesIn:new Uint8Array(bytesIn);while(pos%4){bytes.push(0);pos++}const offset=pos;for(const b of arr)bytes.push(b);pos+=arr.length;const v={buffer:0,byteOffset:offset,byteLength:arr.length};if(target)v.target=target;views.push(v);return views.length-1;}
+ function accessor(a,ctype,type,target){const view=write(new Uint8Array(a.buffer,a.byteOffset,a.byteLength),target);const count=a.length/({SCALAR:1,VEC3:3,VEC4:4}[type]);const obj={bufferView:view,componentType:ctype,count,type};if(type==='VEC3'){const mins=[Infinity,Infinity,Infinity],maxs=[-Infinity,-Infinity,-Infinity];for(let i=0;i<a.length;i+=3)for(let j=0;j<3;j++){mins[j]=Math.min(mins[j],a[i+j]);maxs[j]=Math.max(maxs[j],a[i+j]);}obj.min=mins;obj.max=maxs;}if(type==='SCALAR'&&count>0){obj.min=[Math.min(...a)];obj.max=[Math.max(...a)];}accessors.push(obj);return accessors.length-1;}
+ const ap=accessor(new Float32Array(g.pos),5126,'VEC3',34962),an=accessor(new Float32Array(g.norm),5126,'VEC3',34962),ai=accessor(new Uint16Array(g.ind),5123,'SCALAR',34963);
+ const meshes=model.materials.map((m,i)=>({name:'matiere_'+m.name,primitives:[{attributes:{POSITION:ap,NORMAL:an},indices:ai,material:i}]}));
+ const nodes=model.nodes.map(n=>{let c={name:n.name,translation:n.translation.slice()};if(n.scale)c.scale=n.scale.slice();if(n.children)c.children=n.children.slice();if(n.mesh!==undefined)c.mesh=n.extras?.materialIndex??0;return c;});
+ const animations=[];
+ for(const clip of model.animations){const samplers=[],channels=[];
+  for(const motion of clip.channels){let ti=accessor(new Float32Array(motion.times),5126,'SCALAR');let path=motion.path||'rotation';let values=motion.values||motion.rotation;let data=accessor(new Float32Array(values.flat()),5126,path==='scale'?'VEC3':'VEC4');let si=samplers.length;samplers.push({input:ti,output:data,interpolation:'LINEAR'});channels.push({sampler:si,target:{node:motion.node,path}});}
+  animations.push({name:clip.name,samplers,channels});
+ }
+ while(pos%4){bytes.push(0);pos++}
+ const doc={asset:{version:'2.0',generator:'Retouche 3D AI Lab v1.9 procedural adults'},scene:0,scenes:[{nodes:[0]}],nodes,meshes,
+  materials:model.materials.map(m=>({name:m.name,pbrMetallicRoughness:{baseColorFactor:m.color,metallicFactor:0,roughnessFactor:.77},doubleSided:true,...(m.color[3]<1?{alphaMode:'BLEND'}:{})})),
+  buffers:[{byteLength:bytes.length}],bufferViews:views,accessors,animations,
+  extras:{synthetic:true,notPhotorealistic:true,notReconstructedFromVideo:true,age:'adult 18+',generatorVersion:'1.9',animationNames:animations.map(a=>a.name),timeline:model.timeline,smokeHand:model.config.smokeHand,tobacco:model.config.tobacco,caveat:'procedural nodes with facial pivot + eyes and mouth scales, no skinning or faithful human motion'}};
+ let json=new TextEncoder().encode(JSON.stringify(doc));const pad=(4-json.length%4)%4;const output=new Uint8Array(12+8+json.length+pad+8+bytes.length);const dv=new DataView(output.buffer);
+ output.set([103,108,84,70],0);dv.setUint32(4,2,true);dv.setUint32(8,output.length,true);dv.setUint32(12,json.length+pad,true);output.set([74,83,79,78],16);output.set(json,20);output.fill(32,20+json.length,20+json.length+pad);let offset=20+json.length+pad;dv.setUint32(offset,bytes.length,true);output.set([66,73,78,0],offset+4);output.set(new Uint8Array(bytes),offset+8);
+ return {bytes:output,document:doc};
+}
+return {parsePrompt,build,encodeGLB};
+});
+
+
+
+</script>
+<script>
+(()=>{'use strict';const $=id=>document.getElementById(id), api=Retouche3DGenerator;let current=null,encoded=null,angle=-.15,zoom=1,play=false,started=performance.now(),playbackT=0,animName='pose',speed=1,rafId=null;
+ const canvas=$('view'),ctx=canvas.getContext('2d');let dragging=false,x0=0,y0=0,pinchDistance=0;const pointers=new Map();
+ function updateStatus(t,error=false){$('status').textContent=t;$('status').className='status'+(error?' error':'');}
+ function download(bytes,name,type){const blob=new Blob([bytes],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);}
+ function generate(){try{const prompt=api.parsePrompt($('prompt').value);current=api.build(prompt);encoded=api.encodeGLB(current);const pairs=[prompt.gender,prompt.hair,prompt.clothes,prompt.outfitColor,prompt.tobacco||null,prompt.smoke?'geste main → visage':'pose douce',prompt.glasses?'lunettes':null].filter(Boolean);
+  const facts=$('facts');facts.replaceChildren();for(const p of pairs){const b=document.createElement('span');b.className='fact';b.textContent=p;facts.appendChild(b);}
+  $('download').disabled=false;$('exportJson').disabled=false;$('statsMesh').textContent=current.nodes.filter(n=>n.mesh!==undefined).length+' pièces';$('statsAnim').textContent=current.animations.length+' séquences';
+  const a=$('animation');a.replaceChildren();for(const clip of current.animations){const opt=document.createElement('option');opt.value=clip.name;opt.textContent=clip.label;a.appendChild(opt)}animName=current.selectedAnimation;a.value=animName;
+  const steps=$('timelineSteps');steps.replaceChildren();if(current.timeline.length){for(const [stepIndex,step] of current.timeline.entries()){const badge=document.createElement('span');badge.className='step';badge.setAttribute('role','listitem');badge.dataset.action=step.action;badge.dataset.stepIndex=String(stepIndex);badge.textContent=step.action+' · '+step.start.toFixed(1)+'–'+step.end.toFixed(1)+' s';steps.appendChild(badge);}}else{const single=document.createElement('span');single.className='step';single.setAttribute('role','listitem');single.textContent=prompt.actions[0];steps.appendChild(single);}
+  const limitations=$('unhandled');limitations.hidden=prompt.unhandled.length===0;limitations.textContent=prompt.unhandled.length?'Pas encore reproduit : '+prompt.unhandled.join(' ; ')+'.':'';
+  updateStatus('Personnage créé localement : '+current.nodes.length+' nœuds, '+current.animations.length+' animations. '+(prompt.matched.length?'Compris : '+prompt.matched.join(', ')+'.':'Attributs non précisés : valeurs par défaut.'));
+  play=false;$('toggleAnimation').textContent='▶ Animer';playbackT=0;$('progress').value='0';draw();
+ }catch(e){current=null;encoded=null;$('download').disabled=true;$('exportJson').disabled=true;$('facts').replaceChildren();$('animation').replaceChildren();$('unhandled').hidden=true;updateStatus(e.message,true);draw();}}
+ function interpValues(t,track){const times=track.times,values=track.values||track.rotation;
+  if(t<=times[0])return values[0];
+  for(let i=1;i<times.length;i++)if(t<=times[i]){const duration=times[i]-times[i-1],k=duration>0?(t-times[i-1])/duration:0;
+    return values[i-1].map((v,j)=>v+(values[i][j]-v)*k);}
+  return values[values.length-1];}
+ function worldParts(time){if(!current)return[];const rotations=new Map(),scales=new Map();
+  const clip=current.animations.find(a=>a.name===animName)||current.animations[0];
+  for(const track of clip.channels){const v=interpValues(time,track);
+   if(track.path==='scale')scales.set(track.node,v);
+   else rotations.set(track.node,2*Math.atan2(v[2],v[3]));}
+  const parts=[];
+  function walk(id,position=[0,0,0],parentA=0,parentScale=[1,1,1]){
+   const n=current.nodes[id],v=n.translation||[0,0,0],cs=Math.cos(parentA),sn=Math.sin(parentA);
+   const p=[position[0]+v[0]*parentScale[0]*cs-v[1]*parentScale[1]*sn,position[1]+v[0]*parentScale[0]*sn+v[1]*parentScale[1]*cs,position[2]+v[2]*parentScale[2]],a=parentA+(rotations.get(id)||0);
+   const localScale=scales.get(id)||n.scale||[1,1,1],effectiveScale=parentScale.map((v,i)=>v*localScale[i]);
+   if(n.mesh!==undefined)parts.push({name:n.name,p,scale:effectiveScale,color:current.materials[n.extras.materialIndex].color,rot:a});
+   for(const ch of n.children||[])walk(ch,p,a,effectiveScale);
+  }walk(0);return parts;}
+ function clock(){const clip=current?.animations.find(a=>a.name===animName);const duration=clip?.duration||4.5;return play?((performance.now()-started)/1000*speed)%duration:playbackT;}
+ function draw(){const box=canvas.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1),w=Math.max(1,box.width),h=Math.max(1,box.height);if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  const now=performance.now();const clip=current?.animations.find(a=>a.name===animName);let t=clock();$('progress').value=String(Math.round(t/(clip?.duration||4.5)*1000));$('timeLabel').textContent=t.toFixed(1).replace('.',',')+' s';document.querySelectorAll('.step').forEach(b=>{const st=current?.timeline[Number(b.dataset.stepIndex)];b.classList.toggle('active',animName==='scenario'&&!!st&&t>=st.start&&t<st.end);});
+  const scale=Math.min(w*.89/1.1,h*.84/2.2)*zoom,cx=w*.5,cy=h*.55;const project=([x,y,z])=>[cx+(x*Math.cos(angle)+z*Math.sin(angle))*scale,cy+(1.13-y)*scale,z*Math.cos(angle)-x*Math.sin(angle)];
+  const grd=ctx.createRadialGradient(cx,cy+15,3,cx,cy+15,w*.50);grd.addColorStop(0,'#50748c23');grd.addColorStop(1,'#21324a00');ctx.fillStyle=grd;ctx.fillRect(0,0,w,h);
+  ctx.save();ctx.translate(cx,cy+8);ctx.scale(1,.22);const shadow=ctx.createRadialGradient(0,0,4,0,0,150*zoom);shadow.addColorStop(0,'#071623cc');shadow.addColorStop(1,'#08142300');ctx.fillStyle=shadow;ctx.beginPath();ctx.arc(0,0,150*zoom,0,2*Math.PI);ctx.fill();ctx.restore();
+  const parts=worldParts(t).map(p=>{let [px,py,z]=project(p.p);return {...p,px,py,z}}).sort((a,b)=>a.z-b.z);
+  for(const p of parts){if(p.name.startsWith('fumee_volute_')&&Math.max(...p.scale)<.003)continue;const color=p.color.map((v,i)=>i===3?v:Math.round(255*v)),rgb=(k)=>'rgb('+color.slice(0,3).map(x=>Math.max(0,Math.min(255,Math.round(x*k)))).join(',')+')';let sx=Math.max(1,p.scale[0]*scale),sy=Math.max(1,p.scale[1]*scale);
+   const anis=Math.abs(Math.cos(p.rot));let ww=Math.sqrt((p.scale[0]*anis)**2+(p.scale[1]*Math.sin(p.rot))**2)*scale,hh=Math.sqrt((p.scale[1]*anis)**2+(p.scale[0]*Math.sin(p.rot))**2)*scale;
+   const grad=ctx.createRadialGradient(p.px-ww*.35,p.py-hh*.40,1,p.px,p.py,Math.max(ww,hh)*1.3);grad.addColorStop(0,rgb(1.13));grad.addColorStop(.62,rgb(.92));grad.addColorStop(1,rgb(.63));ctx.fillStyle=grad;ctx.beginPath();ctx.ellipse(p.px,p.py,Math.max(1,ww),Math.max(1,hh),-p.rot*.6,0,Math.PI*2);ctx.globalAlpha=p.color[3]??1;ctx.fill();ctx.globalAlpha=1;}
+  if(play && !rafId)rafId=requestAnimationFrame(()=>{rafId=null;draw()});
+ }
+ $('generate').addEventListener('click',generate);
+ document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{$('prompt').value=b.dataset.preset;generate()}));
+ $('animation').addEventListener('change',()=>{animName=$('animation').value;playbackT=0;started=performance.now();draw()});
+ $('speed').addEventListener('input',()=>{playbackT=clock();speed=Number($('speed').value);$('speedLabel').textContent=speed.toFixed(2).replace('.',',')+'×';started=performance.now()-playbackT/speed*1000;draw()});
+ $('toggleAnimation').addEventListener('click',()=>{if(!current)return;playbackT=clock();play=!play;started=performance.now()-playbackT/speed*1000;$('toggleAnimation').textContent=play?'❚❚ Pause':'▶ Animer';draw();});
+ $('progress').addEventListener('input',()=>{const clip=current?.animations.find(a=>a.name===animName);if(!clip)return;playbackT=clip.duration*Number($('progress').value)/1000;started=performance.now()-playbackT/speed*1000;draw();});
+ $('download').addEventListener('click',()=>{if(encoded)download(encoded.bytes,'personnage_adulte_synthetique_v19.glb','model/gltf-binary')});
+ $('exportJson').addEventListener('click',()=>{if(current)download(new TextEncoder().encode(JSON.stringify({schema:'retouche-original-character-v1.9',parameters:current.config,timeline:current.timeline,animations:current.animations.map(a=>({name:a.name,duration:a.duration})),origin:'fully synthetic procedural',notPhotorealistic:true,notBasedOnUserVideos:true},null,2)),'fiche_personnage_v19.json','application/json')});
+ $('openImport').addEventListener('click',()=>$('importJson').click());
+ $('importJson').addEventListener('change',async()=>{const file=$('importJson').files?.[0];if(!file)return;try{if(file.size>65536)throw Error('Fiche trop grande (64 Ko max).');const j=JSON.parse(await file.text());if(!/^retouche-original-character-v1\.(6|7|8|9)$/.test(j.schema)||typeof j.parameters?.originalText!=='string')throw Error('Format de fiche non reconnu.');$('prompt').value=j.parameters.originalText;generate();if(current)updateStatus('Fiche importée localement. '+$('status').textContent);}catch(e){updateStatus('Import impossible : '+e.message,true);}finally{$('importJson').value='';}});
+ canvas.addEventListener('pointerdown',e=>{pointers.set(e.pointerId,[e.clientX,e.clientY]);dragging=true;x0=e.clientX;y0=e.clientY;canvas.setPointerCapture(e.pointerId);if(pointers.size===2){const v=[...pointers.values()];pinchDistance=Math.hypot(v[1][0]-v[0][0],v[1][1]-v[0][1]);}});
+ canvas.addEventListener('pointermove',e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,[e.clientX,e.clientY]);if(pointers.size>=2){const v=[...pointers.values()],d=Math.hypot(v[1][0]-v[0][0],v[1][1]-v[0][1]);if(pinchDistance>1)zoom=Math.max(.75,Math.min(1.7,zoom*d/pinchDistance));pinchDistance=d;}else{angle+=(e.clientX-x0)*.012;zoom=Math.max(.75,Math.min(1.7,zoom+(y0-e.clientY)*.001));x0=e.clientX;y0=e.clientY;}draw()});
+ function endPointer(e){pointers.delete(e.pointerId);dragging=pointers.size>0;pinchDistance=0;const r=[...pointers.values()][0];if(r){x0=r[0];y0=r[1];}}canvas.addEventListener('pointerup',endPointer);canvas.addEventListener('pointercancel',endPointer);
+ canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.75,Math.min(1.7,zoom*(e.deltaY>0?.94:1.06)));draw()},{passive:false});
+ window.addEventListener('resize',draw);if(window.ResizeObserver)new ResizeObserver(draw).observe($('stageBody'));
+ generate();
+})();
+</script></body></html>
