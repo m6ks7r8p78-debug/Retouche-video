@@ -129,3 +129,37 @@ test("NOVA 0.27 : pagehide au troisième succès provisoire refuse le bilan de s
   assert.equal(await page.locator("#iphoneBenchStabilityRun").isEnabled(),true);
  });
 });
+
+test("NOVA 0.28 : annulation manuelle laisse seulement un reçu local "+engineName,async()=>{
+ await preview(async page=>{
+  await page.evaluate(()=>{
+   const api=window.NOVA_IPHONE_REPORT;
+   window.NOVA_IPHONE_REPORT={...api,executer:()=>new Promise(resolve=>{
+    window.__finishAfterCancel=()=>resolve({
+     report:{result:"success",sourceKind:"synthetic-generated"},
+     outputBlob:new Blob(["fake-output-not-allowed"])
+    });
+   })};
+  });
+  await page.locator("#iphoneBenchSynthetic").click();
+  await page.waitForFunction(()=>typeof window.__finishAfterCancel==="function",null,{timeout:15000});
+  await page.locator("#iphoneBenchSynthetic").click();
+  await page.evaluate(()=>window.__finishAfterCancel());
+  await page.waitForFunction(()=>document.querySelector("#iphoneBenchSynthetic")?.textContent===
+   "Tester Safari sans vidéo personnelle",null,{timeout:15000});
+  assert.equal(await page.locator("#iphoneBenchJson").getAttribute("href"),null);
+  assert.equal(await page.locator("#iphoneBenchMp4").getAttribute("href"),null);
+  assert.match(await page.locator("#iphoneBenchInterruptionJson").getAttribute("href")||"",/^blob:/);
+  const pending=page.waitForEvent("download");
+  await page.locator("#iphoneBenchInterruptionJson").click();
+  const receipt=JSON.parse(await fs.readFile(await (await pending).path(),"utf8"));
+  assert.equal(receipt.trigger,"user");
+  assert.equal(receipt.workflow,"single-export");
+  assert.equal(receipt.status,"cancelled");
+  assert.equal(receipt.mediaUploaded,false);
+  assert.equal(receipt.nativeMemoryReleased,false);
+  assert.equal(receipt.physicalIphoneCertified,false);
+  assert.equal(receipt.fileNameIncluded,false);
+  assert.equal(await page.locator("#iphoneBenchSynthetic").isEnabled(),true);
+ });
+});
