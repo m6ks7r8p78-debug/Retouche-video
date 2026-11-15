@@ -322,3 +322,55 @@ test("NOVA HD : les motifs de refus restent précis, bornés et sans information
   else globalThis.NOVA_NATIVE_HD=saved;
  }
 });
+
+test("NOVA iPhone : classement des couleurs sans exporter, pas de confusion avec les limites WASM",async()=>{
+ const types=[
+  [null,"absent-colr"],
+  [{kind:"prof",primaries:12,transfer:1,matrix:1},"unknown-colr"],
+  [{kind:"nclx",primaries:9,transfer:16,matrix:9,fullRange:false},"hdr-pq-hlg"],
+  [{kind:"nclx",primaries:12,transfer:1,matrix:1,fullRange:false},"wide-gamut-primaries"],
+  [{kind:"nclx",primaries:1,transfer:1,matrix:1,fullRange:true},"full-range"],
+  [{kind:"nclx",primaries:2,transfer:2,matrix:1,fullRange:false},"unspecified-tags"],
+  [{kind:"nclx",primaries:1,transfer:1,matrix:6,fullRange:false},"non-bt709-tags"],
+  [{kind:"nclx",primaries:1,transfer:1,matrix:1,fullRange:false},"bt709-tags"]
+ ];
+ for(const [color,expected] of types){
+  const local={...track,W:1088,H:1920,dw:1088,dh:1920,ns:195,
+   durationUs:6450000,color};
+  const result=await AUDIT.inspect(options({probe:async()=>local,
+   validate:()=>{throw Error("PRIVATE_USER_VIDEO_MEDIA_SHOULD_NOT_ESCAPE")}}));
+  assert.equal(result.status,"hevc-profile-or-timeline-incompatible");
+  assert.equal(result.colorEvidence.classification,expected,expected);
+  assert.equal(result.readyForExportAttempt,false);
+  assert.deepEqual(result.blockers,["coded-pixels-over-limit","source-frames-over-limit"]);
+  const serialized=AUDIT.serialiser(result);
+  const safe=JSON.parse(serialized);
+  assert.equal(safe.colorEvidence.classification,expected);
+  assert.equal(safe.source.width,1088);
+  assert.equal(safe.source.height,1920);
+  assert.equal(safe.source.frames,195);
+  assert.equal(safe.nativeReason,"not-evaluated");
+  assert.ok(!serialized.includes("PRIVATE_USER_VIDEO"));
+  assert.ok(!serialized.includes(file.name));
+  assert.ok(!serialized.includes("gps"));
+ }
+});
+test("NOVA iPhone : métadonnées colorimétriques exposées seulement par liste blanche",async()=>{
+ const c={kind:"nclx",primaries:12,transfer:16,matrix:9,fullRange:false,
+  filename:"PRIVATE_FACE.mov",privatePixels:"PRIVATE_FRAME"};
+ const result=await AUDIT.inspect(options({probe:async()=>({...track,color:c}),
+  validate:()=>{throw Error("PRIVATE_COLOR_PATH")}}));
+ const report=JSON.parse(AUDIT.serialiser({...result,colorEvidence:{
+  ...result.colorEvidence,secret:"PRIVATE_RAW",
+  container:"\u003cscript\u003ePRIVATE\u003c/script\u003e",
+  hevcSps:"PRIVATE_MEDIA",
+  lumaBits:9999,transfer:-15,
+  classification:"PRIVATE_CLASS"}}));
+ assert.equal(report.colorEvidence.container,"other");
+ assert.equal(report.colorEvidence.classification,"unknown-colr");
+ assert.equal(report.colorEvidence.hevcSps,"not-confirmed");
+ assert.equal(report.colorEvidence.transfer,null);
+ assert.equal(report.colorEvidence.lumaBits,null);
+ assert.ok(!JSON.stringify(report).includes("PRIVATE"));
+ assert.equal(report.privacy.mediaModified,false);
+});
