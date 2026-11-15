@@ -12,6 +12,14 @@ const MAX_US=12000000, MAX_ENCODED=32*MiB;
 // Amorce bornée à 16 échantillons sans augmenter la file WebCodecs (<4)
 // ni le tampon des VideoFrame (<5). Le clip synthétique contient 15 images.
 const FIRST_FRAME_LOOKAHEAD=16;
+// Tampon limité à environ 64 Mio de surfaces RGBA théoriques.
+// Les clips synthétiques courts peuvent attendre un plus grand désordre
+// d'images, sans augmenter le plafond des grandes vidéos iPhone.
+const DECODER_BUFFER_BUDGET=64*MiB;
+function decoderBufferLimit(plan){
+ const bytes=plan.width*plan.height*4;
+ return Math.max(7,Math.min(24,Math.floor(DECODER_BUFFER_BUDGET/bytes)));
+}
 const fail=s=>{throw new Error("NOVA HD : "+s)};
 const safe=n=>Number.isSafeInteger(n);
 const codes=["avc1.640028","avc1.4d4028","avc1.42e028","avc1.42e01f"];
@@ -189,7 +197,10 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  const canvas=document.createElement("canvas");canvas.width=p.width;canvas.height=p.height;
  const ranks=new Map(p.ptsUs.map((time,i)=>[time,i]));
  const decoded=new Map();
- let hevcChunksSubmitted=0,hevcFramesReceived=0;
+ const bufferLimit=decoderBufferLimit(p);
+ const feedBufferThreshold=Math.max(5,bufferLimit-3);
+ let hevcChunksSubmitted=0,hevcFramesReceived=0,bufferPeak=0;
+ let waitingForFirst=false;
  let encoder,decoder,failed=null,sent=0,encoded=0,encodedBytes=0,modified=0,closed=false;
  const started=clock();
  const check=()=>{if(signal?.aborted)fail("annulé");if(failed)throw failed};
@@ -209,10 +220,17 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    if(rank===undefined||decoded.has(rank)){
     fr.close();failed=new Error("PTS décodé absent ou en double");return;
    }
-   if(decoded.size>=7){fr.close();failed=new Error("tampon décodeur HD saturé");return}
+   if(decoded.size>=bufferLimit){
+    fr.close();
+    onProgress({stage:"native-decoder-buffer-limit",buffered:decoded.size});
+    failed=new Error("fenêtre de réordonnancement dépasse le budget mémoire HD");
+    return;
+   }
    decoded.set(rank,fr);
    hevcFramesReceived++;
-   onProgress({stage:"native-decoder-output",received:hevcFramesReceived});
+   bufferPeak=Math.max(bufferPeak,decoded.size);
+   onProgress({stage:"native-decoder-output",received:hevcFramesReceived,
+    buffered:decoded.size,firstPresentationReceived:decoded.has(0)});
   },error:e=>{failed=e;onProgress({stage:"native-decoder-error"})}});
   decoder.configure(decCfg);
   const frames=p.ptsUs;
@@ -226,7 +244,8 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
   while(next<p.sourceFrames){
    const lookahead=next===0?Math.min(p.sourceFrames,FIRST_FRAME_LOOKAHEAD):8;
    check();
-   while(fed<p.sourceFrames&&decoded.size<5&&decoder.decodeQueueSize<4&&fed<next+lookahead){
+   while(fed<p.sourceFrames&&decoded.size<feedBufferThreshold&&
+     decoder.decodeQueueSize<4&&fed<next+lookahead){
     const offset=info.so[fed],len=info.sz[fed];
     if(!safe(offset)||!safe(len)||len<1||offset+len>file.size)
      fail("échantillon source tronqué");
@@ -259,6 +278,10 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
      await globalThis.NOVA_GUARD.attendreEncodeur(encoder,{
       maxQueue:2,signal,timeoutMs:20000});
    }else{
+    if(next===0&&decoded.size>=feedBufferThreshold&&!waitingForFirst){
+     waitingForFirst=true;
+     onProgress({stage:"native-decoder-wait-first",buffered:decoded.size});
+    }
     if(fed===p.sourceFrames&&decoder.decodeQueueSize===0){
      onProgress({stage:"native-decoder-drain"});
      await decoder.flush();
