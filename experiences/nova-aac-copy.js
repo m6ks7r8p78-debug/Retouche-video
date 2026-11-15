@@ -276,7 +276,7 @@ async function copier(file,plan,muxer,{signal,onPacket=()=>{},beforePacket=()=>{
   muxer.addAudioChunkRaw(bytes,"key",packet.timestamp,packet.duration,
     first?{decoderConfig:{codec:"mp4a.40.2",sampleRate:plan.sampleRate,
       numberOfChannels:plan.channels,description:plan.asc}}:undefined);
-  first=false;count++;onPacket({timestamp:packet.timestamp,duration:packet.duration});
+  first=false;count++;await onPacket({timestamp:packet.timestamp,duration:packet.duration});
  }
  return Object.freeze({count,mode:"aac-copy"});
 }
