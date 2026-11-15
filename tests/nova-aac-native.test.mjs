@@ -123,7 +123,7 @@ function webkitDesc(channels=1){
  const b=new Uint8Array(WEBKIT_302253_MONO);
  // AudioSpecificConfig présent dans le DecoderSpecificInfo (tag 05).
  // Ne jamais faire « slice(-8) » : la longueur et l'intégrité comptent.
- if(channels===2)b[31]=0x90;
+ if(channels===2)b[32]=0x90;
  return b;
 }
 test("WebKit #302253 : decoderConfig.description = ES_Descriptor natif, extraction ASC mono",()=>{
@@ -175,7 +175,7 @@ test("WebKit #302253 : rejette les descriptions corrompues et les canaux différ
  assert.throws(()=>NATIVE.normalizeDescription(corrupt,48000,1),/incohérent|ambig|descripteur/);
  const wrongCodec=new Uint8Array(valid);wrongCodec[13]=0x20;
  assert.throws(()=>NATIVE.normalizeDescription(wrongCodec,48000,1),/DecoderConfig/);
- const noLC=new Uint8Array(valid);noLC[30]=0x29;
+ const noLC=new Uint8Array(valid);noLC[31]=0x29;
  assert.throws(()=>NATIVE.normalizeDescription(noLC,48000,1),/non.*AAC-LC/);
  assert.throws(()=>NATIVE.normalizeDescription(new Uint8Array(300),48000,2),/hors limites/);
 });
