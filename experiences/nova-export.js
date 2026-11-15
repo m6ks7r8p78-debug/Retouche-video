@@ -64,6 +64,22 @@ async function audioDuFichier(file,allowSilent,AudioContextType){
  }catch(e){throw new Error("Son non préservable sur cet appareil : "+(e.message||"échec de décodage")+". Export interrompu.")}
  finally{try{await ctx?.close()}catch(_){}}
 }
+/* Certains encodeurs AAC iOS renvoient un descripteur esds complet.
+ * Le muxer requiert l'AudioSpecificConfig ; reprise du garde-fou de app.js.
+ */
+function ascOnly(desc){
+ const b=desc instanceof ArrayBuffer?new Uint8Array(desc):new Uint8Array(desc.buffer,desc.byteOffset||0,desc.byteLength);
+ let p=0;if(b.length>4&&b[0]===0&&b[1]===0&&b[2]===0&&b[3]===0&&b[4]===3)p=4;
+ if(b[p]!==3)return b.slice();
+ const len=q=>{let l=0,x;do{x=b[q++];l=(l<<7)|(x&127)}while(x&128&&q<b.length);return [l,q]};
+ try{
+  let l;[l,p]=len(p+1);const fl=b[p+2];p+=3;
+  if(fl&128)p+=2;if(fl&64)p+=1+b[p];if(fl&32)p+=2;
+  if(b[p]!==4)return b.slice();[l,p]=len(p+1);p+=13;
+  if(b[p]!==5)return b.slice();[l,p]=len(p+1);
+  return p+l<=b.length&&l>=2?b.slice(p,p+l):b.slice();
+ }catch(_){return b.slice()}
+}
 function transformateur(moteur,arbitre){
  let worker=null,next=0,closed=false;
  if(typeof Worker!=="undefined")try{worker=new Worker("nova-worker.js")}catch(_){worker=null}
@@ -112,7 +128,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,onProgress=()=>{}
   videoEnc=new VideoEncoder({output:(chunk,meta)=>{try{muxer.addVideoChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
   videoEnc.configure(config);
   if(audio){
-   audioEnc=new AudioEncoder({output:(chunk,meta)=>{try{muxer.addAudioChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
+   audioEnc=new AudioEncoder({output:(chunk,meta)=>{try{if(meta?.decoderConfig?.description)meta={...meta,decoderConfig:{...meta.decoderConfig,description:ascOnly(meta.decoderConfig.description)}};muxer.addAudioChunk(chunk,meta)}catch(e){error=e}},error:e=>{error=e}});
    audioEnc.configure(audio.cfg);
   }
   canvas.width=settings.width;canvas.height=settings.height;
