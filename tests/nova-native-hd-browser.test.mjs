@@ -157,11 +157,13 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
     sourceFrames:15,outputFrames:15,sourceFps:15,
     modifiedFrames:0,audioMode:"aac-copy",colorWarning:null
    })};
-   const probe=NOVA_DEMUX.analyser;
-   window.NOVA_DEMUX.analyser=async f=>{
-    const info=await probe(f);
+   // NOVA_DEMUX is frozen; replacing its method silently does nothing.
+   // Wrap the global object to emulate an HD-sized source for routing only.
+   const demux=window.NOVA_DEMUX;
+   window.NOVA_DEMUX={...demux,analyser:async f=>{
+    const info=await demux.analyser(f);
     return f instanceof File&&info?{...info,ns:100}:info;
-   };
+   }};
   });
   await page.locator("#exportVideo").click();
   await page.waitForTimeout(1400);
