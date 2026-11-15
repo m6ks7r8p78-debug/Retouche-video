@@ -70,6 +70,46 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   assert.equal(await page.locator("#novaHdRun").isEnabled(),false);
   await page.locator("#file").setInputFiles(sample);
   await page.waitForFunction(()=>!document.querySelector("#novaHdRun").disabled);
+  // La description erronée publiée par WebKit doit produire une piste AAC
+  // réellement lisible, pas seulement une configuration JSON plausible.
+  // Les paquets AAC sont ceux du fichier audio synthétique FFmpeg local.
+  const probe=await page.evaluate(async()=>{
+   const file=document.querySelector("#file").files[0];
+   const plan=await NOVA_AAC_COPY.planifier(file,{durationSeconds:1});
+   if(plan.sampleRate!==48000||plan.channels!==1)
+    throw Error("Unexpected synthetic mono AAC profile");
+   const broken=new Uint8Array([3,128,128,128,34,0,0,0,4,
+    128,128,128,20,64,20,0,24,0,0,0,0,0,0,0,0,0,
+    5,128,128,128,2,17,136,6,128,128,128,1,2]);
+   const normalized=NOVA_AAC_NATIVE.normalizeDescription(broken,48000,1);
+   const target=new Mp4Muxer.ArrayBufferTarget();
+   const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",
+    audio:{codec:"aac",sampleRate:plan.sampleRate,numberOfChannels:plan.channels}});
+   await NOVA_AAC_COPY.copier(file,plan,{
+    addAudioChunkRaw(data,type,timestamp,duration,meta){
+     muxer.addAudioChunkRaw(data,type,timestamp,duration,
+      meta?{decoderConfig:{...meta.decoderConfig,description:normalized}}:undefined);
+    }
+   });
+   muxer.finalize();
+   const a=document.createElement("a");
+   a.id="webkitAacProof";
+   a.href=URL.createObjectURL(new Blob([target.buffer],{type:"audio/mp4"}));
+   a.download="synthetic-apple-aac-proof.m4a";document.body.append(a);
+   return {packets:plan.packets.length,asc:Array.from(normalized)};
+  });
+  assert.ok(probe.packets>=40);
+  assert.deepEqual(probe.asc,[17,136]);
+  const aacDL=page.waitForEvent("download");
+  await page.locator("#webkitAacProof").click();
+  const aacPath=await (await aacDL).path();
+  const aacCheck=JSON.parse((await run("ffprobe",["-v","error","-show_streams",
+   "-of","json",aacPath],{timeout:10000})).stdout);
+  const aacStream=aacCheck.streams.find(x=>x.codec_type==="audio");
+  assert.equal(aacStream.codec_name,"aac");
+  assert.equal(aacStream.sample_rate,"48000");
+  assert.equal(aacStream.channels,1);
+
   assert.match(await page.locator("#novaHdOriginal").getAttribute("href")||"",/^blob:/);
   assert.equal(await page.locator("#novaHdSave").getAttribute("href"),null,
    "no processing starts automatically");
