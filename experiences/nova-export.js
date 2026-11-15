@@ -145,16 +145,30 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  let videoEnc=null,audioEnc=null,trans=null,sourcePTS=null,error=null,sourceMode="pts";
  try{
   media.src=url;await pret(media);
-  const settings=plan({duration:media.duration,width:media.videoWidth,height:media.videoHeight,bytes:file.size});
+  const sourceDuration=media.duration;
+  const settings=plan({duration:sourceDuration,width:media.videoWidth,height:media.videoHeight,bytes:file.size});
+  if(!globalThis.NOVA_GUARD)throw new Error("Garde-fous mémoire NOVA indisponibles");
+  const budget=NOVA_GUARD.exigerBudget({sourceBytes:file.size,
+    sourceWidth:media.videoWidth,sourceHeight:media.videoHeight,
+    outputWidth:settings.width,outputHeight:settings.height,
+    durationSeconds:sourceDuration,withAudio:!allowSilent});
+  onProgress({stage:"budget",estimatedMiB:budget.mebibytes,limitMiB:budget.limitMiB});
   if(!globalThis.NOVA_TIMELINE)throw new Error("Horodatage NOVA indisponible");
-  const timeline=NOVA_TIMELINE.calculer(media.duration,settings.fps);
+  const timeline=NOVA_TIMELINE.calculer(sourceDuration,settings.fps);
   if(timeline.count!==settings.frames)throw new Error("Incohérence du plan temporel");
+  let sourceAudit=null;
   if(!allowApproximate){
     if(!globalThis.NOVA_PTS)throw new Error("Décodeur MP4 PTS indisponible");
     try{
       sourcePTS=await NOVA_PTS.creer(file,{signal});
       if(sourcePTS.info.width!==media.videoWidth||sourcePTS.info.height!==media.videoHeight)
         throw new Error("Orientation source incohérente entre piste MP4 et lecteur natif");
+      sourceAudit=NOVA_GUARD.exigerDebutFidele(NOVA_GUARD.auditerPTS({
+        ptsUs:sourcePTS.info.ptsUs,durationSeconds:sourceDuration,fps:settings.fps
+      }));
+      // Le lecteur HTML n'est plus nécessaire au parcours PTS : libère son
+      // décodeur / son tampon avant de lancer le décodage audio et le muxage.
+      disposer(media);URL.revokeObjectURL(url);
       onProgress({stage:"source",mode:"pts",codec:sourcePTS.info.codec,frames:sourcePTS.info.samples});
     }catch(e){
       throw new Error("Décodage PTS natifs impossible : "+(e.message||"erreur source")+
@@ -193,7 +207,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    const i=entry.index;
    if(signal?.aborted)throw new Error("Export annulé");
    if(error)throw error;
-   const t=Math.min(media.duration-.001,entry.seekSeconds);
+   const t=Math.min(sourceDuration-.001,entry.seekSeconds);
    if(sourcePTS){
      const source=await sourcePTS.imageA(t,canvas);
      if(lastRank!==null){
@@ -205,7 +219,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
      trace.dernierPTSUs=source.selectedPTSUs;
    }else{
      await seek(media,t,signal);
-     const position=NOVA_TIMELINE.validerPosition(media.currentTime,t,media.duration);
+     const position=NOVA_TIMELINE.validerPosition(media.currentTime,t,sourceDuration);
      if(!position.ok)throw new Error("Recherche vidéo imprécise : export refusé ("+position.distance.toFixed(3)+" s)");
      ctx.drawImage(media,0,0,canvas.width,canvas.height);
    }
@@ -214,7 +228,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    ctx.putImageData(new ImageData(processed.data,processed.width,processed.height),0,0);
    const frame=new VideoFrame(canvas,{timestamp:entry.timestamp,duration:entry.duration});
    try{videoEnc.encode(frame,{keyFrame:entry.keyFrame})}finally{frame.close()}
-   if(videoEnc.encodeQueueSize>5)await videoEnc.flush();
+   if(videoEnc.encodeQueueSize>5)await NOVA_GUARD.attendreEncodeur(videoEnc,{maxQueue:3,signal});
    if(error)throw error;
    onProgress({stage:"video",progress:(i+1)/settings.frames,frame:i+1,total:settings.frames});
   }
@@ -231,7 +245,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     const sample=new AudioData({format:"f32-planar",sampleRate:ab.sampleRate,
       numberOfFrames:n,numberOfChannels:channels,timestamp:Math.round(offset*1e6/ab.sampleRate),data:pcm});
     try{audioEnc.encode(sample)}finally{sample.close()}
-    if(audioEnc.encodeQueueSize>15)await audioEnc.flush();
+    if(audioEnc.encodeQueueSize>15)await NOVA_GUARD.attendreEncodeur(audioEnc,{maxQueue:8,signal});
     if(error)throw error;
    }
    await audioEnc.flush();if(error)throw error;
@@ -242,7 +256,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   onProgress({stage:"verification",progress:1});
   const validation=await verifierMp4(blob,settings,signal);
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,validation,hasAudio:!!audio,sourceMode,sourceInfo:sourcePTS?.info??null,trace:sourcePTS?trace:null,timeline:{
+  return {blob,plan:settings,validation,hasAudio:!!audio,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,budget,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
   },report:sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
