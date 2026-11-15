@@ -799,3 +799,190 @@ test("NOVA 0.12 : retard audio de 250 ms conserve elst vide, AAC et sync AV",asy
   await fs.rm(tmp,{recursive:true,force:true});
  }
 });
+
+
+/* Banc ISO-BMFF : convertit une *vraie* source MP4 FFmpeg dont moov
+ * se trouve après mdat, sans déplacer les offsets stco/co64.
+ * Seule la boîte elst de la piste soun change de version 0 vers 1.
+ */
+function convertirElstAudioV1(source){
+ const b=Buffer.from(source);
+ function boxes(start,end){
+  const out=[];
+  for(let o=start;o<end;){
+   if(o+8>end)throw new Error("ISO-BMFF : boîte tronquée");
+   const len=b.readUInt32BE(o),type=b.toString("ascii",o+4,o+8);
+   if(len<8||o+len>end)throw new Error("ISO-BMFF : longueur invalide "+type);
+   out.push({type,start:o,end:o+len});o+=len;
+  }
+  return out;
+ }
+ const top=boxes(0,b.length),moov=top.find(x=>x.type==="moov"),
+  mdat=top.find(x=>x.type==="mdat");
+ assert.ok(moov&&mdat&&moov.start>=mdat.end,
+  "le MP4 source de test doit avoir son moov à la fin pour ne pas changer stco");
+ const tracks=boxes(moov.start+8,moov.end).filter(x=>x.type==="trak");
+ const sound=tracks.find(tr=>{
+  const mdia=boxes(tr.start+8,tr.end).find(x=>x.type==="mdia");
+  if(!mdia)return false;
+  const handler=boxes(mdia.start+8,mdia.end).find(x=>x.type==="hdlr");
+  return handler&&b.toString("ascii",handler.start+16,handler.start+20)==="soun";
+ });
+ assert.ok(sound,"piste AAC source absente");
+ const edts=boxes(sound.start+8,sound.end).find(x=>x.type==="edts");
+ assert.ok(edts,"source AAC sans montage");
+ const elst=boxes(edts.start+8,edts.end).find(x=>x.type==="elst");
+ assert.ok(elst,"liste de montage source absente");
+ assert.equal(b[elst.start+8],0,"source FFmpeg attendue en elst version 0");
+ const count=b.readUInt32BE(elst.start+12);
+ assert.ok(count===1||count===2);
+ assert.equal(elst.end-elst.start,16+count*12);
+ const entries=[];
+ for(let i=0;i<count;i++){
+  const pos=elst.start+16+12*i;
+  entries.push({duration:b.readUInt32BE(pos),
+   media:b.readInt32BE(pos+4),rate:b.readInt32BE(pos+8)});
+ }
+ const elstBody=Buffer.alloc(8+20*count);
+ elstBody[0]=1;elstBody.writeUInt32BE(count,4);
+ for(let i=0;i<count;i++){
+  const p=8+i*20,{duration,media,rate}=entries[i];
+  elstBody.writeBigUInt64BE(BigInt(duration),p);
+  elstBody.writeBigInt64BE(BigInt(media),p+8);
+  elstBody.writeInt32BE(rate,p+16);
+ }
+ const makeBox=(name,payload)=>{
+  const head=Buffer.alloc(8);head.writeUInt32BE(payload.length+8);
+  head.write(name,4);return Buffer.concat([head,payload]);
+ };
+ const wrap=(parent,child,replacement)=>makeBox(parent.type,Buffer.concat([
+  b.subarray(parent.start+8,child.start),replacement,
+  b.subarray(child.end,parent.end)
+ ]));
+ const elstNew=makeBox("elst",elstBody);
+ const edtsNew=wrap(edts,elst,elstNew);
+ const soundNew=wrap(sound,edts,edtsNew);
+ const moovNew=wrap(moov,sound,soundNew);
+ return {buffer:Buffer.concat([
+   b.subarray(0,moov.start),moovNew,b.subarray(moov.end)
+ ]),entries};
+}
+function lireElstAudioVersion1(source){
+ const b=Buffer.from(source);
+ const type=(off)=>b.toString("ascii",off+4,off+8);
+ const scan=(start,end,kind)=>{
+  for(let o=start;o<end;){
+   if(o+8>end)throw Error("boîte MP4 tronquée");
+   const length=b.readUInt32BE(o);
+   if(length<8||o+length>end)throw Error("boîte MP4 invalide");
+   if(type(o)===kind)return {start:o,end:o+length};
+   o+=length;
+  }
+  return null;
+ };
+ const moov=scan(0,b.length,"moov");
+ assert.ok(moov);
+ for(let p=moov.start+8;p<moov.end;){
+  const len=b.readUInt32BE(p);
+  if(len<8||p+len>moov.end)throw Error("trak MP4 invalide");
+  if(type(p)==="trak"){
+   const mdia=scan(p+8,p+len,"mdia");
+   const h=mdia&&scan(mdia.start+8,mdia.end,"hdlr");
+   if(h&&b.toString("ascii",h.start+16,h.start+20)==="soun"){
+    const edts=scan(p+8,p+len,"edts"),e=edts&&scan(edts.start+8,edts.end,"elst");
+    assert.ok(e,"elst audio absent");
+    const version=b[e.start+8],count=b.readUInt32BE(e.start+12),entries=[];
+    for(let i=0;i<count;i++){
+     const pos=e.start+16+i*(version===1?20:12);
+     entries.push(version===1?{
+       duration:Number(b.readBigUInt64BE(pos)),
+       media:Number(b.readBigInt64BE(pos+8))
+     }:{
+       duration:b.readUInt32BE(pos),media:b.readInt32BE(pos+4)
+     });
+    }
+    return {version,count,entries};
+   }
+  }
+  p+=len;
+ }
+ throw Error("piste audio introuvable");
+}
+
+test("NOVA 0.13 : MP4 AAC elst version 1 réel, conversion et synchronisation",async(t)=>{
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-elst-v1-"));
+ const base=path.join(tmp,"aac-v0.mp4"),src=path.join(tmp,"aac-v1.mp4"),app=server();
+ try{
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
+   "-f","lavfi","-i",
+   "color=c=black:s=160x90:r=15:d=2,drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='between(t,0.525,0.585)+between(t,1.325,1.385)'",
+   "-itsoffset","0.25","-f","lavfi","-i",
+   "aevalsrc=if(lt(abs(t-0.28)\\,0.03)\\,0.7*sin(2*PI*1000*t)\\,0)+if(lt(abs(t-1.08)\\,0.03)\\,0.7*sin(2*PI*1400*t)\\,0):s=48000:d=1.75",
+   "-map","0:v:0","-map","1:a:0",
+   "-c:v","libx264","-bf","0","-pix_fmt","yuv420p",
+   "-c:a","aac","-b:a","128k",
+   "-use_editlist","1","-y",base]);
+  const {buffer,entries}=convertirElstAudioV1(await fs.readFile(base));
+  assert.equal(entries.length,2,"source doit présenter une édition vide et une édition média");
+  assert.equal(entries[0].media,-1);
+  await fs.writeFile(src,buffer);
+  assert.deepEqual(lireElstAudioVersion1(buffer),{version:1,count:2,
+   entries:entries.map(({duration,media})=>({duration,media}))});
+  const orig=new Blob([buffer]),[copy,meta,a0,v0]=await Promise.all([
+   AAC_COPY.planifier(orig,{durationSeconds:2}),AVSYNC.analyser(orig),
+   decodeAudioEvents(src,{alignPresentation:true}),decodeVideoEvents(src)
+  ]);
+  assert.equal(copy.editListVersion,1);
+  assert.equal(meta.edits,2);
+  assert.ok(meta.delayUs>200000&&meta.delayUs<270000);
+  assert.deepEqual([a0.length,v0.length],[2,2]);
+  await new Promise(resolve=>app.listen(0,"127.0.0.1",resolve));
+  const browser=await chromium.launch({headless:true,
+   ...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  try{
+   const page=await browser.newPage({viewport:{width:390,height:844},acceptDownloads:true});
+   const errors=[];page.on("pageerror",e=>errors.push(e.message));
+   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
+   await page.locator("#file").setInputFiles(src);
+   await page.waitForFunction(()=>!document.querySelector("#exportVideo").disabled);
+   await page.locator("#exportVideo").click();
+   await page.waitForFunction(()=>!!document.querySelector("#downloadVideo")?.getAttribute("href")||
+     document.querySelector("#exportStatus").textContent.startsWith("Export refusé"),
+     null,{timeout:90000});
+   const msg=await page.locator("#exportStatus").innerText();
+   assert.match(await page.locator("#downloadVideo").getAttribute("href")||"",/^blob:/,msg);
+   assert.match(msg,/audio AAC original copié/);
+   const pending=page.waitForEvent("download");
+   await page.locator("#downloadVideo").click();
+   const saved=await pending,out=await saved.path();
+   const finalBuf=await fs.readFile(out);
+   const outputElst=lireElstAudioVersion1(finalBuf);
+   assert.equal(outputElst.version,1,"doit conserver elst version 1 à la sortie");
+   assert.equal(outputElst.count,2);
+   assert.equal(outputElst.entries[0].duration,entries[0].duration);
+   assert.equal(outputElst.entries[0].media,-1);
+   assert.equal(outputElst.entries[1].media,entries[1].media);
+   const [after,oldHash,newHash,a1,v1]=await Promise.all([
+    AVSYNC.analyser(new Blob([finalBuf])),audioPacketHashes(src),
+    audioPacketHashes(out),decodeAudioEvents(out,{alignPresentation:true}),
+    decodeVideoEvents(out)
+   ]);
+   assert.equal(after.delayUs,meta.delayUs);
+   assert.equal(after.trimUs,meta.trimUs);
+   assert.ok(newHash.length>=70);
+   assert.deepEqual(newHash,oldHash.slice(0,newHash.length));
+   const audit=comparerImpulsions({sourceAudio:a0,sourceVideo:v0,
+    outputAudio:a1,outputVideo:v1,toleranceMs:90});
+   assert.ok(audit.offsetMs<=35);
+   assert.ok(audit.driftMs<=35);
+   t.diagnostic("NOVA edit-list 64 bits : "+JSON.stringify({
+    inputVersion:copy.editListVersion,outputVersion:outputElst.version,
+    leadInUs:meta.delayUs,packets:newHash.length,offsetMs:audit.offsetMs,driftMs:audit.driftMs
+   }));
+   assert.deepEqual(errors,[]);
+  }finally{await browser.close()}
+ }finally{
+  if(app.listening)await new Promise(r=>app.close(r));
+  await fs.rm(tmp,{recursive:true,force:true});
+ }
+});
