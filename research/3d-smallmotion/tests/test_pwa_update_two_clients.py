@@ -117,9 +117,9 @@ try:
   b=ctx.new_page();b.goto(SITE,wait_until='load');b.wait_for_function('!!navigator.serviceWorker.controller')
   for page in [a,b]:
    page.evaluate('window.__unsavedEditorState={openVideo:true,unexportedEdits:7}')
-   check(page,86)
+   check(page,85)
   assert a.evaluate('async()=> (await caches.keys()).includes("retouche-v85")')
-  # Publishing release two while two active pages are still controlled by v84.
+  # Publishing release two while two active pages are still controlled by v85.
   install_release('v86')
   a.evaluate('async()=>{const reg=await navigator.serviceWorker.getRegistration();await reg.update()}')
   # Chromium can schedule a second installing worker while replacing a waiting
@@ -146,7 +146,7 @@ try:
   assert a.evaluate('async()=>!!(await navigator.serviceWorker.getRegistration()).waiting')
   for page in [a,b]:
    assert page.evaluate('window.__unsavedEditorState?.unexportedEdits')==7
-   check(page,86) # Crucial: new files are online, but old clients use old cache.
+   check(page,85) # Crucial: new files are online, but old clients use old cache.
   rows.append({'phase':'waiting_two_clients','oldCacheRetained':True,'newCachePrepared':True,
                'unsavedEditorStatePreserved':True,'oldWorkerCoherent':True})
   ctx.set_offline(True)
@@ -155,7 +155,7 @@ try:
   assert b.evaluate('window.__unsavedEditorState?.openVideo') is True
   assert b.evaluate('async()=>!!(await navigator.serviceWorker.getRegistration()).waiting')
   assert b.evaluate('async()=>(await caches.keys()).includes("retouche-v85")')
-  check(b,86)
+  check(b,85)
   rows.append({'phase':'waiting_one_client_offline','oldCacheRetained':True,'oldWorkerCoherent':True})
   b.close() # Last old client closes -> new SW may safely activate.
   # A new client can race activation. If it does, close and retry rather than
