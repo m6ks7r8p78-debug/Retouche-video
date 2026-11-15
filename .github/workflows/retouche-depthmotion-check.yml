@@ -1,0 +1,43 @@
+name: Retouche 3D DepthMotion synthetic evidence
+on:
+  push:
+    branches:
+      - lab-3d-depthmotion-evidence
+    paths:
+      - 'research/3d-depth-evidence/**'
+      - '.github/workflows/retouche-depthmotion-check.yml'
+  pull_request:
+    paths:
+      - 'research/3d-depth-evidence/**'
+      - '.github/workflows/retouche-depthmotion-check.yml'
+jobs:
+  controlled-synthetic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONPATH: research/3d-multimotion:research/3d-depth-evidence
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU-only dependencies
+        run: python -m pip install numpy opencv-python-headless pytest
+      - name: Preserve v4.3 + MultiMotion + DepthMotion regressions
+        run: python -m pytest -q research/3d-camera-v43/tests research/3d-multimotion/tests research/3d-depth-evidence/tests
+      - name: Benchmark synthetic cases seed batch A
+        run: python research/3d-depth-evidence/benchmark_depthmotion.py --seeds 3 --offset 0 --out /tmp/depthmotion-a.json
+      - name: Benchmark synthetic cases seed batch B
+        run: python research/3d-depth-evidence/benchmark_depthmotion.py --seeds 3 --offset 3 --out /tmp/depthmotion-b.json
+      - name: Merge results and validate separate batch bookkeeping
+        run: |
+          python research/3d-depth-evidence/merge_batches.py /tmp/depthmotion-combined.json /tmp/depthmotion-a.json /tmp/depthmotion-b.json
+          python -c 'import json; r=json.load(open("/tmp/depthmotion-combined.json")); assert r["integrity"]["rows_equal_seeds_times_cases"] and r["integrity"]["ablations_equal_seeds_times_four"]'
+      - name: Generate offline synthetic demo without external models
+        run: python research/3d-depth-evidence/build_demo.py
+      - name: Archive synthetic-only structured experiment
+        uses: actions/upload-artifact@v4
+        with:
+          name: depthmotion-controlled-synthetic
+          path: /tmp/depthmotion-*.json
+          if-no-files-found: error
