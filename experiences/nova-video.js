@@ -11,7 +11,8 @@ function creer(options={}){
  const intervalMs=Math.max(100,Math.min(600,Number(options.intervalMs)||220));
  const source=document.createElement("canvas"),sourceCtx=source.getContext("2d",{willReadFrequently:true});
  const ctx=canvas.getContext("2d");
- let running=false,pending=null,last=-Infinity,frames=0,painted=0,active=true,observer=null;
+ let running=false,pending=null,last=-Infinity,frames=0,painted=0,active=true;
+ let worker=null,workPending=false,workTime=0;
  const nativeCb=typeof video.requestVideoFrameCallback==="function";
  function dimensions(){
   const w=video.videoWidth,h=video.videoHeight;
@@ -21,19 +22,50 @@ function creer(options={}){
   if(source.width!==iw||source.height!==ih){source.width=canvas.width=iw;source.height=canvas.height=ih}
   return true;
  }
+ function peindre(result,temps){
+  if(!active)return;
+  ctx.putImageData(new ImageData(result.data,result.width,result.height),0,0);
+  canvas.hidden=false;painted++;
+  const report={numero:painted,temps,bilan:result.bilan,
+    largeur:result.width,hauteur:result.height};
+  if(typeof onFrame==="function")onFrame(report);
+  return report;
+ }
+ if(typeof Worker!=="undefined"){
+  try{
+   worker=new Worker("nova-worker.js");
+   worker.onmessage=e=>{
+    workPending=false;if(!active)return;
+    if(!e.data?.ok){const error=new Error(e.data?.erreur||"Traitement vidéo refusé");
+      worker.terminate();worker=null;
+      if(typeof onError==="function")onError(error);
+      return}
+    peindre(e.data,workTime);
+    if(video.paused&&Math.abs(video.currentTime-workTime)>.15)rendre();
+   };
+   worker.onerror=e=>{
+    workPending=false;if(worker){worker.terminate();worker=null}
+    if(typeof onError==="function")onError(new Error(e.message||"Worker vidéo indisponible"));
+   };
+  }catch{worker=null}
+ }
  function rendre(){
-  if(!active||video.readyState<2||!dimensions())return null;
+  if(!active||video.readyState<2||!dimensions()||(worker&&workPending))return null;
   try{
    sourceCtx.drawImage(video,0,0,source.width,source.height);
    const image=sourceCtx.getImageData(0,0,source.width,source.height);
+   if(worker){
+    workPending=true;workTime=video.currentTime;
+    worker.postMessage({id:++frames,image:{width:image.width,height:image.height,data:image.data},size:64});
+    return {enCours:true};
+   }
    const result=moteur.restituer(image,{size:64,arbitre});
-   ctx.putImageData(new ImageData(result.data,result.width,result.height),0,0);
-   canvas.hidden=false;painted++;
-   const report={numero:painted,temps:video.currentTime,bilan:result.bilan,
-     largeur:source.width,hauteur:source.height};
-   if(typeof onFrame==="function")onFrame(report);
-   return report;
-  }catch(err){if(typeof onError==="function")onError(err);return null}
+   return peindre(result,video.currentTime);
+  }catch(err){
+   workPending=false;
+   if(worker){worker.terminate();worker=null}
+   if(typeof onError==="function")onError(err);return null;
+  }
  }
  function planifier(){
   if(!active||!running||pending!==null)return;
@@ -74,6 +106,7 @@ function creer(options={}){
   video.removeEventListener("pause",pause);
   video.removeEventListener("ended",pause);
   video.removeEventListener("seeked",avance);
+  if(worker){worker.terminate();worker=null}workPending=false;
   canvas.hidden=true;canvas.width=canvas.height=0;
  }
  video.addEventListener("play",jouer);
