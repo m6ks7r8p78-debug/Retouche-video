@@ -1,0 +1,73 @@
+name: NOVA iPhone HD - color evidence
+on:
+  push:
+    branches:
+      - chatgpt-nova-iphone-hd-color-evidence-v1
+  pull_request:
+    branches:
+      - chatgpt-nova-iphone-native-fullhd-v1
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-hd-color-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe
+        run: |
+          node --check experiences/nova-hd-color.js
+          node --check experiences/nova-native-hd.js
+          node --check tests/nova-hd-color.test.mjs
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Vérifier preuves couleur et régressions HD
+        run: |
+          node --test tests/nova-hd-color.test.mjs tests/nova-native-hd.test.mjs tests/nova-real-preflight.test.mjs tests/nova-iphone-preview.test.mjs tests/nova-iphone-report.test.mjs
+      - name: ZIP Cloudflare isolé sans vidéo privée
+        run: |
+          node outils/build-nova-iphone-preview.mjs
+          test -f dist/nova-iphone-preview/experiences/nova-hd-color.js
+          test -f dist/nova-iphone-preview/experiences/nova-native-hd.js
+          cd dist/nova-iphone-preview
+          zip -q -X -r ../../NOVA_HD_Couleur_iPhone_Cloudflare.zip .
+          cd ../..
+          unzip -t NOVA_HD_Couleur_iPhone_Cloudflare.zip >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-HD-color-evidence-Cloudflare
+          path: NOVA_HD_Couleur_iPhone_Cloudflare.zip
+          retention-days: 7
+          if-no-files-found: error
+  navigateur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Playwright
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Export vidéo/sur navigateur avec MP4 colr incomplet
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test tests/nova-native-hd-browser.test.mjs
