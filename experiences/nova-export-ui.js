@@ -7,9 +7,13 @@ const $=id=>document.getElementById(id);
 const panel=$("pilotVideo"),start=$("exportVideo"),silent=$("allowSilent"),
   download=$("downloadVideo"),status=$("exportStatus"),fileInput=$("file"),drop=$("drop"),approx=$("allowApproximate"),
   hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText"),
-  colorReport=$("novaHdFrameReport");
+  colorReport=$("novaHdFrameReport"),qualityReport=$("novaHdQualityReport");
 if(!panel||!start||!silent||!download||!status||!fileInput)return;
-let file=null,controller=null,blobUrl=null,generation=0,colorReportUrl=null;
+let file=null,controller=null,blobUrl=null,generation=0,colorReportUrl=null,qualityReportUrl=null;
+function clearQualityReport(){
+ if(qualityReportUrl){URL.revokeObjectURL(qualityReportUrl);qualityReportUrl=null}
+ if(qualityReport){qualityReport.hidden=true;qualityReport.removeAttribute("href")}
+}
 function clearColorReport(){
  if(colorReportUrl){URL.revokeObjectURL(colorReportUrl);colorReportUrl=null}
  if(colorReport){colorReport.hidden=true;colorReport.removeAttribute("href")}
@@ -20,7 +24,7 @@ function clear(){
  if(controller){controller.abort();controller=null}
  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null}
  download.hidden=true;download.removeAttribute("href");
- clearColorReport();globalThis.NOVA_HD_COLOR?.resetDiagnostic?.();
+ clearColorReport();clearQualityReport();globalThis.NOVA_HD_COLOR?.resetDiagnostic?.();
  if(hevcPanel)hevcPanel.hidden=true;
  if(hevcText)hevcText.textContent="";
  start.disabled=true;start.textContent="Exporter un MP4 restauré";panel.hidden=true;silent.checked=false;if(approx)approx.checked=false;
@@ -46,7 +50,7 @@ start.addEventListener("click",async()=>{
  if(!file)return;
  const ctl=new AbortController(),thisGen=generation;
  controller=ctl;start.textContent="Annuler l'export";
- clearColorReport();globalThis.NOVA_HD_COLOR?.resetDiagnostic?.();
+ clearColorReport();clearQualityReport();globalThis.NOVA_HD_COLOR?.resetDiagnostic?.();
  download.hidden=true;
  msg("Vérification des codecs et du son…");
  try{
@@ -79,12 +83,26 @@ start.addEventListener("click",async()=>{
    download.download=(file.name||"video").replace(/\.[^.]+$/,"")+
     "_NOVA_HD_experimental.mp4";
    download.hidden=false;
+   if(qualityReport&&hd.qualityReport){
+    qualityReportUrl=URL.createObjectURL(new Blob([
+     JSON.stringify(hd.qualityReport,null,2)+"\n"
+    ],{type:"application/json"}));
+    qualityReport.href=qualityReportUrl;
+    qualityReport.download="NOVA_035_bilan_qualite_local.json";
+    qualityReport.hidden=false;
+   }
    msg("MP4 HD disponible : "+hd.originalWidth+" × "+hd.originalHeight+
     ", "+hd.outputFrames+" / "+hd.sourceFrames+" images, "+
     hd.sourceFps+" i/s d'origine ; "+(hd.audioMode==="aac-copy"?
      "AAC original conservé sans réencodage": "AAC-LC réencodé localement (contrôler la synchronisation)")+". "+
     hd.modifiedFrames+" images avec corrections locales de lumière. "+
-    (hd.colorWarning?(" ATTENTION COULEURS : "+hd.colorWarning):" Couleurs vérifiées par NOVA.")+
+    (hd.colorWarning?(" ATTENTION COULEURS : "+hd.colorWarning):
+     " Profil couleur BT.709 du MP4 contrôlé ; fidélité à la source à comparer.")+
+    (hd.qualityReport?(" Fin AAC / fin vidéo : "+
+     (hd.qualityReport.audio.lastAudioPacketMinusVideoDurationMs>0?"+":"")+
+     hd.qualityReport.audio.lastAudioPacketMinusVideoDurationMs+
+     " ms (pas une preuve de synchronisation perceptuelle). "+
+     "Bilan qualité local disponible ci-dessus."):"")+
     " Vérifiez image et son. Pas de reconstruction neuronale.");
    return;
   }
