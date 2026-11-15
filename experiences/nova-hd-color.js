@@ -58,7 +58,7 @@ function metadata(info){
  if(c&&s&&c.fullRange!==null&&c.fullRange!==undefined&&
     c.fullRange!==s.fullRange)err("plage entre colr et SPS/VUI contradictoire");
  const explicit=x=>!!x&&x.primaries===1&&SDR_XFER.has(x.transfer)&&
-    x.matrix===1&&x.fullRange!==true;
+    x.matrix===1&&x.fullRange===false;
  const confirmed=explicit(s)||explicit(c);
  const kind=explicit(s)?"hevc-sps-vui-bt709":
   explicit(c)?"mp4-colr-bt709":"pending-decoded-frame";
@@ -94,7 +94,7 @@ function report(info){
  catch(e){warning=String(e?.message||"").slice(0,180)}
  return Object.freeze({
   schema:"retoucheproai.nova.hd-color.v1",
-  colr:fields(c),hevcSpsPresent:!!hvcSps(info),
+  colr:fields(c),hevcSpsPresent:!!(()=>{try{return hvcSps(info)}catch{return null}})(),
   evidence:evidence?.kind??null,sourceTransfer:evidence?.sourceTransfer??null,
   warning,
   explanation:"Informations techniques locales seulement. L'absence de colr ne prouve ni SDR ni HDR. Aucun média transmis."
