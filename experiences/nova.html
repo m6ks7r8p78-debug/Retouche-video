@@ -135,8 +135,8 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <section class="card"><small>02 / Le contrôle</small><h2>Preuves, pas promesses.</h2><div id="metrics"><div class="metric"><span>Source</span><strong>—</strong></div><div class="metric"><span>Décision</span><strong>En attente</strong></div></div>
 <button class="secondary" id="save" disabled>Exporter l'aperçu PNG</button>
 <section class="pilot" id="pilotVideo" hidden>
-<strong>Export MP4 court — pilote expérimental</strong>
-<p>12 secondes maximum, 640 pixels, 15 images/seconde. Vérifiez toujours le fichier final.</p>
+<strong>Export MP4 local — NOVA adaptatif (expérimental)</strong>
+<p>Pour les vidéos HD compatibles, NOVA essaie le moteur natif pour conserver la résolution, la cadence et le son d'origine. Le parcours historique 640 pixels / 15 images par seconde reste réservé aux petites sources. Durée pilote : 12 secondes maximum. Vérifiez toujours l'image et le son du fichier final.</p>
 <button class="primary" id="exportVideo" disabled>Exporter un MP4 restauré</button>
 <details class="sourceAdvanced"><summary>Compatibilité des vidéos</summary>
 <p>NOVA utilise les horodatages MP4 natifs. Pour HEVC, le pilote impose un décodage WebAssembly local avec audit de couleur ; l'option approximative ne contourne jamais ces contrôles. Pour certains autres fichiers, un décodage approximatif peut doubler ou manquer des images.</p>
