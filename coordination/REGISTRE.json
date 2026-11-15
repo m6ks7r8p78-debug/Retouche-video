@@ -133,6 +133,20 @@
       ]
     },
     {
+      "id": "nova-iphone-opaque-sdr",
+      "label": "NOVA — rendu natif SDR HEVC opaque Safari, source 601 / décodeur 709",
+      "branch": "chatgpt-nova-iphone-opaque-frame-sdr-v1",
+      "pr": 70,
+      "observation": "draft-pr-observed",
+      "interface": "Recours expérimental pour VideoFrame.format=null et matrice source BT601 alors que la trame native déclare BT709 ; rendu du décodeur avec avertissement couleur non certifiée, sans changement silencieux ni HDR accepté",
+      "workBoundary": "experiences/nova-hd-color.js; experiences/nova-native-hd.js; experiences/nova-export-ui.js; experiences/nova-native-hd-ui.js; tests SDR/native HD; workflow",
+      "validationGap": "72/72 tests unitaires + 1/1 navigateur Chromium H264/AAC synthétique réussis sur le parcours opaque simulé; véritable HEVC Safari iPhone, fidélité couleurs et synchronisation AAC toujours non vérifiées",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/70",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43731285960"
+      ]
+    },
+    {
       "id": "smallmotion",
       "label": "SmallMotion / PWA / budgets",
       "branch": "preprod-retoucheproai-local-v1",
@@ -308,6 +322,12 @@
       "from": "nova-webkit-aac-esds",
       "to": "nova",
       "topic": "WebKit #302253 : AudioEncoder.decoderConfig.description peut contenir un ESDS complet et non l'ASC; normaliser 03/04/05/06 sans tronquer arbitrairement, vérifier AOT/sampleRate/canaux, tester une vraie piste AAC. Safari iPhone à valider.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-iphone-opaque-sdr",
+      "to": "nova",
+      "topic": "NOVA: gérer VideoFrame.format=null matériel avec source matrice SDR BT601 vs couleur frame BT709, sans renommer les pixels; avertir source non certifiée et demander comparaison visuelle réelle. Ne pas contourner HDR/P3 et ne pas promouvoir avant test physique iPhone.",
       "state": "proposal"
     }
   ],
