@@ -168,6 +168,20 @@ function traiter(src,mode){
 }
 function ecart(a,b){let sum=0,count=0;const step=Math.max(4,Math.floor(a.data.length/200000/4)*4);for(let i=0;i<a.data.length;i+=step){sum+=Math.abs(a.data[i]-b.data[i]);count++}return sum/Math.max(1,count)/255}
 function drawOutput(imgData,target){target.width=imgData.width;target.height=imgData.height;target.getContext("2d").putImageData(imgData,0,0)}
+async function calculerMosaique(img){
+ if(typeof Worker==="undefined")return NOVA_ZONES.restituer(img,{size:128,arbitre:NOVA_DECISION});
+ try{
+  return await new Promise((resolve,reject)=>{
+   let worker;try{worker=new Worker("nova-worker.js")}catch(e){reject(e);return}
+   const timeout=setTimeout(()=>{worker.terminate();reject(new Error("Calcul trop long"))},20000);
+   const fin=(cb,value)=>{clearTimeout(timeout);worker.terminate();cb(value)};
+   worker.onmessage=e=>e.data?.ok?fin(resolve,e.data):fin(reject,new Error(e.data?.erreur||"Échec du traitement"));
+   worker.onerror=e=>fin(reject,new Error(e.message||"Worker indisponible"));
+   try{worker.postMessage({id:1,image:{width:img.width,height:img.height,data:img.data},size:128})}
+   catch(e){fin(reject,e)}
+  });
+ }catch(_){return NOVA_ZONES.restituer(img,{size:128,arbitre:NOVA_DECISION})}
+}
 function compareAt(v){after.style.clipPath="inset(0 "+(100-v)+"% 0 0)";$("#videoAfter").style.clipPath="inset(0 "+(100-v)+"% 0 0)";$("#split").style.left=v+"%"}
 function drawZoneOverlay(zones){
  const canvas=$("#zonesOverlay");canvas.width=before.width;canvas.height=before.height;
@@ -225,7 +239,8 @@ run.addEventListener("click",async()=>{
   if(kind==="photo"){
    const cx=before.getContext("2d",{willReadFrequently:true}),img=cx.getImageData(0,0,before.width,before.height);
    const orig=mesure(img);
-   const spatial=NOVA_ZONES.restituer(img,{size:128,arbitre:NOVA_DECISION});
+   const generation=frameSeq,spatial=await calculerMosaique(img);
+   if(generation!==frameSeq||kind!=="photo")return;
    lastModified=new ImageData(spatial.data,spatial.width,spatial.height);
    drawOutput(lastModified,after);before.hidden=after.hidden=false;
    $("#compare").disabled=false;compareAt(50);save.disabled=false;metrics.replaceChildren();
