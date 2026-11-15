@@ -1,0 +1,100 @@
+{
+  "schema": "retouche-cinema-behavior-p15-v1",
+  "media_scope": "private_local",
+  "allow_network": false,
+  "export_media": false,
+  "source_type": "fictional_synthetic",
+  "file_name": "video_fictive_test.mp4",
+  "duration_s": 5,
+  "adult_status": "unverified",
+  "events": [
+    {
+      "id": "f1",
+      "channel": "face",
+      "label": "gaze_camera",
+      "start_s": 0.1,
+      "end_s": 3.8,
+      "evidence": "visible",
+      "review_status": "unreviewed",
+      "annotator_id": "A",
+      "confidence": null,
+      "notes": "ÉTIQUETTE FICTIVE DE TEST — pas une observation d’une personne réelle"
+    },
+    {
+      "id": "f2",
+      "channel": "hands",
+      "label": "hand_raise",
+      "start_s": 1.2,
+      "end_s": 2.1,
+      "evidence": "visible",
+      "review_status": "unreviewed",
+      "annotator_id": "A",
+      "confidence": null,
+      "notes": "ÉTIQUETTE FICTIVE DE TEST — pas une observation d’une personne réelle"
+    },
+    {
+      "id": "f3",
+      "channel": "lips",
+      "label": "lip_lick_lower",
+      "start_s": 1.5,
+      "end_s": 1.8,
+      "evidence": "uncertain",
+      "review_status": "unreviewed",
+      "annotator_id": "A",
+      "confidence": null,
+      "notes": "ÉTIQUETTE FICTIVE DE TEST — pas une observation d’une personne réelle"
+    },
+    {
+      "id": "f4",
+      "channel": "lips",
+      "label": "lip_lick_lower",
+      "start_s": 1.54,
+      "end_s": 1.85,
+      "evidence": "uncertain",
+      "review_status": "unreviewed",
+      "annotator_id": "B",
+      "confidence": null,
+      "notes": "ÉTIQUETTE FICTIVE DE TEST — pas une observation d’une personne réelle"
+    },
+    {
+      "id": "f5",
+      "channel": "object",
+      "label": "filter_contact",
+      "start_s": 2.1,
+      "end_s": 2.7,
+      "evidence": "estimated",
+      "review_status": "unreviewed",
+      "annotator_id": "A",
+      "confidence": null,
+      "notes": "ÉTIQUETTE FICTIVE DE TEST — pas une observation d’une personne réelle"
+    },
+    {
+      "id": "f6",
+      "channel": "lips",
+      "label": "lip_seal_on_filter",
+      "start_s": 2.1,
+      "end_s": 2.7,
+      "evidence": "estimated",
+      "review_status": "unreviewed",
+      "annotator_id": "A",
+      "confidence": null,
+      "notes": "ÉTIQUETTE FICTIVE DE TEST — pas une observation d’une personne réelle"
+    },
+    {
+      "id": "f7",
+      "channel": "face",
+      "label": "blink",
+      "start_s": 3.5,
+      "end_s": 3.63,
+      "evidence": "visible",
+      "review_status": "unreviewed",
+      "annotator_id": "A",
+      "confidence": null,
+      "notes": "ÉTIQUETTE FICTIVE DE TEST — pas une observation d’une personne réelle"
+    }
+  ],
+  "ready_for_training": false,
+  "identity_proven": false,
+  "semantic_action_verified": false,
+  "subjective_mood_is_director_choice": true
+}
