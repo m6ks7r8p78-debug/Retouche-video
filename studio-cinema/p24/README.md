@@ -46,3 +46,17 @@ La CI `.github/workflows/ci-cinema-p24.yml` exécute également les tests hérit
 - Pour NOVA, le rapport peut servir de **fixture synthétique** de validation codec; aucun moteur NOVA n'a été importé, et la vraie compatibilité reste indépendante.
 - Pour AURA, pas de changement d'interface. Pour SmallMotion, aucune promotion d'un indice 2D en geste sémantique. Pour le Directeur IA, **résultat consultatif exclusivement**.
 - Le registre commun est sous la responsabilité du coordinateur; les relais sont consignés dans la PR de ce laboratoire.
+
+
+## Deuxième banc P24 — lecture navigateur (laboratoire Linux uniquement)
+
+L'aperçu `preview/index.html` est un **lecteur autonome** avec un bouton utilisateur, des contrôles natifs, une annonce de statut et un avertissement clair « vidéo entièrement fictive ». Il ne touche pas à l'interface AURA, à la PWA, à `main` ou à un domaine public.
+
+Le script `src/p24_browser_smoke.py` copie **uniquement** la vidéo synthétique P23 et cet HTML dans un dossier temporaire, les sert depuis `127.0.0.1` et teste les moteurs **Chromium** et **WebKit sous Linux** sur un viewport **390×844**. Le test distingue :
+- `browser_played_synthetic_video` : lecture réelle, métadonnées 720×720 / 8 s, horloge vidéo effectivement avancée après clic ;
+- `codec_or_playback_safely_refused` : refus explicite du codec ou de la lecture, sans repli trompeur ;
+- `playback_unverified_timed_out` ou `browser_test_failed` : ne constitue pas une validation et échoue la CI.
+
+Chaque navigateur doit rester sans erreur JavaScript et **sans requête HTTP externe**; des captures d'écran sont conservées exclusivement comme preuves de layout. La CI `.github/workflows/ci-cinema-p24-browser.yml` installe Playwright et ses moteurs Linux, lance le serveur local et publie le rapport et les captures en artefact GitHub temporaire.
+
+**Réserve essentielle :** « WebKit Linux » n'est pas « Safari sur iPhone physique ». Une lecture réussie dans ces moteurs ne prouve aucune compatibilité iPhone, température, fluidité GPU ou qualité naturelle d'une personne réelle. Une lecture refusée ne doit pas être transformée en réussite de codec.
