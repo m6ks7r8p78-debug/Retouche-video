@@ -294,7 +294,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
       onPacket:packet=>audioPaquets.push(packet)});
   }
   const audioAudit=audioConfig?NOVA_GUARD.auditerPaquetsAAC(audioPaquets,{
-    durationSeconds:timeline.durationSeconds}):null;
+    durationSeconds:timeline.durationSeconds,
+    leadingGapSeconds:audioCopy?.outputEditGapSeconds??0}):null;
   muxer.finalize();
   const blob=new Blob([target.buffer],{type:"video/mp4"});
   if(blob.size<1024)throw new Error("Fichier de sortie incomplet");
