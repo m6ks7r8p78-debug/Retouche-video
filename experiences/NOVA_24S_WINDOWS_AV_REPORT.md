@@ -21,17 +21,17 @@ Le pilote H.264 passait déjà une vraie source HD courte avec contrôle BT.709 
 
 ## Preuve et limites exactes
 
-**GitHub Actions #43726287878 — SUCCESS**, commit fonctionnel `5c0afb0097140833304f28174828c3d9fde51ddb` :
+**GitHub Actions #43726770824 — SUCCESS**, commit fonctionnel `049375a2e2fa13141f090658b14655d573cf6948` :
 
 - **48/48 tests Node** couvrant limites 12/24 s, fenêtres contiguës, précontrôle, refus de profils incompatibles, contrôle SPS/VUI, héritage HEVC, validation des `elst` AAC 24 s opt-in, refus de priming non confirmé.
-- **3/3 tests Chromium**, incluant un véritable MP4 H.264/AAC **20 secondes** d'une mire synthétique **320×180 à 15 images/s**, généré après un clic ; sa sortie garde 320×180/15 i/s.
-- **4 fenêtres** de travail : [0–6], [6–12], [12–18], [18–20] secondes, toutes confirmées par les événements locaux de progression.
-- **300 images vidéo** dans l'unique MP4 final, chacune séparée d'environ 66,7 ms, sans PTS dupliqué ni discontinuité aux frontières ; images clés identifiées aux index 0, 90, 180 et 270.
-- **939 paquets AAC** identiques à ceux du fichier source selon SHA-256, une seule piste audio et une seule piste vidéo, 20 secondes sur chaque piste, couleurs `colr` BT.709 limitées présentes.
+- **4/4 tests Chromium**, incluant deux véritables MP4 H.264/AAC de **20 et 24 secondes** à partir de mires synthétiques **320×180 à 15 images/s**, générés après un clic ; leurs sorties gardent 320×180/15 i/s.
+- Pour **20 s** : 4 fenêtres [0–6], [6–12], [12–18], [18–20] secondes. Pour **24 s** : 4 fenêtres [0–6], [6–12], [12–18], [18–24] secondes ; toutes confirmées par les événements locaux de progression.
+- **300 images** dans le MP4 de 20 s et **360 images** dans celui de 24 s, chacune espacée d'environ 66,7 ms, sans PTS dupliqué ni discontinuité aux frontières ; images clés identifiées aux index 0, 90, 180 et 270.
+- **939 paquets AAC** pour 20 s et **1 126 paquets AAC** pour 24 s, bit-identiques aux paquets source selon SHA-256 ; dans chaque MP4 une seule piste audio et une seule piste vidéo, durées audio et vidéo égales à 20/24 secondes, métadonnées `colr` BT.709 limitées présentes.
 - Aucune requête externe ni upload détecté pendant le test Chromium, aucune vidéo utilisateur utilisée.
 - Le banc HD court de #54 reste exécuté en non-régression dans ce même workflow : source 1280×720/30 i/s → sortie 640×360/15 i/s, seulement sur 2 secondes.
 
-**La borne 24 s est vérifiée au niveau du plan et des garde-fous unitaires, pas encore par une vidéo 24 s physiquement exportée.** La preuve média complète couvre **20 secondes** seulement.
+**La borne 24 secondes est maintenant validée par un vrai export Chromium synthétique de 24 secondes**, en complément de celui de 20 secondes. Il ne s'agit toujours PAS d'une mesure Safari iPhone physique ou d'une certification perceptuelle.
 
 ## Limites encore ouvertes
 
