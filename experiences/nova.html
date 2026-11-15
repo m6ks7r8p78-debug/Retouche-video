@@ -136,6 +136,10 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <label><input type="checkbox" id="allowApproximate"> Autoriser le décodage approximatif pour cet export</label>
 </details>
 <label><input type="checkbox" id="allowSilent"> J'accepte explicitement un export <b>sans son</b> si je le choisis. Sinon, l'export est interrompu lorsque l'audio ne peut pas être conservé.</label>
+<details class="sourceAdvanced"><summary>Écriture progressive locale (expérimental)</summary>
+<p>Enregistrez temporairement le MP4 dans le stockage privé de ce navigateur, puis récupérez-le avec le lien de téléchargement habituel. Uniquement H.264 BT.709 vérifié de 12 à 24 s avec piste AAC conservable. Test Safari iPhone physique non effectué. Le stockage OPFS peut persister après une fermeture brutale ; évitez tout fichier confidentiel dans ce laboratoire avant validation.</p>
+<label><input type="checkbox" id="writeOpfs"> Utiliser l'écriture progressive privée sur cet appareil (sans upload)</label>
+</details>
 <a id="downloadVideo" hidden>Enregistrer le fichier MP4</a>
 <div id="exportStatus" role="status" aria-live="polite">Aucun export lancé.</div>
 <details class="sourceAdvanced" id="hevcDiagnosticsPanel" hidden>
@@ -198,6 +202,7 @@ Conservez le son par défaut ; « sans son » reste un choix explicite.</p>
 <script src="nova-avsync.js"></script>
 <script src="nova-aac-copy.js"></script>
 <script src="nova-windows.js"></script>
+<script src="nova-opfs-stream.js"></script>
 <script src="nova-export.js"></script>
 <script>
 (()=>{
