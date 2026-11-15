@@ -5,22 +5,34 @@
  */
 var NOVA_EXPORT=(()=>{
 "use strict";
-const MAX_SECONDS=12,MAX_LONG_SECONDS=24,MAX_OPFS_SECONDS=48,MAX_BYTES=60*1024*1024,MAX_SIDE=640,FPS=15;
+const MAX_SECONDS=12,MAX_LONG_SECONDS=24,MAX_OPFS_SECONDS=48,
+ MAX_HD_SECONDS=3,MAX_BYTES=60*1024*1024,MAX_SIDE=640,MAX_HD_SIDE=1280,FPS=15;
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
 function plan({duration,width,height,bytes,fps=FPS,maxSide=MAX_SIDE,profile}={}){
- const maxSeconds=profile==="h264-opfs-48s"?MAX_OPFS_SECONDS:
+ const hd720=profile==="h264-hd720-opfs-3s";
+ const maxSeconds=hd720?MAX_HD_SECONDS:
+  profile==="h264-opfs-48s"?MAX_OPFS_SECONDS:
   profile==="h264-windowed-24s"?MAX_LONG_SECONDS:MAX_SECONDS;
+ const sideCap=hd720?MAX_HD_SIDE:MAX_SIDE;
+ const pixelCap=hd720?1280*720:MAX_SIDE*MAX_SIDE;
  if(!finite(duration)||duration<=0||duration>maxSeconds)
   throw new RangeError("NOVA : durée limitée à "+maxSeconds+" secondes");
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<2||height<2)throw new RangeError("Dimensions source invalides");
  if(!finite(bytes)||bytes<1||bytes>MAX_BYTES)throw new RangeError("Fichier limité à 60 Mo pour ce pilote");
  if(!finite(fps)||fps<5||fps>FPS)throw new RangeError("Cadence pilote limitée à 15 images/s");
- if(!finite(maxSide)||maxSide<96||maxSide>MAX_SIDE)throw new RangeError("Sortie pilote limitée à 640 px");
- const factor=Math.min(1,maxSide/Math.max(width,height));
+ if(!finite(maxSide)||maxSide<96||maxSide>MAX_SIDE)
+  throw new RangeError("Choix de résolution pilote invalide");
+ if(hd720&&(Math.min(width,height)<720||Math.max(width,height)<1280))
+  throw new RangeError("NOVA HD720 : source au moins 1280 × 720 exigée, aucun agrandissement artificiel");
+ const factor=Math.min(1,sideCap/Math.max(width,height));
  const outW=Math.max(2,Math.round(width*factor/2)*2);
  const outH=Math.max(2,Math.round(height*factor/2)*2);
+ if(outW*outH>pixelCap)throw new RangeError("Sortie HD720 : budget pixels dépassé");
+ if(hd720&&(Math.min(outW,outH)<720||Math.max(outW,outH)<1280))
+  throw new RangeError("Sortie HD720 incomplète : ne pas étiqueter une sortie basse résolution HD");
  return {width:outW,height:outH,fps,frames:Math.max(1,Math.floor(duration*fps+1e-8)),
-   duration, maxSeconds, audio:"conserver ou refuser",pilot:true};
+   duration,maxSeconds,outputProfile:hd720?"h264-hd720-opfs-3s":"standard",
+   audio:"conserver ou refuser",pilot:true};
 }
 function disposer(media){
  if(!media)return;
