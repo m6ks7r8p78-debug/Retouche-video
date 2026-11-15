@@ -23,4 +23,5 @@ for k in cases:
  a=[x for x in out if x['scenario']==k];summary[k]={'candidate':sum(x['n']>0 for x in a),'statuses':sorted({x['status'] for x in a}),'total':len(a)}
 print(json.dumps(summary,indent=2))
 assert summary['local_object']['candidate']==3 and summary['single_plane']['candidate']==0 and summary['two_depths']['candidate']==0, 'Browser proxy failed the synthetic counterexamples'
+(p/'results').mkdir(exist_ok=True)
 (p/'results'/'browser_crosscheck.json').write_text(json.dumps({'summary':summary,'rows':out,'limits':['RGB-only local hypotheses cannot distinguish parallax from true object motion']},indent=2)+'\n')
