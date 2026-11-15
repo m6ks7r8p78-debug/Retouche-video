@@ -16,7 +16,7 @@ function plan({duration,width,height,bytes,fps=FPS,maxSide=MAX_SIDE}={}){
  const factor=Math.min(1,maxSide/Math.max(width,height));
  const outW=Math.max(2,Math.round(width*factor/2)*2);
  const outH=Math.max(2,Math.round(height*factor/2)*2);
- return {width:outW,height:outH,fps,frames:Math.max(1,Math.floor(duration*fps)),
+ return {width:outW,height:outH,fps,frames:Math.max(1,Math.floor(duration*fps+1e-8)),
    duration, maxSeconds:MAX_SECONDS, audio:"conserver ou refuser",pilot:true};
 }
 function disposer(media){
