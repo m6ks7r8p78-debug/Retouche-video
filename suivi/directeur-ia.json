@@ -46,15 +46,16 @@
     "RNE14: descripteur Census en surcontrôle photo RNE13, 22 tests synthetiques; 288 scènes secondaires éclairage: 95/459 zones justes retrouvées mais 2/309 mauvaises nouvellement acceptées; autre générateur 120 scènes, +36 sous ombre, +7 gamma, aucun gain JPEG+lumière/flou. NON promu.",
     "RNE15: 50 tests synthétiques locaux, 450 scènes appariées. Nouveau garde-fou n'empêche aucun défaut supplémentaire par rapport à RNE14 et refuse 1249 zones correctes en plus. Rejet; nouveau filtre de preuve appariée ajouté.",
     "RNE16 ANCRE: 9592 paramètres, modèle original CNN double branche entraîné de zéro sur 450 exemples exclusivement synthétiques, 280 étapes. +0,288 dB sur 150 cas synthétiques initiaux après correction confiance 7x7; sur second générateur gelé, 26 pertes >0,5 dB et petit texte en recul. Promotion refusée; 40 tests locaux verts.",
-    "RNE17 AEGIS: 2305-param residual gate trained on 600 private-data-free synthetic scenes; dev 180: 7→0 severe; locked 270: 16→3 severe, mean -0.048dB vs bicubic; learned not better than fixed 0.70 => REJECTED, 41 synthetic tests PASS."
+    "RNE17 AEGIS: 2305-param residual gate trained on 600 private-data-free synthetic scenes; dev 180: 7→0 severe; locked 270: 16→3 severe, mean -0.048dB vs bicubic; learned not better than fixed 0.70 => REJECTED, 41 synthetic tests PASS.",
+    "RNE18 OBSERVABLE3D: 3D synthetic view evidence atlas; UV observed 21.1%/47.1%/76.0% with 1/4/10 views, 24% unknown left. Calibrated camera and geometry are provided by simulator; 47 tests PASS, 8 independent procedural textures exposed forged UV calibration. NOT a human 3D reconstruction."
   ],
   "prochaines_etapes": [
-    "Ne pas promouvoir RNE17 learned gate: 270 synthetic images show it is worse than cheap fixed 0.70 and still below bicubic on text-family images.",
-    "Stop tuning on the same 270 final synthetic cases; freeze that benchmark as previously examined.",
-    "Develop independent true temporal sequence benchmark with motion ground truth and region-level text/faces fidelity, not merely image-level PSNR.",
-    "Any future learned selector must beat both ANCRE and the fixed scalar baseline, not only reduce synthetic severe losses.",
-    "Keep 41 new videos strictly out of training/calibration, and track consent and separation for all prior media.",
-    "No production deployment or main merge; confirm remote GitHub CI and validate real Safari iPhone separately."
+    "Construct separate synthetic articulated 3D ground-truth scenes: person-like head/torso/arms/hands + held objects, with correct visibility and contacts. Measure UV coverage by body part and unseen regions.",
+    "Recover camera pose, depth and articulated pose from RGB with a verifiable independent estimation pipeline; NEVER pass simulator GT to inference; quantify calibration errors and mistaken geometry.",
+    "Provide separate masks for observed / contested / never observed / AI-inferred surfaces; AI-generated hidden sides must never be mislabeled as actual identity.",
+    "Check rights/privacy and conditions for authorized personal historical video inference and model training; keep 41 recent uploads strictly excluded from training and calibration.",
+    "Benchmark on authorized public articulated multi-view data and independent subjects before testing user videos, measuring identity drift, hands, occlusions, false observed evidence and 3D geometry uncertainty.",
+    "Do not merge the draft PR, publish weights/media, deploy to retoucheproai.com, or claim iPhone Safari performance without respective validation; CI remote to verify."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -65,16 +66,16 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-15",
     "objets": [
-      "outils/rne/rne17/rne17.py",
-      "outils/rne/rne17/research_limiter.py",
-      "outils/rne/rne17/promotion_gate.py",
-      "tests/test_rne17_gate.py",
-      "RETOUCHE_NEURAL_ENGINE_17.md",
+      "outils/rne/rne18/observable_atlas.py",
+      "outils/rne/rne18/bench_observability.py",
+      "outils/rne/rne18/stress_provenance.py",
+      "tests/test_rne18_observable_atlas.py",
+      "tests/test_rne18_provenance_conflicts.py",
+      "RETOUCHE_NEURAL_ENGINE_18.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "41/41 private synthetic tests passed; train/dev/final synthetic + fixed baseline ablation, repeatable code + weights private",
-    "statut_ci": "a_verifier",
-    "observations": "One-shot locked final examined, avoid any further calibration on that set. No private media or trained weights published."
+    "preuve_locale": "47 synthetic tests passed in isolated GH-layout plus 10 synthetic camera views and 8 independent texture stress samples",
+    "statut_ci": "a_verifier"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1836,5 +1837,90 @@
       "True AR original-filtered supervision",
       "iPhone Safari execution"
     ]
+  },
+  "jalon_neural_engine_18": {
+    "date": "2026-11-15",
+    "label": "RNE18 OBSERVABLE 3D - evidence-first multi-view texture atlas",
+    "status": "synthetic_calibrated_3d_proof_of_concept_ONLY; no 3D person reconstructed",
+    "architectural_horizon": [
+      "observed surface memory",
+      "independent camera-view support",
+      "contested color evidence",
+      "unseen surface must remain unknown",
+      "future articulated people and handled objects"
+    ],
+    "scientific_context": [
+      "ICLR 2026 USplat4D uncertainty-aware anchors",
+      "Sensors 2026 IA-3DGS identity and drift",
+      "ECCV 2026 AHOY human occlusions",
+      "CVPR 2026 RHINO human-object interaction"
+    ],
+    "method": "synthetic rotating sphere with GT yaw, UV coordinates and visibility; confidence-weighted observed color atlas; distinct 15-degree viewpoint bins and ambiguous-color detection; non-observed UV never inpainted",
+    "benchmark": {
+      "atlas_resolution_uv": [
+        160,
+        320
+      ],
+      "image_resolution": [
+        192,
+        192
+      ],
+      "viewcounts": [
+        1,
+        4,
+        10
+      ],
+      "atlas_observed_fraction": [
+        0.211,
+        0.4706,
+        0.7604
+      ],
+      "atlas_corroborated_fraction": [
+        0,
+        0.277,
+        0.652
+      ],
+      "newview_visible_observed_mean": [
+        0.347,
+        0.667,
+        0.978
+      ],
+      "unknown_uv_after_ten_views": 0.2396,
+      "gt_camera_pose_known": true,
+      "gt_geometry_known": true,
+      "gt_occlusion_mask_known": true
+    },
+    "stress": {
+      "new_synthetic_textures": 8,
+      "correct_calibration_mean_contested_cells": 0,
+      "wrong_uv_shift": 0.12,
+      "wrong_calibration_mean_contested_cells": 6081.25,
+      "repeat_same_camera_false_corrob_cells": 0,
+      "camera_estimation_not_tested": true
+    },
+    "tests": "47/47 synthetic tests PASS locally; separately re-run 47/47 under GitHub-like folder import layout",
+    "files": [
+      "outils/rne/rne18/observable_atlas.py",
+      "outils/rne/rne18/bench_observability.py",
+      "outils/rne/rne18/stress_provenance.py",
+      "tests/test_rne18_observable_atlas.py",
+      "tests/test_rne18_provenance_conflicts.py",
+      "RETOUCHE_NEURAL_ENGINE_18.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE18_OBSERVABLE3D_Laboratoire_Synthetique.zip",
+    "private_archive_files": 16,
+    "original_157_videos_used": false,
+    "recent_41_videos_used": false,
+    "model_trained": false,
+    "weights_saved": false,
+    "user_media_published": false,
+    "geometry_estimation_from_real_video": false,
+    "human_identity_reconstruction": false,
+    "final_note": "UV coverage measures grid cells not true spherical area. PSNR only on observed pixels; unknown pixels excluded. 3D synthetic truth provided by simulator, no iPhone Safari test.",
+    "promotion": "research milestone only; not connected to RNE rendering or public site; RNE04 and ANCRE remain experimental super-resolution references",
+    "main_merged": false,
+    "production_deployed": false,
+    "github_ci_remote": "unverified"
   }
 }
