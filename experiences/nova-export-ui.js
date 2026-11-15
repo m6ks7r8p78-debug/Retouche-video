@@ -5,7 +5,7 @@
 "use strict";
 const $=id=>document.getElementById(id);
 const panel=$("pilotVideo"),start=$("exportVideo"),silent=$("allowSilent"),
-  download=$("downloadVideo"),status=$("exportStatus"),fileInput=$("file"),drop=$("drop");
+  download=$("downloadVideo"),status=$("exportStatus"),fileInput=$("file"),drop=$("drop"),approx=$("allowApproximate");
 if(!panel||!start||!silent||!download||!status||!fileInput)return;
 let file=null,controller=null,blobUrl=null,generation=0;
 function msg(s){status.textContent=s}
@@ -14,7 +14,7 @@ function clear(){
  if(controller){controller.abort();controller=null}
  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null}
  download.hidden=true;download.removeAttribute("href");
- start.disabled=true;start.textContent="Exporter un MP4 restauré";panel.hidden=true;silent.checked=false;
+ start.disabled=true;start.textContent="Exporter un MP4 restauré";panel.hidden=true;silent.checked=false;if(approx)approx.checked=false;
 }
 function choisir(f){
  clear();file=null;
@@ -39,9 +39,12 @@ start.addEventListener("click",async()=>{
  try{
   const result=await NOVA_EXPORT.exporter({
    file,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,
-   allowSilent:silent.checked,signal:ctl.signal,
+   allowSilent:silent.checked,allowApproximate:!!approx?.checked,signal:ctl.signal,
    onProgress:step=>{
     if(generation!==thisGen)return;
+    if(step.stage==="source")msg(step.mode==="pts"?
+     "Décodage vidéo selon les PTS MP4 natifs ("+step.frames+" images source)":
+     "Mode compatibilité approximatif choisi : les images peuvent être dupliquées.");
     if(step.stage==="audio")msg("Décodage et validation de la piste audio…");
     if(step.stage==="video")msg("Encodage MP4 : "+Math.round(step.progress*100)+" % ("+step.frame+"/"+step.total+" images)");
     if(step.stage==="verification")msg("MP4 assemblé : contrôle de lisibilité et de durée sur cet appareil…");
@@ -56,6 +59,7 @@ start.addEventListener("click",async()=>{
   download.hidden=false;
   msg("MP4 prêt : "+result.plan.width+" × "+result.plan.height+", "+
     (result.hasAudio?"audio AAC réencodé":"sans son, selon votre choix")+
+    ", "+(result.sourceMode==="pts"?"PTS natifs":"recherche approximative") +
     ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Métadonnées contrôlées : "+result.validation.width+" × "+result.validation.height+", "+result.validation.duration.toFixed(2)+" s. Vérifiez l’image et le son.");
  }catch(err){
   if(generation===thisGen)msg(ctl.signal.aborted?"Export annulé. Aucun fichier créé.":"Export refusé : "+(err?.message||"erreur inconnue"));
