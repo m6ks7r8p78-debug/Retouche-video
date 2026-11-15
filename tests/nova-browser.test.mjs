@@ -109,3 +109,47 @@ test("NOVA : prévisualisation vidéo réelle à partir d'un MP4 synthétique",a
   await fs.rm(tmp,{recursive:true,force:true});
  }
 });
+
+
+test("NOVA : MP4 court exporté avec son préservé ou refus, puis MP4 sans son explicite",async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),"nova-mp4-")),src=path.join(dir,"source.mp4"),app=server();
+ try{
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error","-f","lavfi","-i",
+  "testsrc2=size=160x90:rate=15:duration=1.2","-f","lavfi","-i","sine=frequency=440:duration=1.2",
+  "-c:v","libx264","-pix_fmt","yuv420p","-c:a","aac","-shortest","-y",src]);
+  await new Promise(ok=>app.listen(0,"127.0.0.1",ok));
+  const browser=await chromium.launch({headless:true,...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  try{
+   const page=await browser.newPage({viewport:{width:390,height:844},acceptDownloads:true});
+   const errors=[];page.on("pageerror",e=>errors.push(e.message));
+   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
+   await page.locator("#file").setInputFiles(src);
+   await page.waitForFunction(()=>!document.querySelector("#exportVideo").disabled);
+   for(const silent of [false,true]){
+    if(silent)await page.locator("#allowSilent").check();
+    await page.locator("#exportVideo").click();
+    await page.waitForFunction(()=>{
+     const d=document.querySelector("#downloadVideo");
+     return !d.hidden||document.querySelector("#exportStatus").textContent.startsWith("Export refusé");
+    },null,{timeout:90000});
+    if(!await page.locator("#downloadVideo").isVisible()){
+     if(silent)throw new Error(await page.locator("#exportStatus").innerText());
+     assert.match(await page.locator("#exportStatus").innerText(),/Export refusé/);
+     continue;
+    }
+    const pending=page.waitForEvent("download");await page.locator("#downloadVideo").click();
+    const result=await pending;
+    const {stdout}=await runBinary("ffprobe",["-v","error","-show_entries","stream=codec_type",
+     "-of","json",await result.path()]);
+    const types=JSON.parse(stdout).streams.map(s=>s.codec_type);
+    assert.ok(types.includes("video"),"flux vidéo MP4 attendu");
+    assert.equal(types.includes("audio"),!silent,"la piste sonore respecte la décision utilisateur");
+   }
+   assert.deepEqual(errors,[]);
+   await page.close();
+  }finally{await browser.close()}
+ }finally{
+  if(app.listening)await new Promise(ok=>app.close(ok));
+  await fs.rm(dir,{recursive:true,force:true});
+ }
+});
