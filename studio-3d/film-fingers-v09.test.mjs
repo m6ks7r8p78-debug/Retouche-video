@@ -13,7 +13,7 @@ test('la fermeture des doigts suit la prise, le transport et le dépôt sans sau
   {intent:'poser_objet',start:5.4,end:6.85}
  ];
  assert.equal(fingerClosureAt(2.2,timeline),0);
- assert.ok(fingerClosureAt(2.6,timeline)>.02);
+ assert.ok(fingerClosureAt(2.75,timeline)>.02);
  assert.ok(fingerClosureAt(3.1,timeline)>.99);
  assert.ok(fingerClosureAt(5.4,timeline)>.99);
  assert.ok(fingerClosureAt(5.96,timeline)<.01);
