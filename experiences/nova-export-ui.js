@@ -60,7 +60,7 @@ start.addEventListener("click",async()=>{
   msg("MP4 prêt : "+result.plan.width+" × "+result.plan.height+", "+
     (result.hasAudio?"audio AAC réencodé":"sans son, selon votre choix")+
     ", "+(result.sourceMode==="pts"?"PTS natifs":"recherche approximative") +
-    ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Métadonnées contrôlées : "+result.validation.width+" × "+result.validation.height+", "+result.validation.duration.toFixed(2)+" s. Vérifiez l’image et le son.");
+    ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Métadonnées contrôlées : "+result.validation.width+" × "+result.validation.height+", "+result.validation.duration.toFixed(2)+" s."+ (result.trace?" Cadence : "+result.trace.repetitions+" répétitions et "+result.trace.sautsDeSource+" images source sautées lors de la conversion.":"")+" Vérifiez l’image et le son.");
  }catch(err){
   if(generation===thisGen)msg(ctl.signal.aborted?"Export annulé. Aucun fichier créé.":"Export refusé : "+(err?.message||"erreur inconnue"));
  }finally{
