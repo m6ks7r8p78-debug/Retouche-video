@@ -243,3 +243,42 @@ Prochaine étape : un test de synchronisation de bout en bout (impulsions audio 
 5. Ne débloquer ni Full HD en sortie ni 4K/8K sans ces validations.
 
 **Les limites opérationnelles restent inchangées :** 12 s / 60 Mo, sortie 640 px / 15 fps, décodage PTS source Full HD au plus. PR #3 toujours brouillon, aucune fusion ni déploiement, aucune publication de média privé.
+
+
+## NOVA 0.9 — solution libre et locale aux lacunes d'AudioEncoder AAC (15 novembre 2026)
+
+**Blocage initial résolu pour un sous-ensemble strict de MP4** : Chrome/Chromium sur Linux n'expose pas d'encodeur AAC utilisable. Le test AV était historiquement ignoré dans cette CI, bien que le test sonore synthétique FFmpeg fonctionne. Des recherches documentaires sur WebCodecs ont montré la solution de **pass-through AAC** ; le `mp4-muxer.js` déjà présent expose `addAudioChunkRaw`. Aucun service payant, nouveau moteur WASM, fichier externe ou téléversement n'est nécessaire.
+
+### Code intégré sur la branche isolée
+
+- `experiences/nova-aac-copy.js` : lecture locale du `moov` (plafond d'index), sélection d'une unique piste AAC-LC mono/stéréo validée par `esds/ASC`, `mdhd`, `stsd`, `stts`, `stsc`, `stsz` et `stco/co64`. Reconstruction bornée des offsets, tailles, durées et PTS audio. **Copie échantillon par échantillon des octets AAC originaux** vers le muxer MP4 sans `AudioEncoder` ni `decodeAudioData`.
+- Cette voie n'est permise que pour **une piste AAC-LC simple dont le début, la couverture et la configuration sont vérifiables**. Elle rejette un priming/trim AAC non nul, les listes de montage complexes, les pistes multiples, les codecs inconnus, des tables malformées ou des données hors limites. L'audit audio source de NOVA 0.7 reste obligatoire, et le contrôle des paquets de sortie de NOVA 0.6 aussi.
+- `nova-export.js` **essaie la copie AAC d'abord**, puis l'encodeur AAC natif pour les cas qui exigent un réencodage, sinon refuse l'export sonore. La case « sans son » reste une action explicitement demandée, jamais un repli silencieux.
+- `nova-export-ui.js` annonce correctement « audio AAC original copié » plutôt que « réencodé ». Cela évite de confondre les deux chemins.
+- `nova-pts.js` introduit `choisirProche` : à la sortie CFR 15 fps, une vraie image source peut être sélectionnée légèrement à l'avance **uniquement si elle est la plus proche et à moins d'une demi-image** (33,3 ms). Aucun nouvel objet/image n'est généré. La fonction historique `choisir` reste disponible pour les cas qui exigent le passé strict.
+- La chronologie source vidéo de notre banc AV est maintenant mesurée avec les **vrais PTS FFprobe**, pas seulement en supposant que l'image zéro démarre à t=0.
+
+### Tests CI réellement exécutés
+
+- `tests/nova-aac-copy.test.mjs` : samples source égaux bit à bit aux octets recopiés, horodatages, ASC, rejets priming, pistes invalides, couverture incomplète et annulations.
+- `tests/nova-pts.test.mjs` : nouvelle sélection temporelle au plus proche et borne de demi-image, y compris pour des intervalles VFR.
+- `tests/nova-browser.test.mjs` : vrai fichier synthétique H.264/AAC généré par FFmpeg, sans edit-list audio/vidéo ambiguë, décodé et converti par NOVA en Chromium Linux. Les paquets audio source et sortie sont comparés par empreintes SHA-256 `ffprobe -show_data_hash`, puis les flashs vidéo et impulsions audio sont comparés sur leurs **timestamps effectifs**, avec un seuil inférieur à une demi-image de sortie.
+- **CI du commit `91e735eb8819967b3a6962b387ff2aec9a4b83b3` : [run 43683773593](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43683773593), 2 jobs success, 67/67 tests unitaires et 9/9 navigateur, 0 échec, 0 ignoré.**
+- **Résultat exact du banc** : **94 paquets AAC identiques bit à bit**, décalage AV ajouté **21,4 ms** (contre 66,7 ms avant ajustement du choix de trames), **dérive 0,0 ms** entre les 2 impulsions, témoins FFmpeg 0 ms sain / 250 ms défaut identifié.
+
+### Limites à ne pas masquer
+
+- Un test synthétique H.264/AAC avec source audio simple et sortie à 15 fps ne certifie **ni synchronisation universelle, ni iPhone Safari physique, ni écoute subjective**, ni conservation des métadonnées originales HDR/couleurs.
+- Certains MP4 AAC contiennent un **priming obligatoire ou un montage que la copie brute ne peut représenter correctement** avec ce muxer : pas de suppression arbitraire du priming. Ces médias ne bénéficient pas de la copie directe ; le chemin d'encodage natif reste requis, et peut lui-même être indisponible.
+- `choisirProche` minimise l'écart CFR en acceptant une image déjà réelle légèrement future (≤ une demi-période) : il n'est **pas** un mode strict « jamais d'anticipation » et ne constitue pas une restauration de cadence intégrale.
+- Le budget mémoire 0.6 est une estimation préventive, pas une mesure d'usage iOS. Les limites pilote restent **12 secondes, 60 Mo de fichier, côté long 640 pixels, sortie 15 fps, source décodée PTS Full HD maximum**.
+- Toujours PR #3 en brouillon, aucune fusion/déploiement, aucune donnée privée ou vidéo d'entraînement publiée.
+
+### Étapes mesurables suivantes
+
+1. Sur une vraie application iPhone Safari, mesurer les variantes sans edit-list, avec priming AAC, HEVC orienté, 30/60 fps, écoute des 2 repères et mémoire.
+2. Rechercher une stratégie standardisée pour **préserver exactement l'edit-list AAC/priming** avant de généraliser la copie sans encodage.
+3. Ajouter le même banc d'événements sur des sources VFR/B-frames réelles (timelines FFprobe et sorties), mesurer les erreurs de cadence.
+4. Puis seulement permettre Full HD/4K après validation mémoire/performance, sans forcer le moteur neuronal.
+
+Références : [MDN — pass-through WebCodecs](https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API/Using_the_WebCodecs_API), [MDN — disponibilité des encodeurs AAC](https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API/Codec_selection), [Apple — priming AAC](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFAppenG/QTFFAppenG.html).
