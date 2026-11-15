@@ -104,3 +104,46 @@ test("sérialiseur bloque un faux statut et élimine les champs injectés",async
  assert.ok(!json.includes("PRIVATE_"));
  assert.deepEqual(JSON.parse(json).exportProposal,{width:160,height:90,fps:15,frames:15});
 });
+
+test("NOVA 0.26 : vidéo verticale HD synthétique : deux raisons exactes + cadence indicative",async()=>{
+ const trackHD={...track,W:1080,H:1920,dw:1080,dh:1920,ns:180,durationUs:6000000};
+ let audioCalls=0;
+ const r=await AUDIT.inspect(options({probe:async()=>trackHD,
+  validate:()=>{throw Error("NOVA HEVC limite stricte")},
+  audioPlan:async()=>{audioCalls++;return null}}));
+ assert.equal(r.status,"hevc-profile-or-timeline-incompatible");
+ assert.deepEqual(r.blockers,["coded-pixels-over-limit","source-frames-over-limit"]);
+ assert.deepEqual(r.advisories,["source-rate-above-output-rate"]);
+ assert.equal(r.source.estimatedSourceFps,30);
+ assert.equal(r.audio,"not-tested");
+ assert.equal(audioCalls,0,"ne doit pas tenter l'audio si le profil vidéo échoue");
+ const j=JSON.parse(AUDIT.serialiser(r));
+ assert.deepEqual(j.blockers,["coded-pixels-over-limit","source-frames-over-limit"]);
+ assert.equal(j.source.estimatedSourceFps,30);
+ assert.equal(j.pilotLimits.codedPixelAreaMax,230400);
+ assert.equal(j.pilotLimits.sourceFramesMax,90);
+ assert.equal(j.pilotLimits.outputFpsMax,15);
+ assert.equal(j.privacy.mediaModified,false);
+ assert.ok(!JSON.stringify(j).includes(file.name));
+});
+test("NOVA 0.26 : distinguer durée / dimensions impaires, sans fuite",async()=>{
+ const r=await AUDIT.inspect(options({
+  probe:async()=>({...track,W:639,H:359,ns:15,durationUs:13000000}),
+  validate:()=>{throw Error("duration rejected")}
+ }));
+ assert.equal(r.status,"hevc-profile-or-timeline-incompatible");
+ assert.deepEqual(r.blockers,["duration-over-limit","coded-dimensions-not-even"]);
+ const j=JSON.parse(AUDIT.serialiser({...r,blockers:[...r.blockers,"PRIVATE-RAW",r.blockers[0]],
+  advisories:["source-rate-above-output-rate","PRIVATE-RAW"]}));
+ assert.deepEqual(j.blockers,["duration-over-limit","coded-dimensions-not-even"]);
+ assert.deepEqual(j.advisories,["source-rate-above-output-rate"]);
+ assert.ok(!JSON.stringify(j).includes("PRIVATE"));
+});
+test("NOVA 0.26 : rejet VUI ou PTS avec source petite : pas de fausse raison connue",async()=>{
+ const r=await AUDIT.inspect(options({
+  validate:()=>{throw Error("HDR/P3 sans preuve de couleur")}
+ }));
+ assert.equal(r.status,"hevc-profile-or-timeline-incompatible");
+ assert.deepEqual(r.blockers,[]);
+ assert.deepEqual(r.advisories,[]);
+});
