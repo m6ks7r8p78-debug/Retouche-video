@@ -1,0 +1,19 @@
+{
+ "_provenance": {
+  "declare_par": "propriétaire du projet RetoucheProAI",
+  "date": "2026-11-14",
+  "canal": "conversation Claude (« j'ai déjà donné toutes les autorisations à ChatGPT »)",
+  "portee": "bibliothèque privée de recherche (157 vidéos + 1 image) cataloguée par ChatGPT",
+  "limites": [
+   "Ne couvre pas le consentement des AUTRES personnes représentées : à vérifier avant publication, partage externe, création de dataset diffusé ou d'avatars les concernant.",
+   "Aucun média, nom de fichier, empreinte individuelle ou donnée biométrique dans GitHub (règle du prompt maître, maintenue).",
+   "L'entraînement autorisé n'est lancé qu'avec un protocole validé, partitions sans fuite et modèle/licence compatibles ; il n'est pas déclenché automatiquement.",
+   "Aucune dépense : pas de service payant."
+  ]
+ },
+ "*": {
+  "analyse_technique": "oui", "evaluation_benchmark": "oui", "stockage_durable": "oui", "annotation": "oui",
+  "creation_dataset": "oui", "entrainement": "oui", "recherche_externe_partage": "oui", "publication": "oui",
+  "avatars_personnages": "oui"
+ }
+}

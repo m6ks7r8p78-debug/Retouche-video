@@ -1,0 +1,25 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const {fusionnerMasquesCausaux:fun}=require('../outils/directeur-fusion-temporelle-ar.cjs');
+const base=()=>({largeur:3,hauteur:2,courant:new Float32Array([.2,.2,.2,.2,.2,.2]),
+  precedent:new Float32Array([0,1,0,0,1,0]),fluxArriere:new Float32Array(12),fiabiliteMouvement:.97,coupeScene:false,coefficient:.45,zoneAutorisee:null});
+const call=(e={})=>fun({...base(),...e});
+test('fonctionne avec état temporel antérieur, sans rendu NVIDIA',()=>{const r=call();assert.equal(r.pixelsLisses,6);assert.equal(r.sdkNvidiaDLSS5Utilise,false);assert.equal(r.applicationSurMedia,false)});
+test('un flux de déplacement arrière entier cible la bonne position précédente',()=>{const d=base();for(let i=0;i<6;i++)d.fluxArriere[2*i]=-1;const r=fun(d);assert.equal(r.probabilites[2]>.5,true);assert.equal(r.probabilites[0],d.courant[0]);});
+test('interpolation bilinéaire fractionnaire',()=>{const d=base();d.fluxArriere[0]=.5;const r=fun(d);assert.ok(Math.abs(r.probabilites[0]-(.2*.55+.5*.45))<1e-5)});
+test('coupure de scène remet à zéro l’historique',()=>{const r=call({coupeScene:true});assert.equal(r.pixelsLisses,0);assert.equal(r.reinitialise,true);assert.deepEqual([...r.probabilites],[...base().courant])});
+test('mouvement non fiable interdit le mélange temporel',()=>assert.equal(call({fiabiliteMouvement:.89}).pixelsLisses,0));
+test('absence de précédent interdit tout mélange',()=>assert.equal(call({precedent:null}).pixelsLisses,0));
+test('absence de flux interdit tout mélange',()=>assert.equal(call({fluxArriere:null}).pixelsLisses,0));
+test('coefficient zéro est une opération neutre',()=>assert.equal(call({coefficient:0}).pixelsLisses,0));
+test('extérieur de zone intact',()=>{const r=call({zoneAutorisee:new Uint8Array([0,0,1,0,0,0])});assert.equal(r.pixelsLisses,1);for(const i of [0,1,3,4,5])assert.equal(r.probabilites[i],base().courant[i]);});
+test('zone entièrement interdite ne subit aucune modification',()=>assert.equal(call({zoneAutorisee:new Uint8Array(6)}).pixelsLisses,0));
+test('interdit les probabilités invalides et NaN',()=>{assert.throws(()=>call({courant:new Float32Array([0,NaN,0,0,0,0])}));assert.throws(()=>call({precedent:new Float32Array([-1,0,0,0,0,0])}))});
+test('interdit le flux énorme et non fini',()=>{assert.throws(()=>call({fluxArriere:Float32Array.from([Infinity,...Array(11).fill(0)])}));assert.throws(()=>call({fluxArriere:Float32Array.from([70,...Array(11).fill(0)])}))});
+test('interdit les dimensions excessives',()=>assert.throws(()=>call({largeur:4096,hauteur:4096})));
+test('interdit masques de zone invalides',()=>assert.throws(()=>call({zoneAutorisee:new Uint8Array([2,0,0,0,0,0])})));
+test('refuse noms de fichiers ou données privées',()=>assert.throws(()=>call({fichier:'secret.mov'}),/interdites/));
+test('ne modifie pas les entrées',()=>{const d=base(),cur=Float32Array.from(d.courant),prev=Float32Array.from(d.precedent),fl=Float32Array.from(d.fluxArriere);fun(d);assert.deepEqual(d.courant,cur);assert.deepEqual(d.precedent,prev);assert.deepEqual(d.fluxArriere,fl)});
+test('aucun entraînement ni publication implicite',()=>{const r=call();assert.equal(r.deploiement,false);assert.equal(r.publication,false);assert.equal(r.modeleValide,false)});

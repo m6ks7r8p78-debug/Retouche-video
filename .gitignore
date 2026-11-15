@@ -16,3 +16,21 @@ tests/prive/
 tests/labo_filtres/migan_pipeline_v2.onnx
 tests/labo_filtres/hand_landmarker.task
 tests/medias/format/
+tests/medias/filtre_multi/
+
+# RNE : modèles entraînés et index de la Bibliothèque personnelle sont privés.
+*.pt
+*.pth
+*.safetensors
+rne_manifest_prive.json
+rne_2x_rapport_prive.json
+sorties_rne/
+
+# RNE07 - caches de pixels et manifests d'entraînement strictement privés
+consent_manifest_PRIVATE.json
+preparation_report_PRIVATE.json
+report_PRIVATE.json
+**/examples_PRIVATE/
+**/example_cache_PRIVATE/
+**/triplets_PRIVATE/
+**/rne07_private/

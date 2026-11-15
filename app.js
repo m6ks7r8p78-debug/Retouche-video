@@ -6,13 +6,72 @@ function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((
   s.onload=ok;s.onerror=()=>{delete __charges[src];ko(new Error("Impossible de charger "+src+" (connexion ?)"))};document.head.appendChild(s)}))}
 function chargerModule(n){return Promise.all(MODULES[n].map(chargerScript))}
 const $=s=>document.querySelector(s);
+/* Directeur IA expérimental : plan global fondé sur les mesures existantes.
+   Pas de nouveau téléchargement de modèle ni de réseau ; on ne substitue pas le plan au moteur d'export. */
+function planDirecteur(type,m,fl){
+  try{
+    if(!window.DIRECTEUR_IA)return null;
+    const w=type==="video"?v.videoWidth:m.w,h=type==="video"?v.videoHeight:m.h;
+    const mobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const choix={mode:"auto",longueur:$("#q")&&$("#q").value==="-1"?"origine":Math.max(0,+($("#q")&&$("#q").value)||0),
+      autoriserGeneration:!!($("#o_max")&&$("#o_max").checked)};
+    const cap=window.DIRECTEUR_CAPACITES?DIRECTEUR_CAPACITES.inspecter({
+      type,webgl:!!gl,videoDecoder:!!window.VideoDecoder,videoEncoder:!!window.VideoEncoder,
+      audioEncoder:!!window.AudioEncoder,scintillementMesure:!!fl,
+      voixModele:!!(window.MODELS&&!MODELS.isOff("voix")&&MODELS.compat("voix").ok),
+      reconstructionAutorisee:choix.autoriserGeneration
+    }):null;
+    const disponibles=cap?cap.disponibles:{voix:!(window.MODELS&&MODELS.isOff("voix"))};
+    const p=DIRECTEUR_IA.planifier({type,w,h,mesures:m,scintillement:fl,appareil:{mobile},choix,disponibles});
+    if(cap)p.capacites={version:cap.version,disponibles:cap.disponibles,options:cap.options,raison:cap.raison};
+    if(type==="video"&&window.DIRECTEUR_SCENES&&Array.isArray(m.echantillons)){
+      /* Diagnostic de variations observées dans le film ; aucune adaptation non validée injectée dans l'export. */
+      p.zonage=DIRECTEUR_SCENES.analyser({duree:v.duration,echantillons:m.echantillons});
+    }
+    window.__dirplan=p;return p;
+  }catch(e){console.warn("Directeur IA : plan non calculé",e);return null}
+}
+function afficherDirecteur(p){
+  const box=$("#dirbox"),sum=$("#dirsummary"),liste=$("#dirlist");
+  if(!box||!sum||!liste)return;
+  if(!p){box.hidden=true;liste.textContent="";return}
+  box.hidden=false;liste.textContent="";
+  const actifs=p.operations.filter(x=>x.id!=="controle"&&x.id!=="export");
+  sum.textContent="Directeur IA · "+(actifs.length?actifs.length+" traitements évalués":"source peu dégradée");
+  for(const a of p.operations){const li=document.createElement("li");li.textContent=a.nom+" — "+a.raison+(a.genere?" (reconstruction, à vérifier)":"");liste.appendChild(li)}
+  for(const a of p.avertissements){const li=document.createElement("li");li.textContent="Limite : "+a;liste.appendChild(li)}
+  if(p.capacites){
+    for(const a of p.ecartes.slice(0,3)){const li=document.createElement("li");li.textContent="Non retenu : "+a.id+" — "+a.raison;liste.appendChild(li)}
+    const optionnels=p.capacites.options.filter(x=>x.possible);
+    if(optionnels.length){const li=document.createElement("li");
+      li.textContent="Outils supplémentaires disponibles sur demande : "+optionnels.map(x=>x.id.replaceAll("_"," ")).join(", ")+". Aucun n'est exécuté automatiquement.";
+      liste.appendChild(li)}
+  }
+  if(p.zonage&&p.zonage.zones.length){
+    const li=document.createElement("li");li.textContent="Variations observées : "+p.zonage.zones.length+" zone(s) estimée(s) sur "+p.zonage.echantillons+" images de contrôle. Frontières approximatives ; seul le débruitage classique peut varier prudemment à l'export.";liste.appendChild(li);
+    if(p.zonage.zones.length>1)for(const z of p.zonage.zones){
+      const note=document.createElement("li");
+      note.textContent=Math.round(z.debut)+"–"+Math.round(z.fin)+" s · "+z.priorites.join(", ")+" ("+(z.confiance==="faible"?"faible confiance":"échantillonnage limité")+")";
+      liste.appendChild(note);
+    }
+  }
+}
+/* Le choix de résolution ou du moteur IA peut changer après l'analyse.
+   Recalculer le plan sans refaire le décodage lourd ; ne jamais réutiliser un autre fichier. */
+function rafraichirDirecteur(){
+  try{
+    if(mode==="video"&&window.__prof&&window.__prof.m)afficherDirecteur(planDirecteur("video",window.__prof.m,window.__prof.fl));
+    else if(mode==="photo"&&PHOTO.last)afficherDirecteur(planDirecteur("photo",PHOTO.last,null));
+  }catch(e){console.warn("Actualisation du Directeur IA indisponible",e)}
+}
+for(const id of ["q","o_max"]){const el=$("#"+id);if(el)el.addEventListener("change",rafraichirDirecteur)}
 $("#ver").textContent=VER;
 const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||""})};
 const cv=$("#cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:false});
 const v=document.createElement("video");v.playsInline=true;v.muted=true;v.setAttribute("playsinline","");v.preload="auto";
 v.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(v);
 let HP=.7;/* force de la protection des hautes lumières */
-const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],r:1};let WBG=[1,1,1],DFG=1;
+const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],r:1};let WBG=[1,1,1],DFG=1,DIRDN=1,DIRSH=1;
 /* ===== Profils de rendu =====
    Ils ne remplacent pas l'analyse automatique : ils dosent ce qu'elle a réglé (P reste la base, visible dans les curseurs).
    - sh, dn, cs : multiplient netteté, réduction du bruit, nettoyage des couleurs ;
@@ -273,7 +332,7 @@ function draw(el){
   const CL=show&&!dustOnly&&window.CAM?CAM.reglages():null;
   if(CL&&progL&&gl.getProgramParameter(progL,gl.LINK_STATUS)&&(CL.vg>0||CL.ca[0]||CL.ca[1])){const R=.5*Math.hypot(w,h);
     pass(progL,src,texL,w,h,()=>{gl.uniform1i(UL.t,0);gl.uniform2f(UL.px,1/w,1/h);gl.uniform2f(UL.sc,w/R,h/R);gl.uniform2f(UL.ca,CL.ca[0],CL.ca[1]);gl.uniform1f(UL.vg,CL.vg);gl.uniform1f(UL.sig,1);gl.uniform1f(UL.dk,0)});src=texL}
-  const eSh=PROF.v("sh")*(window.CAM?CAM.partNettete():1),eDn=PROF.v("dn"),eCs=PROF.v("cs");
+  const eSh=PROF.v("sh")*(window.CAM?CAM.partNettete():1)*(exporting&&mode==="video"?DIRSH:1),eDn=Math.min(1,PROF.v("dn")*(exporting&&mode==="video"?DIRDN:1)),eCs=PROF.v("cs");
   if(show&&!srIn&&!dustOnly&&(eSh>0||eDn>0||eCs>0)){pass(progB,src,tex3,w,h,()=>{gl.uniform1i(UB.t,0);gl.uniform2f(UB.px,1/w,1/h);gl.uniform1f(UB.sh,eSh);gl.uniform1f(UB.dn,eDn);gl.uniform1f(UB.cs,eCs)});src=tex3}
   /* v6.0 caméra virtuelle, 2e temps de l'objectif : le flou, APRÈS le débruitage (sinon le bruit serait accentué) ; pas sur l'image IA, qui a déjà rendu le détail */
   if(CL&&!srIn&&CL.k>.05&&progL){const R=.5*Math.hypot(w,h),dst=src===texL?texL2:texL;
@@ -452,7 +511,7 @@ function loop(){
 /* Réglages avancés */
 const S=[["cs","Nettoyage des couleurs",0,1,.05],["br","Luminosité",-.3,.3,.01],["co","Contraste",.6,1.6,.01],["sa","Couleurs",0,2,.01],["wa","Chaleur",-.15,.15,.01],["wb","Équilibre des couleurs (dominante)",0,1,.05],["sh","Netteté",0,2,.05],["dn","Réduction du bruit",0,1,.05]];
 $("#sl").innerHTML=S.map(([k,n,a,b,s])=>`<label class="s"><span>${n}</span><input type="range" id="r_${k}" min="${a}" max="${b}" step="${s}" value="${P[k]}"></label>`).join("");
-S.forEach(([k])=>{$("#r_"+k).oninput=e=>{P[k]=+e.target.value;draw()}});
+S.forEach(([k])=>{$("#r_"+k).oninput=e=>{P[k]=+e.target.value;if(k==="dn")window.__dirDnManuel=true;draw()}});
 const sync=()=>{S.forEach(([k])=>{$("#r_"+k).value=P[k]});draw()};
 const PR={auto:{br:.01,co:1.05,sa:1.04,wa:0,sh:.3,dn:.2},vhs:{br:.02,co:1.08,sa:1,wa:0,sh:.4,dn:.5},film:{br:.01,co:1.06,sa:1.1,wa:-.05,sh:.25,dn:.2},dark:{br:.045,co:1.1,sa:1.08,wa:0,sh:.25,dn:.65},beauty:{br:0,co:1.04,sa:1,wa:0,sh:.08,dn:0}};
 $("#wbb").onclick=async()=>{const b=$("#wbb");b.disabled=true;try{await balanceColors()}finally{b.disabled=false}};
@@ -758,7 +817,7 @@ function btUpdate(){
 function loadFile(f){
   return new Promise(res=>{
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
-  curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
+  window.__dirplan=null;window.__dirqualite=null;window.__prof=null;window.__dirDnManuel=false;DIRDN=DIRSH=1;try{if(REC)REC.last=null;afficherDirecteur(null)}catch(e){}curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
   url=URL.createObjectURL(f);v.src=url;v.load();
   msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres","pv","erb","rvb","dfb"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
@@ -842,13 +901,16 @@ const AZ={
     const pc=q=>{let a=0;for(let i=0;i<256;i++){a+=h[i];if(a>=q*n)return i/255}return 1};
     return{p2:pc(.02),p50:pc(.5),p98:pc(.98),sat:sat/(n*255)}},
   async run(el,o){
-    o=o||{};const dur=el.duration||1,fps=o.fps||30,dt=1/fps,P={n:0,blk:[],dust:[],noise:[],sharp:[],p2:[],p50:[],p98:[],sat:[],gains:[],acc:[]};
+    o=o||{};const dur=el.duration||1,fps=o.fps||30,dt=1/fps,P={n:0,blk:[],dust:[],noise:[],sharp:[],p2:[],p50:[],p98:[],sat:[],gains:[],acc:[],echantillons:[]};
     const pos=[.1,.22,.34,.46,.58,.7,.82,.92],tri=new Set([1,3,5]);
     for(let s=0;s<pos.length;s++){
       if(o.cancel&&o.cancel())return null;
       const t=Math.min(dur-.3,Math.max(.05,dur*pos[s]));await AZ.seek(el,t);
       const f=AZ.grab(el,480),st=AZ.stats(f);P.p2.push(st.p2);P.p50.push(st.p50);P.p98.push(st.p98);P.sat.push(st.sat);
-      P.noise.push(AZ.noise(f));P.sharp.push(AZ.sharp(f));const g=AZ.gains(f);if(g)P.gains.push(g);P.n++;
+      const noise=AZ.noise(f),sharp=AZ.sharp(f);
+      P.noise.push(noise);P.sharp.push(sharp);
+      P.echantillons.push({t:+Math.max(0,t).toFixed(3),p2:st.p2,p50:st.p50,p98:st.p98,noise,sharp});
+      const g=AZ.gains(f);if(g)P.gains.push(g);P.n++;
       if(tri.has(s)&&dur>1){
         const a=AZ.grab(el,640);await AZ.seek(el,t+dt);const b=AZ.grab(el,640);await AZ.seek(el,t+2*dt);const c=AZ.grab(el,640);
         P.dust.push(AZ.dust(a,b,c));try{const bk=AZ.block(el);if(bk)P.blk.push(bk)}catch(e){}
@@ -860,7 +922,7 @@ const AZ={
     }
     const M=AZ.med,mg=k=>P.gains.length?M(P.gains.map(g=>g[k])):1;
     return{n:P.n,noise:M(P.noise),sharp:M(P.sharp),p2:M(P.p2),p50:M(P.p50),p98:M(P.p98),sat:M(P.sat),
-      blk:P.blk.length?{r:M(P.blk.map(b=>b.r)),px:M(P.blk.map(b=>b.px)),py:M(P.blk.map(b=>b.py))}:null,dust:P.dust.length?M(P.dust):0,shake:P.acc.length?M(P.acc):0,gains:P.gains.length>=3?[mg(0),mg(1),mg(2)]:null};
+      blk:P.blk.length?{r:M(P.blk.map(b=>b.r)),px:M(P.blk.map(b=>b.px)),py:M(P.blk.map(b=>b.py))}:null,dust:P.dust.length?M(P.dust):0,shake:P.acc.length?M(P.acc):0,gains:P.gains.length>=3?[mg(0),mg(1),mg(2)]:null,echantillons:P.echantillons};
   },
   small(f,W){const k=f.W/W,H=Math.round(f.H/k),y=new Float32Array(W*H);for(let j=0;j<H;j++)for(let i=0;i<W;i++){let s=0,c=0;for(let dj=0;dj<k;dj++)for(let di=0;di<k;di++){s+=f.y[Math.min(f.H-1,Math.floor(j*k)+dj)*f.W+Math.min(f.W-1,Math.floor(i*k)+di)];c++}y[j*W+i]=s/c}return{W,H,y}}
 };
@@ -925,6 +987,8 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       const r=REC.recommend(m,fl);REC.last={m,fl,r};window.__prof={m,fl};
       try{PROF.recommend({w:v.videoWidth,h:v.videoHeight,noise:m.noise,blk:m.blk,p50:m.p50,p98:m.p98})}catch(e){}
       const ad=LEARN.adapt(r.o);r.learn=ad.notes;
+      const pd=planDirecteur("video",m,fl);
+      if(pd)DIRECTEUR_IA.concilier(r,pd);
       REC.apply(r);
       /* v3.7 : réglages calculés pour CHAQUE vidéo d'après ses mesures (avant, netteté 0,3 et bruit 0,2 fixes, chaleur fixe :
          toutes les vidéos recevaient presque les mêmes réglages). Base calée sur le style de la personne (5 nov. 2026). */
@@ -944,7 +1008,10 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
         P.co=cl("co",P.co-.10*Math.max(0,Math.min(1,(P.co-1)/.15)));if(m.p50<.25&&P.br<0)P.br=0;P.sa=cl("sa",P.sa+.17);P.br=cl("br",m.p50<.25?P.br:P.br-.02);P.cs=cl("cs",P.cs-.05);sync()}
       if(r.o.bias){for(const k in r.o.bias)P[k]=Math.max(k==="co"||k==="sa"?.8:-.3,Math.min(k==="co"||k==="sa"?1.4:.3,P[k]+r.o.bias[k]));sync()}
       if(r.o.skip)r.it&&r.it.forEach((k,i)=>{const id={dust:"o_dust",defl:"o_defl",stab:"o_stab",voice:"o_voice"}[k];if(id&&r.o.skip[id]){REC.toggle(k,false,r);(r.off=r.off||{})[i]=true}});
-      REC.show(r);LEARN.snap();
+      /* Directeur IA : atténuer uniquement une netteté excessive sur un média vraiment abîmé.
+         Ne touche pas aux modèles, aux choix manuels ni aux autres recommandations de REC. */
+      if(pd&&!PROF.manual){const n=DIRECTEUR_IA.protegerNettete(P.sh,pd);if(n!==P.sh){P.sh=n;sync()}}
+      REC.show(r);afficherDirecteur(pd);LEARN.snap();
       /* v6.0 caméra virtuelle : fiche de l'appareil et mesures de l'objectif (6 images), même quand la case est décochée : la fiche s'affiche
          et, avec l'accord « diagnostic », ses nombres aident à régler l'app pour chaque type d'appareil */
       if(window.CAM&&!halt()){try{if(await lim(CAM.analyser(v,my,{bruit:m.noise,blocs:m.blk&&m.blk.r,cancel:halt}),25000,null)&&!halt()){camShow();DIAG.send("camera",CAM.diag())}}catch(e){}}
@@ -984,9 +1051,25 @@ REC.after=async function(){
     if(m.shake>=REC.T.shake&&!A.stab){sug.push("Le résultat tremble encore : activer la stabilisation.");ch.stab=true}
     if(m.noise>=REC.T.noiseMid&&P.dn<.5){sug.push("Le bruit est encore visible : réduction du bruit renforcée.");ch.dn=m.noise>=REC.T.noiseHi?.6:.45}
     const ul=$("#rec_a");ul.textContent="";
-    if(!sug.length){$("#rec_at").textContent="Résultat vérifié : aucun défaut mesurable ne reste. Si quelque chose te gêne, ouvre « Réglages avancés ».";return}
-    $("#rec_at").textContent="J’ai analysé ta vidéo améliorée et je propose :";
-    sug.forEach(t=>{const li=document.createElement("li");li.textContent=t;ul.appendChild(li)});
+    /* Comparaison technique de la sortie avec les mesures de la source.
+       Un meilleur indicateur n'est PAS une preuve de réalisme et ne bloque pas l'export. */
+    let qc=null;
+    try{if(window.DIRECTEUR_QUALITE&&REC.last&&REC.last.m&&REC.last.m.kind!=="photo"){
+      qc=DIRECTEUR_QUALITE.evaluer(REC.last.m,m,{media:"video"});window.__dirqualite=qc;
+    }}catch(e){console.warn("Contrôle comparatif indisponible",e)}
+    const note=t=>{const li=document.createElement("li");li.textContent=t;ul.appendChild(li)};
+    if(qc){
+      const c=qc.compte;
+      note("Comparaison technique : "+c.ameliore+" mesure(s) en progrès, "+c.degrade+" en recul, "+c.stable+" stable(s). Ce n'est pas une mesure de réalisme.");
+      for(const x of qc.alertes.slice(0,3))note("À vérifier : "+x);
+      for(const x of qc.prudences.slice(0,2))note("Prudence : "+x);
+    }
+    if(!sug.length){
+      $("#rec_at").textContent=qc&&qc.alertes.length?"Certaines mesures se sont dégradées : inspecte le rendu avant de l'enregistrer.":"Contrôle technique terminé : aucun défaut ciblé ne justifie un nouvel essai automatique.";
+      return;
+    }
+    $("#rec_at").textContent="Analyse de la vidéo exportée :";
+    sug.forEach(note);
     b.hidden=false;b.textContent="Réessayer avec ces réglages";
     b.onclick=()=>{
       const set=(id,v)=>{$("#"+id).checked=v;try{localStorage.setItem(id,v?"1":"0")}catch(x){}};
@@ -1691,7 +1774,7 @@ $("#ex").onclick=async()=>{
   if(REC.pr){window.__exStarting=true;msg("Fin de l’analyse, puis l’export démarre…");REC.stop=true;REC.redo=curFile;try{await Promise.race([REC.pr,new Promise(r=>setTimeout(r,4000))])}catch(e){}finally{window.__exStarting=false;REC.pr=null}}
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
   if(SPD.k()!==1&&!window.__plan&&!window.__baMode)return TR.go(SPD.k());
-  exporting=true;cancel=false;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
+  exporting=true;cancel=false;DIRDN=DIRSH=1;window.__dirRendu=null;v.pause();show=1;try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
   try{const ch=window.__baMode||window.__plan?null:LEARN.record();DIAG.send("export_debut",ch&&Object.keys(ch).length?{ajustements:ch}:{})}catch(e){}
   window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
   $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;$("#dupn").hidden=true;
@@ -1702,17 +1785,46 @@ $("#ex").onclick=async()=>{
     if(glPerdu()){msg("Le moteur graphique de l’iPhone redémarre…");if(!(await glPret(8000)))throw new Error("moteur graphique indisponible")}
     OFPS=window.__plan?(window.__planFps||FPS):await measureFps();
     const isPlan=!!window.__plan,fast=$("#o_fast").checked,fluid=!isPlan&&!fast&&$("#o_fluid").checked&&OFPS<28.5,OUTF=fluid?30:OFPS;
+    /* Adaptation temporelle v0.4 : légère modulation de l'étape de débruitage EXISTANTE,
+       pas de seconde passe GPU, pas de modèle nouveau ni de variation de lumière/couleur.
+       Un profil ou curseur manuel, une sortie IA ou un montage complexe prévaut toujours. */
+    const dirSource=window.__dirplan&&window.__dirplan.zonage;
+    const dirRendu=window.DIRECTEUR_RENDU&&DIRECTEUR_RENDU.preparer({
+      zonage:dirSource,bruitGlobal:window.__prof&&window.__prof.m&&window.__prof.m.noise,
+      activer:!isPlan&&!fast&&!window.__baMode&&!PROF.manual&&!window.__dirDnManuel,
+      manuel:!!(PROF.manual||window.__dirDnManuel),
+      ia:!!SRX.on()
+    });
+    window.__dirRendu=dirRendu?{actif:dirRendu.actif,raison:dirRendu.raison,
+      imagesAdaptees:0,facteurMin:1,facteurMax:1,imagesNettete:0,netteteMin:1,amplitude:dirRendu.amplitude}:null;
     let [tS,tE]=isPlan?[0,v.duration]:trimRange();const trimmed=!isPlan&&(tS>.05||tE<v.duration-.05);
     if(fast)stabOn=false;
     if(!isPlan&&!fast&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
     const dT=Math.max(.2,tE-tS);
     msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde");
-    /* résolution et encodeur */
-    let cfg=null,rdr0=false;window.__memDown=false;
+    /* résolution et encodeur : validation préalable des dimensions et de la mémoire.
+       Le codec réel est ensuite éprouvé par VideoEncoder.isConfigSupported. */
+    let cfg=null,rdr0=false;window.__memDown=false;window.__dirExport=null;
     /* v6.8 : « Préparer pour X » (case décochée par défaut) : H.264, taille et débit selon les limites publiées par X ; X recompresse quand même */
     const XP=window.ANALYSE&&$("#o_x")&&$("#o_x").checked?ANALYSE.profilX(v.videoWidth,v.videoHeight,OUTF,dT,!!($("#o_xp")&&$("#o_xp").checked)):null;window.__xprof=XP;
     if(XP&&XP.avertissements.length)msg("Pour X : "+XP.avertissements.join(" "));
-    for(const L of XP?[Math.max(XP.largeur,XP.hauteur),1280]:[+$("#q").value,1920,1280]){
+    const limitesExport={};
+    if(gl)try{
+      limitesExport.texture=gl.getParameter(gl.MAX_TEXTURE_SIZE);
+      limitesExport.rendu=gl.getParameter(gl.MAX_RENDERBUFFER_SIZE);
+      limitesExport.viewport=Array.from(gl.getParameter(gl.MAX_VIEWPORT_DIMS));
+    }catch(e){}
+    const diagnosticExport=!XP&&window.DIRECTEUR_EXPORT?DIRECTEUR_EXPORT.preparer({
+      w:v.videoWidth,h:v.videoHeight,demande:+$("#q").value,mobile:/iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+      limites:limitesExport}):null;
+    window.__dirExport=diagnosticExport;
+    if(diagnosticExport&&diagnosticExport.repli){
+      msg("Résolution ajustée pour préserver la stabilité : "+diagnosticExport.raisonRepli);
+      window.__memDown=true;
+    }
+    const candidatsExport=XP?[Math.max(XP.largeur,XP.hauteur),1280]:
+      diagnosticExport?diagnosticExport.candidats.map(x=>x.longueur):[+$("#q").value,1920,1280];
+    for(const L of candidatsExport){
       if(window.__plan&&L>1920&&window.__plan.length/FPS>60){msg("Version longue : export en Full HD pour ne pas saturer la mémoire de l’iPhone.");continue}
       size(L);
       /* fichier le plus léger possible sans perte visible : HEVC (H.265) quand l'iPhone sait l'encoder, sinon H.264.
@@ -1852,7 +1964,15 @@ $("#ex").onclick=async()=>{
     poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();let glN=0;window.__glN=0;
     for(let i=0;i<total;i++){
       if(cancel||err)break;
-      const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
+      const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;
+      if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
+      /* Horodatage SOURCE : préserve la cadence, les plans et l'interpolation existants. */
+      DIRDN=dirRendu&&dirRendu.actif?DIRECTEUR_RENDU.facteur(dirRendu,(pl.a+.5)/OFPS):1;
+      DIRSH=dirRendu&&dirRendu.actif?DIRECTEUR_RENDU.facteurNettete(dirRendu,(pl.a+.5)/OFPS):1;
+      /* Une modification manuelle pendant l'export prend effet immédiatement,
+         sans écraser la correction choisie par la personne. */
+      if(PROF.manual||window.__dirDnManuel)DIRDN=DIRSH=1;
+      /* Les compteurs ne sont incrémentés qu'après encodage réussi, pas sur les images retentées. */
       /* saut en arrière dans un plan (prolongation) : la lecture séquentielle repart de là */
       if(rdr&&isPlan&&(pl.a<pMax-1||(SRX.remote&&pl.a===pMax-1&&!rdr.peek(pl.a)))){
         /* v6.1 : à l'envers avec l'IA rapide : la lecture repart de l'image clé voisine, sans relire tout le fichier */
@@ -1909,7 +2029,14 @@ $("#ex").onclick=async()=>{
         if(prevT){let sm=true;for(let z=0;z<td.length;z++){if(td[z]!==prevT[z]){sm=false;break}}if(sm){dup++;run++;if(run>maxRun)maxRun=run}else run=0}
         prevT=td}
       tDu+=performance.now()-d0;
-      const e0=performance.now();enc.encode(f,{keyFrame:i%60===0});f.close();tEn+=performance.now()-e0;if(!rdr&&qa>=0){go(qa+POOL);if(qb>=0)go(qb+POOL)}
+      const e0=performance.now();enc.encode(f,{keyFrame:i%60===0});f.close();tEn+=performance.now()-e0;
+      if(window.__dirRendu&&Math.abs(DIRDN-1)>.001){
+        const d=window.__dirRendu;d.imagesAdaptees++;d.facteurMin=Math.min(d.facteurMin,DIRDN);d.facteurMax=Math.max(d.facteurMax,DIRDN);
+      }
+      if(window.__dirRendu&&Math.abs(DIRSH-1)>.001){
+        const d=window.__dirRendu;d.imagesNettete++;d.netteteMin=Math.min(d.netteteMin,DIRSH);
+      }
+      if(!rdr&&qa>=0){go(qa+POOL);if(qb>=0)go(qb+POOL)}
       const t2=performance.now();tD+=t2-t1;
       while(enc.encodeQueueSize>6)await wait(8);
       tQ+=performance.now()-t2;
@@ -1942,6 +2069,10 @@ $("#ex").onclick=async()=>{
       if(pr!==true&&window.__plan)throw new Error("le fichier est illisible (code "+pr+")");
       if(pr!==true){
         msg("Le fichier image par image n’est pas lisible ici (code "+pr+"). Passage à la méthode de secours en temps réel : garde l’écran allumé…");
+        /* Le moteur de secours n'est pas synchronisé avec les zones temporelles.
+           Revenir au débruitage classique : ne pas attribuer les corrections abandonnées à la sortie. */
+        DIRDN=DIRSH=1;
+        if(window.__dirRendu){Object.assign(window.__dirRendu,{actif:false,raison:"Export de secours non piloté par zones",imagesAdaptees:0,facteurMin:1,facteurMax:1,imagesNettete:0,netteteMin:1})}
         $("#pg").value=0;outBlob=await realtime();wa=!rtNoSound;
         if(cancel)throw new Error("export annulé.");
       }
@@ -1960,7 +2091,13 @@ $("#ex").onclick=async()=>{
         const l=$("#orep_l");l.textContent="";let nb=0;ro.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
         $("#orep_s").textContent=nb?"Compte rendu de l’export : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu de l’export : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro;window.__retried4k=false}catch(e){}
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
-      try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)]}))}catch(e){}
+      try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)],
+        precontrole_export:window.__dirExport?{demande:window.__dirExport.demande,
+          resolution_preferee:window.__dirExport.sortiePreferee?window.__dirExport.sortiePreferee.largeur+"x"+window.__dirExport.sortiePreferee.hauteur:null,
+          repli:window.__dirExport.repli,raison:window.__dirExport.raisonRepli,examen8k:window.__dirExport.examen8k}:undefined,
+        adaptation_temporelle:window.__dirRendu?{actif:window.__dirRendu.actif,raison:window.__dirRendu.raison,
+          images:window.__dirRendu.imagesAdaptees,facteurMin:+window.__dirRendu.facteurMin.toFixed(3),facteurMax:+window.__dirRendu.facteurMax.toFixed(3),
+          imagesNettete:window.__dirRendu.imagesNettete,netteteMin:+window.__dirRendu.netteteMin.toFixed(3)}:undefined}))}catch(e){}
       try{DIAG.send("export",{ok:true,codec:cfg.codec,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,...(window.__glN?{gl_reprises:window.__glN}:{}),msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
@@ -1973,7 +2110,7 @@ $("#ex").onclick=async()=>{
     try{DIAG.send("export",{ok:false,err:m.slice(0,300)})}catch(x){}}
   finally{
     if(SRX.remote){try{SRX.remote.fermer()}catch(e){}SRX.remote=null;SRX.idx=-1}
-    window.__plan=null;window.__planK=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
+    window.__plan=null;window.__planK=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;DIRDN=DIRSH=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}
     if(window.__retryPending)try{$("#q").dispatchEvent(new Event("change"));document.querySelectorAll("[data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q===$("#q").value?"true":"false"))}catch(e){}
@@ -2702,7 +2839,7 @@ $("#pickp").onclick=()=>$("#fp").click();
 let photoURL=null;
 $("#fp").onchange=e=>{
   if(exporting||window.__exStarting){e.target.value="";msg("Un export est en cours : attends la fin ou touche « Annuler » avant de choisir une photo.");return}
-  const f=e.target.files[0];e.target.value="";if(!f)return;window.__photoName=f.name;
+  const f=e.target.files[0];e.target.value="";if(!f)return;window.__dirplan=null;window.__dirqualite=null;window.__prof=null;window.__dirDnManuel=false;DIRDN=DIRSH=1;try{afficherDirecteur(null)}catch(e){}window.__photoName=f.name;
   const u=URL.createObjectURL(f),im=new Image();msg("Chargement de la photo…");
   im.onload=()=>{
     const k=Math.min(1,4096/Math.max(im.naturalWidth,im.naturalHeight));
@@ -2737,11 +2874,14 @@ const PHOTO={last:null,
     if(st.p98-st.p2<.45){n.push("Image peu contrastée : contraste relevé.");it.push("img")}
     else if(st.p50<.22){n.push("Image sombre : éclaircie avec mesure (une scène sombre voulue reste sombre).");it.push("img")}
     if(st.p98>=.985&&st.p50>.6)n.push("Zones très claires probablement brûlées : elles sont protégées, mais le détail perdu ne revient pas.");
+    const pd=planDirecteur("photo",m,null);
+    if(pd){const ord={o:{db:P.db,dn:P.dn}};DIRECTEUR_IA.concilier(ord,pd);P.db=ord.o.db;P.dn=ord.o.dn}
     sync();
     const r={n:n.slice(1),it:it.slice(1),o:{db:P.db,dn:P.dn}};REC.last={m,r};
     PROF.recommend(m);
+    if(pd&&!PROF.manual){const n=DIRECTEUR_IA.protegerNettete(P.sh,pd);if(n!==P.sh){P.sh=n;sync()}}
     $("#rec").hidden=false;REC.show(r,n[0]+(r.n.length?" Voici ce que j’ai mesuré et réglé :":" Aucun défaut marqué mesuré : réglages doux."));
-    try{LEARN.snap()}catch(e){}
+    afficherDirecteur(pd);try{LEARN.snap()}catch(e){}
     try{DIAG.send("analyse_photo",{mesures:{w,h,bruit:+noise.toFixed(2),nettete:Math.round(sharp),blocs:blk&&+blk.r.toFixed(2),p50:+st.p50.toFixed(2)},profil:PROF.rec})}catch(e){}
   }
 };
@@ -2752,7 +2892,10 @@ function recipe(extra){
     ia:SRX.on()?{modele:"Real-ESRGAN general v3 (v0.2.5.0)",moteur:window.SR?SR.engine:"?",debruitage:+SRX.dn().toFixed(2),part_ia:PROF.k().ai}:"non",
     operations:[P.db>0&&"anti-blocs",PROF.v("dn")>0&&"réduction du bruit",PROF.v("sh")>0&&"netteté",PROF.v("cs")>0&&"nettoyage des couleurs",P.wb>0&&"équilibre des couleurs",FLT.sel>=0&&"retrait de filtre",
       mode==="video"&&o("o_dust")&&"poussières",mode==="video"&&o("o_defl")&&"anti-scintillement",mode==="video"&&o("o_stab")&&"stabilisation",mode==="video"&&o("o_voice")&&"voix",mode==="video"&&o("o_fluid")&&"fluidité"].filter(Boolean),
-    reglages_appliques:Object.fromEntries(["br","co","sa","wa","sh","dn","cs","db"].map(k=>[k,+(+PROF.v(k)).toFixed(3)])),protection_hautes_lumieres:PROF.k().hp,...(extra||{})};
+    reglages_appliques:Object.fromEntries(["br","co","sa","wa","sh","dn","cs","db"].map(k=>[k,+(+PROF.v(k)).toFixed(3)])),protection_hautes_lumieres:PROF.k().hp,
+    directeur:window.__dirplan?{version:window.__dirplan.version,operations:window.__dirplan.operations.map(x=>({id:x.id,intensite:x.intensite,genere:x.genere})),
+      sortie_proposee:window.__dirplan.sortie.propose,exportConfigure:window.__dirplan.sortie.exportConfigure,
+      zones:window.__dirplan.zonage?window.__dirplan.zonage.zones.map(z=>({debut:z.debut,fin:z.fin,priorites:z.priorites,confiance:z.confiance})):undefined}:undefined,...(extra||{})};
   try{const h=JSON.parse(localStorage.getItem("recettes")||"[]");h.push(r);localStorage.setItem("recettes",JSON.stringify(h.slice(-30)))}catch(e){}
   return r}
 function showRecipe(r){const e=$("#recipe");if(!e)return;e.textContent="Recette : "+JSON.stringify(r);$("#tech").hidden=false}
@@ -2771,17 +2914,37 @@ async function exportPhoto(){
     size(PREVIEW);
     if(!blob){msg("Impossible de créer la photo (mémoire saturée ?). Réessaie, ou choisis le format JPEG.");return}
     /* contrôle du fichier produit : il doit se relire et avoir la taille prévue */
-    let ok=false;try{const bm=await createImageBitmap(blob);ok=bm.width===W&&bm.height===H;bm.close&&bm.close()}catch(e){ok=false}
+    let ok=false,qualitePhoto=null,bm=null;
+    try{
+      bm=await createImageBitmap(blob);ok=bm.width===W&&bm.height===H;
+      if(ok&&window.DIRECTEUR_QUALITE&&photoThumb){
+        /* Miniatures à taille comparable : RAM bornée, aucune photo envoyée.
+           On ne confond pas variation technique et amélioration esthétique. */
+        try{
+          const wQ=Math.min(320,photoThumb.width),a=AZ.grab(photoThumb,wQ),b=AZ.grab(bm,wQ);
+          const mQ=x=>{const st=AZ.stats(x);return{noise:AZ.noise(x),sharp:AZ.sharp(x),p2:st.p2,p50:st.p50,p98:st.p98}};
+          qualitePhoto=DIRECTEUR_QUALITE.evaluer(mQ(a),mQ(b),{media:"photo"});
+          window.__dirqualite=qualitePhoto;
+        }catch(e){console.warn("Mesures comparatives photo indisponibles",e)}
+      }
+    }catch(e){ok=false}finally{if(bm)try{bm.close&&bm.close()}catch(e){}}
     if(!ok){msg("La photo produite n’a pas pu être relue : réessaie.");return}
     outBlob=blob;if(outUrl)URL.revokeObjectURL(outUrl);outUrl=URL.createObjectURL(blob);
     $("#ri").src=outUrl;$("#rv").hidden=true;$("#ba").hidden=true;$("#bat").hidden=true;$("#rtb").hidden=true;$("#sv").textContent="Enregistrer la photo";
     $("#out").hidden=false;$("#sv").hidden=false;$("#kbb").hidden=false;$("#erb").hidden=false;$("#rvb").hidden=false;$("#dfb").hidden=false;$("#kbo").hidden=false;$("#kbres").hidden=true;$("#bab").hidden=true;$("#bares").hidden=true;
     PV.show(photoURL,outUrl,W,H);
-    const r=recipe({sortie:W+"×"+H,format:png?"PNG":"JPEG 95 %",ia_utilisee:ia,duree_s:+((performance.now()-t0)/1000).toFixed(1)});showRecipe(r);
+    const r=recipe({sortie:W+"×"+H,format:png?"PNG":"JPEG 95 %",ia_utilisee:ia,duree_s:+((performance.now()-t0)/1000).toFixed(1),
+      comparaison:qualitePhoto?{verdict:qualitePhoto.verdict,compte:qualitePhoto.compte,limite:qualitePhoto.preuve}:undefined});showRecipe(r);
     const ro=[["ok","Photo créée : "+W+"×"+H+" ("+(s>1?"agrandie ×"+(Math.round(s*10)/10).toString().replace(".",","):"taille d’origine")+"), "+(png?"PNG sans perte":"JPEG qualité 95 %")+", "+(blob.size/1048576).toFixed(1).replace(".",",")+" Mo. Fichier relu et vérifié ✓"],
       ["ok","Rendu : "+PROF.NOM[PROF.id]+(ia?" ; restauration IA (Real-ESRGAN general v3, moteur "+(SR.engine==="gpu"?"WebGPU":"WebGL2")+")":" ; sans IA")+"."]];
     if(s>1)ro.push([ia?"warn":"ok",ia?"Agrandissement par IA : une partie des fins détails est estimée par le réseau, elle n’existait pas dans l’original. Compare au zoom ci-dessous.":"Agrandissement classique : aucune information n’est inventée, l’image est seulement interpolée."]);
     if(SRX.lastErr)ro.push(["warn","IA non utilisée : "+SRX.lastErr.texte]);
+    if(qualitePhoto){
+      const q=qualitePhoto;
+      ro.push([q.compte.degrade?"warn":"ok","Contrôle comparatif local : "+q.compte.ameliore+" indicateur(s) en progrès, "+q.compte.degrade+" en recul. Cette mesure ne prouve pas le réalisme de la photo."]);
+      for(const a of q.alertes.slice(0,2))ro.push(["warn","À comparer au zoom : "+a]);
+      for(const a of q.prudences.slice(0,2))ro.push(["warn","Prudence : "+a]);
+    }
     orepShow(ro);
     msg("Terminé ! "+W+"×"+H+"."+(dl?"":" Appuie longuement sur la photo pour l’enregistrer."));
     try{DIAG.send("export_photo",{ok:true,out:W+"x"+H,ia,profil:PROF.id,format:png?"png":"jpeg",mo:+(blob.size/1048576).toFixed(2)})}catch(e){}

@@ -1,0 +1,2202 @@
+{
+  "schema": 1,
+  "depot": "m6ks7r8p78-debug/Retouche-video",
+  "branche": "chatgpt-ai-director-v01",
+  "pr": 1,
+  "pr_brouillon": true,
+  "dernier_succes": {
+    "sha": "bbf1d34724bd06d292d1f65477f4675cc32df198",
+    "run_id": 43565861601,
+    "url": "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43565861601",
+    "remarque": "Succes global (2 jobs) verifie par Claude le 2026-11-14 : inclut le catalogueur 538f3e0 et le banc de triage bbf1d34. A revalider apres chaque commit."
+  },
+  "termine": [
+    "Directeur IA avec planification, analyse et adaptation prudente du debruitage et de la nettete par zone temporelle.",
+    "Precontrole export et repli de resolution; prototype 8K FFmpeg hors navigateur, pas de 8K iPhone operationnel.",
+    "Laboratoire synthétique et entraînements pilotes privés séparés ; aucun poids personnel déployé ou publié.",
+    "GitHub Actions: derniers tests globaux constates reussis au run 43558397824.",
+    "Catalogueur prive outils/catalogue_medias.py (SHA-256, metadonnees, mesures, doublons exacts, rapprochements hypothetiques, groupes de scene, partition sans fuite, 9 autorisations separees, import du catalogue ChatGPT) teste sur medias synthetiques.",
+    "Priorisation des modules faibles outils/directeur-priorites.cjs + suivi/etat-modules.json (aucune qualite inventee : action mesurer, filtres AR en tete).",
+    "Documents MEDIA_CATALOG_SCHEMA.md, BENCHMARK_PROTOCOL.md, BENCHMARK_RESULTS.md, CHATGPT_CLAUDE_HANDOFF.md.",
+    "Banc synthetique independant de segmentation sur masques verifies declaratifs; 12 tests locaux et garde-fous anti-fuite entre scenes (CI distante a verifier).",
+    "Banc multi-cas du vrai module de retrait de filtre AR (8 cas synthetiques, Claude) : qualite 0,37, 62,5 % d'echecs, filtre chat non retire ; cause : detecteur (compression/pose/petits elements clairs). Autorisations du proprietaire enregistrees (suivi/autorisations-proprietaire.json).",
+    "Ajustement multibruit privé sur 8 vidéos + validation 4 + confirmation 4 scènes distinctes, 220 étapes ; modèle spécialisé fort bruit, non déployé. Module laboratoire de spécialistes de bruit et 13 tests locaux.",
+    "Pilote AR v4 privé : 180 étapes sur 12 vidéos, 4 validations et 3 confirmations; masque synthétique chat/chien/lunettes mieux détecté, mais candidat refusé pour faux positifs de 1,4594 % > 1 % sur confirmation.",
+    "Recherche inspirée DLSS 5 documentée (NVIDIA SDK non public, non disponible Safari iPhone); garde-fou de décision vidéo 2D et AR en laboratoire seulement, 18 tests locaux.",
+    "Fusion causale temporelle expérimentale AR sur cartes de probabilites ; 17 tests locaux; réduction de variation temporelle de 49,67 % sur 360 frames synthetiques, petite perte d'IoU; non déployé.",
+    "RNE 0.1 maison : moteur neuronal 2x trainable avec 13 692 paramètres, causal video et sortie MP4 audio tentative, 17 tests synthetiques CPU; 900 steps privés sur 12 clips, 4 validation, 5 test; gain moyen +0,0958 dB (modeste) vs bicubique, hors application et non deployable.",
+    "RNE 0.2: réseau temporel causal 2 frames 9244 paramètres entraîné 600 étapes; tests locaux 36/36; +0,27784 dB vs RNE 0.1 sur 4 vidéos nouvelles, mais -0,20973 dB vs bicubique ; prototype rejeté pour activation.",
+    "RNE 0.3 : 157/157 vidéos privées retrouvées et vérifiées par SHA, 284 triplets sur 37 groupes, apprentissage 127 vidéos / validation 12 / test 18; 600 étapes ; PSNR test +0,432 dB vs bicubique et +0,428 dB vs RNE 0.2; 66 tests locaux réussis, 5 régressions importantes donc non activé.",
+    "RNE 0.3+ maison : corpus 157 SHA valides, 154 contenus uniques, 919 triplets non redondants / 37 groupes, 420 étapes supplémentaires équilibrées, 80 tests locaux RNE; gain in-sample +0,0579 dB seulement, 3 regressions > 0,5 dB; non déployable.",
+    "QA temporelle sur mouvements naturels : 37 groupes et 333 images filmées, 296 transitions; RNE03+ légèrement moins stable que bicubique; prototype de lissage résiduel et garde-fou, 26 nouveaux tests locaux, aucun déploiement.",
+    "RNE 0.4 — entraînement réel apparié MSE seule vs MSE+perte temporelle sur 919 triplets privés, 180 étapes x2 ; 2 fenêtres de mouvements naturels ×37 groupes ×333 images : stabilisation mesurée, bicubique encore meilleur. 12 tests locaux, poids privés, non deployable.",
+    "Audit fidélité spatiale RNE 0.4 : 74 images de 37 groupes, régions de contours, textures et ROI visage proposées ; 32 nouveaux tests locaux. Essai textures 220 steps x2 bras sur 919 triplets, gain +0,00219 dB trop faible, pas d'activation.",
+    "Banc photo externe indépendante du corpus : 6 photos naturelles, 108 essais RNE04, +0,29936 dB et 97/108 cas gagnants face au bicubique pour version temporelle, MAIS instabilité 13,076>12,643; 32 tests locaux, aucun déploiement.",
+    "RNE 0.4 nouvelles vidéos: 41 uploads audités; exclusion 3 copies exactes et 9 mêmes scènes malgré SHA différents; 29 candidats provisoires (580 reconstructions), +0,341 dB PSNR vs bicubique, 3 regressions sur un seul clip, textures encore difficiles, 232 vraies transitions, pas de déploiement.",
+    "RNE cohérence LR post-hoc : 29 clips candidats, 580 reconstructions; gain propre +0,480→+0,723 dB et 3 regressions éliminées, mais JPEG +0,203→+0,090 dB, flicker 1,702→1,858 et textures pires. Blocage de déploiement maintenu, 14 tests synthétiques.",
+    "RNE 0.5 texture/temporel : 157 historiques verifiees, 154 uniques, 308 triplets, A/B 260 steps x 2; gain PSNR +0.00162 dB trop faible, perte temporelle aggravée, pas de promotion, 14 tests synthétiques réussis.",
+    "RNE06: entraînement expérimental sur 308 triplets historiques, 260 steps x2, réduction faible des erreurs temporelles mais PSNR/contours en recul; 29 vidéos du lot réutilisé confirment l'absence de promotion. 16 tests nouveaux PASS.",
+    "RNE07: 157 archives SHA vérifiées, 154 uniques, 308 triplets, 2 bras de 120 étapes, 4 dégradations dont vrai H264 en mémoire. +0,02433 dB sur H264 mais -0,03306 dB sur sources propres; candidat bloqué, 30 tests locaux verts, aucune des 41 vidéos de test utilisée pour l'apprentissage.",
+    "RNE08: 19 signaux de qualité sans vérité de référence à l'inférence ; validation 616 exemples historiques, +0,16442 dB vs +0,20554 RNE04, 3 pertes graves restent; 29 tests initiaux + 18 audits de rareté PASS; sélecteur non promu.",
+    "RNE09: 246 historic synthetic stress cases, photometric attenuation rejected; stricter confidence-invariant gate refused 164/164 deliberately mismatched histories while preserving 82/82 valid examples. 23 new tests PASS; not deployable.",
+    "RNE10: 328 stress essais sur anciens groupes; RNE09 laisse passer 164/164 faux alignements sous confiance recalculée malgré 20/41 pertes graves sur LR propre 1px. Garde-fou causal de provenance de sessions, 27 tests synthétiques PASS, aucune promotion.",
+    "RNE11: recherche Reddit/OpenCV, capteur indépendant Lucas-Kanade vs Farneback, 23 tests synthétiques locaux PASS, 41 paires historiques de calibration. 1px de décalage synthétique détecté après réglage du seuil sur le même lot (résultats post-hoc, non indépendants). Non déployé.",
+    "RNE12: troisième observateur par corrélation de phase; 144 cas nouveaux synthétiques, acceptations erronées 24/74→0/74 ; limite multi-plans 12/12→5/12 ; 26 tests PASS. Validation hors distribution et iPhone manquantes; non promu.",
+    "RNE13: contrôle local 16 régions sur 54 scènes multicouches et 288 scènes synthétiques d'artefacts. 26/26 tests locaux; 22/39 régions à faux mouvement encore acceptées; coût ~101ms/720p CPU hors réseau/flux. NON promu; aucun média utilisé.",
+    "RNE14: descripteur Census en surcontrôle photo RNE13, 22 tests synthetiques; 288 scènes secondaires éclairage: 95/459 zones justes retrouvées mais 2/309 mauvaises nouvellement acceptées; autre générateur 120 scènes, +36 sous ombre, +7 gamma, aucun gain JPEG+lumière/flou. NON promu.",
+    "RNE15: 50 tests synthétiques locaux, 450 scènes appariées. Nouveau garde-fou n'empêche aucun défaut supplémentaire par rapport à RNE14 et refuse 1249 zones correctes en plus. Rejet; nouveau filtre de preuve appariée ajouté.",
+    "RNE16 ANCRE: 9592 paramètres, modèle original CNN double branche entraîné de zéro sur 450 exemples exclusivement synthétiques, 280 étapes. +0,288 dB sur 150 cas synthétiques initiaux après correction confiance 7x7; sur second générateur gelé, 26 pertes >0,5 dB et petit texte en recul. Promotion refusée; 40 tests locaux verts.",
+    "RNE17 AEGIS: 2305-param residual gate trained on 600 private-data-free synthetic scenes; dev 180: 7→0 severe; locked 270: 16→3 severe, mean -0.048dB vs bicubic; learned not better than fixed 0.70 => REJECTED, 41 synthetic tests PASS.",
+    "RNE18 OBSERVABLE3D: 3D synthetic view evidence atlas; UV observed 21.1%/47.1%/76.0% with 1/4/10 views, 24% unknown left. Calibrated camera and geometry are provided by simulator; 47 tests PASS, 8 independent procedural textures exposed forged UV calibration. NOT a human 3D reconstruction.",
+    "RNE19 OBSERVABLE ARTICULE: simulateur 3D synthétique de 11 pièces, contact géométrique main-objet, profondeur/occlusion, 2 GLB, atlas partiels, 50 nouveaux tests + 47 regressions RNE18 PASS. Générique GitHub sans médias privés, aucune reconstruction réelle.",
+    "RNE20: inversion d'un mannequin synthétique connu à partir d'images; 16 contrôles gelés, erreur caméra 0,7421° et articulation 5,1231°. 26 tests PASS. Contact indéterminé 12/16, pas de relâché identifié. GLB issu d'une pose estimée; aucun humain réel reconstruit.",
+    "RNE21 ANCRAGE: nouvelle inversion synthétique à 10 fiduciaux sur 5 vues, 42 tests locaux, 42 séquences comparatives et 36 séquences de contrôle d'abstention, cinq GLB de démonstration. Les longueurs multi-vues restent moins justes que l'inversion indépendante; non promu."
+  ],
+  "prochaines_etapes": [
+    "Ne pas présenter les fiduciaux artificiels comme une détection réelle de corps humain. Tester l'inversion à partir de silhouettes/rendus SANS pastilles ni pose cachée, avec variations de géométrie et d'appareil.",
+    "Prototyper un vrai modèle caméra perspective avec intrinsics et distorsion inconnus. Évaluer identifiabilité échelle/profondeur; ne jamais inventer de mètres depuis des pixels sans ancre métrique.",
+    "Ajouter plusieurs articulations et estimations contact relâché/tenu fondées sur références géométriques; conserver les hypothèses non décidables.",
+    "Conserver l'ajustement image par image comme baseline forte : RNE21 partagé est moins précis sur longueur, ne pas déployer malgré phase améliorée.",
+    "Vérifier CI GitHub distante et licence de toute future architecture externe; n'utiliser aucun poids personnel ni média privé sur dépôt.",
+    "Maintenir 157 vidéos historiques et 41 récentes strictement hors de ce laboratoire synthétique; aucun entraînement ni calibration sur 41 nouvelles.",
+    "Préparer un contrôle avec sources réellement hors générateur (autre moteur graphique / vidéos synthétiques sous une autre caméra) avant toute prétention de généralisation ou test iPhone."
+  ],
+  "garde_fous": {
+    "main_intouchable": true,
+    "pas_de_fusion": true,
+    "pas_de_deploiement": true,
+    "pas_de_medias_personnels": true
+  },
+  "jalon_en_attente_ci": {
+    "date": "2026-11-15",
+    "objets": [
+      "outils/rne/rne21/anchorage.py",
+      "outils/rne/rne21/evidence_audit.py",
+      "outils/rne/rne21/locked_evaluation.py",
+      "outils/rne/rne21/audit_frozen.py",
+      "outils/rne/rne21/export_inverse_glb.py",
+      "tests/test_rne21_anchorage.py",
+      "tests/test_rne21_evidence_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_21.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "preuve_locale": "42 tests locaux et CI miroir réussis; 42 + 36 cas synthétiques évalués avec rapports anonymes; 5 GLBs rechargés",
+    "statut_ci": "a_verifier"
+  },
+  "jalon_specialiste_bruit_fort": {
+    "date": "2026-11-14",
+    "branche": "chatgpt-ai-director-v01",
+    "tests_unitaires_locaux": "13/13 Node réussis",
+    "groupe_entrainement_videos": 8,
+    "groupe_validation_videos": 4,
+    "groupe_confirmation_videos": 4,
+    "etapes": 220,
+    "delta_psnr_confirmation_sigma_0_10_db": 1.4281,
+    "delta_psnr_confirmation_sigma_0_14_db": 3.1663,
+    "limites": "Dégradations gaussiennes simulées et routage oracle; le modèle source avait déjà appris sur un échantillon des 157 vidéos. Mauvais résultat sur bruit faible donc aucun remplacement universel.",
+    "objet_code": "outils/directeur-specialistes-bruit.cjs",
+    "reference_document": "LABO_SPECIALISTE_BRUIT_FORT.md",
+    "poids_et_resultats_details": "Archive privée ChatGPT, jamais Github",
+    "etat_ci": "a_verifier_2_jobs",
+    "decision": "recherche_seulement_pas_deploiement"
+  },
+  "jalon_dlss5_ar_v4": {
+    "date": "2026-11-14",
+    "doc": "RECHERCHE_DLSS5_ET_AR_V4.md",
+    "bilan": "BENCHMARK_RESULTS.md",
+    "source_publique_dlss5": [
+      "https://research.nvidia.com/labs/adlr/DLSS5/",
+      "https://developer.nvidia.com/blog/whats-new-for-game-developers-dlss-5-with-3d-guided-neural-rendering-nvidia-ace-updates-and-new-rtx-kit-capabilities/",
+      "https://forums.developer.nvidia.com/t/official-dlss-5-neural-rendering-plugin-access-for-unreal-engine-5-8-2/382731"
+    ],
+    "technologie_nvidia_integree": false,
+    "modele_entraine_ar_v4": "poids expérimental prive uniquement",
+    "essais_prives": {
+      "videos_ajustement": 12,
+      "videos_validation": 4,
+      "videos_confirmation": 3,
+      "iterations": 180,
+      "cas_validation_simules": 96,
+      "cas_confirmation_simules": 72
+    },
+    "confirmation": {
+      "iou_chat_ancien": 0.1025,
+      "iou_chat_candidat": 0.2893,
+      "faux_positifs_temoins": 0.014594,
+      "seuil_max_faux_positifs": 0.01
+    },
+    "statut": "recherche_only_candidat_AR_refuse",
+    "garde_fou": "outils/directeur-garde-fou-neural.cjs",
+    "tests_locaux": "18/18 Node reussis",
+    "verification_ci": "deux_jobs_distants_a_confirmer",
+    "limites": "aucun vrai masque AR verifie, pas de validation Safari iPhone; confirmation independante du nouvel ajustement et non garantie vierge de l'ancien preentrainement; vrai NVIDIA DLSS 5 pas utilise"
+  },
+  "jalon_ar_v4_temporel": {
+    "date": "2026-11-14",
+    "code": "outils/directeur-fusion-temporelle-ar.cjs",
+    "tests": "tests/directeur-fusion-temporelle-ar.test.mjs",
+    "documentation": "LABO_AR_V4_FUSION_TEMPORELLE.md",
+    "bench": "BENCHMARK_RESULTS.md",
+    "essai_prive_seuil": {
+      "videos_confirmation": 5,
+      "cas_synthetiques": 120,
+      "seuil_calibre_sur_validation": 0.5,
+      "iou_chat_ancien": 0.14895,
+      "iou_chat_v4": 0.36219,
+      "faux_positifs_temoins_v4": 0.002718,
+      "limite": "fonds peuvent deja contenir des filtres; seulement absence d'incrustation synthetique"
+    },
+    "essai_prive_temporel": {
+      "validation_groupes": 4,
+      "images_validation_synthetiques": 288,
+      "confirmation_groupes": 5,
+      "images_confirmation_synthetiques": 360,
+      "beta_causal": 0.45,
+      "instabilite_initiale": 0.007026,
+      "instabilite_lissee": 0.003536,
+      "iou_initial": 0.270691,
+      "iou_lissee": 0.266382,
+      "limite": "translations procedurales, pas de mouvement naturel ou verite terrain AR"
+    },
+    "sdk_dlss5_utilise": false,
+    "droit_publication": false,
+    "activation_automatique": false,
+    "modele_poids_en_public": false,
+    "tests_unitaires_locaux": "17/17 reussis",
+    "ci_git": "a_confirmer_2_jobs",
+    "archive_privee": "RetoucheProAI_AR_v4_calibrage_temporel_prive_2026-11-14.zip"
+  },
+  "jalon_neural_engine_propre": {
+    "date": "2026-11-14",
+    "nom": "Retouche Neural Engine (RNE) v0.1",
+    "orientation": "notre propre moteur 2D de superresolution neurale et stabilite causale, inspire des problemes du neural rendering sans SDK/poids NVIDIA",
+    "code": [
+      "outils/rne/engine.py",
+      "outils/rne/train.py"
+    ],
+    "tests": "tests/test_rne_engine.py",
+    "documentation": "RETOUCHE_NEURAL_ENGINE.md",
+    "ci_specifique": ".github/workflows/rne-cpu.yml",
+    "parametrage": {
+      "facteur": 2,
+      "poids_parametres": 13692,
+      "modele_init_nouveau": true,
+      "steps_meilleur_entrainement": 900,
+      "batch": 12,
+      "clips_entrainement": 12,
+      "clips_validation": 4,
+      "clips_test": 5,
+      "frames_sources_total": 42
+    },
+    "mesures": {
+      "validation_cases": 32,
+      "psnr_validation_bicubic_db": 35.0616,
+      "psnr_validation_rne_db": 35.6231,
+      "test_cases": 40,
+      "psnr_test_bicubic_db": 37.4311,
+      "psnr_test_rne_db": 37.5269,
+      "gain_test_db": 0.0958
+    },
+    "notes_preuves": "Test de 40 patches apres premiere exploration des hyperparametres, pas un test final scelle ; references bruitees et compressees synthetiquement. Un petit MP4 synthetique 24 frames a ete rendu en x2.",
+    "qualite_niveau": "prototype_de_recherche_gains_faibles",
+    "tests_locaux": "17/17 testes en Python CPU sur medias synthetiques",
+    "ci_distante": "a_verifier_RNE_et_les_deux_jobs_directeur",
+    "audio": "tentative de remux local ffmpeg avec repli video silencieuse; aucune preuve de conservation sur toutes sources",
+    "donnees_privees": "poids, notes detaillees, manifest et clips d entrainement non publies; archive privee ChatGPT",
+    "aucune_compatibilite_iPhone_confirmee": true,
+    "aucun_modele_nvidia_ou_dlss5_integre": true,
+    "activation_application": false,
+    "aucune_fusion_ou_deploiement": true
+  },
+  "jalon_rne_02": {
+    "date": "2026-11-14",
+    "nom": "Retouche Neural Engine 0.2 - reseau temporel causal maison",
+    "statut": "prototype_experimental_non_deploye",
+    "base": "RNE 0.1 13692 parametres geles",
+    "reseau_temporel_parametres": 9244,
+    "apprentissage": {
+      "videos": 12,
+      "paires_frames_consécutives": 24,
+      "steps": 600
+    },
+    "validation": {
+      "videos": 4,
+      "paires": 8,
+      "patches": 32,
+      "gain_psnr_vs_rne01_db": 0.207
+    },
+    "test_exploratoire": {
+      "videos": 5,
+      "paires": 10,
+      "patches": 40,
+      "gain_psnr_vs_rne01_db": 0.16652
+    },
+    "controle_supplementaire": {
+      "videos": 4,
+      "paires": 8,
+      "patches": 48,
+      "psnr_bicubique_db": 37.13346,
+      "psnr_rne01_db": 36.64589,
+      "psnr_rne02_db": 36.92373,
+      "gain_vs_rne01_db": 0.27784,
+      "perte_vs_bicubique_db": -0.20973,
+      "regressions_de_plus_de_0_5_db": 1,
+      "sha256_verifies": true,
+      "groupes_isoles_par_catalogue": true
+    },
+    "tests_synthetiques_cpu_locaux": "36/36 (17 RNE0.1 + 19 RNE0.2)",
+    "demonstration": "MP4 de 24 frames entièrement synthétiques, 256x192, sans piste audio; 23 transitions temporelles",
+    "code_public": [
+      "outils/rne/temporal.py",
+      "outils/rne/train_temporal.py",
+      "tests/test_rne_temporal.py"
+    ],
+    "docs": [
+      "RETOUCHE_NEURAL_ENGINE_02.md",
+      "BENCHMARK_RESULTS.md"
+    ],
+    "workflow": ".github/workflows/rne-cpu.yml",
+    "ci_distante": "a_verifier",
+    "modeles_personnalises": "archive privee ChatGPT RetoucheNeuralEngine_RNE_v0_2_prive.zip, non commitee",
+    "rappel_dlss5": "moteur independant pour video 2D, aucun sdk ou poids NVIDIA, pas de qualite comparable prouvee",
+    "iPhoneSafari": "aucune compatibilite ou mesure de temps reel prouvee",
+    "decision": "ne pas integrer automatiquement; bicubique meilleur sur nouvelles scènes"
+  },
+  "jalon_neural_engine_03": {
+    "date": "2026-11-14",
+    "moteur": "Retouche Neural Engine 0.3, super-resolution neuronale 2x avec 3 frames et estimation d'occlusion",
+    "corpus": {
+      "videos_catalogue": 157,
+      "videos_sha_valides": 157,
+      "go_total": 2.46,
+      "groupes_conservateurs": 37,
+      "train_videos": 127,
+      "validation_videos": 12,
+      "test_videos": 18,
+      "groupes_train": 27,
+      "groupes_validation": 4,
+      "groupes_test": 6,
+      "triplets_train": 254,
+      "triplets_validation": 12,
+      "triplets_test": 18,
+      "aucuns_echecs_decodage": true,
+      "aucune_video_ancienne_rne01_rne02_dans_test_ou_validation": true
+    },
+    "entrainement": {
+      "steps": 600,
+      "batch": 8,
+      "reseau_params": 13684,
+      "meilleur_checkpoint": 600,
+      "apprentissage_initialise_de_zero": true,
+      "source_frames_naturelles_et_degradations_synthetiques": true
+    },
+    "scores_test": {
+      "patchs": 72,
+      "psnr_bicubique": 33.07405,
+      "psnr_rne01": 32.75664,
+      "psnr_rne02": 33.0782,
+      "psnr_rne03": 33.50619,
+      "gain_rne03_vs_bic_db": 0.43214,
+      "gain_rne03_vs_rne02_db": 0.42798,
+      "groupes_rne03_sup_bicubique": 5,
+      "groupes_test": 6,
+      "pertes_plus_0_5_db_vs_bicubique": 1,
+      "pertes_plus_0_5_db_vs_rne02": 5
+    },
+    "sorties": {
+      "demo_synthetique_24_frames": "128x96 vers 256x192, 22 transitions, MP4 decodable",
+      "test_audio_synthetique": "24 frames et AAC preserved par FFmpeg en essai local"
+    },
+    "source_publique": [
+      "outils/rne/triad.py",
+      "outils/rne/prepare_triad.py",
+      "outils/rne/train_triad.py",
+      "tests/test_rne_triad.py",
+      "tests/test_rne_triad_protocol.py"
+    ],
+    "documentation": "RETOUCHE_NEURAL_ENGINE_03.md",
+    "tests_locaux": "66/66 Python CPU sur medias synthetiques, dont 30 nouveaux tests RNE 0.3 et consentements",
+    "workflow": ".github/workflows/rne-cpu.yml",
+    "ci_distante": "verification_a_confirmer",
+    "risques": "5 regressions > 0,5 dB vs RNE 0.2; pas de mesure perceptuelle ni iPhone Safari",
+    "mode": "RECHERCHE PRIVE NON DEPLOYABLE; aucun SDK NVIDIA DLSS 5",
+    "medias_publies": false,
+    "poids_publies": false,
+    "base_main_modifiee": false,
+    "archive_privee": "RNE03_157_videos_recherche_prive.zip"
+  },
+  "jalon_neural_engine_03_all157": {
+    "date": "2026-11-14",
+    "etat": "entrainement prive termine ; recherche, non deployable",
+    "jeu_complet": {
+      "videos_retrouvees": 157,
+      "empreintes_sha256_verifiees": 157,
+      "taille_GB": 2.46,
+      "empreintes_uniques": 154,
+      "copies_exactes_supplementaires": 3,
+      "groupes": 37,
+      "entrainees_avec_autorisations_privees": 157
+    },
+    "train_apres_evaluation": {
+      "checkpoint_initial": "RNE0.3 sur 127 videos, evalue sur 12 validation + 18 tests",
+      "sources_presentes_optimiseur": 157,
+      "triplets_presentes": 284,
+      "etapes_supplementaires": 450,
+      "batch": 8,
+      "parametres": 13684
+    },
+    "benchmark_historique_sur_checkpoint_initial": {
+      "test_videos_alors_inedites": 18,
+      "patchs": 72,
+      "gain_vs_bicubic_db": 0.43214,
+      "regressions_de_plus_0_5db_vs_rne02": 5
+    },
+    "scores_sur_donnees_entrainement_apres_finetune": {
+      "patchs": 284,
+      "psnr_bicubic_db": 34.5021,
+      "psnr_checkpoint_avant_db": 34.9438,
+      "psnr_checkpoint_tout157_db": 34.9979,
+      "gain_in_sample_vs_avant_db": 0.0541,
+      "aucun_test_independant_restant": true
+    },
+    "demo_synthetique": {
+      "source_frames": 24,
+      "output_frames": 24,
+      "resolution": "256x192",
+      "images_traitees_temporellement": 22,
+      "mp4_decode_ok": true,
+      "source_audio": false
+    },
+    "tests_locaux_existants": "30/30 Python tests RNE03 + protocole, reexecutes",
+    "nouveaux_tests_ci": "7 tests du module finetune_all_corpus.py, CI GitHub a confirmer",
+    "code_public": [
+      "outils/rne/finetune_all_corpus.py",
+      "tests/test_rne_all_corpus.py",
+      "RETOUCHE_NEURAL_ENGINE_03_ALL157.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "poids_privés": "RetoucheNeuralEngine_RNE03_157_videos_prive.zip, jamais dans Github",
+    "avertissement": "Tous les groupes ont desormais servi a l'apprentissage; le score in-sample ne demontre pas generalisation. Necessite nouvelles videos independantes et tests iPhone. La totalité des frames n'a pas été utilisée, seulement 1-2 triplets/video.",
+    "dlss5_nvidia_integre": false,
+    "publication_medias_prives": false,
+    "activation_app": false,
+    "fusion_main": false
+  },
+  "jalon_neural_engine_03_plus": {
+    "date": "2026-11-14",
+    "state": "research_only_private_neural_finetune",
+    "corpus": {
+      "catalogue_videos": 157,
+      "sha_checked": 157,
+      "unique_contents": 154,
+      "exact_copies_discarded": 3,
+      "scene_groups": 37,
+      "temporal_windows_per_unique_target": 6,
+      "valid_triplets": 919,
+      "videos_with_fewer_than_six_windows": 2,
+      "unique_contents_covered": 154,
+      "invalid_cached_triplets": 0,
+      "repeat_last_frame_within_video": 0
+    },
+    "model": {
+      "name": "RNE 0.3+ experimental balanced",
+      "parameters": 13684,
+      "from_checkpoint": "RNE 0.3 trained on 157",
+      "training_steps_extra": 420,
+      "batch": 8,
+      "optimizer_exposures": 3360,
+      "all_919_triplets_seen": true,
+      "group_balanced_resampling": true
+    },
+    "training_data_psnr_db": {
+      "bicubic": 30.24604,
+      "old_rne03": 30.40111,
+      "new_rne03_plus": 30.45901,
+      "gain_new_vs_old": 0.0579,
+      "gain_new_vs_bicubic": 0.21297,
+      "groups_improved": 29,
+      "groups_total": 37,
+      "regressions_gt_half_db_vs_old": 3,
+      "regressions_gt_half_db_vs_bicubic": 2
+    },
+    "audit": {
+      "real_video_frames_processed": 48,
+      "real_video_clips": 3,
+      "temporal_frames_processed": 42,
+      "video_quality_proved": false,
+      "synthetic_demo_frames": 24,
+      "synthetic_demo_output": "256x192",
+      "synthetic_demo_with_audio": true,
+      "synthetic_demo_audio_verified_by_ffprobe": true
+    },
+    "tests": {
+      "local_python_tests": 80,
+      "local_python_failures": 0,
+      "workflow": ".github/workflows/rne-cpu.yml",
+      "github_ci": "not_yet_verified"
+    },
+    "code": [
+      "outils/rne/expanded_sampler.py",
+      "outils/rne/balanced_finetune.py",
+      "outils/rne/quality_gate.py",
+      "tests/test_rne_expanded_sampler.py",
+      "tests/test_rne_quality_gate.py",
+      "RETOUCHE_NEURAL_ENGINE_03_PLUS.md"
+    ],
+    "private_archive": "RetoucheNeuralEngine_RNE03_plus_157_prive.zip",
+    "privacy": "No private media, labels, frame samples, source SHA values or specialized weights pushed to public repo",
+    "limits": [
+      "In-sample comparison only, no untouched group among 157 after previous finetune",
+      "Not proved robust on unseen videos, faces, full-length 4K, Safari iPhone",
+      "Explicit user opt-in required for experimental preview; automatic deployment forbidden",
+      "No NVIDIA DLSS 5 SDK or weights used"
+    ],
+    "deploy": false,
+    "merge": false
+  },
+  "jalon_rne03_plus_qa_temporelle": {
+    "date": "2026-11-14",
+    "etat": "mesure_privee_sur_mouvements_filmés; code_de_prototype, sans activation",
+    "statut_ci": "a_verifier_pour_nouveau_HEAD",
+    "corpus": {
+      "videos_catalogue": 157,
+      "groupes_representants": 37,
+      "images_reelles_decodees": 333,
+      "transitions_utilisables": 296,
+      "groupes_jamais_vus": 0,
+      "limite": "neuf images naturelles autour de 18% de chaque clip representant; les 157 videos ont deja participe a l'apprentissage"
+    },
+    "mesures": {
+      "mae_mediane_par_groupe_bicubique": 1.3819,
+      "mae_RNE03_checkpoint_tout157": 1.44168,
+      "mae_RNE03plus_919_triplets": 1.41158,
+      "mae_RNE03plus_detail_lisse_025": 1.41094,
+      "segments_bloques_avant_lissage": 24,
+      "segments_bloques_apres_lissage": 20,
+      "transitions_a_risque_apres_lissage": 27,
+      "seuil": "regle exploratoire non calibrée humainement, >max(0.2 RGB/255, 3% de la référence bicubique), coupe, mediane; jamais interpréter comme taux d'erreur perceptuelle"
+    },
+    "strategie": {
+      "correction": "déplacement optique arrière entre frames réelles, stabilisation d'un quart du seul résidu RNE−bicubique, sans accumulation des corrections",
+      "protection": "masque utilisateur explicite protège au pixel près la zone à ne pas modifier, aucune détection automatique de visages",
+      "preview": "uniquement revue manuelle de laboratoire sur segment sans alerte",
+      "deploiement": false
+    },
+    "fichiers_publics": [
+      "outils/rne/temporal_safety.py",
+      "outils/rne/residual_temporal.py",
+      "outils/rne/bench_natural_motion.py",
+      "tests/test_rne_temporal_safety.py",
+      "tests/test_rne_residual_temporal.py",
+      "RETOUCHE_NEURAL_ENGINE_QA_TEMPORELLE.md"
+    ],
+    "tests_locaux": {
+      "precedents_RNE": 80,
+      "nouveaux": 26,
+      "tous_reussis_separement": true
+    },
+    "archive_privee": "RetoucheNeuralEngine_RNE03plus_QA_Temporelle_prive_2026-11-14.zip",
+    "aucune_video_ou_image_personnelle_publiee": true,
+    "poids_prives_non_commites": true,
+    "sdk_NVIDIA_DLSS5_utilise": false,
+    "fidelite_visage_validee": false,
+    "iPhone_safari_valide": false,
+    "prochaine_priorite": "réseau de cohérence temporelle vraiment entraîné et jeux totalement neufs, évaluation visage/texture, scènes de mouvement et mémoire iPhone"
+  },
+  "jalon_neural_engine_04": {
+    "date": "2026-11-14",
+    "statut": "prototype RNE 0.4 entraîné et audité, pas d'intégration ni de déploiement",
+    "objectif": "apprentissage direct d'une perte de cohérence temporelle sur le résidu RNE-bicubique, avec confidence de flux optique, sans NVIDIA DLSS 5",
+    "protocole": {
+      "catalogue_sources_sha_verifiees": 157,
+      "contenus_uniques": 154,
+      "copies_exactes_eliminees": 3,
+      "groupes_conservateurs": 37,
+      "triplets_prives": 919,
+      "triplets_tous_presentes_optimiseur": 919,
+      "steps_par_variante": 180,
+      "batch": 8,
+      "variantes": [
+        "RNE 0.4 témoin MSE spatiale",
+        "RNE 0.4 MSE+perte temporelle résiduelle"
+      ],
+      "coefficient_perte_temporelle": 0.025,
+      "initialisation_poids_identiques": true
+    },
+    "psnr_apprentissage_db": {
+      "bicubique": 30.88856,
+      "checkpoint_rne03plus": 31.11227,
+      "controle_spatial": 31.12542,
+      "candidat_temporel": 31.12229,
+      "ecart_candidat_vs_temoin": -0.00313
+    },
+    "proxy_apprentissage": {
+      "residu_temporel_temoin": 0.003307,
+      "residu_temporel_candidat": 0.002663,
+      "limitation": "cible derivée d'un teacher gelé, sur les propres triplets appris; pas de vérité perceptuelle"
+    },
+    "qa_mouvements_naturels": [
+      {
+        "position_fraction": 0.18,
+        "groups": 37,
+        "frames": 333,
+        "usable_transitions": 296,
+        "bicubic_mae": 1.3819,
+        "rne03plus_mae": 1.41158,
+        "controle_mae": 1.40887,
+        "candidat_mae": 1.40139,
+        "segments_a_risque_reference": 24,
+        "segments_a_risque_candidat": 21,
+        "transitions_a_risque_reference": 27,
+        "transitions_a_risque_candidat": 22
+      },
+      {
+        "position_fraction": 0.62,
+        "groups": 37,
+        "frames": 333,
+        "usable_transitions": 296,
+        "bicubic_mae": 1.42204,
+        "rne03plus_mae": 1.43128,
+        "controle_mae": 1.42851,
+        "candidat_mae": 1.42285,
+        "segments_a_risque_reference": 21,
+        "segments_a_risque_candidat": 19,
+        "transitions_a_risque_reference": 23,
+        "transitions_a_risque_candidat": 21
+      }
+    ],
+    "demo": "24 images toutes synthétiques 128x96 → 256x192, 22 images neurales temporelles, mp4 décodable; comparateur bicubique/RNE",
+    "tests_locaux": "12/12 Python CPU réussis dans le dernier essai; CI GitHub à confirmer",
+    "source_et_tests": [
+      "outils/rne/train_temporal_residual.py",
+      "tests/test_rne04_temporal_train.py"
+    ],
+    "protocole_public": "RETOUCHE_NEURAL_ENGINE_04.md",
+    "benchmark_public": "BENCHMARK_RESULTS.md",
+    "archive_privee": "RetoucheNeuralEngine_RNE04_temporel_prive_2026-11-14.zip",
+    "preuve_generalisation_externe": false,
+    "mesure_qualite_visage": false,
+    "mesure_4k_8k": false,
+    "safari_iphone_reel": false,
+    "mediation_humaine_requise": true,
+    "activation_automatique": false,
+    "publication_poids_medias": false,
+    "aucun_sdk_nvidia_dlss5": true,
+    "avertissement": "Les 37 scènes/154 contenus ont déjà participé à l'entraînement; les audits à 18% et 62% ne sont pas un jeu de scènes vierges. Stabilité inférieure ou presque égale au bicubique selon la fenêtre."
+  },
+  "jalon_rne04_fidelite_textures": {
+    "date": "2026-11-14",
+    "statut": "recherche_privee_non_deployable",
+    "corpus": {
+      "videos_verifiees_sha256": 157,
+      "contenus_uniques": 154,
+      "groupes": 37,
+      "images_comparees": 74,
+      "instants_sources": [
+        0.62,
+        0.83
+      ],
+      "scenes_non_vues_par_modele": 0,
+      "degradations": "x2 artificiel, deuxieme instant compresse JPEG qualite 60"
+    },
+    "scores_spatiaux_74": {
+      "psnr_bicubique_db": 33.43385,
+      "psnr_rne04_temporal_db": 33.86264,
+      "gain_rne04_vs_bic_db": 0.42878,
+      "mae_contours_bicubique": 9.07442,
+      "mae_contours_rne04": 8.23847,
+      "mae_textures_bicubique": 4.58035,
+      "mae_textures_rne04": 4.60053,
+      "mae_roi_visage_proposee_bicubique": 4.24439,
+      "mae_roi_visage_proposee_rne04": 4.09015,
+      "images_avec_roi_visage_proposee": 30,
+      "limite": "ROI Haar non annotee et non equivalente au vrai masque visage; originaux peuvent deja etre filtres, toutes scenes precedemment apprises"
+    },
+    "protection": {
+      "module": "outils/rne/fidelity_guard.py",
+      "masque_verifie_explicite": true,
+      "limite_contours_RGB255": 8,
+      "limite_hors_contours_RGB255": 16,
+      "psnr_guard_db": 33.78095,
+      "decision": "protection conservatrice facultative, pas meilleure PSNR moyenne, ne garantit pas identité ni pixels authentiques"
+    },
+    "entrainement_textures": {
+      "module": "outils/rne/train_texture_detail.py",
+      "checkpoint_depart": "RNE04 temporal",
+      "videos_autorisees": 157,
+      "triplets": 919,
+      "steps_par_bras": 220,
+      "batch": 8,
+      "poids_gradient": 0.015,
+      "poids_temporel": 0.025,
+      "psnr_A_B_temoins_sur_74": 33.85586,
+      "psnr_A_B_gradients_sur_74": 33.85805,
+      "gain_gradients_vs_temoin_db": 0.00219,
+      "mae_texture_temoins": 4.60838,
+      "mae_texture_gradients": 4.59641,
+      "mae_contours_temoins": 8.21411,
+      "mae_contours_gradients": 8.21762,
+      "decision": "gain insuffisant, garder en recherche sans promotion"
+    },
+    "code": [
+      "outils/rne/fidelity_guard.py",
+      "outils/rne/audit_spatial_fidelity.py",
+      "outils/rne/train_texture_detail.py"
+    ],
+    "tests": [
+      "tests/test_rne_fidelity_guard.py",
+      "tests/test_rne_spatial_audit.py",
+      "tests/test_rne_texture_training.py"
+    ],
+    "nouveaux_tests_locaux": "32/32 reussis, medias entièrement synthetiques",
+    "document": "RETOUCHE_NEURAL_ENGINE_FIDELITE_TEXTURES.md",
+    "archive_privee": "RetoucheNeuralEngine_RNE04_Fidelite_Textures_prive_2026-11-14.zip",
+    "memoire_sauvegarde": "aucune vidéo brute, image extraite ou poids privé sur GitHub",
+    "sdk_NVIDIA_DLSS5": false,
+    "iphone_Safari_valide": false,
+    "auto_activation": false,
+    "CI_distante": "a_verifier"
+  },
+  "jalon_rne_externe_photos_2026_11_14": {
+    "date": "2026-11-14",
+    "etat": "recherche seulement, pas de deploiement",
+    "motivation": "Premier protocole sur sources photographiques extérieures au corpus des 157 vidéos, afin de vérifier une généralisation spatiale partielle.",
+    "protocole": {
+      "sources_photographiques": 6,
+      "variantes_totales": 108,
+      "decoupages_par_image": "3 mouvements de recadrage simulés × 2 degradations × 3 reconstructions",
+      "vraies_videos_en_mouvement": false,
+      "photos_jamais_utilisees_dans_entrainement_RNE": true,
+      "sources": "scikit-image.data (astronaut,coffee,chelsea,camera,rocket,hubble_deep_field)",
+      "temporal_pairs": 72
+    },
+    "candidat_temporel": {
+      "gain_PSNR_moyen_vs_bicubique_db": 0.29936,
+      "gagnants": 97,
+      "perdants": 11,
+      "pertes_superieures_a_0_5dB": 0,
+      "pire_delta_PSNR_db": -0.06953,
+      "mae_contours_changement_RGB255": -0.96921,
+      "mae_roi_proposee_RGB255": -0.44178,
+      "photos_avec_region_face_proposee": 14,
+      "temporal_MAE_bicubique": 12.643,
+      "temporal_MAE_rne": 13.07629
+    },
+    "autres_modeles": {
+      "rne04_supervised_control": {
+        "gain_psnr_db": 0.31051,
+        "mae_temporelle": 13.1097
+      },
+      "rne04_gradient": {
+        "gain_psnr_db": 0.31064,
+        "mae_temporelle": 13.09879
+      }
+    },
+    "limites": "Les 108 reconstructions sont corrélées au sein de 6 photos; déplacements artificiels et aucun test indépendant de mouvement naturel, masques faciaux humains corrigés ou iPhone Safari. Ces photos ont maintenant servi à comparer trois checkpoints et ne doivent pas être réutilisées comme jeu scellé.",
+    "code_public": [
+      "outils/rne/external_evidence.py",
+      "tests/test_rne_external_evidence.py"
+    ],
+    "protocole_complet_prive": "RetoucheNeuralEngine_banc_independant_photos_2026-11-14.zip (scripts, tests, résultats et poids privées; aucune image source)",
+    "doc_public": "RETOUCHE_NEURAL_ENGINE_PHOTOS_EXTERNES.md",
+    "tests_locaux": "32/32 : 16 tests banc externe, 16 tests interprétation/garde-fou; tests Github Actions nouveaux à confirmer",
+    "CI_distante": "a_verifier",
+    "nvidia_SDK_DLSS5": false,
+    "auto_activation": false,
+    "modele_promu": false,
+    "fichiers_personnels_publies": false
+  },
+  "jalon_rne04_41_nouvelles_videos": {
+    "date": "2026-11-14",
+    "status": "evaluation_reelle_sur_mouvements_filmes; modeles_geles; recherche_non_deployable",
+    "corpus": {
+      "uploads": 41,
+      "sha256_controles": 41,
+      "exact_old": 2,
+      "exact_entre_uploads": 1,
+      "meme_scene_ancienne_supplementaires": 9,
+      "candidats_provisoirement_independants": 29,
+      "independance_complete_prouvee": false,
+      "frames_filmees": 406
+    },
+    "methodologie": "Deux fenêtres par video (33%, 67%), 7 frames chacune, degradation LR×2 artificielle, comparaison RNE 0.4 temporel vs bicubique sur les vraies frames; 290 reconstructions propres + 290 JPEG65, 232 vraies transitions",
+    "mesures": {
+      "psnr_moyen_bicubique_db": 32.65557,
+      "psnr_moyen_rne_db": 32.99698,
+      "gain_moyen_db": 0.34141,
+      "intervalle_bootstrap_par_video_psnr_db": [
+        0.26635,
+        0.42026
+      ],
+      "reconstructions": 580,
+      "positive": 559,
+      "negative": 21,
+      "regressions_plus_0_5_db": 3,
+      "regressions_concentrees_sur_videos": 1,
+      "regressions_mode": "LR simulé sans JPEG ajouté",
+      "contours_mae_bicubique": 9.62319,
+      "contours_mae_rne": 9.00643,
+      "textures_mae_bicubique": 4.95882,
+      "textures_mae_rne": 5.08902,
+      "roi_harr_propositions": 202,
+      "roi_harr_identite_verifiee": false,
+      "temporal_paires": 232,
+      "temporal_mae_bic": 1.71223,
+      "temporal_mae_rne": 1.70159,
+      "videos_stabilite_rne_superieure": 18,
+      "videos_stabilite_rne_inferieure": 11,
+      "bootstrap_par_video_delta_temporal_mae": [
+        -0.02058,
+        0.00029
+      ],
+      "avantage_temporel_statistique_non_etabli": true
+    },
+    "code_public": [
+      "outils/rne/holdout_reporting.py",
+      "tests/test_rne_holdout_reporting.py",
+      "RETOUCHE_NEURAL_ENGINE_41_NOUVELLES_VIDEOS.md"
+    ],
+    "tests_ajoutes": "16/16 réussis localement sur données synthetiques; CI distante à vérifier",
+    "rapport_prive": "RetoucheProAI_RNE04_evaluation_41_videos_privee.zip (sans videos ni poids)",
+    "bloqueurs": [
+      "independance visuelle des candidats encore provisoire",
+      "3 régressions spatial > 0.5 dB",
+      "textures plus éloignées de la référence",
+      "gain temporel non significatif au bootstrap de videos",
+      "absence d'original avant filtres AR certifié",
+      "aucun test iPhone Safari réel"
+    ],
+    "publication_media_personnel": false,
+    "entrainement_nouveaux_uploads": false,
+    "auto_deploiement": false,
+    "fusion_main": false,
+    "SDK_NVIDIA_DLSS5": false
+  },
+  "jalon_rne04_posthoc_consistance_lr": {
+    "date": "2026-11-14",
+    "status": "ablation_experimentale_posthoc; recherche seulement, aucun deploiement",
+    "sources": {
+      "nouveaux_uploads": 41,
+      "scene_candidates_provisoires": 29,
+      "scene_independence_verified": false,
+      "train_on_41": false,
+      "model_rne04_frozen": true
+    },
+    "diagnosis": {
+      "source_videos": 7,
+      "source_videos_avec_regressions_historiques": 1,
+      "other_controls": 6,
+      "new_time_fractions": 6,
+      "total_reconstructions": 252,
+      "challenging_clip_clean_gain_db": -0.26304,
+      "challenging_clip_jpeg65_gain_db": 0.02771,
+      "controls_clean_gain_db": 0.70863,
+      "controls_jpeg65_gain_db": 0.29896,
+      "dominated_by_luminance_error": true,
+      "no_original_before_filter_ground_truth": true
+    },
+    "ablation": {
+      "method": "one non-learned luma back-projection toward known simulated area-downsample LR, no tuning on the test cases",
+      "cases": 580,
+      "videos": 29,
+      "psnr_gain_clean_rne04_db": 0.48028,
+      "psnr_gain_clean_after_projection_db": 0.7225,
+      "psnr_gain_jpeg_rne04_db": 0.20255,
+      "psnr_gain_jpeg_after_projection_db": 0.08987,
+      "psnr_gain_overall_rne04_db": 0.34141,
+      "psnr_gain_overall_after_projection_db": 0.40619,
+      "clean_corrections_improved_rne": 290,
+      "clean_total": 290,
+      "jpeg_corrections_worsened_rne": 280,
+      "jpeg_total": 290,
+      "regressions_gt_0_5db_before": 3,
+      "regressions_gt_0_5db_after": 0,
+      "temporal_mae_rne04": 1.70159,
+      "temporal_mae_after_projection": 1.85807,
+      "texture_degradation_rne04_mae": 0.1302,
+      "texture_degradation_after_projection_mae": 0.39782,
+      "lr_luma_consistency_error_before": 0.73272,
+      "lr_luma_consistency_error_after": 0.24907,
+      "no_untouched_validation": true,
+      "decision": "NOT PROMOTED: temporal and texture degradation, JPEG failure, unknown forward operator for imported files"
+    },
+    "safety": {
+      "code_public": "outils/rne/data_consistency.py",
+      "tests_public": "tests/test_rne_data_consistency.py",
+      "tests_synthetic_local": "14/14 passed",
+      "forced_known_operator_flag": true,
+      "model_train_during_this_turn": false,
+      "automatic_deployment": false,
+      "iphone_safari_validation": false,
+      "media_published": false,
+      "nvidia_dlss5_used": false,
+      "ci_remote": "to_check",
+      "documentation": "RETOUCHE_NEURAL_ENGINE_DIAGNOSTIC_PROJECTION.md",
+      "archive_privee": "RetoucheProAI_RNE04_diagnostic_projection_posthoc_prive.zip"
+    }
+  },
+  "jalon_rne_05_texture_temporelle": {
+    "date": "2026-11-14",
+    "version": "RNE 0.5 texture-temporal A/B, private research only",
+    "etat": "experience achevee, candidat refuse, pas de deploiement",
+    "donnees": {
+      "catalogue_original": 157,
+      "empreintes_sha256_verifiees": 157,
+      "contenus_uniques": 154,
+      "copies_exactes_ecartees": 3,
+      "groupes_anti_fuite_catalogue": 43,
+      "triplets_entrainement": 308,
+      "sources_avec_triplets": 154,
+      "extraction_erreurs": 0,
+      "triplets_presentes_optimiseur": 308,
+      "nouveaux_41_uploads_utilises_entrainement": false
+    },
+    "entrainement": {
+      "depart": "poids RNE 0.4 temporel identiques pour témoin et candidat",
+      "steps_par_branche": 260,
+      "batch": 8,
+      "lambda_temporal": 0.025,
+      "lambda_laplacian_candidat": 0.018
+    },
+    "mesures_sur_entrainement": {
+      "psnr_temoin_db": 30.95481,
+      "psnr_candidat_db": 30.95643,
+      "psnr_gain_candidat_vs_temoin_db": 0.00162,
+      "mae_texture_laplacien_temoin": 0.055932,
+      "mae_texture_laplacien_candidat": 0.055861,
+      "mae_residu_temporel_temoin": 0.002218,
+      "mae_residu_temporel_candidat": 0.002262,
+      "temporal_regression_candidate": 0.000044,
+      "triplets_gagnants_candidat": 203,
+      "triplets": 308,
+      "aucune_validation_independante": true,
+      "precision": "métriques internes au corpus pre-entraine; gain pas suffisant pour adopter"
+    },
+    "decision": {
+      "candidat_promu": false,
+      "checkpoint_reference": "RNE 0.4 temporel",
+      "auto_deploiement": false,
+      "site_public_modifie": false,
+      "publication_videos_privees": false,
+      "tests_locaux_nouveaux": "14/14",
+      "ci_distante": "non_verifiee",
+      "iPhone_safari_reel": false,
+      "NVIDIA_DLSS5_utilise": false
+    },
+    "fichiers_publics": [
+      "outils/rne/texture_temporal_v05.py",
+      "tests/test_rne_v05_texture_temporal.py",
+      "RETOUCHE_NEURAL_ENGINE_05_TEXTURE_TEMPORAL.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "archive_privee": "RetoucheProAI_RNE05_texture_temporel_prive.zip (3 checkpoints + scripts + rapports, aucune vidéo/frame)",
+    "progres_recherche": "nouvelle perte gradients Laplacien reentrainee et comparee à témoin avec un veto de promotion des poids",
+    "prochaine_priorite": "garder les 41 vidéos réservées; mesurer textures et stabilité sur des références authentiques externes; améliorer continuité et fidélité des visages sans optimiser post-hoc sur le test"
+  },
+  "jalon_neural_engine_06": {
+    "date": "2026-11-14",
+    "status": "entrainement prive terminé, candidat RNE06 non promu",
+    "protocol": "Même checkpoint RNE04, ordre et MSE+temporal identiques pour 2 bras; candidat ajoute gradients temporels sur résidu aligné avec confiance de mouvement",
+    "train": {
+      "videos_historique": 157,
+      "sha_verified": 157,
+      "unique_sources": 154,
+      "triplets": 308,
+      "steps_per_arm": 260,
+      "batch": 8,
+      "used_new_41_uploads": false
+    },
+    "in_sample": {
+      "PSNR_reference_db": 30.63414,
+      "PSNR_candidate_db": 30.6323,
+      "delta_PSNR_db": -0.00184,
+      "grad_temporal_reference": 0.000546,
+      "grad_temporal_candidate": 0.000531,
+      "temporal_reference": 0.002255,
+      "temporal_candidate": 0.002225,
+      "spatial_reference": 0.018783,
+      "spatial_candidate": 0.018787
+    },
+    "reused_evaluation": {
+      "videos_provisional": 29,
+      "already_inspected": true,
+      "clips_new_used_for_training": false,
+      "samples": 290,
+      "natural_motion_transitions": 232,
+      "PSNR_gain_RNE04_db": 0.48028,
+      "PSNR_gain_RNE06_db": 0.464442,
+      "edge_MAE_RNE04": 7.328081,
+      "edge_MAE_RNE06": 7.370479,
+      "texture_MAE_RNE04": 3.596195,
+      "texture_MAE_RNE06": 3.576064,
+      "regressions_RNE04": 3,
+      "regressions_RNE06": 1,
+      "temporal_delta_RNE04": -0.012029,
+      "temporal_delta_RNE06": -0.01191,
+      "perceptual_independence_proven": false
+    },
+    "quality_gate": "FAILED: RNE06 PSNR/contours inferior to paired control and RNE04; smoother is not necessarily more faithful",
+    "tests": "16/16 new RNE06 + 14/14 previous RNE05 synthetic CPU tests local PASS, CI remote unverified",
+    "code": [
+      "outils/rne/temporal_gradients.py",
+      "tests/test_rne06_temporal_gradients.py",
+      "RETOUCHE_NEURAL_ENGINE_06.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE06_gradients_temporels_prive.zip",
+    "personal_media_published": false,
+    "weights_published": false,
+    "auto_deployment": false,
+    "main_merged": false,
+    "iphone_safari_tested": false,
+    "nvidia_dlss5_used": false
+  },
+  "jalon_neural_engine_07": {
+    "date": "2026-11-14",
+    "status": "RNE 0.7 entraîné puis rejeté au contrôle multimode; recherche privée sans déploiement",
+    "objectif": "exposer des modèles RNE à des dégradations proches de celles des vidéos compressées, sans toucher aux 41 clips de test",
+    "corpus": {
+      "videos_catalogue_ancienne": 157,
+      "empreintes_sha_conformes": 157,
+      "contenus_uniques": 154,
+      "copies_exactes_non_surpesees": 3,
+      "triplets": 308,
+      "positions_privees": [
+        0.18,
+        0.64
+      ],
+      "exemples_entrainement_disponibles": 616,
+      "exemples_controle_interne": 616,
+      "aucune_nouvelle_video_utilisee_pour_entrainer": true
+    },
+    "experience": {
+      "modes": [
+        "clean_area",
+        "jpeg55",
+        "blur_noise",
+        "h264_crf34"
+      ],
+      "h264": "FFmpeg libx264, encodage/décodage réel en mémoire, YUV420p CRF34",
+      "poids_depart": "RNE0.4 temporel privé",
+      "method": "deux bras initialisation/ordre/optimiseur identiques, témoin inclut 2 slots propres, candidat remplace un slot propre par H264",
+      "iterations_par_bras": 120,
+      "batch": 8,
+      "objective": "MSE + 0.025 residual temporal"
+    },
+    "scores_interne_par_mode": {
+      "clean_area": {
+        "delta_PSNR_db": -0.03306,
+        "delta_contours": 0.000002,
+        "delta_proxy_temporel": -0.000027,
+        "psnr_candidat_db": 36.22107
+      },
+      "jpeg55": {
+        "delta_PSNR_db": -0.00139,
+        "delta_contours": -0.000013,
+        "delta_proxy_temporel": -0.000031,
+        "psnr_candidat_db": 30.45044
+      },
+      "blur_noise": {
+        "delta_PSNR_db": -0.01692,
+        "delta_contours": 0.000014,
+        "delta_proxy_temporel": -0.000027,
+        "psnr_candidat_db": 30.72363
+      },
+      "h264_crf34": {
+        "delta_PSNR_db": 0.02433,
+        "delta_contours": -0.000027,
+        "delta_proxy_temporel": -0.000023,
+        "psnr_candidat_db": 29.85925
+      }
+    },
+    "limites": "L'ancien checkpoint RNE04 a déjà appris les 154 contenus. Seul le moment du nouveau fine-tuning a été tenu à l'écart de ce fine-tuning. Pas de validation indépendante. Conditions LR simulées et codec H264 représentatif, pas chaîne caméra authentique; indicateur temporel de details non equivalent stabilité perceptuelle.",
+    "decision": {
+      "passed_internal_gate": false,
+      "promoted": false,
+      "reference_model": "RNE 0.4 temporel",
+      "bicubic_fallback": true,
+      "not_deployed": true,
+      "real_iphone_safari_tested": false,
+      "real_before_after_ar_pairs": false,
+      "main_unchanged": true,
+      "NVIDIA_DLSS5_used": false
+    },
+    "tests_locaux": "30/30 tests synthetiques + vrai encodeur H264, confidentialité et consentement",
+    "github_code": [
+      "outils/rne/rne07/degradations.py",
+      "outils/rne/rne07/robust_gate.py",
+      "outils/rne/rne07/prepare_corpus.py",
+      "outils/rne/rne07/train_robust.py",
+      "tests/test_rne07_degradations.py",
+      "tests/test_rne07_protocol.py",
+      "RETOUCHE_NEURAL_ENGINE_07.md",
+      ".github/workflows/rne-cpu.yml",
+      ".gitignore"
+    ],
+    "archive_privee": "RetoucheProAI_RNE07_Degradations_H264_Privé.zip",
+    "poids_media_prives_jamais_publies": true,
+    "ci_Github": "a_verifier"
+  },
+  "jalon_neural_engine_08": {
+    "date": "2026-11-14",
+    "status": "selector RNE08 evaluated; NOT PROMOTED",
+    "historical_corpus": {
+      "original_files": 157,
+      "distinct_videos": 154,
+      "scene_groups": 41,
+      "cache_conditions": 4,
+      "training_cases": 616,
+      "validation_cases": 616,
+      "original_RNE04_exposed_to_all_historical_scenes": true
+    },
+    "candidate": {
+      "features": 19,
+      "model": "ridge lambda 35",
+      "threshold_gain_db": 0.2,
+      "group_cv_folds": 5,
+      "rne04_baseline_mean_gain_db": 0.20554,
+      "adaptive_mean_gain_db": 0.16442,
+      "rne04_severe_regressions": 4,
+      "adaptive_severe_regressions": 3,
+      "bicubic_fallbacks": 293,
+      "selected_neural": 323,
+      "decision": "REJECT - loses gain and three severe regressions remain"
+    },
+    "safety": {
+      "manual_preview_only": true,
+      "scene_hysteresis_good_frames": 3,
+      "scene_hysteresis_bad_frames": 2,
+      "cut_reset": true,
+      "memory_fallback": true,
+      "automatic_deployment": false
+    },
+    "severe_risk_audit": {
+      "protocol": "Fixed severe PSNR regression at <-0.5 dB, cluster bootstrap 5000 per 41 scene groups, source historical only",
+      "train_examples": 616,
+      "train_severe": 5,
+      "train_failure_groups": 3,
+      "train_95pct_rate": [
+        0,
+        0.017342
+      ],
+      "validation_examples": 616,
+      "validation_severe": 4,
+      "validation_failure_groups": 1,
+      "validation_95pct_rate": [
+        0,
+        0.0165746
+      ],
+      "validation_zero_event_bootstraps_fraction": 0.3654,
+      "decision": "insufficient diverse failure cases to train credible risk detector; blocked"
+    },
+    "heldout_41_used_for_selector": false,
+    "heldout_41_used_for_tail_audit": false,
+    "tests": "47/47 synthetic local tests PASS, 29 existing + 18 new; workflow updated but remote not confirmed",
+    "new_files": [
+      "outils/rne/rne08/adaptive_selector.py",
+      "outils/rne/rne08/scene_router.py",
+      "outils/rne/rne08/build_private_dataset.py",
+      "outils/rne/rne08/evaluate_private.py",
+      "outils/rne/rne08/risk_audit.py",
+      "tests/test_rne08_adaptive.py",
+      "tests/test_rne08_risk_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_08.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE08_Audit_Risques_Privé.zip",
+    "files_published_private": false,
+    "weights_published": false,
+    "main_merged": false,
+    "iphone_safari_validated": false,
+    "NVIDIA_DLSS5_used": false
+  },
+  "jalon_neural_engine_09": {
+    "date": "2026-11-14",
+    "stage": "RNE09 temporal confidence invariant; laboratory research only",
+    "dataset": {
+      "historical_videos": 157,
+      "historical_unique": 154,
+      "historical_scene_groups": 41,
+      "normal_cases": 82,
+      "synthetic_corrupted_contexts": 164,
+      "ablation_cases_per_method": 246,
+      "new_41_used": false,
+      "checkpoint_frozen": "RNE04"
+    },
+    "first_ablation": "Photometric trust attenuation rejected; worsened normal scenes and shifted-context errors",
+    "second_ablation": {
+      "type": "photometric upper-bound invariant, refuse entire neural frame on incompatible trust map",
+      "tolerance_posthoc": 0.05,
+      "violation_fraction_posthoc": 0.01,
+      "normal_unchanged": 82,
+      "normal_total": 82,
+      "corrupted_refused": 164,
+      "corrupted_total": 164,
+      "severe_psnr_regressions_without_guard": 87,
+      "severe_psnr_regressions_with_guard": 0,
+      "mean_gain_from_refusal_in_corrupted_cases_db": 0.85615,
+      "exploratory_group_bootstrap_ci_95pct_db": [
+        0.70544,
+        1.047
+      ],
+      "notes": "corruptions deliberately violate known confidence rule; historic scenes were already in pretraining; thresholds chosen after failed ablation; NOT independent validation"
+    },
+    "tests": {
+      "new_generic_tests": "23/23 PASS locally",
+      "all_RNE09_experimental_tests": "45/45 PASS locally",
+      "regression_RNE08": "47/47 PASS locally",
+      "ci_remote": "to_check"
+    },
+    "code_public": [
+      "outils/rne/rne09/confidence_invariant.py",
+      "tests/test_rne09_confidence_invariant.py",
+      "RETOUCHE_NEURAL_ENGINE_09.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE09_Protection_Temporelle_Prive.zip",
+    "privacy": {
+      "new_41_videos_opened": false,
+      "new_41_used_for_training": false,
+      "video_or_frames_public": false,
+      "personal_model_weights_public": false
+    },
+    "quality_gate": "BLOCKED for production; only opt-in laboratory preview; no iPhone validation; no authentic scene-cut generalization",
+    "site_deployed": false,
+    "main_merged": false,
+    "NVIDIA_DLSS5_used": false
+  },
+  "jalon_neural_engine_10": {
+    "date": "2026-11-14",
+    "phase": "audit d'angle mort + couche de provenance temporelle",
+    "status": "research_only; no model training or promotion",
+    "historic_source": {
+      "files": 157,
+      "distinct": 154,
+      "old_scene_groups_examined": 41,
+      "model_previously_saw_these_scenes": true
+    },
+    "reserved_recent_corpus": {
+      "uploads": 41,
+      "used_for_training": false,
+      "used_for_this_evaluation": false,
+      "untouched": true
+    },
+    "bench": {
+      "comparisons": 328,
+      "modes": [
+        "clean_area",
+        "h264_crf34"
+      ],
+      "alterations": [
+        "unaltered",
+        "1px shifted with trust recomputed to photometric cap",
+        "2px shifted with trust recomputed",
+        "2px shifted with stale trust"
+      ],
+      "synthetic_motion_errors": true,
+      "real_optical_flow_recomputed_for_stress": false,
+      "weights_frozen": true,
+      "clean_unaltered_psnr_gain_db": 0.37483,
+      "clean_1px_recomputed_psnr_gain_db": -0.52406,
+      "clean_2px_recomputed_psnr_gain_db": -0.53531,
+      "clean_1px_recomputed_severe_regressions": 20,
+      "clean_2px_recomputed_severe_regressions": 19,
+      "h264_unaltered_psnr_gain_db": 0.0987,
+      "h264_1px_recomputed_psnr_gain_db": -0.00347,
+      "h264_2px_recomputed_psnr_gain_db": -0.04682,
+      "stale_confidence_refusals": 82,
+      "stale_total": 82,
+      "recomputed_confidence_refusals": 0,
+      "recomputed_total": 164,
+      "clean_1px_delta_vs_original_db": -0.89889,
+      "clean_1px_delta_bootstrap_group95_db": [
+        -1.115,
+        -0.73562
+      ],
+      "main_limitation": "A photometric invariant is insufficient evidence of geometric motion correctness."
+    },
+    "architecture": "A research-only session guard receives raw BGR frames + sequential index + ephemeral per-video token, rebuilds alignment and trust from raw images, falls back on cut/stream switch/drop/errors/no consent. Does not certify optical flow geometry.",
+    "code_public": [
+      "outils/rne/rne10/causal_session_guard.py",
+      "tests/test_rne10_causal_session_guard.py",
+      "RETOUCHE_NEURAL_ENGINE_10.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "local_tests": "27/27 synthetic unit tests pass",
+    "private_archive": "RetoucheProAI_RNE10_Protection_Alignement_Prive.zip",
+    "quality_gate": "BLOCKED: synthetic perturbation on old training scenes, natural tracking faults untested; unverified iPhone Safari and true AR before/after",
+    "ci_remote": "pending/unverified",
+    "media_or_private_weights_published": false,
+    "production_deployed": false,
+    "main_merged": false,
+    "NVIDIA_DLSS5_used": false
+  },
+  "jalon_neural_engine_11": {
+    "date": "2026-11-14",
+    "status": "independent sparse vs dense optical-flow sensor built, tested, NOT DEPLOYED",
+    "research_sources": [
+      "r/computervision tracking distributed keypoints (reddit.com/r/computervision/comments/1o222hi)",
+      "r/TopazLabs small face distortions (reddit.com/r/TopazLabs/comments/1ip8bit)",
+      "r/upscaling restoration before upscale (reddit.com/r/upscaling/comments/1ruxr5x)",
+      "r/StableDiffusion temporal flicker per-frame (reddit.com/r/StableDiffusion/comments/1kov1dl)",
+      "OpenCV forward-back optical-flow consistency (docs.opencv.org/5.0/extra_modules/optflow.html)"
+    ],
+    "source_note": "4chan /g/ searched; no trustworthy source was retained. Forum statements are suggestions, not RNE measurements.",
+    "existing_code_finding": "outils/rne/triad.py already computes forward and backward Farneback, photometric error and edge validity; new sensor crosschecks with sparse Lucas-Kanade rather than duplicating forward/back.",
+    "detector": {
+      "module": "outils/rne/rne11/sparse_motion_audit.py",
+      "type": "grid-based Shi-Tomasi corners and sparse LK forward-backward cycle, compare to dense Farneback from current to prior",
+      "grid": "4x4",
+      "min_valid_tracks": 12,
+      "min_cells": 4,
+      "abstain_default": true,
+      "posthoc_median_disagreement_threshold_px": 0.75,
+      "provisional_only": true,
+      "not_connected_to_render": true
+    },
+    "historical_experiment": {
+      "historic_video_files_available": 157,
+      "pairs_sampled": 41,
+      "recent_41_videos_accessed": false,
+      "training": false,
+      "modified_neural_weights": false,
+      "frames_saved": false,
+      "sensitivity_cases_41_each": {
+        "nominal": {
+          "provisional_agreement": 41,
+          "disagreement": 0
+        },
+        "synthetic_offset_0_5px": {
+          "provisional_agreement": 41,
+          "disagreement": 0
+        },
+        "synthetic_offset_1px": {
+          "provisional_agreement": 0,
+          "disagreement": 41
+        },
+        "synthetic_offset_2px": {
+          "provisional_agreement": 0,
+          "disagreement": 41
+        },
+        "synthetic_offset_5px": {
+          "provisional_agreement": 0,
+          "disagreement": 41
+        }
+      },
+      "warning": "Threshold selected after observing this historic data; results NOT independent validation; artificial flow corruption not natural optical-flow errors."
+    },
+    "cpu_local_median_five_passes_ms": {
+      "square192": {
+        "reusing_dense": 2.32,
+        "recomputing_dense": 9.4
+      },
+      "width640_height360": {
+        "reusing_dense": 4.36,
+        "recomputing_dense": 57.39
+      },
+      "width1280_height720": {
+        "reusing_dense": 12.61,
+        "recomputing_dense": 224.57
+      }
+    },
+    "tests": "23/23 synthetic tests PASS locally; GitHub Actions remote not confirmed",
+    "files": [
+      "outils/rne/rne11/sparse_motion_audit.py",
+      "tests/test_rne11_sparse_motion_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_11.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE11_Recherche_Forums_Mouvement_Prive.zip",
+    "no_private_media_in_archive": true,
+    "no_private_media_published": true,
+    "holdout_41_used": false,
+    "model_promotion": false,
+    "website_deployed": false,
+    "main_merged": false,
+    "iphone_safari_validated": false
+  },
+  "jalon_neural_engine_12": {
+    "date": "2026-11-15",
+    "status": "third observer (global phase correlation) researched, benchmarked, saved; NOT PROMOTED",
+    "method": "Use RNE11 sparse LK vs dense Farneback first; if provisional, cross-check with independent phase correlation on globally rigid translation. Abstain on uncertain phase, median deviation or excessive spatial outliers.",
+    "thresholds_are_research_heuristics": {
+      "phase_peak_response_min": 0.35,
+      "global_dense_median_error_px_max": 0.75,
+      "fraction_gt2px_max": 0.15,
+      "not_certified_for_natural_motion": true
+    },
+    "procedural_benchmark": {
+      "original_train_corpus_touched": false,
+      "new_41_videos_touched": false,
+      "model_train": false,
+      "weights_changed": false,
+      "calibration": {
+        "seed_start": 100,
+        "instances": 2,
+        "cases": 144,
+        "known_bad": 74,
+        "RNE11_bad_accepted": 24,
+        "RNE12_bad_accepted": 2,
+        "RNE11_good_accepted": 53,
+        "RNE12_good_accepted": 47
+      },
+      "heldout_new_random_seeds": {
+        "seed_start": 5007,
+        "instances": 2,
+        "cases": 144,
+        "known_bad": 74,
+        "RNE11_bad_accepted": 24,
+        "RNE12_bad_accepted": 0,
+        "RNE11_good_accepted": 51,
+        "RNE12_good_accepted": 47,
+        "limitation": "same generation families; not independent real-world distribution"
+      },
+      "moving_foreground_background": {
+        "cases": 54,
+        "known_bad": 12,
+        "RNE11_bad_accepted": 12,
+        "RNE12_bad_accepted": 5,
+        "RNE11_good_accepted": 42,
+        "RNE12_good_accepted": 24,
+        "limitation": "multi-layer occlusion exposes remaining false acceptance and excess conservative fallback"
+      },
+      "gt_definition": "Known horizontal translation, ignore synthetic occluded/border pixels; bad if median EPE>1px OR P90 EPE>2px; cuts classified unreliable"
+    },
+    "timing_CPU_reusing_dense_ms": {
+      "size192x192": {
+        "RNE11": 4.07,
+        "RNE12": 6.15
+      },
+      "size640x360": {
+        "RNE11": 6.54,
+        "RNE12": 20.4
+      },
+      "size1280x720": {
+        "RNE11": 21.61,
+        "RNE12": 79.99
+      },
+      "excluded": [
+        "Farneback computation",
+        "video decode",
+        "neural inference"
+      ],
+      "iphone_measured": false
+    },
+    "tests": "26/26 new RNE12 local tests PASS, 23/23 RNE11 tests rerun PASS; GitHub CPU CI updated but remote not confirmed",
+    "code_public": [
+      "outils/rne/rne12/phase_motion_guard.py",
+      "tests/test_rne12_phase_motion_guard.py",
+      "RETOUCHE_NEURAL_ENGINE_12.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE12_Troisieme_Observateur_Mouvement_Privé.zip",
+    "privacy": {
+      "only_synthetic_procedural_benchmarks": true,
+      "new_41_reserved_excluded": true,
+      "personal_media_published": false,
+      "model_weights_published": false
+    },
+    "model_promotion": false,
+    "production_deployed": false,
+    "main_merged": false,
+    "safari_iphone_tested": false
+  },
+  "jalon_neural_engine_13": {
+    "date": "2026-11-15",
+    "status": "regional motion research prototype and synthetic evaluation; NOT DEPLOYED",
+    "objective": "audit local sparse LK vs dense Farneback and photometric residual, 4x4 tiles; abstention on insufficient evidence; NO neural retraining",
+    "basis": "Research on occlusions/uncertainty (OCAI CVPR2024; Jeong arXiv 2025) and r/computervision distributed tracking",
+    "synthetic_layered": {
+      "trials": 54,
+      "ground_truth_scored_tiles": 840,
+      "gt_bad": 39,
+      "gt_good": 801,
+      "rne11_old": {
+        "bad_accepted": 39,
+        "good_accepted": 801
+      },
+      "rne12_global": {
+        "bad_accepted": 24,
+        "good_accepted": 443
+      },
+      "rne13_local": {
+        "bad_accepted": 22,
+        "good_accepted": 598
+      },
+      "conjunction_12_13": {
+        "bad_accepted": 19,
+        "good_accepted": 318
+      },
+      "warning": "new procedural seeds but same generator family as preceding experiments; not valid evidence for real user videos"
+    },
+    "synthetic_robustness": {
+      "trials": 288,
+      "conditions": 6,
+      "scenes_per_condition": 48,
+      "clean": {
+        "bad_accepted": 136,
+        "bad_gt": 316,
+        "good_accepted": 307,
+        "good_gt": 452
+      },
+      "blur": {
+        "bad_accepted": 81,
+        "bad_gt": 319,
+        "good_accepted": 53,
+        "good_gt": 449
+      },
+      "occlusion": {
+        "bad_accepted": 122,
+        "bad_gt": 297,
+        "good_accepted": 258,
+        "good_gt": 371
+      },
+      "illumination_shift": {
+        "bad_accepted": 0,
+        "bad_gt": 316,
+        "good_accepted": 0,
+        "good_gt": 452
+      },
+      "jpeg": {
+        "bad_accepted": 174,
+        "bad_gt": 341,
+        "good_accepted": 319,
+        "good_gt": 427
+      },
+      "scene_cut": {
+        "ground_truth_valid": false,
+        "insufficient_tiles": 765,
+        "total_tiles": 768
+      },
+      "failure": "large false rejects under illumination changes and blur; false accepts on JPEG and periodic textures, no guarantee of regional motion correctness"
+    },
+    "local_cpu_ms": {
+      "exclude_decode_flow_and_model": true,
+      "width192_height192": 9.63,
+      "width640_height360": 27.29,
+      "width1280_height720": 100.86,
+      "iphone_safari_tested": false
+    },
+    "tests": "26/26 unit tests passed locally against synthetic frames; remote GitHub Actions status unverified",
+    "code_public": [
+      "outils/rne/rne13/regional_motion_audit.py",
+      "tests/test_rne13_regional_motion_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_13.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE13_Controle_Regional_Mouvement_Prive.zip",
+    "archive_files": 9,
+    "privacy": {
+      "new_41_videos_used": false,
+      "new_41_videos_training": false,
+      "old_157_videos_used": false,
+      "media_published": false,
+      "model_weights_published": false
+    },
+    "model_promoted": false,
+    "production_site_deployed": false,
+    "main_merged": false
+  },
+  "jalon_neural_engine_14": {
+    "date": "2026-11-15",
+    "status": "experimental lighting-tolerant Census tile audit; not trained, not promoted or deployed",
+    "baseline": "RNE13 tilewise LK+Farneback+raw photometric veto; only its photometric veto may be revised; RNE04 neural model kept unchanged",
+    "method": "8-neighbor rank/census signature, minimum texture contrast, fixed 14px period self-correlation, saturation/inbounds guards; RNE13 audit always recomputed from same frames/flow; manual opt-in research only",
+    "literature": [
+      "https://visionbook.mit.edu/optical_flow.html",
+      "https://www.mia.uni-saarland.de/Publications/demetz-eccv14.pdf",
+      "https://www.mia.uni-saarland.de/Publications/hafner-ssvm13.pdf",
+      "https://link.springer.com/article/10.1007/s42452-021-04227-x"
+    ],
+    "internal_development": {
+      "synthetic_scenes": 144,
+      "lighting_good_newly_supported": 40,
+      "lighting_bad_newly_supported": 0,
+      "warning": "Development scores are post-hoc calibration, not independent validation"
+    },
+    "secondary_same_generator": {
+      "synthetic_scenes": 288,
+      "lighting_gt_good": 459,
+      "lighting_gt_bad": 309,
+      "lighting_good_baseline": 0,
+      "lighting_good_candidate": 95,
+      "lighting_bad_baseline": 0,
+      "lighting_bad_candidate": 2,
+      "blur_good_baseline": 60,
+      "blur_good_candidate": 60,
+      "jpeg_good_baseline": 332,
+      "jpeg_good_candidate": 332,
+      "warning": "Unseen seeds of same image generator, not new human scenes or certified generalization"
+    },
+    "alternate_generator": {
+      "synthetic_scenes": 120,
+      "shadow_gt_good": 226,
+      "shadow_good_baseline": 22,
+      "shadow_good_candidate": 58,
+      "shadow_bad_baseline": 0,
+      "shadow_bad_candidate": 0,
+      "gamma_gt_good": 200,
+      "gamma_good_baseline": 87,
+      "gamma_good_candidate": 94,
+      "gamma_bad_baseline": 0,
+      "gamma_bad_candidate": 0,
+      "jpeg_and_light_improvement": 0,
+      "motion_blur_improvement": 0,
+      "warning": "Alternative procedural family, still artificial; cannot prove real-world robustness"
+    },
+    "local_cpu_ms": {
+      "resolution_192x192": {
+        "rne13": 7.1,
+        "rne14": 8.77
+      },
+      "resolution_640x360": {
+        "rne13": 23.05,
+        "rne14": 34.23
+      },
+      "resolution_1280x720": {
+        "rne13": 79.2,
+        "rne14": 116.67
+      },
+      "outside_scope": "decoder, Farneback initial motion, neural inference, iPhone Safari"
+    },
+    "safety": {
+      "local_tests_passed": 22,
+      "CI_remote_unverified": true,
+      "published_private_media": false,
+      "used_old_157_videos": false,
+      "used_recent_41_videos": false,
+      "trained_models": false,
+      "promoted": false,
+      "site_changed": false,
+      "main_merged": false,
+      "NVIDIA_DLSS5_used": false
+    },
+    "files": [
+      "outils/rne/rne14/illumination_census.py",
+      "tests/test_rne14_illumination_census.py",
+      "RETOUCHE_NEURAL_ENGINE_14.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_lab_archive": "RetoucheProAI_RNE14_Census_Lumiere_Recherche.zip",
+    "conclusion": "Partial lighting recovery but 2 added false supports on synthetic same-generator secondary check. Do not promote; repeated texture detector fixed at 14px is not general."
+  },
+  "jalon_neural_engine_15": {
+    "date": "2026-11-15",
+    "status": "new NCC multiple-match diagnostic built; additional RNE14 veto REJECTED by paired evidence",
+    "motivation": "Periodic textures create many plausible matches; compare to existing guard before promoting another",
+    "research_basis": [
+      "OpenCV template matching TM_CCOEFF_NORMED",
+      "Alfarano et al CVIU 2024 optical flow survey"
+    ],
+    "local_work": {
+      "diagnostic": "ambiguity_guard.py (16 regions, NCC 2 peaks, dense-flow discrepancy)",
+      "generator": "procedural_bench.py (textures/stripes/checker/dots/two-layer articulated surrogate, exact shifts)",
+      "comparator": "evaluate_pair.py uses same scenes and synthetic ground truth for old/new",
+      "gate": "evidence_gate.py: new prevented errors and >=95% retained correct regions",
+      "frozen_thresholds_before_heldout": true,
+      "neural_weights_trained": false,
+      "synthetic_tests_passed": 50
+    },
+    "detector_heldout": {
+      "four_pixel": {
+        "scenes": 200,
+        "regions": 3200,
+        "bad": 858,
+        "bad_accepted": 0,
+        "good": 2342,
+        "good_accepted": 1244
+      },
+      "one_pixel": {
+        "scenes": 100,
+        "regions": 1600,
+        "bad": 508,
+        "bad_accepted": 264,
+        "good": 1092,
+        "good_accepted": 569
+      },
+      "caveat": "standalone 1px failure, synthetic only; cannot infer real-video safety"
+    },
+    "paired_against_rne14": {
+      "four_pixel": {
+        "scenes": 250,
+        "bad": 1150,
+        "bad_accepted_old": 0,
+        "bad_accepted_new": 0,
+        "good_accepted_old": 2041,
+        "good_accepted_new": 1342
+      },
+      "one_pixel": {
+        "scenes": 200,
+        "bad": 973,
+        "bad_accepted_old": 0,
+        "bad_accepted_new": 0,
+        "good_accepted_old": 1597,
+        "good_accepted_new": 1047
+      },
+      "combined": {
+        "scenes": 450,
+        "bad": 2123,
+        "additional_bad_prevented": 0,
+        "good_accepted_old": 3638,
+        "good_accepted_new": 2389,
+        "additional_good_refusals": 1249,
+        "retention_fraction": 0.656679
+      },
+      "decision": "REJECT; redundant on these synthetic perturbations, 34.33% of formerly accepted correct regions lost"
+    },
+    "cpu_local_ms": {
+      "NCC_audit_only": true,
+      "dimensions_192": 3.35,
+      "dimensions_640x360": 5.424,
+      "dimensions_1280x720": 11.938,
+      "iphone_safari_tested": false
+    },
+    "github_public": [
+      "RETOUCHE_NEURAL_ENGINE_15.md",
+      "outils/rne/rne15/evidence_gate.py",
+      "tests/test_rne15_evidence_gate.py",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE15_Banc_Ambiguites_Privé.zip",
+    "archive_files": 15,
+    "media_published": false,
+    "old_157_used": false,
+    "recent_41_used": false,
+    "neural_weights_updated": false,
+    "website_deployed": false,
+    "main_merged": false
+  },
+  "jalon_neural_engine_16": {
+    "date": "2026-11-15",
+    "status": "RNE16 ANCRE from-scratch causal gated residual prototype trained; NOT PROMOTED",
+    "original_method": "Two independent compact CNN residual heads, bicubic anchor, spatial-only fallback, temporal optional trusted prior, 7x7 erosion of confidence to block convolution leakage, exact bicubic on protected ROI; 9592 parameters",
+    "source_research": [
+      "DGAF-VSR CVPR2026",
+      "UDA-VSR 2026",
+      "VideoGigaGAN CVPR2025",
+      "BasicVSR++ CVPR2022",
+      "Reddit TopazLabs Nov2026"
+    ],
+    "training": {
+      "source": "pure procedural synthetic 450 LR-HR pairs",
+      "historical_157_videos_used": false,
+      "reserved_41_videos_used": false,
+      "seed": 16,
+      "steps": 280,
+      "from_scratch": true,
+      "all_checkpoint_weights_private": true
+    },
+    "preliminary_first_checkpoint_discarded": true,
+    "after_safety_retraining": {
+      "synthetic_val_150": {
+        "bic_psnr_db": 22.67933,
+        "spatial_psnr_db": 22.8954,
+        "dual_psnr_db": 22.96738,
+        "average_dual_gain_db": 0.28805,
+        "dual_bicubic_wins": 121,
+        "dual_spatial_wins": 113,
+        "severe_regressions": 1
+      }
+    },
+    "second_frozen_generator": {
+      "samples": 150,
+      "model_frozen": true,
+      "spirals": {
+        "gain_db": 0.55704,
+        "losses_gt_half_db": 15
+      },
+      "glyph_mosaic": {
+        "gain_db": -0.01826,
+        "losses_gt_half_db": 11
+      },
+      "woven_noise": {
+        "gain_db": 0.88658,
+        "losses_gt_half_db": 0
+      }
+    },
+    "cpu_synthetic_lr256_to_hr512_median_ms": 37.14,
+    "tests_local": "30+10=40/40 passed",
+    "promotion_gate": {
+      "status": "BLOCKED_RESEARCH_ONLY",
+      "reasons": [
+        "no real original-HR video pairs",
+        "no temporal stability on real naturally moving sequences",
+        "no real iPhone Safari test",
+        "negative mean glyph gain",
+        "26 severe PSNR regressions on second synthetic stress test"
+      ]
+    },
+    "code_public": [
+      "outils/rne/rne16/rne16.py",
+      "outils/rne/rne16/procedural.py",
+      "outils/rne/rne16/train.py",
+      "outils/rne/rne16/stress_frozen.py",
+      "outils/rne/rne16/quality_gate.py",
+      "tests/test_rne16_ancre.py",
+      "tests/test_rne16_quality_gate.py",
+      "RETOUCHE_NEURAL_ENGINE_16.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "local_archive": "RetoucheProAI_RNE16_ANCRE_Modele_Original_Privé.zip",
+    "local_archive_sha256": "fd65c77d7ec9ea8df2b1aabe1d6777866e9503a5b87a379176f2f9928bcfbdef",
+    "archive_contains_personal_media": false,
+    "weights_uploaded_to_github": false,
+    "main_modified": false,
+    "production_deployment": false,
+    "safari_iphone_tested": false,
+    "remote_ci_status": "unverified"
+  },
+  "jalon_neural_engine_17": {
+    "date": "2026-11-15",
+    "codename": "AEGIS",
+    "status": "trained original lightweight residual gate, REJECTED after fixed-baseline ablation; research only",
+    "backbone": "RNE16 ANCRE frozen, synthetic weights remain private",
+    "additional_learned_parameters": 2305,
+    "synthetic_train": {
+      "count": 600,
+      "families": [
+        "microprint",
+        "filaments",
+        "weave"
+      ],
+      "steps": 500,
+      "selected_checkpoint_step": 25
+    },
+    "synthetic_dev": {
+      "count": 180,
+      "ancre_gain_vs_bicubic_db": 0.46389,
+      "aegis_gain_vs_bicubic_db": 0.4859,
+      "severe_losses_ancre": 7,
+      "severe_losses_aegis": 0,
+      "selection_use": "selected checkpoint; not independent"
+    },
+    "synthetic_locked_final": {
+      "count": 270,
+      "predeclared_families": [
+        "diagram",
+        "facade",
+        "foliage"
+      ],
+      "ancre_gain_vs_bicubic_db": -0.11006,
+      "aegis_gain_vs_bicubic_db": -0.04823,
+      "aegis_minus_ancre_db": 0.06184,
+      "bootstrap_exploratory_95pct_db": [
+        0.05371,
+        0.07004
+      ],
+      "ancre_severe_losses": 16,
+      "aegis_severe_losses": 3,
+      "by_family": {
+        "diagram": {
+          "ancre": -0.26877,
+          "aegis": -0.164
+        },
+        "facade": {
+          "ancre": -0.0684,
+          "aegis": 0.00249
+        },
+        "foliage": {
+          "ancre": 0.00699,
+          "aegis": 0.01683
+        }
+      },
+      "synthetic_generator_only": true,
+      "independent_real_world_test": false
+    },
+    "cheap_ablation": {
+      "fixed_strength_from_dev": 0.7,
+      "learned_mean_strength": 0.70049,
+      "learned_mean_spatial_std": 0.000076,
+      "fixed_strength_gain_vs_bicubic_db": -0.04814,
+      "learned_minus_fixed_db": -0.000083,
+      "fixed_severe_losses": 3,
+      "learned_severe_losses": 3,
+      "decision": "Reject learned gate: cheaper scalar is marginally better; neural head not justified"
+    },
+    "privacy": {
+      "old_historic_157_videos_used": false,
+      "new_recent_41_videos_used": false,
+      "personal_media_published": false,
+      "original_people_models_used": false,
+      "trained_weights_uploaded_to_github": false
+    },
+    "local_unit_tests": "41/41 passed, 21 public synthetic tests added to GitHub workflow",
+    "github_files": [
+      "outils/rne/rne17/rne17.py",
+      "outils/rne/rne17/research_limiter.py",
+      "outils/rne/rne17/promotion_gate.py",
+      "tests/test_rne17_gate.py",
+      "RETOUCHE_NEURAL_ENGINE_17.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE17_AEGIS_Laboratoire_Prive.zip",
+    "private_archive_file_count": 18,
+    "source_experiment_scripts_in_private_archive": true,
+    "research_promotion_allowed": false,
+    "site_deployed": false,
+    "main_merged": false,
+    "github_actions_remote_verification": "unconfirmed",
+    "outstanding": [
+      "Real independent video validation",
+      "Fidelity on authentic small face and text",
+      "Temporal flicker under real optical flow",
+      "True AR original-filtered supervision",
+      "iPhone Safari execution"
+    ]
+  },
+  "jalon_neural_engine_18": {
+    "date": "2026-11-15",
+    "label": "RNE18 OBSERVABLE 3D - evidence-first multi-view texture atlas",
+    "status": "synthetic_calibrated_3d_proof_of_concept_ONLY; no 3D person reconstructed",
+    "architectural_horizon": [
+      "observed surface memory",
+      "independent camera-view support",
+      "contested color evidence",
+      "unseen surface must remain unknown",
+      "future articulated people and handled objects"
+    ],
+    "scientific_context": [
+      "ICLR 2026 USplat4D uncertainty-aware anchors",
+      "Sensors 2026 IA-3DGS identity and drift",
+      "ECCV 2026 AHOY human occlusions",
+      "CVPR 2026 RHINO human-object interaction"
+    ],
+    "method": "synthetic rotating sphere with GT yaw, UV coordinates and visibility; confidence-weighted observed color atlas; distinct 15-degree viewpoint bins and ambiguous-color detection; non-observed UV never inpainted",
+    "benchmark": {
+      "atlas_resolution_uv": [
+        160,
+        320
+      ],
+      "image_resolution": [
+        192,
+        192
+      ],
+      "viewcounts": [
+        1,
+        4,
+        10
+      ],
+      "atlas_observed_fraction": [
+        0.211,
+        0.4706,
+        0.7604
+      ],
+      "atlas_corroborated_fraction": [
+        0,
+        0.277,
+        0.652
+      ],
+      "newview_visible_observed_mean": [
+        0.347,
+        0.667,
+        0.978
+      ],
+      "unknown_uv_after_ten_views": 0.2396,
+      "gt_camera_pose_known": true,
+      "gt_geometry_known": true,
+      "gt_occlusion_mask_known": true
+    },
+    "stress": {
+      "new_synthetic_textures": 8,
+      "correct_calibration_mean_contested_cells": 0,
+      "wrong_uv_shift": 0.12,
+      "wrong_calibration_mean_contested_cells": 6081.25,
+      "repeat_same_camera_false_corrob_cells": 0,
+      "camera_estimation_not_tested": true
+    },
+    "tests": "47/47 synthetic tests PASS locally; separately re-run 47/47 under GitHub-like folder import layout",
+    "files": [
+      "outils/rne/rne18/observable_atlas.py",
+      "outils/rne/rne18/bench_observability.py",
+      "outils/rne/rne18/stress_provenance.py",
+      "tests/test_rne18_observable_atlas.py",
+      "tests/test_rne18_provenance_conflicts.py",
+      "RETOUCHE_NEURAL_ENGINE_18.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE18_OBSERVABLE3D_Laboratoire_Synthetique.zip",
+    "private_archive_files": 16,
+    "original_157_videos_used": false,
+    "recent_41_videos_used": false,
+    "model_trained": false,
+    "weights_saved": false,
+    "user_media_published": false,
+    "geometry_estimation_from_real_video": false,
+    "human_identity_reconstruction": false,
+    "final_note": "UV coverage measures grid cells not true spherical area. PSNR only on observed pixels; unknown pixels excluded. 3D synthetic truth provided by simulator, no iPhone Safari test.",
+    "promotion": "research milestone only; not connected to RNE rendering or public site; RNE04 and ANCRE remain experimental super-resolution references",
+    "main_merged": false,
+    "production_deployed": false,
+    "github_ci_remote": "unverified"
+  },
+  "jalon_neural_engine_19": {
+    "date": "2026-11-15",
+    "status": "synthetic articulated 3D simulator and per-part evidence atlas complete, RESEARCH ONLY",
+    "synthetic_geometry": {
+      "objects": 11,
+      "parts": [
+        "torso",
+        "head",
+        "left_upper_arm",
+        "left_forearm",
+        "left_hand",
+        "right_upper_arm",
+        "right_forearm",
+        "right_hand",
+        "held_object",
+        "left_leg",
+        "right_leg"
+      ],
+      "camera_pose_uv_depth_visibility_known_exactly_from_simulator": true,
+      "models_exported": [
+        "RNE19_personnage_synthetique_objet_tenu.glb",
+        "RNE19_personnage_synthetique_objet_relache.glb"
+      ],
+      "model_type": "static 11-part procedural GLB, not a rigged or inferred human",
+      "held_contact_frames": 7,
+      "released_no_contact_frames": 5,
+      "contact_analytic_3d": true
+    },
+    "experiment": {
+      "synthetic_rendered_frames": 12,
+      "atlas_per_part_pixels": [
+        64,
+        128
+      ],
+      "observed_fraction_by_views": {
+        "1": 0.15558,
+        "4": 0.29498,
+        "8": 0.52024,
+        "12": 0.60147
+      },
+      "corroborated_fraction_by_views": {
+        "1": 0,
+        "4": 0.14547,
+        "8": 0.31206,
+        "12": 0.44088
+      },
+      "unknown_fraction_after_12": 0.39853,
+      "uv_head_bad_calibration_shift": 0.13,
+      "head_contested_correct": 0,
+      "head_contested_bad": 635,
+      "eight_alternate_synthetic_texture_seeds": 8,
+      "false_calibration_extra_conflicts": [
+        580,
+        590,
+        598,
+        592,
+        598,
+        581,
+        592,
+        584
+      ],
+      "naive_shared_uv_atlas_mixed_part_fraction": 0.93764,
+      "warning": "synthetic UV coverage not physically weighted surface area; all geometry and contact supplied, not estimated from video; counterfeit consistent calibration can evade color conflict"
+    },
+    "validation": {
+      "main_new_local_tests": "50/50 PASS, including GLB round trip",
+      "old_rne18_local_regression": "47/47 PASS",
+      "public_generic_provenance_tests": "18 authored and added to CI; remote result not verified",
+      "independent_real_human_validation": false,
+      "iphone_safari_tested": false
+    },
+    "files_public": [
+      "outils/rne/rne19/part_provenance.py",
+      "tests/test_rne19_part_provenance.py",
+      "RETOUCHE_NEURAL_ENGINE_19.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "additional_private_archive_files": [
+      "articulated_observable.py",
+      "export_synthetic_glb.py",
+      "benchmark_articulated.py",
+      "test_articulated_observable.py",
+      "2 GLB synthetic models",
+      "2 synthetic PNG previews",
+      "JSON metric report",
+      "test logs"
+    ],
+    "private_archive": "RetoucheProAI_RNE19_OBSERVABLE_Articule_Synthetique.zip",
+    "privacy": {
+      "historical_157_used": false,
+      "recent_41_used": false,
+      "personal_media_published": false,
+      "private_weights_published": false
+    },
+    "product_deployed": false,
+    "production_merge": false,
+    "real_people_reconstructed": false
+  },
+  "jalon_neural_engine_20": {
+    "date": "2026-11-15",
+    "project": "INVERSE-OBSERVABLE: image-only fitting of a KNOWN 11-piece synthetic template",
+    "status": "RESEARCH ONLY. No real human shape reconstruction, neural training, or production deployment.",
+    "method": "Only image BGR input to the inverse. Search camera yaw, single articulated arm phase and holding/released template hypothesis. GT used only after fit for measurement.",
+    "known_priors": [
+      "ellipsoid geometry and topology",
+      "orthographic camera model",
+      "procedural texture family",
+      "special synthetic occluder color"
+    ],
+    "results": {
+      "development_images": 8,
+      "locked_images": 16,
+      "stress_images": 8,
+      "procedural_only": true,
+      "locked_camera_yaw_mean_error_deg": 0.7421,
+      "coarse_camera_yaw_mean_error_deg": 4.5377,
+      "locked_phase_mean_error_deg": 5.1231,
+      "coarse_phase_mean_error_deg": 27.8353,
+      "locked_phase_within_10deg": 12,
+      "locked_pose_ambiguity_flagged": 9,
+      "locked_contact_abstentions": 12,
+      "locked_explicit_hold_correct": 4,
+      "locked_explicit_release_predictions": 0,
+      "stress_phase_mean_error_deg": 9.908,
+      "stress_bad_fit_rejections": 4,
+      "stress_contact_abstentions": 7,
+      "demo_phase_error_deg": 1.286,
+      "demo_camera_yaw_error_deg": 0.597,
+      "demo_glb": "Known 11-piece mannequin fitted to pixels, NOT geometric reconstruction from humans"
+    },
+    "tests": "26/26 local and 26/26 GitHub-structure mirror tests PASS; remote Actions unverified",
+    "files_public": [
+      "outils/rne/rne19/articulated_observable.py",
+      "outils/rne/rne19/export_synthetic_glb.py",
+      "outils/rne/rne20/inverse_pose.py",
+      "outils/rne/rne20/evaluate_inverse.py",
+      "outils/rne/rne20/aggregate_evaluation.py",
+      "outils/rne/rne20/demo_inverse_glb.py",
+      "tests/test_rne20_inverse_pose.py",
+      "RETOUCHE_NEURAL_ENGINE_20.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "zip": "RetoucheProAI_RNE20_INVERSE_3D_Synthetique.zip",
+    "archive_files": 23,
+    "historic_157_personal_videos_used": false,
+    "recent_41_personal_videos_used": false,
+    "personal_media_or_weights_published": false,
+    "real_person_model_created": false,
+    "iphone_safari_validated": false,
+    "main_merged": false,
+    "website_deployed": false
+  },
+  "jalon_neural_engine_21": {
+    "date": "2026-11-15",
+    "name": "RNE21 ANCRAGE — inverse multi-vues à proportions relatives",
+    "status": "research_only; code + 42 tests synthetic pass; no deployment",
+    "scientific_constraints": "Original bounded fiducial-only research prototype, not generic human reconstruction or novel unproven human method. Perspective unknown, contact and metric scale not recovered.",
+    "sources": [
+      "CVPR2026 Mocap-2-to-3",
+      "CVPR2025 MV-SSM",
+      "CVPR2026 CARI4D",
+      "CHOIR arXiv 2026",
+      "r/computervision rapid-motion pose complaints"
+    ],
+    "architecture": {
+      "synthetic_visible_fiducials": 10,
+      "independent_frame_inverse": "unknown arm proportions, yaw, phase and image scale optimized from detected pixels",
+      "multi_frame_inverse": "shared right upper/forearm relative lengths; frame-wise yaw, phase, image scale with robust soft-L1",
+      "image_only_inference": true,
+      "simulator_gt_used_only_for_scoring": true,
+      "evidence_audit": "require genuinely diverse estimated camera angles, several wrist observations, agreement between single frame and shared shape; abstain otherwise",
+      "metric_scale_recovered": false,
+      "contact_verified": false,
+      "identity_reconstructed": false
+    },
+    "first_benchmark": {
+      "cases": 42,
+      "images": 210,
+      "groups": {
+        "clean": 18,
+        "partial_occlusion": 12,
+        "synthetic_marker_outliers": 12
+      },
+      "mean_length_errors": {
+        "fixed_shape_multiframe": {
+          "upper": 0.149548,
+          "forearm": 0.135503
+        },
+        "variable_shape_per_frame": {
+          "upper": 0.00479,
+          "forearm": 0.004843
+        },
+        "variable_shape_multiframe": {
+          "upper": 0.007973,
+          "forearm": 0.00777
+        }
+      },
+      "mean_camera_yaw_error_deg": {
+        "fixed": 3.854579,
+        "single": 0.665571,
+        "multi": 0.693167
+      },
+      "mean_articulation_error_deg": {
+        "fixed": 4.28069,
+        "single": 0.791707,
+        "multi": 0.541869
+      },
+      "decision": "Shared shape improves articulation vs per-frame in this synthetic sample but WORSE length fidelity; no promotion."
+    },
+    "frozen_additional_audit": {
+      "cases": 36,
+      "images": 180,
+      "clean": {
+        "accepted": 8,
+        "abstained": 0
+      },
+      "partial_occlusion": {
+        "accepted": 8,
+        "abstained": 0
+      },
+      "synthetic_marker_outliers": {
+        "accepted": 8,
+        "abstained": 0
+      },
+      "duplicated_camera_views": {
+        "accepted": 0,
+        "abstained": 6
+      },
+      "missing_wrist_evidence": {
+        "accepted": 0,
+        "abstained": 6
+      },
+      "accepted_with_max_length_error_gt_point1": 0,
+      "warning": "New seeds from SAME synthetic generator family; neither independent real footage nor calibrated reliability."
+    },
+    "tests": {
+      "synthetic_local": "42/42 pass",
+      "ci_mirror": "42/42 pass",
+      "remote_ci": "unverified"
+    },
+    "demo": {
+      "glb_static_models": 5,
+      "meshes_per_model": 16,
+      "known_topology": true,
+      "pixel_fitted_pose_and_proportions": true,
+      "real_person_scan": false
+    },
+    "privacy": {
+      "old_157_used": false,
+      "new_41_used": false,
+      "private_weights_published": false,
+      "private_images_published": false,
+      "personal_media_exported": false
+    },
+    "public_code": [
+      "outils/rne/rne21/anchorage.py",
+      "outils/rne/rne21/evidence_audit.py",
+      "outils/rne/rne21/locked_evaluation.py",
+      "outils/rne/rne21/audit_frozen.py",
+      "outils/rne/rne21/export_inverse_glb.py",
+      "tests/test_rne21_anchorage.py",
+      "tests/test_rne21_evidence_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_21.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE21_ANCRAGE_Multivues_Synthetique.zip",
+    "no_production_deployment": true,
+    "main_merged": false,
+    "iphone_safari_tested": false
+  }
+}
