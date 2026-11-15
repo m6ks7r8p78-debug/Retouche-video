@@ -369,3 +369,38 @@ Les garde-fous du pilote restent inchangés : 12 secondes, 60 Mo source, 640 px/
 1. Répéter le banc sur les variantes d'edit-list version 1 et les délais plus courts qui se quantifient à une unité AAC.
 2. Tester les différences de lecture iPhone Safari progressive vs MSE, sans déployer la PR et sans publier de médias privés.
 3. Isoler les fausses alertes de décalage sur des vidéos iPhone HEVC/VFR et instrumenter la mémoire et l'énergie réelles.
+
+
+## NOVA 0.13 — listes de montage AAC `elst` version 1 (15 novembre 2026)
+
+### Extension codée et validée
+
+NOVA 0.12 gérait l'édition audio `elst` version 0 (durée 32 bits non signée, `media_time` 32 bits signé) avec au plus deux segments : une portion vide facultative, puis la piste AAC. Le pilote NOVA 0.13 sait **lire et conserver la version 1**, à durée 64 bits non signée et `media_time` 64 bits signé, conformément à [ISO/IEC 14496-12:2015/Amd.2:2018, §8.6.6](https://cdn.standards.iteh.ai/sist-preview/71851/c530ffc825c84f0a9440e20cba9baf30/ISO-IEC-14496-12-2015-Amd-2-2018.pdf).
+
+- `experiences/nova-aac-copy.js` : lecture `getBigUint64`/`getBigInt64`, conservation du numéro de version `editListVersion`, refus des valeurs qui ne peuvent pas être représentées en entier JS sans perte de précision. Les bornes de durée et de préchargement déjà présentes restent obligatoires : il ne s'agit PAS d'autoriser 64 bits de durée arbitraires.
+- `mp4-muxer.js` : écriture d'une boîte `elst` **version 1 en sortie**, avec ses champs 64 bits et l'édition vide facultative ; les boîtes de durée de la piste et du film continuent à refléter la durée de présentation, et les octets AAC sont recopiés sans réencodage.
+- `nova-export.js` : propage `editListVersion` uniquement si l'édition audio source validée est copiée.
+- Durcissement fondé sur les règles ISO : **le bit de répétition de la liste `elst` et les autres flags non nuls sont refusés**, car le pilote ne peut pas reproduire fidèlement la répétition. Le refus s'applique à `nova-aac-copy.js`, à l'audit `nova-avsync.js` et à `nova-demux.js` pour les éditions vidéo ; les en-têtes tronqués sont également refusés.
+
+### Preuve expérimentale vérifiée
+
+La CI produit un **vrai MP4 FFmpeg** H.264 + AAC avec édition vide initiale ; sa boîte `moov` est volontairement en fin de fichier, après `mdat`. Le banc transforme ensuite **uniquement** l'édition audio `elst` version 0 en version 1 (en recalculant la taille de `elst/edts/trak/moov`) : les offsets `stco` des paquets restent identiques. Ce n'est **pas** une vidéo iPhone originale encodée directement en v1, mais une vraie vidéo AAC/AVC lisible avec métadonnée v1 reconstruite.
+
+L'export expérimental du navigateur Chromium conserve :
+- **`elst` 1 → 1** avec 2 entrées et un silence initial de **228 ms** ;
+- **84 paquets AAC** vérifiés identiques par leurs empreintes SHA-256 source/sortie ;
+- **0 ms de décalage AV introduit, 0 ms de dérive** sur les deux événements synthétiques, aux seuils du banc ;
+- aucun upload ni encodage audio supplémentaire.
+
+Le test ajoute des cas unitaires `elst` v1 à un et deux segments, avec/sans priming, des entiers supérieurs à `Number.MAX_SAFE_INTEGER`, des `media_time` invalides et les **flags de répétition** interdits. **GitHub Actions [run 43688752755](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43688752755)** sur le commit `496055794caf4ee9315cc797852d0f35ae8e3f81` : **87/87 tests unitaires, 14/14 tests navigateur Chromium, 0 échec, 0 ignoré, deux jobs success**.
+
+### Limites à respecter
+
+- Le fait qu'une `elst` soit version 1 ne garantit **pas** sa prise en charge : les grandes valeurs 64 bits, les répétitions, les edits multiples/complexes, les vides initiaux >500 ms et les fichiers fragmentés MSE restent exclus du chemin conservateur.
+- Un banc Chromium/FFmpeg synthétique ne remplace pas des essais matériels **Safari iOS**, et ne démontre pas de synchronisation labiale ou de restauration vidéo visuelle supérieure.
+- Les plafonds opérationnels ne changent pas : 12 s / 60 Mo source, sortie 640 px à 15 i/s. Aucun entraînement neuronal réalisé ici, aucune analyse des 157 médias privés, aucun déploiement/fusion.
+- La PR #3 doit rester **DRAFT** et le site `retoucheproai.com` doit rester inchangé.
+
+### Poursuite prioritaire
+
+Éprouver sur appareil iPhone physique le MP4 progressif avec edits v0/v1 et les délais AAC ; ensuite isoler les cas source HEVC orienté/VFR et les pistes multiples, sans étendre les formats non testés ni sacrifier l'audio.
