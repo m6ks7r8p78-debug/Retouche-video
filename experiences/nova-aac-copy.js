@@ -155,8 +155,12 @@ function extract(b,sizeLimit,mdatRanges){
   if(packets.length!==count||!safe(t))fail("chronologie des AAC incomplète");
   const mediaDurationSeconds=t/timescale;
   const editDurationSeconds=editMovieDuration==null?null:editMovieDuration/movieTimescale;
+  // Un edit-list ne doit pas promettre des samples décodés après le dernier
+  // paquet. Un excès de 120 ms cacherait plusieurs trames audio manquantes.
+  // 5 ms couvre seulement l'arrondi des unités movie-timescale habituelles.
   if(editMediaTime/timescale>mediaDurationSeconds||
-     (editDurationSeconds!=null&&editDurationSeconds>mediaDurationSeconds-editMediaTime/timescale+0.12))
+     (editDurationSeconds!=null&&editDurationSeconds>
+       mediaDurationSeconds-editMediaTime/timescale+0.005))
    fail("montage AAC sortant de la durée audio encodée");
   found.push({sampleRate,channels,asc,packets,rollDistance,
     editMediaTime,editDurationSeconds,movieTimescale});
@@ -192,12 +196,14 @@ async function planifier(file,{durationSeconds,signal}={}){
  const parsed=extract(media,file.size,mdatRanges),outputEnd=Math.round(durationSeconds*1e6);
  const editStartUs=Math.round(parsed.editMediaTime*1e6/parsed.sampleRate);
  const sourceEditedUs=parsed.editDurationSeconds==null?null:Math.round(parsed.editDurationSeconds*1e6);
- if(sourceEditedUs!=null&&sourceEditedUs+160000<outputEnd)
+ // Autoriser tout au plus une courte incertitude de fin (30 ms), et
+ // pas un silence involontaire de ~160 ms.
+ if(sourceEditedUs!=null&&sourceEditedUs+30000<outputEnd)
   fail("durée audio présentée par elst insuffisante pour le film");
  const neededEnd=outputEnd+editStartUs;
  const packets=parsed.packets.filter(p=>p.timestamp<neededEnd);
  if(!packets.length||packets[0].timestamp!==0||packets.at(-1).timestamp+
-    packets.at(-1).duration<neededEnd-120000)
+    packets.at(-1).duration<neededEnd-30000)
   fail("AAC sans couverture temporelle alignée avec la vidéo");
  if(parsed.editMediaTime>0&&parsed.rollDistance==null)
   fail("priming AAC non représentable sans groupes roll");
