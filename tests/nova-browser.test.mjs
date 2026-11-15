@@ -41,7 +41,16 @@ for(const width of [390,1350]){
      await page.waitForFunction(()=>!document.querySelector("#save").disabled);
      assert.equal(await page.locator("#before").isVisible(),true);
      assert.equal(await page.locator("#after").isVisible(),true);
-     assert.match(await page.locator("#metrics").innerText(),/Décision technique/);
+     assert.match(await page.locator("#metrics").innerText(),/Régions inspectées/);
+     assert.match(await page.locator("#zoneInfo").innerText(),/régions adaptées/);
+     const zonesButton=page.locator("#showZones");
+     if(await zonesButton.isVisible()){
+       await zonesButton.click();
+       assert.equal(await zonesButton.getAttribute("aria-pressed"),"true");
+       assert.equal(await page.locator("#zonesOverlay").isVisible(),true);
+       await zonesButton.click();
+       assert.equal(await page.locator("#zonesOverlay").isVisible(),false);
+     }
      await page.locator("#compare").evaluate(el=>{el.value="70";el.dispatchEvent(new Event("input",{bubbles:true}))});
      assert.match(await page.locator("#after").evaluate(el=>el.style.clipPath),/30%/);
      const download=page.waitForEvent("download");
