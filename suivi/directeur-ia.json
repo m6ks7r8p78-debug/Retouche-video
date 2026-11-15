@@ -48,16 +48,15 @@
     "RNE16 ANCRE: 9592 paramètres, modèle original CNN double branche entraîné de zéro sur 450 exemples exclusivement synthétiques, 280 étapes. +0,288 dB sur 150 cas synthétiques initiaux après correction confiance 7x7; sur second générateur gelé, 26 pertes >0,5 dB et petit texte en recul. Promotion refusée; 40 tests locaux verts.",
     "RNE17 AEGIS: 2305-param residual gate trained on 600 private-data-free synthetic scenes; dev 180: 7→0 severe; locked 270: 16→3 severe, mean -0.048dB vs bicubic; learned not better than fixed 0.70 => REJECTED, 41 synthetic tests PASS.",
     "RNE18 OBSERVABLE3D: 3D synthetic view evidence atlas; UV observed 21.1%/47.1%/76.0% with 1/4/10 views, 24% unknown left. Calibrated camera and geometry are provided by simulator; 47 tests PASS, 8 independent procedural textures exposed forged UV calibration. NOT a human 3D reconstruction.",
-    "RNE19 OBSERVABLE ARTICULE: simulateur 3D synthétique de 11 pièces, contact géométrique main-objet, profondeur/occlusion, 2 GLB, atlas partiels, 50 nouveaux tests + 47 regressions RNE18 PASS. Générique GitHub sans médias privés, aucune reconstruction réelle."
+    "RNE19 OBSERVABLE ARTICULE: simulateur 3D synthétique de 11 pièces, contact géométrique main-objet, profondeur/occlusion, 2 GLB, atlas partiels, 50 nouveaux tests + 47 regressions RNE18 PASS. Générique GitHub sans médias privés, aucune reconstruction réelle.",
+    "RNE20: inversion d'un mannequin synthétique connu à partir d'images; 16 contrôles gelés, erreur caméra 0,7421° et articulation 5,1231°. 26 tests PASS. Contact indéterminé 12/16, pas de relâché identifié. GLB issu d'une pose estimée; aucun humain réel reconstruit."
   ],
   "prochaines_etapes": [
-    "Ne pas présenter les GLB synthétiques connus du simulateur comme des personnes reconstruites depuis vidéo. Séparer géométrie source 100 % connue et atlas UV partiellement observé.",
-    "Apprendre à segmenter des parties, estimer pose et profondeur depuis des seules images, puis contrôler sur notre simulateur où les vérités sont disponibles.",
-    "Tester de véritables mouvements multi-personne, main-objet, occlusions et ambiguïtés sur données publiques sous licence compatible, puis seulement envisager les médias historiques autorisés.",
-    "Préserver les 41 vidéos récentes hors entraînement, calibration de seuils et mise au point ; les utiliser plus tard dans un protocole strictement préenregistré si souhaité.",
-    "Proposer un viewer 3D adapté iPhone, distinguer GLB de USDZ et tester réellement sur Safari avant tout engagement de compatibilité.",
-    "Conserver RNE 0.4 et ANCRE en tant que références expérimentales distinctes ; pas de déploiement ni de fusion automatique.",
-    "Confirmer exécution distante GitHub Actions ; rapporter clairement tout problème de CI."
+    "Développer RNE21: nouveau squelette paramétrique multi-articulations et variation de caméra/géométrie, avec test d'inversion hors du gabarit connu.",
+    "Évaluer explicitement les cas relâchés: le système RNE20 n'a émis aucune classification relâchée certaine.",
+    "Étudier le suivi multi-vues et l'élévation des incertitudes par articulation, préserver les régions réellement invisibles.",
+    "Maintenir 41 récentes hors apprentissage/calibration; aucune vidéo personnelle utilisée dans RNE20 ou publiée dans GitHub.",
+    "Valider la CI distante et le rendu iPhone Safari avant tout merge ou déploiement."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -67,15 +66,20 @@
   },
   "jalon_en_attente_ci": {
     "date": "2026-11-15",
+    "statut_ci": "a_verifier",
     "objets": [
-      "outils/rne/rne19/part_provenance.py",
-      "tests/test_rne19_part_provenance.py",
-      "RETOUCHE_NEURAL_ENGINE_19.md",
+      "outils/rne/rne19/articulated_observable.py",
+      "outils/rne/rne19/export_synthetic_glb.py",
+      "outils/rne/rne20/inverse_pose.py",
+      "outils/rne/rne20/evaluate_inverse.py",
+      "outils/rne/rne20/aggregate_evaluation.py",
+      "outils/rne/rne20/demo_inverse_glb.py",
+      "tests/test_rne20_inverse_pose.py",
+      "RETOUCHE_NEURAL_ENGINE_20.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "50 tests articulated 3D, 47 tests historiques RNE18, 2 GLB round trip; 18 tests public écrits (CI remote non vérifiée)",
-    "statut_ci": "a_verifier",
-    "observations": "aucun média privé ni checkpoint publié; nouveau modèle de mannequin synthétique et atlas distincts"
+    "preuve_locale": "26/26 tests miroir GitHub et images synthétiques de contrôle, GLB 11 éléments",
+    "observations": "PR en brouillon, aucun média personnel publié, pas d'identité réelle restaurée"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -2020,5 +2024,59 @@
     "product_deployed": false,
     "production_merge": false,
     "real_people_reconstructed": false
+  },
+  "jalon_neural_engine_20": {
+    "date": "2026-11-15",
+    "project": "INVERSE-OBSERVABLE: image-only fitting of a KNOWN 11-piece synthetic template",
+    "status": "RESEARCH ONLY. No real human shape reconstruction, neural training, or production deployment.",
+    "method": "Only image BGR input to the inverse. Search camera yaw, single articulated arm phase and holding/released template hypothesis. GT used only after fit for measurement.",
+    "known_priors": [
+      "ellipsoid geometry and topology",
+      "orthographic camera model",
+      "procedural texture family",
+      "special synthetic occluder color"
+    ],
+    "results": {
+      "development_images": 8,
+      "locked_images": 16,
+      "stress_images": 8,
+      "procedural_only": true,
+      "locked_camera_yaw_mean_error_deg": 0.7421,
+      "coarse_camera_yaw_mean_error_deg": 4.5377,
+      "locked_phase_mean_error_deg": 5.1231,
+      "coarse_phase_mean_error_deg": 27.8353,
+      "locked_phase_within_10deg": 12,
+      "locked_pose_ambiguity_flagged": 9,
+      "locked_contact_abstentions": 12,
+      "locked_explicit_hold_correct": 4,
+      "locked_explicit_release_predictions": 0,
+      "stress_phase_mean_error_deg": 9.908,
+      "stress_bad_fit_rejections": 4,
+      "stress_contact_abstentions": 7,
+      "demo_phase_error_deg": 1.286,
+      "demo_camera_yaw_error_deg": 0.597,
+      "demo_glb": "Known 11-piece mannequin fitted to pixels, NOT geometric reconstruction from humans"
+    },
+    "tests": "26/26 local and 26/26 GitHub-structure mirror tests PASS; remote Actions unverified",
+    "files_public": [
+      "outils/rne/rne19/articulated_observable.py",
+      "outils/rne/rne19/export_synthetic_glb.py",
+      "outils/rne/rne20/inverse_pose.py",
+      "outils/rne/rne20/evaluate_inverse.py",
+      "outils/rne/rne20/aggregate_evaluation.py",
+      "outils/rne/rne20/demo_inverse_glb.py",
+      "tests/test_rne20_inverse_pose.py",
+      "RETOUCHE_NEURAL_ENGINE_20.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "zip": "RetoucheProAI_RNE20_INVERSE_3D_Synthetique.zip",
+    "archive_files": 23,
+    "historic_157_personal_videos_used": false,
+    "recent_41_personal_videos_used": false,
+    "personal_media_or_weights_published": false,
+    "real_person_model_created": false,
+    "iphone_safari_validated": false,
+    "main_merged": false,
+    "website_deployed": false
   }
 }
