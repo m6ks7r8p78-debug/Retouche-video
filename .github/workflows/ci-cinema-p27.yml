@@ -1,0 +1,88 @@
+name: Cinema P27 — conservative fidelity advisory from real P25/P26 synthetic evidence
+on:
+  push:
+    paths:
+      - 'studio-cinema/p27/**'
+      - '.github/workflows/ci-cinema-p27.yml'
+  pull_request:
+    paths:
+      - 'studio-cinema/p27/**'
+      - '.github/workflows/ci-cinema-p27.yml'
+  workflow_dispatch:
+jobs:
+  conservative-advisory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 27
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free procedural processing and codec dependencies
+        run: |
+          python -m pip install --disable-pip-version-check 'numpy<3' 'opencv-python-headless>=4.9,<5'
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep libx264
+          ffmpeg -hide_banner -encoders | grep ffv1
+          ffmpeg -hide_banner -encoders | grep -E '(^| )aac( |$)'
+      - name: Run P27 isolated advisory, evidence-forgery, safety and confidentiality tests
+        run: node --test studio-cinema/p27/tests/test_p27_advisory.cjs
+      - name: Generate 480 synthetic P19/P21 poses without external media
+        run: node studio-cinema/p22/src/build_p22_controls.cjs studio-cinema/p22/results/controls.json
+      - name: Re-run P15-P26 source contracts and synthetic regression
+        run: |
+          node --test studio-cinema/p21/tests/test_p21.cjs studio-cinema/p20/tests/test_p20.cjs studio-cinema/p19/tests/test_p19.cjs studio-cinema/p15/tests/test_behavior_ontology.cjs
+          python -m unittest discover -s studio-cinema/p22/tests -p 'test_p22_visual.py' -v
+          python -m unittest discover -s studio-cinema/p23/tests -p 'test_p23_temporal.py' -v
+          python -m unittest discover -s studio-cinema/p24/tests -p 'test_p24_unit.py' -v
+          python -m unittest discover -s studio-cinema/p24/tests -p 'test_p24_browser_static.py' -v
+          python -m unittest discover -s studio-cinema/p25/tests -p 'test_p25_contracts.py' -v
+          python -m unittest discover -s studio-cinema/p26/tests -p 'test_p26_contracts.py' -v
+      - name: Build verified real P25 H264 first-pass reports
+        run: |
+          python studio-cinema/p25/src/p25_crf_matrix.py             --data studio-cinema/p22/results/controls.json             --out studio-cinema/p25/results/proof
+      - name: Build verified real P26 H264 second-pass reports
+        run: |
+          python studio-cinema/p26/src/p26_recompression.py             --data studio-cinema/p22/results/controls.json             --source-dir studio-cinema/p25/results/proof             --out studio-cinema/p26/results/proof
+      - name: Produce P27 read-only French advisory from the real cross-checked evidence
+        run: |
+          node studio-cinema/p27/src/p27_advisory.cjs             studio-cinema/p25/results/proof/p25_crf_matrix_synthetic_report.json             studio-cinema/p26/results/proof/p26_second_generation_synthetic_report.json             studio-cinema/p27/results/proof
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('studio-cinema/p27/results/proof')
+          x=json.loads((p/'p27_synthetic_advisory.json').read_text())
+          assert x['status']=='consultative_synthetic_evidence_only'
+          assert x['comparisons']==9
+          assert x['evidence_level']=='synthetic-tested'
+          assert x['observed_counts']['pairs_with_verified_identical_decoded_audio']==9
+          assert x['observed_counts']['pairs_with_measured_p95_error_increase']==9
+          assert x['observed_counts']['pairs_with_file_size_growth_and_no_p95_fidelity_gain']==3
+          assert x['app_control_contract']['may_autoselect_codec'] is False
+          assert x['app_control_contract']['may_automatically_change_video'] is False
+          assert x['app_control_contract']['may_upload_media'] is False
+          assert x['recommendation'] is None
+          assert x['physical_iphone_tested'] is False
+          for line in (p/'p27_synthetic_advisory_fr.md').read_text().splitlines():
+              if '32 → 18' in line:
+                  print('P27 32-to-18 caution:',line)
+          print('P27 QA passed, source rows:',x['comparisons'],'warnings:',x['observed_counts'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinema-p27-advisory-and-synthetic-source-evidence
+          path: |
+            studio-cinema/p27/results/proof/p27_synthetic_advisory.json
+            studio-cinema/p27/results/proof/p27_synthetic_advisory_fr.md
+            studio-cinema/p25/results/proof/p25_crf_matrix_synthetic_report.json
+            studio-cinema/p26/results/proof/p26_second_generation_synthetic_report.json
+          retention-days: 3
+          if-no-files-found: error
