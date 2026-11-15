@@ -29,6 +29,11 @@ const checkpoints=Object.freeze({
  "native-muxer":"préparation du MP4",
  "native-codec-start":"ouverture des codecs natifs",
  "native-video-feed":"alimentation du décodeur en images HEVC",
+ "native-decoder-submit":"soumission d’un échantillon au décodeur HEVC",
+ "native-decoder-submitted":"échantillons transmis au décodeur HEVC",
+ "native-decoder-output":"restitution des images décodées",
+ "native-decoder-error":"erreur asynchrone signalée par le décodeur HEVC",
+ "native-decoder-drain":"vidage des images en attente du décodeur",
  "native-image-process":"restauration et conversion des images",
  "native-image-encode":"encodage H.264 des images",
  "native-encoder-flush":"finalisation des images encodées",
@@ -63,6 +68,7 @@ function blankReport(){
   sourceKind:"bundled-ffmpeg-synthetic-hevc-aac",
   result:"failed",failedAt:null,errorCode:null,
   checkpoint:null,errorClass:null,framesStarted:0,processedFrames:0,
+  decoderChunksSubmitted:0,decoderFramesReceived:0,
   source:null,output:null,decodedByNative:false,encodedByNative:false,
   preservedAac:false,
   privacy:{userMediaRead:false,externalUpload:false,filenameInReport:false,
@@ -133,6 +139,14 @@ button.addEventListener("click",async()=>{
     if(seq!==sequence||signal.aborted)return;
     if(Object.prototype.hasOwnProperty.call(checkpoints,step?.stage))
      report.checkpoint=step.stage;
+    if(step?.stage==="native-decoder-submitted"&&
+       Number.isSafeInteger(step.submitted)&&step.submitted>=1&&
+       step.submitted<=report.source.frames)
+     report.decoderChunksSubmitted=Math.max(report.decoderChunksSubmitted,step.submitted);
+    if(step?.stage==="native-decoder-output"&&
+       Number.isSafeInteger(step.received)&&step.received>=1&&
+       step.received<=report.source.frames)
+     report.decoderFramesReceived=Math.max(report.decoderFramesReceived,step.received);
     if((step?.stage==="native-image-process"||step?.stage==="native-image-encode")&&
        Number.isSafeInteger(step.frame)&&step.frame>=1&&
        step.frame<=report.source.frames)
@@ -180,7 +194,9 @@ button.addEventListener("click",async()=>{
     "interruption lors de : "+checkpoints[report.checkpoint]:
     (phaseLabels[phase]||"étape non vérifiée");
    status.textContent="Essai natif non abouti : "+checkpoint+
-    ". "+report.processedFrames+" image(s) terminée(s). "+
+    ". "+report.decoderChunksSubmitted+" échantillon(s) HEVC transmis, "+
+    report.decoderFramesReceived+" image(s) décodée(s), "+
+    report.processedFrames+" image(s) traitée(s). "+
     "Aucun MP4 n'est présenté comme réussi. Rapport JSON local disponible.";
   }else status.textContent="Test annulé; aucun MP4 incomplet enregistré.";
  }finally{

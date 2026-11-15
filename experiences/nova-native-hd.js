@@ -8,6 +8,10 @@ var NOVA_NATIVE_HD=(()=>{
 "use strict";
 const MiB=1048576, MAX_PIXELS=2200000, MAX_FRAMES=360, MAX_BYTES=60*MiB;
 const MAX_US=12000000, MAX_ENCODED=32*MiB;
+// Certains décodeurs retiennent les premiers accès avant de produire une image.
+// Amorce bornée à 16 échantillons sans augmenter la file WebCodecs (<4)
+// ni le tampon des VideoFrame (<5). Le clip synthétique contient 15 images.
+const FIRST_FRAME_LOOKAHEAD=16;
 const fail=s=>{throw new Error("NOVA HD : "+s)};
 const safe=n=>Number.isSafeInteger(n);
 const codes=["avc1.640028","avc1.4d4028","avc1.42e028","avc1.42e01f"];
@@ -185,6 +189,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  const canvas=document.createElement("canvas");canvas.width=p.width;canvas.height=p.height;
  const ranks=new Map(p.ptsUs.map((time,i)=>[time,i]));
  const decoded=new Map();
+ let hevcChunksSubmitted=0,hevcFramesReceived=0;
  let encoder,decoder,failed=null,sent=0,encoded=0,encodedBytes=0,modified=0,closed=false;
  const started=clock();
  const check=()=>{if(signal?.aborted)fail("annulé");if(failed)throw failed};
@@ -206,7 +211,9 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    }
    if(decoded.size>=7){fr.close();failed=new Error("tampon décodeur HD saturé");return}
    decoded.set(rank,fr);
-  },error:e=>{failed=e}});
+   hevcFramesReceived++;
+   onProgress({stage:"native-decoder-output",received:hevcFramesReceived});
+  },error:e=>{failed=e;onProgress({stage:"native-decoder-error"})}});
   decoder.configure(decCfg);
   const frames=p.ptsUs;
   const durations=frames.map((x,i)=>i+1<frames.length?frames[i+1]-x:
@@ -217,15 +224,19 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
   let fed=0,next=0,stalled=clock();
   onProgress({stage:"native-video-feed"});
   while(next<p.sourceFrames){
+   const lookahead=next===0?Math.min(p.sourceFrames,FIRST_FRAME_LOOKAHEAD):8;
    check();
-   while(fed<p.sourceFrames&&decoded.size<5&&decoder.decodeQueueSize<4&&fed<next+8){
+   while(fed<p.sourceFrames&&decoded.size<5&&decoder.decodeQueueSize<4&&fed<next+lookahead){
     const offset=info.so[fed],len=info.sz[fed];
     if(!safe(offset)||!safe(len)||len<1||offset+len>file.size)
      fail("échantillon source tronqué");
     const data=new Uint8Array(await file.slice(offset,offset+len).arrayBuffer());
+    onProgress({stage:"native-decoder-submit"});
     decoder.decode(new Chunk({type:info.key[fed]?"key":"delta",
      timestamp:info.ptsUs[fed],data}));
     fed++;
+    hevcChunksSubmitted++;
+    onProgress({stage:"native-decoder-submitted",submitted:hevcChunksSubmitted});
    }
    check();
    const frame=decoded.get(next);
@@ -249,6 +260,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
       maxQueue:2,signal,timeoutMs:20000});
    }else{
     if(fed===p.sourceFrames&&decoder.decodeQueueSize===0){
+     onProgress({stage:"native-decoder-drain"});
      await decoder.flush();
      check();
      if(!decoded.has(next))fail("image décodée manquante");
