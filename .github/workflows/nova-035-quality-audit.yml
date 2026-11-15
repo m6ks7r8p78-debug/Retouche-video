@@ -1,0 +1,81 @@
+name: NOVA HD 0.35 - real output QA and local privacy
+on:
+  push:
+    branches:
+      - chatgpt-nova-postexport-quality-035
+  pull_request:
+    branches:
+      - chatgpt-nova-safari-color-evidence-034
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-postexport-035-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Syntaxe
+        run: |
+          node --check experiences/nova-aac-copy.js
+          node --check experiences/nova-aac-native.js
+          node --check experiences/nova-native-hd.js
+          node --check experiences/nova-hd-color.js
+          node --check experiences/nova-hd-qa.js
+          node --check tests/nova-hd-qa.test.mjs
+          node --check experiences/nova-export-ui.js
+          node --check experiences/nova-native-hd-ui.js
+          node --check tests/nova-aac-copy.test.mjs
+          node --check tests/nova-aac-native.test.mjs
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: AAC dossier réel synthétique et suites NOVA
+        run: |
+          node --test tests/nova-aac-copy.test.mjs tests/nova-aac-native.test.mjs tests/nova-native-hd.test.mjs tests/nova-hd-color.test.mjs tests/nova-hd-qa.test.mjs tests/nova-real-preflight.test.mjs tests/nova-iphone-preview.test.mjs
+      - name: ZIP manuel Cloudflare, jamais en prod
+        run: |
+          node outils/build-nova-iphone-preview.mjs
+          test -f dist/nova-iphone-preview/experiences/nova-aac-copy.js
+          test -f dist/nova-iphone-preview/experiences/nova-aac-native.js
+          test -f dist/nova-iphone-preview/experiences/nova-native-hd.js
+          test -f dist/nova-iphone-preview/experiences/nova-hd-color.js
+          test -f dist/nova-iphone-preview/experiences/nova-hd-qa.js
+          cd dist/nova-iphone-preview
+          zip -q -X -r ../../NOVA_HD_035_Qualite_Cloudflare.zip .
+          cd ../..
+          unzip -t NOVA_HD_035_Qualite_Cloudflare.zip >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-HD-035-Qualite-Cloudflare
+          path: NOVA_HD_035_Qualite_Cloudflare.zip
+          retention-days: 7
+          if-no-files-found: error
+  navigateur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Playwright
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Chromium MP4 H264/AAC synthétique et conversion couleur SDR
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test tests/nova-native-hd-browser.test.mjs
