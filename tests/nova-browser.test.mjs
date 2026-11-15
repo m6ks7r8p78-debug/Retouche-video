@@ -394,6 +394,14 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
    assert.ok(outputHashes.length>=10,"les unités AAC copiées doivent être nombreuses");
    assert.deepEqual(outputHashes,sourceHashes.slice(0,outputHashes.length),
       "les échantillons AAC doivent être bit à bit identiques à ceux du fichier source");
+   const [sourceRoll,outputRoll]=await Promise.all([
+     audioRollInfo(src),audioRollInfo(await saved.path())
+   ]);
+   assert.equal(sourceRoll?.group,"roll");
+   assert.equal(sourceRoll?.distance,-1);
+   assert.deepEqual(outputRoll,{
+     group:"roll",map:"roll",distance:-1,samples:outputHashes.length,groupIndex:1
+   },"le muxer doit préserver le groupe de préchargement AAC roll");
    const [outputAudio,outputVideo]=await Promise.all([
     decodeAudioEvents(await saved.path()),decodeVideoEvents(await saved.path())
    ]);
@@ -415,6 +423,14 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
  }
 });
 
+async function audioRollInfo(filename){
+ const b=await fs.readFile(filename),sg=b.indexOf(Buffer.from("sgpd")),
+   sb=b.indexOf(Buffer.from("sbgp"));
+ if(sg<4||sb<4||sg+22>b.length||sb+24>b.length)return null;
+ const group=b.toString("ascii",sg+8,sg+12),map=b.toString("ascii",sb+8,sb+12);
+ return {group,map,distance:b.readInt16BE(sg+20),samples:b.readUInt32BE(sb+16),
+   groupIndex:b.readUInt32BE(sb+20)};
+}
 async function audioPacketHashes(filename){
  const {stdout}=await runBinary("ffprobe",["-v","error","-select_streams","a:0",
    "-show_packets","-show_entries","packet=data_hash","-show_data_hash","sha256",
@@ -533,6 +549,10 @@ test("NOVA 0.10 : vrai MP4 AAC + B-frames VFR, copie audio et contrôle A/V",asy
    assert.ok(outputHashes.length>=50);
    assert.deepEqual(outputHashes,sourceHashes.slice(0,outputHashes.length),
      "copie des paquets AAC octet pour octet malgré VFR + B-frames");
+   const roll=await audioRollInfo(out);
+   assert.deepEqual(roll,{
+     group:"roll",map:"roll",distance:-1,samples:outputHashes.length,groupIndex:1
+   },"VFR+B : le groupe AAC de préchargement reste représenté");
    const audit=comparerImpulsions({sourceAudio,sourceVideo,outputAudio,outputVideo,toleranceMs:90});
    assert.ok(audit.offsetMs<=90,"écart AV ajouté <=90ms malgré VFR");
    assert.ok(audit.driftMs<=90,"pas de dérive AV sur les 2 impulsions");
