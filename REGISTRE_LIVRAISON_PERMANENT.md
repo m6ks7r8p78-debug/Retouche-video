@@ -341,6 +341,7 @@ Statut : REMPLACÉ par F31 en v7.2 (ancien : INTÉGRÉ NON VALIDÉ).
   le 3B : c'est ce que le contrôle de structure doit attraper) ; vitesse réelle inconnue (estimée plusieurs minutes de calcul
   par minute de vidéo) ; Internet du calcul Kaggle requis (compte vérifié par téléphone) ; peut « dessiner » des détails :
   le mélange avec la version classique de l'app reste appliqué.
+- **v8.2** : contrôle qualité v2 (zones 4×4, Census, stabilité temporelle compensée, atténuation 0,70), méthodes des recherches RNE de ChatGPT ; 8/8 tests.
 - **Prochaine étape** : premier essai réel sur une vidéo courte (10–20 s), lire `info.json` (moteur, contrôle, s/image),
   régler taille de travail / blocs échangés ; puis banc A/B (Standard vs Cinéma) sur les 41 vidéos tenues à l'écart.
 

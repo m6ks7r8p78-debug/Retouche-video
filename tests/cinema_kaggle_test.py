@@ -26,6 +26,11 @@ FAUX = textwrap.dedent('''
         if mode == "bruit": r = rng.integers(0, 255, r.shape, dtype=np.uint8)
         if mode == "couleur": r = np.clip(r.astype(int) + [0, 0, 40], 0, 255).astype(np.uint8)
         if mode == "manque" and k % 10 == 9: k += 1; continue
+        if mode in ("scintille", "leger"):   # bruit différent à chaque image : ajoute du scintillement
+            a = 14 if mode == "scintille" else 3.5
+            r = np.clip(r.astype(np.float32) + rng.normal(0, a, r.shape), 0, 255).astype(np.uint8)
+        if mode == "local":                  # une zone (1/16 de l'image) inventée, fixe (pas de scintillement), le reste fidèle
+            r[: r.shape[0] // 4, : r.shape[1] // 4] = np.random.default_rng(1).integers(0, 255, (r.shape[0] // 4, r.shape[1] // 4, 3), dtype=np.uint8)
         cv2.imwrite(os.path.join(sortie, f"x_{k:06d}.png"), r); k += 1
 ''')
 
@@ -78,6 +83,7 @@ class Cinema(unittest.TestCase):
         self.assertEqual(info["sortie"]["width"], 640); self.assertEqual(info["sortie"]["height"], 360)
         self.assertEqual(int(info["sortie"]["nb_read_frames"]), 90)
         self.assertGreater(info["controle"]["ssim_median"], 0.9)
+        self.assertEqual(info["controle"]["force"], 1.0, info["controle"])
         src, out = images(os.path.join(ent, "video.mp4")), images(os.path.join(sor, "ia.mp4"))
         self.assertEqual(len(src), len(out))
         # chaque image de sortie doit ressembler le plus à l'image de même rang (pas de décalage, jonction comprise)
@@ -102,6 +108,23 @@ class Cinema(unittest.TestCase):
     def test_couleur_refusee(self):
         r, info, *_ = lancer("couleur")
         self.assertEqual(info.get("moteur"), "realesrgan-repli"); self.assertIn("couleur", info.get("repli", ""))
+
+    def test_scintillement_refuse(self):
+        r, info, *_ = lancer("scintille")
+        self.assertEqual(info.get("moteur"), "realesrgan-repli", info.get("cinema"))
+        self.assertIn("scintillement", info.get("repli", ""))
+
+    def test_zone_inventee_refusee(self):
+        r, info, *_ = lancer("local")
+        self.assertEqual(info.get("moteur"), "realesrgan-repli", info.get("cinema"))
+        self.assertIn("zones", info.get("repli", ""))
+
+    def test_leger_attenue(self):
+        r, info, ent, sor = lancer("leger")
+        self.assertEqual(r.returncode, 0, r.stdout[-2000:])
+        self.assertEqual(info.get("moteur"), "seedvr2-3b", info.get("repli"))
+        self.assertEqual(info["controle"]["force"], 0.7, info["controle"])
+        self.assertEqual(int(info["sortie"]["nb_read_frames"]), 90)
 
 
 if __name__ == "__main__":

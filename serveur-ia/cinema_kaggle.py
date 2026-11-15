@@ -16,12 +16,11 @@ Réglable par variables d'environnement pour les tests hors Kaggle (tests/cinema
 """
 import glob, json, os, shutil, subprocess, sys, threading, time
 
-VERSION = 1
+VERSION = 2   # v2 : contrôle qualité par zones, Census et stabilité temporelle (recherches RNE), atténuation 0,70
 SEEDVR2_DEPOT = "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler"
 SEEDVR2_COMMIT = "4490bd1"                      # version vérifiée (24 déc. 2025) : interface en ligne de commande stable
 DIT = "seedvr2_ema_3b_fp16.safetensors"         # 6,8 Go, empreinte contrôlée par le registre du dépôt (sha256 2fd0e03a…)
 DUREE_MAX_S = 10.5 * 3600                       # Kaggle coupe à 12 h : on garde le temps de finir ou de basculer sur le repli
-SSIM_MIN = 0.72                                 # structure minimale (luminance, à la taille d'entrée) d'une image restaurée
 T0 = time.time()
 
 ENTREE = os.environ.get("RETOUCHE_ENTREE") or os.path.dirname(glob.glob("/kaggle/input/**/params.json", recursive=True)[0])
@@ -173,73 +172,193 @@ def assembler(dossiers, bornes, recouvrement):
     return images
 
 
-# ---------------------------------------------------------------- 4. contrôle qualité (structure fidèle à la vidéo)
-def ssim_lum(a, b):
+# ---------------------------------------------------------------- 4. contrôle qualité v2 (méthodes des recherches RNE de ChatGPT)
+# Trois avis indépendants, sur ~24 images réparties dans la vidéo, comparées à l'image d'entrée correspondante :
+#  - structure globale (SSIM de luminance) et couleurs ;
+#  - structure PAR ZONE, grille 4×4 (RNE 0.13 : un accord global peut cacher une erreur locale) ; zones unies ignorées
+#    (abstention), et seconde chance par le « Census » (RNE 0.14 : comparaison de rangs, insensible aux changements de lumière
+#    et au recalage des couleurs) — le Census peut sauver une zone, jamais en condamner une (RNE 0.15 : un garde-fou
+#    redondant qui refuse trop de zones valides coûte plus qu'il ne rapporte) ;
+#  - stabilité dans le temps : écart compensé par le mouvement (flux optique) entre images voisines, restauration contre
+#    entrée (RNE 0.4 / QA temporelle), coupes de plan et zones sans mouvement fiable écartées (RNE 0.9 / 0.10).
+# Décision : accepter (force 1), ATTÉNUER (force 0,70 du détail ajouté, RNE 0.17 : une force fixe vaut un réseau de
+# contrôle) ou refuser (repli sur l'IA standard).
+SEUILS = dict(ssim_med=0.72, ssim_min=0.57, ssim_med_doux=0.80, couleur=12.0, zone_ssim=0.55, zone_census=0.12, zone_std=6.0,
+              zones_refus=0.10, zones_doux=0.03, temps_refus=(1.5, 0.35), temps_doux=(0.6, 0.12), coupe=0.24)
+FORCE_DOUCE = 0.70
+
+
+def ssim_carte(a, b):
     import numpy as np, cv2
     a = a.astype(np.float64); b = b.astype(np.float64)
     k = (11, 11); C1, C2 = (0.01 * 255) ** 2, (0.03 * 255) ** 2
     ma, mb = cv2.GaussianBlur(a, k, 1.5), cv2.GaussianBlur(b, k, 1.5)
     va = cv2.GaussianBlur(a * a, k, 1.5) - ma * ma; vb = cv2.GaussianBlur(b * b, k, 1.5) - mb * mb
     cab = cv2.GaussianBlur(a * b, k, 1.5) - ma * mb
-    return float((((2 * ma * mb + C1) * (2 * cab + C2)) / ((ma * ma + mb * mb + C1) * (va + vb + C2))).mean())
+    return ((2 * ma * mb + C1) * (2 * cab + C2)) / ((ma * ma + mb * mb + C1) * (va + vb + C2))
 
 
-def controler(images, segs, bornes, recouvrement, c):
-    """Compare ~32 images restaurées, ramenées à la taille d'entrée, à l'image d'entrée correspondante.
-    Rejette : images vides/noires, NaN, structure trop différente (invention, artefacts de demi-précision)."""
+def census_ecart(a, b):
+    """Part des comparaisons de voisinage (8 voisins à 2 px) qui diffèrent : 0 = même structure (RNE 0.14)."""
+    import numpy as np
+    a = a.astype(np.int16); b = b.astype(np.int16); out = np.zeros(a.shape, np.float32)
+    for dy, dx in ((-2, -2), (-2, 0), (-2, 2), (0, -2), (0, 2), (2, -2), (2, 0), (2, 2)):
+        out += ((np.roll(a, (-dy, -dx), (0, 1)) > a) != (np.roll(b, (-dy, -dx), (0, 1)) > b)).astype(np.float32) / 8
+    return out
+
+
+def ecart_temporel(prev_in, cur_in, prev_out, cur_out):
+    """Écart compensé par le mouvement, entrée et restauration (même taille). None si coupe ou mouvement peu fiable."""
     import numpy as np, cv2
-    n = len(images); idx = sorted(set(int(round(k)) for k in np.linspace(0, n - 1, min(32, n))))
-    caps = [cv2.VideoCapture(s) for s in segs]
-    # images d'entrée correspondantes : on relit les segments dans l'ordre (vidéos intra, lecture séquentielle sûre)
-    entrees = []
-    for i, cap in enumerate(caps):
-        j = 0
+    if float(np.mean(cv2.absdiff(prev_in, cur_in))) / 255 > SEUILS["coupe"]:
+        return None
+    c, p = cv2.cvtColor(cur_in, cv2.COLOR_BGR2GRAY), cv2.cvtColor(prev_in, cv2.COLOR_BGR2GRAY)
+    h, w = c.shape
+    flux = cv2.calcOpticalFlowFarneback(c, p, None, .5, 3, 15, 3, 5, 1.2, 0)
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32); mx, my = xx + flux[..., 0], yy + flux[..., 1]
+    dedans = (mx >= 1) & (mx < w - 2) & (my >= 1) & (my < h - 2)
+    def mae(prev, cur, masque=None):
+        d = np.abs(cv2.remap(prev, mx, my, cv2.INTER_LINEAR).astype(np.float32) - cur.astype(np.float32)).mean(2)
+        return d if masque is None else float(d[masque].mean())
+    fiable = dedans & (mae(prev_in, cur_in) <= 25)
+    if fiable.sum() < max(48, .2 * h * w):
+        return None
+    return mae(prev_in, cur_in, fiable), mae(prev_out, cur_out, fiable)
+
+
+def lire_entrees(segs, recouvrement, voulus):
+    """Images d'entrée aux rangs voulus seulement (lecture séquentielle des segments intra, mémoire bornée)."""
+    import cv2
+    voulus, out, k = set(voulus), {}, 0
+    for i, s in enumerate(segs):
+        cap, j = cv2.VideoCapture(s), 0
         while True:
             ok, fr = cap.read()
             if not ok: break
-            if j >= recouvrement[i]: entrees.append(fr)
+            if j >= recouvrement[i]:
+                if k in voulus: out[k] = fr
+                k += 1
             j += 1
         cap.release()
-    if len(entrees) != n:
-        raise RuntimeError(f"contrôle : {len(entrees)} images d'entrée pour {n} restaurées")
-    scores, ecarts = [], []
-    for k in idx:
-        r = cv2.imread(images[k], cv2.IMREAD_COLOR)
-        if r is None or not np.isfinite(r).all() or r.std() < 1.0:
-            raise RuntimeError(f"image restaurée {k} vide ou invalide")
-        e = entrees[k]
-        rr = cv2.resize(r, (e.shape[1], e.shape[0]), interpolation=cv2.INTER_AREA)
-        ye, yr = cv2.cvtColor(e, cv2.COLOR_BGR2GRAY), cv2.cvtColor(rr, cv2.COLOR_BGR2GRAY)
-        scores.append(ssim_lum(ye, yr))
-        ecarts.append(float(np.abs(e.reshape(-1, 3).mean(0) - rr.reshape(-1, 3).mean(0)).max()))
-    q = {"images_controlees": len(idx), "ssim_median": round(float(np.median(scores)), 4), "ssim_min": round(float(min(scores)), 4),
-         "ecart_couleur_max": round(max(ecarts), 2)}
+    return out, k
+
+
+def controler(images, segs, bornes, recouvrement, c):
+    import numpy as np, cv2
+    n = len(images)
+    pos = sorted(set(int(round(k)) for k in np.linspace(1 if n > 1 else 0, n - 1, min(24, n))))
+    entrees, total = lire_entrees(segs, recouvrement, set(pos) | {k - 1 for k in pos if k > 0})
+    if total != n:
+        raise RuntimeError(f"contrôle : {total} images d'entrée pour {n} restaurées")
+    reduits, ssims, couleurs, zones, zones_mauvaises, temps = {}, [], [], 0, 0, []
+    par_zone = np.zeros((4, 4))   # nombre d'images où chaque zone est mauvaise : un défaut local persistant compte même seul
+    def reduit(k):
+        if k not in reduits:
+            r = cv2.imread(images[k], cv2.IMREAD_COLOR)
+            if r is None or r.std() < 1.0:
+                raise RuntimeError(f"image restaurée {k} vide ou invalide")
+            e = entrees[k]; reduits[k] = cv2.resize(r, (e.shape[1], e.shape[0]), interpolation=cv2.INTER_AREA)
+        return reduits[k]
+    for k in pos:
+        e, r = entrees[k], reduit(k)
+        ye, yr = cv2.cvtColor(e, cv2.COLOR_BGR2GRAY), cv2.cvtColor(r, cv2.COLOR_BGR2GRAY)
+        carte, cens = ssim_carte(ye, yr), census_ecart(ye, yr)
+        ssims.append(float(carte.mean()))
+        couleurs.append(float(np.abs(e.reshape(-1, 3).mean(0) - r.reshape(-1, 3).mean(0)).max()))
+        h, w = ye.shape
+        for i in range(4):
+            for j in range(4):
+                sl = (slice(round(i * h / 4), round((i + 1) * h / 4)), slice(round(j * w / 4), round((j + 1) * w / 4)))
+                if ye[sl].std() < SEUILS["zone_std"]: continue          # zone unie : pas d'avis
+                zones += 1
+                if carte[sl].mean() < SEUILS["zone_ssim"] and cens[sl].mean() > SEUILS["zone_census"]:
+                    zones_mauvaises += 1; par_zone[i, j] += 1
+        if k > 0:
+            t = ecart_temporel(entrees[k - 1], e, reduit(k - 1), r)
+            if t: temps.append(t)
+    ti = float(np.median([t[0] for t in temps])) if temps else None
+    to = float(np.median([t[1] for t in temps])) if temps else None
+    q = {"images_controlees": len(pos), "ssim_median": round(float(np.median(ssims)), 4), "ssim_min": round(min(ssims), 4),
+         "ecart_couleur_max": round(max(couleurs), 2), "zones_jugees": zones,
+         "zones_mauvaises_part": round(zones_mauvaises / max(1, zones), 4),
+         "pire_zone_part": round(float(par_zone.max()) / len(pos), 4), "transitions_fiables": len(temps),
+         "temps_entree": None if ti is None else round(ti, 3), "temps_restauration": None if to is None else round(to, 3)}
+    S = SEUILS; raisons_refus, raisons_doux = [], []
+    if q["ssim_median"] < S["ssim_med"] or q["ssim_min"] < S["ssim_min"]:
+        raisons_refus.append(f"structure trop éloignée de la vidéo (SSIM médian {q['ssim_median']}, min {q['ssim_min']})")
+    if q["ecart_couleur_max"] > S["couleur"]:
+        raisons_refus.append(f"couleurs déplacées ({q['ecart_couleur_max']} niveaux)")
+    if q["zones_mauvaises_part"] > S["zones_refus"] or q["pire_zone_part"] >= 0.25:
+        raisons_refus.append(f"zones abîmées ({q['zones_mauvaises_part'] * 100:.0f} % des zones ; pire zone : "
+                             f"{q['pire_zone_part'] * 100:.0f} % des images)")
+    if ti is not None:
+        d = to - ti
+        if d > max(S["temps_refus"][0], S["temps_refus"][1] * ti):
+            raisons_refus.append(f"scintillement ajouté ({ti:.2f} → {to:.2f})")
+        elif d > max(S["temps_doux"][0], S["temps_doux"][1] * ti):
+            raisons_doux.append("léger scintillement")
+    if q["zones_mauvaises_part"] > S["zones_doux"]: raisons_doux.append("quelques zones douteuses")
+    if q["ssim_median"] < S["ssim_med_doux"]: raisons_doux.append("structure un peu éloignée")
+    q["force"] = 1.0 if not raisons_doux else FORCE_DOUCE
+    q["avis"] = raisons_refus or raisons_doux or ["conforme"]
     INFO["controle"] = q
     journal("contrôle qualité :", q)
-    if q["ssim_median"] < SSIM_MIN or q["ssim_min"] < SSIM_MIN - 0.15:
-        raise RuntimeError(f"structure trop éloignée de la vidéo (SSIM médian {q['ssim_median']}, min {q['ssim_min']})")
-    if q["ecart_couleur_max"] > 12:
-        raise RuntimeError(f"couleurs déplacées ({q['ecart_couleur_max']} niveaux)")
+    if raisons_refus:
+        raise RuntimeError("; ".join(raisons_refus))
+    return q["force"]
 
 
 # ---------------------------------------------------------------- 5. encodage final (mêmes réglages que l'IA standard)
-def encoder(images, c):
-    liste = os.path.join(TMP, "images.txt")
-    with open(liste, "w") as f:
-        for p in images:
-            f.write(f"file '{p}'\nduration 0.0333333\n")
+def flux_attenue(images, segs, recouvrement, force):
+    """Images restaurées avec seulement `force` du détail ajouté : base Lanczos de l'entrée + force × (SeedVR2 − base)."""
+    import numpy as np, cv2
+    k = 0
+    for i, s in enumerate(segs):
+        cap, j = cv2.VideoCapture(s), 0
+        while True:
+            ok, e = cap.read()
+            if not ok: break
+            if j >= recouvrement[i]:
+                r = cv2.imread(images[k], cv2.IMREAD_COLOR).astype(np.float32)
+                base = cv2.resize(e, (r.shape[1], r.shape[0]), interpolation=cv2.INTER_LANCZOS4).astype(np.float32)
+                yield np.clip(base + force * (r - base), 0, 255).astype(np.uint8); k += 1
+            j += 1
+        cap.release()
+
+
+def encoder(images, c, segs=None, recouvrement=None, force=1.0):
     QP = int(P.get("qp", 16))
+    import cv2
+    h0, w0 = cv2.imread(images[0]).shape[:2]
+    if force >= 1.0:
+        liste = os.path.join(TMP, "images.txt")
+        with open(liste, "w") as f:
+            for p in images:
+                f.write(f"file '{p}'\nduration 0.0333333\n")
+        entree = ["-f", "concat", "-safe", "0", "-i", liste]
+    else:
+        entree = ["-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{w0}x{h0}", "-r", "30", "-i", "-"]
     def cmd(nv):
         enc = (["-c:v", "h264_nvenc", "-profile:v", "high", "-preset", "p6", "-tune", "hq", "-rc", "constqp", "-qp", str(QP)] if nv else
                ["-c:v", "libx264", "-profile:v", "high", "-preset", "medium", "-qp", str(QP)])
-        return ["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", liste, "-fps_mode", "passthrough",
+        return ["ffmpeg", "-y", "-loglevel", "error", *entree, "-fps_mode", "passthrough",
                 "-vf", f"scale={c['OW']}:{c['OH']}:flags=lanczos+accurate_rnd+full_chroma_int,"
                        "scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd+full_chroma_int",
                 *enc, "-bf", "0", *(["-g", str(max(1, int(P["gop"])))] if P.get("gop") else []),
                 "-pix_fmt", "yuv420p", "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709",
                 "-color_trc", "bt709", "-movflags", "+faststart", os.path.join(SORTIE, "ia.mp4")]
-    if subprocess.run(cmd(True)).returncode != 0:
-        subprocess.run(cmd(False), check=True)
+    def lancer(nv):
+        if force >= 1.0:
+            return subprocess.run(cmd(nv)).returncode
+        pr = subprocess.Popen(cmd(nv), stdin=subprocess.PIPE)
+        try:
+            for fr in flux_attenue(images, segs, recouvrement, force):
+                pr.stdin.write(fr.tobytes())
+        except BrokenPipeError:
+            pass
+        pr.stdin.close(); return pr.wait()
+    if lancer(True) != 0 and lancer(False) != 0:
+        raise RuntimeError("encodage final impossible")
     s = json.loads(subprocess.run(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries",
                                    "stream=width,height,codec_name,nb_read_frames", "-of", "json", os.path.join(SORTIE, "ia.mp4")],
                                   capture_output=True, text=True).stdout)["streams"][0]
@@ -282,10 +401,13 @@ def principal():
         images = assembler(dossiers, bornes, recouvrement)
         if len(images) != N:
             raise RuntimeError(f"{len(images)} images restaurées au lieu de {N}")
-        controler(images, segs, bornes, recouvrement, c)
+        force = controler(images, segs, bornes, recouvrement, c)
     except Exception as e:
         return repli(e)
-    s = encoder(images, c)
+    try:
+        s = encoder(images, c, segs, recouvrement, force)
+    except Exception as e:
+        return repli(e)
     INFO.update({"images_lues": N, "images_attendues": N, "sortie": s, "taille_octets": os.path.getsize(os.path.join(SORTIE, "ia.mp4")),
                  "duree_s": round(time.time() - T0, 1), "s_par_image": round((time.time() - T0) / max(1, N), 3),
                  "ok": int(s.get("nb_read_frames", -1)) == N and s["width"] == c["OW"] and s["height"] == c["OH"]})

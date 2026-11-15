@@ -1,5 +1,19 @@
 # Journal des versions
 
+## v8.2 (15 nov. 2026) — Moteur Cinéma : contrôle qualité v2, issu des recherches RNE de ChatGPT
+- Le contrôle du résultat SeedVR2 reprend les méthodes mises au point par ChatGPT (RNE 0.4 à 0.17) :
+  - **par zone** (grille 4×4, RNE 0.13) : une zone inventée ou abîmée est repérée même si l'image entière semble correcte ;
+    zones unies ignorées ;
+  - **Census** (RNE 0.14) : seconde chance pour une zone quand seule la lumière a changé ; il peut sauver une zone, jamais en
+    condamner une (leçon de RNE 0.15 sur les refus inutiles) ;
+  - **stabilité dans le temps** (QA temporelle, RNE 0.4/0.9/0.10) : écart compensé par le mouvement entre images voisines,
+    restauration contre vidéo d'origine ; coupes de plan et mouvements peu fiables écartés ;
+  - **atténuation au lieu du tout-ou-rien** (RNE 0.17) : en cas de léger doute, seuls 70 % du détail ajouté sont gardés ;
+    refus franc → IA standard.
+- Lecture des images de contrôle à mémoire bornée (seules les images utiles sont gardées), utile pour les longues vidéos.
+- Tests : `tests/cinema_kaggle_test.py` passe de 5 à 8 cas (scintillement ajouté refusé, zone inventée refusée, léger doute
+  atténué à 0,70 ; résultat fidèle gardé à 100 %).
+
 ## v8.1 (15 nov. 2026) — Moteur Cinéma (essai) : restauration vidéo SeedVR2 sur le serveur Kaggle
 - Nouvelle case **« Moteur Cinéma (essai) »** sous « IA rapide sur serveur gratuit (Kaggle) ». Au lieu de Real-ESRGAN
   (un réseau d'images de 2021, image par image), le serveur utilise **SeedVR2 3B** (ByteDance Seed, ICLR 2026, Apache-2.0) :
