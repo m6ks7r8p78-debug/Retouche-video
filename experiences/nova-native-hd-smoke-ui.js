@@ -18,6 +18,32 @@ const phaseLabels=Object.freeze({
  "native-export":"le traitement ou le muxage natif ne s'est pas terminé",
  "output-aac":"la couverture AAC du MP4 exporté n'a pas été vérifiée"
 });
+// Liste blanche de diagnostics locaux : pas de nom de média, PTS, pixels,
+// message d'exception JavaScript, pile, empreinte ni identifiant d'appareil.
+const checkpoints=Object.freeze({
+ "native-start":"démarrage du traitement",
+ "native-source":"analyse de la source",
+ "native-decoder-config":"configuration du décodeur HEVC",
+ "native-encoder-config":"configuration de l'encodeur H.264",
+ "native-aac-check":"vérification AAC",
+ "native-muxer":"préparation du MP4",
+ "native-codec-start":"ouverture des codecs natifs",
+ "native-video-feed":"alimentation du décodeur en images HEVC",
+ "native-image-process":"restauration et conversion des images",
+ "native-image-encode":"encodage H.264 des images",
+ "native-encoder-flush":"finalisation des images encodées",
+ "native-aac-copy":"copie des paquets AAC",
+ "native-aac-audit":"contrôle de la chronologie AAC",
+ "native-mux-finalize":"finalisation du conteneur MP4",
+ "native-output-index":"vérification des images du MP4 final",
+ "native-output-color":"vérification de la couleur de sortie"
+});
+const errorClasses=Object.freeze(["Error","TypeError","RangeError","NotSupportedError",
+ "EncodingError","DataError","InvalidStateError","OperationError",
+ "QuotaExceededError","AbortError","TimeoutError"]);
+function erreurClasse(e){
+ return errorClasses.includes(e?.name)?e.name:"unknown";
+}
 let sequence=0,controller=null,objectURLs=[];
 function resetLinks(){
  for(const url of objectURLs)URL.revokeObjectURL(url);
@@ -36,6 +62,7 @@ function blankReport(){
   schema:"retoucheproai.nova.native-hevc-smoke.v1",version:1,
   sourceKind:"bundled-ffmpeg-synthetic-hevc-aac",
   result:"failed",failedAt:null,errorCode:null,
+  checkpoint:null,errorClass:null,framesStarted:0,processedFrames:0,
   source:null,output:null,decodedByNative:false,encodedByNative:false,
   preservedAac:false,
   privacy:{userMediaRead:false,externalUpload:false,filenameInReport:false,
@@ -98,13 +125,23 @@ button.addEventListener("click",async()=>{
   if(a?.mode!=="aac-copy"||!a.packets?.length)throw Error("source-aac-unavailable");
   if(signal.aborted||seq!==sequence)return;
   phase="native-export";
+  report.checkpoint="native-start";
   status.textContent="Décodage HEVC natif, traitement des images et copie AAC locale…";
   const out=await NOVA_NATIVE_HD.exporter({
    file,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,signal,
    onProgress:step=>{
     if(seq!==sequence||signal.aborted)return;
-    if(step.stage==="video")
+    if(Object.prototype.hasOwnProperty.call(checkpoints,step?.stage))
+     report.checkpoint=step.stage;
+    if((step?.stage==="native-image-process"||step?.stage==="native-image-encode")&&
+       Number.isSafeInteger(step.frame)&&step.frame>=1&&
+       step.frame<=report.source.frames)
+     report.framesStarted=Math.max(report.framesStarted,step.frame);
+    if(step?.stage==="video"&&Number.isSafeInteger(step.frame)&&
+       step.frame>=1&&step.frame<=report.source.frames){
+     report.processedFrames=Math.max(report.processedFrames,step.frame);
      status.textContent="Traitement HEVC natif : "+step.frame+" / "+step.total+" images.";
+    }
    }
   });
   if(signal.aborted||seq!==sequence)return;
@@ -137,9 +174,14 @@ button.addEventListener("click",async()=>{
   if(!signal.aborted){
    report.failedAt=phase;
    report.errorCode=phase+"-failed";
-   status.textContent="Essai natif non abouti : "+
-    (phaseLabels[phase]||"étape non vérifiée")+
-    ". Aucun MP4 n'est présenté comme réussi. Rapport JSON local disponible.";
+   report.errorClass=erreurClasse(_error);
+   const checkpoint=phase==="native-export"&&report.checkpoint&&
+    Object.prototype.hasOwnProperty.call(checkpoints,report.checkpoint)?
+    "interruption lors de : "+checkpoints[report.checkpoint]:
+    (phaseLabels[phase]||"étape non vérifiée");
+   status.textContent="Essai natif non abouti : "+checkpoint+
+    ". "+report.processedFrames+" image(s) terminée(s). "+
+    "Aucun MP4 n'est présenté comme réussi. Rapport JSON local disponible.";
   }else status.textContent="Test annulé; aucun MP4 incomplet enregistré.";
  }finally{
   if(controller===ctrl){
