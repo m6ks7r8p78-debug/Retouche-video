@@ -42,6 +42,7 @@ start.addEventListener("click",async()=>{
    allowSilent:silent.checked,allowApproximate:!!approx?.checked,signal:ctl.signal,
    onProgress:step=>{
     if(generation!==thisGen)return;
+    if(step.stage==="budget")msg("Protection mémoire : "+step.estimatedMiB+" Mio estimés / "+step.limitMiB+" Mio de budget pilote…");
     if(step.stage==="source")msg(step.mode==="pts"?
      "Décodage vidéo selon les PTS MP4 natifs ("+step.frames+" images source)":
      "Mode compatibilité approximatif choisi : les images peuvent être dupliquées.");
