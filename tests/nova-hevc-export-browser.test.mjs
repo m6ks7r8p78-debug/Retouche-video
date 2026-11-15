@@ -119,11 +119,17 @@ test("NOVA 0.19 : MOV HEVC VFR BT.709 + AAC vers MP4 H.264/AAC avec synchro rée
   const [audio1,video1,hash1,{stdout:probe}]=await Promise.all([
    soundTimes(output),flashTimes(output),hashes(output),
    run("ffprobe",["-v","error","-show_entries",
-    "stream=codec_name,codec_type,avg_frame_rate,width,height","-of","json",output])
+    "stream=codec_name,codec_type,avg_frame_rate,width,height,color_range,color_primaries,color_transfer,color_space","-of","json",output])
   ]);
   const tracks=JSON.parse(probe).streams;
   assert.ok(tracks.some(x=>x.codec_type==="video"&&x.codec_name==="h264"&&x.avg_frame_rate==="15/1"));
   assert.ok(tracks.some(x=>x.codec_type==="audio"&&x.codec_name==="aac"));
+  const finalVideo=tracks.find(x=>x.codec_type==="video");
+  assert.deepEqual(
+    [finalVideo.color_range,finalVideo.color_primaries,
+     finalVideo.color_transfer,finalVideo.color_space],
+    ["tv","bt709","bt709","bt709"],
+    "H.264 MP4 exporté doit signaler BT.709 plage limitée via colr/FFprobe");
   assert.ok(hash1.length>=80);
   assert.deepEqual(hash1,hash0.slice(0,hash1.length),"AAC copié sans altération");
   const measured=comparerImpulsions({sourceAudio:audio0,sourceVideo:video0,
@@ -250,12 +256,15 @@ test("NOVA 0.19 : HEVC MOV SDR portrait rotation 90 degrés exporte MP4 90x160 s
   const pending=page.waitForEvent("download");await page.locator("#downloadVideo").click();
   const output=await (await pending).path();
   const {stdout}=await run("ffprobe",["-v","error",
-    "-show_entries","stream=codec_name,codec_type,width,height,avg_frame_rate",
+    "-show_entries","stream=codec_name,codec_type,width,height,avg_frame_rate,color_range,color_primaries,color_transfer,color_space",
     "-of","json",output]);
   const streams=JSON.parse(stdout).streams;
   assert.ok(streams.some(x=>x.codec_type==="video"&&x.codec_name==="h264"&&
    x.width===90&&x.height===160&&x.avg_frame_rate==="15/1"));
   assert.ok(!streams.some(x=>x.codec_type==="audio"),"l'utilisateur a choisi sans son");
+  const color=streams.find(x=>x.codec_type==="video");
+  assert.deepEqual([color.color_range,color.color_primaries,
+    color.color_transfer,color.color_space],["tv","bt709","bt709","bt709"]);
   assert.deepEqual(external,[]);
   t.diagnostic("NOVA HEVC portrait local export : 90x160, 15 fps, sans piste audio");
  }finally{

@@ -443,7 +443,12 @@ var Mp4Muxer = (() => {
     i16(65535)
     // Pre-defined
   ], [
-    VIDEO_CODEC_TO_CONFIGURATION_BOX[track.info.codec](track)
+    VIDEO_CODEC_TO_CONFIGURATION_BOX[track.info.codec](track),
+    // Extension NOVA 0.20 : nclx optionnel UNIQUEMENT si la source
+    // HEVC a été contrôlée dans les SPS/VUI comme BT.709 limité.
+    // Aucun autre export n'est étiqueté implicitement.
+    ...(track.info.colorMetadata === "bt709-limited" ?
+      [box("colr", [ascii("nclx"), u16(1), u16(1), u16(1), u8(0)])] : [])
   ]);
   var avcC = (track) => track.info.decoderConfig && box("avcC", [
     // For AVC, description is an AVCDecoderConfigurationRecord, so nothing else to do here
@@ -1486,6 +1491,11 @@ var Mp4Muxer = (() => {
       if (!Number.isInteger(options.video.height) || options.video.height <= 0) {
         throw new TypeError(`Invalid video height: ${options.video.height}. Must be a positive integer.`);
       }
+      if (options.video.colorMetadata !== void 0 &&
+          (options.video.codec !== "avc" ||
+           options.video.colorMetadata !== "bt709-limited")) {
+        throw new TypeError("NOVA colorMetadata: only AVC BT.709 limited supported");
+      }
       const videoRotation = options.video.rotation;
       if (typeof videoRotation === "number" && ![0, 90, 180, 270].includes(videoRotation)) {
         throw new TypeError(`Invalid video rotation: ${videoRotation}. Has to be 0, 90, 180 or 270.`);
@@ -1618,6 +1628,7 @@ var Mp4Muxer = (() => {
           width: __privateGet(this, _options).video.width,
           height: __privateGet(this, _options).video.height,
           rotation: __privateGet(this, _options).video.rotation ?? 0,
+          colorMetadata: __privateGet(this, _options).video.colorMetadata ?? null,
           decoderConfig: null
         },
         // The fallback contains many common frame rates as factors

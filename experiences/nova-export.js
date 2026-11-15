@@ -256,7 +256,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   if(signal?.aborted)throw new Error("Export annulé");
   const target=new Mp4Muxer.ArrayBufferTarget();
   const audioConfig=audioCopy?{sampleRate:audioCopy.sampleRate,numberOfChannels:audioCopy.channels}:audio?.cfg;
-  const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",video:{codec:"avc",width:settings.width,height:settings.height},
+  const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",video:{codec:"avc",width:settings.width,height:settings.height,
+    ...(useHevcWasm?{colorMetadata:"bt709-limited"}:{})},
     ...(audioConfig?{audio:{codec:"aac",sampleRate:audioConfig.sampleRate,numberOfChannels:audioConfig.numberOfChannels,
       ...(audioCopy?.rollDistance!=null?{rollDistance:audioCopy.rollDistance}:{}),
       ...(audioCopy?.editDurationSeconds!=null?{
@@ -349,8 +350,22 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   if(blob.size<1024)throw new Error("Fichier de sortie incomplet");
   onProgress({stage:"verification",progress:1});
   const validation=await verifierMp4(blob,settings,signal);
+  // Le MP4 de sortie doit porter réellement la boîte colr nclx
+  // BT.709 + plage limitée si la source HEVC a été contrôlée.
+  // Aucun succès n'est déclaré si le muxer ne la conserve pas.
+  let colorAudit=null;
+  if(useHevcWasm){
+    if(signal?.aborted)throw new Error("Export annulé");
+    const output=await NOVA_DEMUX.analyser(blob);
+    const color=output?.color;
+    if(!color||color.kind!=="nclx"||color.primaries!==1||
+       color.transfer!==1||color.matrix!==1||color.fullRange!==false)
+      throw new Error("MP4 final : colr BT.709 SDR limité non vérifiable");
+    colorAudit=Object.freeze({...color,qualification:
+      "boîte nclx vérifiée, cohérence du SPS H.264 à contrôler séparément"});
+  }
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,validation,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
+  return {blob,plan:settings,validation,colorAudit,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:sourceMode==="hevc-wasm"?"HEVC MIT WASM local, PTS MOV et sortie CFR":sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
   },report:sourceMode==="hevc-wasm"?"HEVC SDR BT.709 traité localement, sortie audiovisuelle à contrôler sur iPhone":sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
