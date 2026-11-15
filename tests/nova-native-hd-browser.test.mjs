@@ -57,10 +57,64 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
    if(!["GET","HEAD"].includes(r.method()))upload.push(r.url());
   });
   await page.goto(base+"/experiences/nova.html");
+  const webkitFixed=await page.evaluate(()=>{
+   const faulty=new Uint8Array([3,128,128,128,34,0,0,0,4,
+    128,128,128,20,64,20,0,24,0,0,0,0,0,0,0,0,0,
+    5,128,128,128,2,17,136,6,128,128,128,1,2]);
+   return Array.from(NOVA_AAC_NATIVE.normalizeDescription(faulty,48000,1));
+  });
+  assert.deepEqual(webkitFixed,[17,136],
+   "Full Safari esds descriptor must normalize to ASC under production CSP");
+
   await page.locator("#novaHdPanel summary").click();
   assert.equal(await page.locator("#novaHdRun").isEnabled(),false);
   await page.locator("#file").setInputFiles(sample);
   await page.waitForFunction(()=>!document.querySelector("#novaHdRun").disabled);
+  // La description erronée publiée par WebKit doit produire une piste AAC
+  // réellement lisible, pas seulement une configuration JSON plausible.
+  // Les paquets AAC sont ceux du fichier audio synthétique FFmpeg local.
+  const probe=await page.evaluate(async()=>{
+   const file=document.querySelector("#file").files[0];
+   const plan=await NOVA_AAC_COPY.planifier(file,{durationSeconds:1});
+   if(plan.sampleRate!==48000||plan.channels!==1)
+    throw Error("Unexpected synthetic mono AAC profile");
+   const broken=new Uint8Array([3,128,128,128,34,0,0,0,4,
+    128,128,128,20,64,20,0,24,0,0,0,0,0,0,0,0,0,
+    5,128,128,128,2,17,136,6,128,128,128,1,2]);
+   const normalized=NOVA_AAC_NATIVE.normalizeDescription(broken,48000,1);
+   const target=new Mp4Muxer.ArrayBufferTarget();
+   const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",
+    audio:{codec:"aac",sampleRate:plan.sampleRate,numberOfChannels:plan.channels}});
+   await NOVA_AAC_COPY.copier(file,plan,{
+    addAudioChunkRaw(data,type,timestamp,duration,meta){
+     muxer.addAudioChunkRaw(data,type,timestamp,duration,
+      meta?{decoderConfig:{...meta.decoderConfig,description:normalized}}:undefined);
+    }
+   });
+   muxer.finalize();
+   const a=document.createElement("a");
+   a.id="webkitAacProof";
+   a.href=URL.createObjectURL(new Blob([target.buffer],{type:"audio/mp4"}));
+   a.download="synthetic-apple-aac-proof.m4a";document.body.append(a);
+   return {packets:plan.packets.length,asc:Array.from(normalized)};
+  });
+  assert.ok(probe.packets>=40);
+  assert.deepEqual(probe.asc,[17,136]);
+  const aacBytes=await page.evaluate(async()=>{
+   const href=document.querySelector("#webkitAacProof").href;
+   const data=await (await fetch(href)).arrayBuffer();
+   return Array.from(new Uint8Array(data));
+  });
+  assert.ok(aacBytes.length>300,"synthetic AAC output too small");
+  const aacPath=path.join(dir,"synthetic-webkit-aac-proof.m4a");
+  await fs.writeFile(aacPath,Buffer.from(aacBytes));
+  const aacCheck=JSON.parse((await run("ffprobe",["-v","error","-show_streams",
+   "-of","json",aacPath],{timeout:10000})).stdout);
+  const aacStream=aacCheck.streams.find(x=>x.codec_type==="audio");
+  assert.equal(aacStream.codec_name,"aac");
+  assert.equal(aacStream.sample_rate,"48000");
+  assert.equal(aacStream.channels,1);
+
   assert.match(await page.locator("#novaHdOriginal").getAttribute("href")||"",/^blob:/);
   assert.equal(await page.locator("#novaHdSave").getAttribute("href"),null,
    "no processing starts automatically");
