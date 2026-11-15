@@ -21,9 +21,11 @@ jobs:
         run: |
           node --check experiences/nova-decision.js
           node --check experiences/nova-zones.js
+          node --check experiences/nova-worker.js
+          node --check experiences/nova-video.js
           node -e "const fs=require('fs'),vm=require('vm');const s=fs.readFileSync('experiences/nova.html','utf8');const a=s.indexOf('<script>');const b=s.indexOf('</script>',a);if(a<0||b<0)throw Error('script absent');new vm.Script(s.slice(a+8,b));console.log('NOVA inline JS valid');"
       - name: Garde-fous NOVA
-        run: node --test tests/nova-decision.test.mjs tests/nova-zones.test.mjs
+        run: node --test tests/nova-decision.test.mjs tests/nova-zones.test.mjs tests/nova-video.test.mjs
   navigateur:
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -34,6 +36,12 @@ jobs:
           node-version: '22'
       - name: Installer Playwright
         run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.55.0
+      - name: Préparer FFmpeg pour le test MP4 réel
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
       - name: Test d'interface mobile et bureau avec Chromium
         run: |
           export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
