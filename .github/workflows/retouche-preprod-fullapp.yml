@@ -33,6 +33,8 @@ jobs:
       - name: Audit actual index.html / original app.js, worker and offline assets
         run: |
           python research/preprod/tests/test_preprod_wiring.py
+          node tests/sw.test.mjs --maj
+          git diff --exit-code -- sw.js
           node tests/sw.test.mjs
       - name: Native browser - actual full app + imported H264/VP8 synthetic video
         run: python research/preprod/tests/test_full_app_smoke.py
