@@ -502,3 +502,12 @@ Ce contrôle **n'est pas une restauration HDR ni un parseur complet des VUI du b
 **Suite technique** : empaqueter les fichiers JavaScript/WASM MIT localement avec hash SHA-256 et contrôle de licence ; valider des sources avec B-frames/VFR/rotation/HDR variées et le budget mémoire, puis seulement tester un chemin réel de sortie audiovisuelle et le comportement sur Safari iOS physique. La PR reste brouillon ; aucun déploiement ou média privé publié.
 
 **Note :** ce paragraphe documentaire crée un nouveau commit ; vérifier sa CI exacte séparément avant de certifier ce HEAD.
+
+
+## NOVA 0.18 — préparation autonome du WASM hors-ligne et décodage flux (expérimental)
+
+- `outils/nova-hevc-assets.mjs` copie dans `experiences/vendor/hevc` les fichiers indispensables de `@hevcjs/core@1.8.0` installé sur le runner, en suivant les imports ES relatifs du décodeur. Il crée un manifeste SHA-256 (longueur des fichiers, version et URL de licence MIT) et refuse les altérations lors de `verify`. La copie ne se fait qu'en CI ; **ce n'est pas encore une livraison des fichiers binaires dans le dépôt**. Une étape suivante doit intégrer les fichiers exacts à un paquet hors-ligne versionné, avec empreintes figées indépendantes de la récupération npm.
+- `NOVA_HEVC_ANNEXB.flux` permet d'émettre les unités Annex B séquentiellement (VPS/SPS/PPS puis un paquet par sample en ordre de décodage), avec limite par paquet et globale ; évite d'assembler la totalité du flux HEVC.
+- `NOVA_HEVC_LAB.decoderFlux` appelle `feed/drain/flush` du vrai décodeur WASM, livre des images provisoires une par une au callback, vérifie les plans YUV, les PTS et le nombre final d'images ; il ne conserve pas la collection d'images. **Interdiction de publier un export tant que le compte final n'est pas vérifié**.
+- Le banc de preuve teste les assets servis depuis le répertoire local éphémère plutôt que directement `node_modules`. Ce chemin ne dépend d'aucun service de téléchargement côté navigateur, mais reste un outil de test tant que les fichiers ne sont pas effectivement distribués à l'application.
+- **État de ces modifications : en attente du contrôle CI du SHA exact ; ne pas interpréter leur présence comme décodage flux vérifié ni mise en production.**

@@ -77,6 +77,48 @@ async function extraire(file,info,{maxBytes=16*1024*1024,maxSamples=90,signal}={
  return Object.freeze({bytes:out,samples:info.ns,nals:chunks.length,
   lengthBytes:cfg.lengthBytes,source:"local-hvcC-annexB",size:out.length});
 }
-return Object.freeze({configuration,decouper,extraire});
+
+/* Produit un unique paquet Annex B par échantillon de décodage. Ne charge
+ * jamais toute la vidéo en RAM, et ne change pas l'ordre DTS des samples.
+ * Les VPS/SPS/PPS sont émis en premier. Aucun timestamp n'est fabriqué.
+ */
+async function* flux(file,info,{maxBytes=16*1024*1024,maxPacketBytes=2*1024*1024,
+  maxSamples=90,signal}={}){
+ if(!file||typeof file.slice!=="function"||!Number.isSafeInteger(file.size)||
+    !info||!/^(hvc1|hev1)\./.test(info.codec||""))
+  refuse("source MOV/MP4 HEVC requise");
+ if(!Number.isInteger(info.ns)||info.ns<1||info.ns>maxSamples||
+    !Array.isArray(info.so)||!Array.isArray(info.sz)||
+    info.so.length!==info.ns||info.sz.length!==info.ns)
+  refuse("quantité d'échantillons hors pilote");
+ if(!Number.isSafeInteger(maxPacketBytes)||maxPacketBytes<16||
+    !Number.isSafeInteger(maxBytes)||maxBytes<maxPacketBytes)
+  refuse("budget de flux invalide");
+ const cfg=configuration(info.desc);let total=0;
+ const pack=(nals)=>{
+  const length=nals.reduce((sum,x)=>sum+4+x.byteLength,0);
+  if(length>maxPacketBytes)refuse("paquet HEVC hors budget mémoire");
+  total+=length;
+  if(total>maxBytes)refuse("flux HEVC hors budget total");
+  const bytes=new Uint8Array(length);let at=0;
+  for(const nal of nals){bytes.set(startCode,at);at+=4;bytes.set(nal,at);at+=nal.length}
+  return bytes;
+ };
+ yield Object.freeze({sampleIndex:-1,bytes:pack(cfg.parameterSets),
+  role:"parameterSets",totalBytes:total});
+ for(let i=0;i<info.ns;i++){
+  if(signal?.aborted)refuse("opération annulée");
+  const offset=info.so[i],len=info.sz[i];
+  if(!Number.isSafeInteger(offset)||!Number.isSafeInteger(len)||len<2||
+      offset<0||offset+len>file.size||offset+len>Number.MAX_SAFE_INTEGER||
+      len>maxPacketBytes)
+   refuse("sample HEVC hors fichier ou budget mémoire");
+  const sample=new Uint8Array(await file.slice(offset,offset+len).arrayBuffer());
+  if(sample.length!==len)refuse("échantillon tronqué");
+  const bytes=pack(decouper(sample,cfg.lengthBytes));
+  yield Object.freeze({sampleIndex:i,bytes,role:"accessUnit",totalBytes:total});
+ }
+}
+return Object.freeze({configuration,decouper,extraire,flux});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_HEVC_ANNEXB;

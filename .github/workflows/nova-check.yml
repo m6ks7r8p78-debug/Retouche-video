@@ -38,7 +38,7 @@ jobs:
           node --check experiences/nova-export-ui.js
           node -e "const fs=require('fs'),vm=require('vm');const s=fs.readFileSync('experiences/nova.html','utf8');const a=s.indexOf('<script>');const b=s.indexOf('</script>',a);if(a<0||b<0)throw Error('script absent');new vm.Script(s.slice(a+8,b));console.log('NOVA inline JS valid');"
       - name: Garde-fous NOVA
-        run: node --test tests/nova-decision.test.mjs tests/nova-zones.test.mjs tests/nova-video.test.mjs tests/nova-demux.test.mjs tests/nova-timeline.test.mjs tests/nova-pts.test.mjs tests/nova-guard.test.mjs tests/nova-avsync.test.mjs tests/nova-aac-copy.test.mjs tests/nova-hevc-annexb.test.mjs tests/nova-av-pulses.test.mjs tests/nova-export.test.mjs
+        run: node --test tests/nova-hevc-assets.test.mjs tests/nova-decision.test.mjs tests/nova-zones.test.mjs tests/nova-video.test.mjs tests/nova-demux.test.mjs tests/nova-timeline.test.mjs tests/nova-pts.test.mjs tests/nova-guard.test.mjs tests/nova-avsync.test.mjs tests/nova-aac-copy.test.mjs tests/nova-hevc-annexb.test.mjs tests/nova-av-pulses.test.mjs tests/nova-export.test.mjs
   navigateur:
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -49,6 +49,10 @@ jobs:
           node-version: '22'
       - name: Installer Playwright
         run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.55.0 @hevcjs/core@1.8.0
+      - name: Préparer le décodeur HEVC WASM local depuis npm épinglé
+        run: |
+          node outils/nova-hevc-assets.mjs stage
+          node outils/nova-hevc-assets.mjs verify
       - name: Préparer FFmpeg pour le test MP4 réel
         run: |
           if ! command -v ffmpeg >/dev/null 2>&1; then
@@ -73,6 +77,8 @@ jobs:
         run: |
           npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.55.0 @hevcjs/core@1.8.0
           npx playwright install --with-deps webkit
+          node outils/nova-hevc-assets.mjs stage
+          node outils/nova-hevc-assets.mjs verify
       - name: Vérifier FFmpeg
         run: |
           if ! command -v ffmpeg >/dev/null 2>&1; then

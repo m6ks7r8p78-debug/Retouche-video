@@ -59,14 +59,14 @@ test("NOVA 0.17 : "+engineName+" décode HEVC MOV via WASM local et égale FFmpe
   await page.addScriptTag({url:"/experiences/nova-hevc-lab.js"});
   // Le glue Emscripten actuel expose HEVCDecoderModule en global, pas
   // un export ES module. Chargement local explicite, sans CDN.
-  await page.addScriptTag({url:"/node_modules/@hevcjs/core/dist/wasm/hevc-decode.js"});
+  await page.addScriptTag({url:"/experiences/vendor/hevc/wasm/hevc-decode.js"});
   await page.locator("#file").setInputFiles(source);
   const actual=await page.evaluate(async()=>{
-   const HEVCDecoder=(await import("/node_modules/@hevcjs/core/dist/decoder-entry.js")).HEVCDecoder;
+   const HEVCDecoder=(await import("/experiences/vendor/hevc/decoder-entry.js")).HEVCDecoder;
    const f=document.querySelector("#file").files[0];
    const before=performance.now();
    const r=await NOVA_HEVC_LAB.decoder(f,{HEVCDecoder,
-    wasmBinaryUrl:"/node_modules/@hevcjs/core/dist/wasm/hevc-decode.wasm"});
+    wasmBinaryUrl:"/experiences/vendor/hevc/wasm/hevc-decode.wasm"});
    const total=r.stamped.reduce((n,x)=>n+x.frame.y.length+x.frame.cb.length+x.frame.cr.length,0);
    const raw=new Uint8Array(total);let pos=0;
    for(const {frame} of r.stamped){

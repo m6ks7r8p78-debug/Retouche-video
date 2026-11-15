@@ -35,6 +35,67 @@ async function decoder(file,{HEVCDecoder,wasmUrl,wasmBinaryUrl,maxSamples=90}={}
     annexBBytes:bitstream.size};
  }finally{dec.destroy()}
 }
-return Object.freeze({decoder});
+
+/* Les frames sont livrées une par une sans être conservées par NOVA.
+ * Une frame émise est provisoire jusqu'à la vérification finale du compte.
+ * Le callback peut analyser les plans YUV, mais ne doit pas publier un
+ * export avant que cette fonction ait terminé sans erreur.
+ */
+async function decoderFlux(file,{HEVCDecoder,wasmUrl,wasmBinaryUrl,maxSamples=90,
+  maxBytes=16*1024*1024,maxPacketBytes=2*1024*1024,onFrame,signal}={}){
+ if(!globalThis.NOVA_DEMUX||!globalThis.NOVA_PTS||!globalThis.NOVA_HEVC_ANNEXB)
+  throw new Error("Modules MOV/PTS/HEVC du laboratoire absents");
+ if(!HEVCDecoder||typeof HEVCDecoder.create!=="function"||
+    typeof onFrame!=="function")
+  throw new Error("Décodeur WASM local et callback onFrame requis");
+ const info=await NOVA_DEMUX.analyser(file);
+ if(!info||!/^(hvc1|hev1)\./.test(info.codec))
+  throw new Error("Source MOV/MP4 HEVC requise");
+ NOVA_DEMUX.exigerPresentationFidele(info);
+ if(info.W*info.H>640*360||info.ns<1||info.ns>maxSamples)
+  throw new Error("Budget HEVC WASM pilote : 640×360 et 90 images maximum");
+ const plan=NOVA_PTS.planifier(info);
+ if(plan.sorted.length!==plan.nonnegative.length||plan.sorted[0].ptsUs!==0)
+  throw new Error("Preroll/décalage PTS HEVC non couvert par le pilote WASM");
+ const dec=await HEVCDecoder.create({wasmUrl,wasmBinaryUrl});
+ let count=0,peakChunkBytes=0,annexBBytes=0,peakFrameBytes=0;
+ async function consume(frames){
+  for(const frame of frames){
+   if(signal?.aborted)throw new Error("Décodage HEVC interrompu");
+   if(count>=plan.nonnegative.length)
+    throw new Error("Trames HEVC excédentaires, PTS non représentables");
+   if(frame.width!==info.W||frame.height!==info.H||frame.bitDepth!==8)
+    throw new Error("Dimensions ou profondeur HEVC WASM non représentables");
+   const expectedY=frame.width*frame.height;
+   const expectedC=frame.chromaWidth*frame.chromaHeight;
+   if(frame.y.length!==expectedY||frame.cb.length!==expectedC||
+      frame.cr.length!==expectedC||frame.chromaWidth*2!==frame.width||
+      frame.chromaHeight*2!==frame.height)
+    throw new Error("Plans YUV420 HEVC incohérents");
+   peakFrameBytes=Math.max(peakFrameBytes,2*(expectedY+2*expectedC));
+   await onFrame(Object.freeze({frame,ptsUs:plan.nonnegative[count].ptsUs,index:count,
+     provisional:true}));
+   count++;
+  }
+ }
+ try{
+  for await(const chunk of NOVA_HEVC_ANNEXB.flux(file,info,{
+    maxSamples,maxBytes,maxPacketBytes,signal
+  })){
+   if(signal?.aborted)throw new Error("Décodage HEVC interrompu");
+   peakChunkBytes=Math.max(peakChunkBytes,chunk.bytes.byteLength);
+   annexBBytes=chunk.totalBytes;
+   dec.feed(chunk.bytes);
+   await consume(dec.drain());
+  }
+  await consume(dec.flush());
+  if(count!==plan.nonnegative.length)
+   throw new Error("Images HEVC manquantes, PTS non représentables");
+  return Object.freeze({frames:count,annexBBytes,peakChunkBytes,peakFrameBytes,
+   firstPTS:plan.nonnegative[0].ptsUs,lastPTS:plan.nonnegative.at(-1).ptsUs,
+   width:info.W,height:info.H,mode:"HEVC WASM flux expérimental"});
+ }finally{dec.destroy()}
+}
+return Object.freeze({decoder,decoderFlux});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_HEVC_LAB;
