@@ -480,3 +480,25 @@ Ce contrôle **n'est pas une restauration HDR ni un parseur complet des VUI du b
 - `nova-hevc-lab.js` : lecteur HEVC expérimental acceptant un décodeur WASM explicitement fourni localement. Associe les trames décodées (ordre de présentation) aux PTS source uniquement si le nombre de trames concorde. Limite prototype **640×360, 90 images, SDR 8 bits et première image PTS=0** ; refuse les exceptions. Ne produit **pas encore** un MP4 restauré avec ce décodeur.
 - Nouveau banc `tests/nova-hevc-wasm-browser.test.mjs` : génère un MOV HEVC à B-frames avec FFmpeg, extrait les vrais paquets dans Chromium, réalise le décodage WebAssembly de `@hevcjs/core` hébergé par le serveur de test local, compare le SHA-256 de l'ensemble des plans YUV avec les octets FFmpeg décodés indépendamment ; refuse les appels réseau externes. Toute différence d'image ou de nombre de trames fait échouer le test.
 - **État** : code et banc soumis à CI, pas de preuve de réussite tant que le SHA exact n'a pas été audité. Ce banc ne prouve **pas** Safari iOS physique, vitesse réelle sur iPhone, restitution des couleurs HDR, export HEVC complet ou fonctionnement hors du laboratoire. Les assets WASM ne sont **pas intégrés à la distribution statique du site**.
+
+
+
+### Validation indépendante du décodage HEVC WASM (NOVA 0.17, 15 novembre 2026)
+
+**Dernier commit de code validé** `0bbaa5ab3f6fea5908f87e47946994915539efdf` ;
+**GitHub Actions** [43694877493](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43694877493) :
+**95 tests unitaires / 95, 21 tests Chromium / 21, 4 tests WebKit Linux / 4, soit 120/120, 0 échec, 0 ignoré, 3 jobs verts**.
+
+**Fichiers et résultats réels** :
+- `experiences/nova-hevc-annexb.js` extrait les images HEVC d'un vrai conteneur MOV en ordre de décodage et reconstitue les VPS/SPS/PPS nécessaires depuis `hvcC`.
+- `experiences/nova-hevc-lab.js` décode ce bitstream avec la version npm épinglée `@hevcjs/core@1.8.0` ; association des images décodées aux PTS validée pour la séquence de test sous les garde-fous du prototype. Le code n'envoie pas les médias vers un service tiers.
+- **18 images HEVC réelles décodées en YUV, 160×90**, avec **SHA-256 identique au décodage FFmpeg** sur *tous les octets des trois plans* en Chromium Linux **et** WebKit Linux. **17 727 octets** d'Annex B produits depuis le MOV. PTS : début 0 µs, dernière image 1 133 333 µs.
+- Mesures du banc pour l'import, la conversion, le décodage, la copie et le calcul de SHA-256 : **170 ms sous Chromium** et **144 ms sous WebKit Linux** dans l'exécution documentée (autre exécution Chromium initiale : 147 ms). Ce ne sont pas des benchmarks iPhone, ni des mesures isolées de performance du décodeur, ni une garantie de débit en temps réel.
+- Un premier essai a révélé que le glue Emscripten expose actuellement `HEVCDecoderModule` comme fonction globale plutôt que comme export ESM. Le banc charge explicitement le script depuis la même origine, sans CDN.
+- Les contrôles HEVC de longueur hvcC/NAL, d'offset et de budget empêchent des traitements manifestement incohérents. Le test de corruption NAL a été rectifié pour altérer le champ de longueur (et non les octets du contenu), sans supprimer la vérification.
+
+**Frontière importante** : le binaire WebAssembly est installé de façon éphémère **uniquement dans la CI** depuis npm et exposé par le serveur local de test ; il **n'est pas encore embarqué dans le site statique** et le décodeur expérimental **n'est pas branché à l'export utilisateur**. Les deux tests prouvent le **décodage local pixel-exact d'une source MOV synthétique particulière**, pas un moteur HEVC universel, ni l'iPhone 15 Pro Max physique, ni une prise en charge HDR, 4K/8K, audio/vidéo HEVC complet, thermique ou longues vidéos. Les limites de l'export NOVA restent 12 secondes / 60 Mo / 640 px / 15 i/s.
+
+**Suite technique** : empaqueter les fichiers JavaScript/WASM MIT localement avec hash SHA-256 et contrôle de licence ; valider des sources avec B-frames/VFR/rotation/HDR variées et le budget mémoire, puis seulement tester un chemin réel de sortie audiovisuelle et le comportement sur Safari iOS physique. La PR reste brouillon ; aucun déploiement ou média privé publié.
+
+**Note :** ce paragraphe documentaire crée un nouveau commit ; vérifier sa CI exacte séparément avant de certifier ce HEAD.
