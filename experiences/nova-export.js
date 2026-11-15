@@ -115,12 +115,20 @@ async function exporter({file,moteur,arbitre,allowSilent=false,onProgress=()=>{}
  try{
   media.src=url;await pret(media);
   const settings=plan({duration:media.duration,width:media.videoWidth,height:media.videoHeight,bytes:file.size});
+  if(!globalThis.NOVA_TIMELINE)throw new Error("Horodatage NOVA indisponible");
+  const timeline=NOVA_TIMELINE.calculer(media.duration,settings.fps);
+  if(timeline.count!==settings.frames)throw new Error("Incohérence du plan temporel");
   const config={codec:"avc1.42E01F",width:settings.width,height:settings.height,
     framerate:settings.fps,bitrate:Math.min(2_500_000,Math.max(550_000,settings.width*settings.height*settings.fps*.28)),
     avc:{format:"avc"},latencyMode:"quality"};
   if(!(await VideoEncoder.isConfigSupported(config)).supported)throw new Error("H.264 non disponible pour ce pilote");
   onProgress({stage:"audio",progress:0});
   const audio=await audioDuFichier(file,allowSilent,globalThis.AudioContext||globalThis.webkitAudioContext);
+  let audioCheck=null;
+  if(audio){
+    audioCheck=NOVA_TIMELINE.verifierAudio(audio.buffer.length,audio.buffer.sampleRate,timeline.durationSeconds);
+    if(!audioCheck.ok)throw new Error("Piste audio trop courte pour la durée vidéo : export interrompu");
+  }
   if(signal?.aborted)throw new Error("Export annulé");
   const target=new Mp4Muxer.ArrayBufferTarget();
   const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",video:{codec:"avc",width:settings.width,height:settings.height},
@@ -133,17 +141,20 @@ async function exporter({file,moteur,arbitre,allowSilent=false,onProgress=()=>{}
   }
   canvas.width=settings.width;canvas.height=settings.height;
   trans=transformateur(moteur,arbitre);
-  for(let i=0;i<settings.frames;i++){
+  for(const entry of timeline.entries){
+   const i=entry.index;
    if(signal?.aborted)throw new Error("Export annulé");
    if(error)throw error;
-   const t=Math.min(media.duration-.001,i/settings.fps);
+   const t=Math.min(media.duration-.001,entry.seekSeconds);
    await seek(media,t,signal);
+   const position=NOVA_TIMELINE.validerPosition(media.currentTime,t,media.duration);
+   if(!position.ok)throw new Error("Recherche vidéo imprécise : export refusé ("+position.distance.toFixed(3)+" s)");
    ctx.drawImage(media,0,0,canvas.width,canvas.height);
    const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
    const processed=await trans.traiter(pixels);
    ctx.putImageData(new ImageData(processed.data,processed.width,processed.height),0,0);
-   const frame=new VideoFrame(canvas,{timestamp:Math.round(i*1e6/settings.fps),duration:Math.round(1e6/settings.fps)});
-   try{videoEnc.encode(frame,{keyFrame:i===0||i%(settings.fps*2)===0})}finally{frame.close()}
+   const frame=new VideoFrame(canvas,{timestamp:entry.timestamp,duration:entry.duration});
+   try{videoEnc.encode(frame,{keyFrame:entry.keyFrame})}finally{frame.close()}
    if(videoEnc.encodeQueueSize>5)await videoEnc.flush();
    if(error)throw error;
    onProgress({stage:"video",progress:(i+1)/settings.frames,frame:i+1,total:settings.frames});
@@ -153,7 +164,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,onProgress=()=>{}
   if(audio){
    const ab=audio.buffer,channels=ab.numberOfChannels,B=4096,src=Array.from({length:channels},(_,ch)=>ab.getChannelData(ch));
    // Durée audio limitée à la durée vidéo encodée : pas de longue queue silencieuse.
-   const maxFrames=Math.min(ab.length,Math.ceil(settings.frames/settings.fps*ab.sampleRate));
+   const maxFrames=Math.min(ab.length,audioCheck.targetFrames);
    for(let offset=0;offset<maxFrames;offset+=B){
     if(signal?.aborted)throw new Error("Export annulé");
     const n=Math.min(B,maxFrames-offset),pcm=new Float32Array(n*channels);
@@ -170,7 +181,10 @@ async function exporter({file,moteur,arbitre,allowSilent=false,onProgress=()=>{}
   const blob=new Blob([target.buffer],{type:"video/mp4"});
   if(blob.size<1024)throw new Error("Fichier de sortie incomplet");
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,hasAudio:!!audio,report:"Export limité, images cherchées par temps : cadence et fidélité aux trames à vérifier"};
+  return {blob,plan:settings,hasAudio:!!audio,timeline:{
+    frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
+    audit:"CFR de sortie validé, images source cherchées par temps (PTS natifs non disponibles)"
+  },report:"Export limité, images cherchées par temps : cadence et fidélité aux trames à vérifier"};
  }finally{
   try{trans?.fermer()}catch(_){}
   try{if(videoEnc&&videoEnc.state!=="closed")videoEnc.close()}catch(_){}
