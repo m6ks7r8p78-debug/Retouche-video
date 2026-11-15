@@ -571,3 +571,10 @@ Un nouveau test `tests/nova-hevc-export-browser.test.mjs` fabrique une véritabl
 **Limites persistantes :** traitement expérimental uniquement en branche `chatgpt-studio-nova-v01` ; plafonds pilote **12 s, 60 Mo, 640 px de sortie, 15 i/s**, avec **90 images HEVC source maximum et 640×360 pixels encodés**. Pas de Safari réel sur iPhone 15 Pro Max, pas de test mémoire/thermique iPhone, pas de 4K/8K HDR, pas de sortie native 30/60 i/s, pas de déploiement sur `main`, pas de média privé partagé.
 
 **Prochaine priorité :** vérification explicite des VUI HEVC et de la plage de couleurs, audit des `colr` de la sortie H.264, étendre progressivement le décodage à des sources plus longues/60 i/s avec budget mémoire instrumenté ; seulement ensuite validation sur Safari iPhone physique.
+
+
+## NOVA 0.20 — audit colorimétrique depuis le bitstream HEVC (étape expérimentale)
+
+Un nouveau module `nova-hevc-vui.js` extrait SPS à partir de `hvcC` et parcourt les paramètres HEVC (RBSP, Exp-Golomb, sous-couches, RPS, VUI) sous des limites strictes. L'audit exige un signal explicite **8 bits / 4:2:0, BT.709 primaires 1, transfert 1, matrice 1, plage vidéo limitée**, puis confronte ces valeurs à la boîte `colr` du MOV. Une divergence, un SPS tronqué, un champ inconnu ou une pleine plage entraîne un refus. Cela évite d'interpréter aveuglément un `nclc` dépourvu d'indicateur de plage complète. Les fonctions sont indépendantes du décodage et ne chargent aucun média privé.
+
+Le banc `tests/nova-hevc-vui-browser.test.mjs` génère avec FFmpeg deux vrais MOV HEVC BT.709, l'un à plage limitée et l'autre à plage complète, compare la lecture du SPS à FFprobe et vérifie le refus du cas pleine plage ainsi que des contradictions `colr` / VUI. **Ne pas prétendre à une CI réussie avant vérification du SHA exact.** Les VUI complexes ou non reconnues restent refusées, pas déduites. La colorimétrie du MP4 de sortie sera auditée séparément.

@@ -1,7 +1,7 @@
 /* NOVA 0.19 — Adaptateur local HEVC -> VideoFrame I420 -> Canvas.
  * Pilote SDR dont les composantes BT.709 sont signalées dans colr.
- * Attention : nclc ne contient PAS l'indicateur full-range (plage vidéo
- * limitée supposée, non déduite des VUI HEVC) ; aucune promesse HDR/P3.
+ * nclc ne fournit pas le bit full-range : vérifier le SPS/VUI HEVC
+ * de façon indépendante avant de définir la VideoFrame comme limitée.
  * Le décodeur MIT est versionné dans experiences/vendor/hevc.
  * Les trames sont traitées en flux, sans enregistrer toute la séquence.
  */
@@ -11,10 +11,14 @@ const fail=s=>{throw new Error("HEVC WASM pilote : "+s)};
 let loading=null;
 function metadata(info){
  if(!info||!/^(hvc1|hev1)\./.test(info.codec||""))fail("MOV/MP4 HEVC requis");
- if(!globalThis.NOVA_PTS||!globalThis.NOVA_DEMUX||!globalThis.NOVA_HEVC_LAB)
-  fail("modules de restauration HEVC manquants");
+ if(!globalThis.NOVA_PTS||!globalThis.NOVA_DEMUX||!globalThis.NOVA_HEVC_LAB||
+    !globalThis.NOVA_HEVC_VUI)
+  fail("modules de restauration HEVC ou audit SPS/VUI manquants");
  NOVA_DEMUX.exigerPresentationFidele(info);
+ const bitstream=NOVA_HEVC_VUI.analyser(info); // vérifie la gamme/VUI et colr
  const c=info.color;
+ if(bitstream.fullRange||bitstream.lumaBits!==8||bitstream.chromaBits!==8)
+  fail("SPS/VUI HEVC hors de la plage vidéo limitée 8 bits");
  if(!c||!["nclc","nclx"].includes(c.kind)||c.primaries!==1||
      c.transfer!==1||c.matrix!==1||c.fullRange===true)
   fail("paramètres colorimétriques BT.709 SDR requis ; pas de HDR/P3 ni de pleine plage identifiée");
