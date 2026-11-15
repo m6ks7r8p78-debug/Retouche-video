@@ -1,0 +1,146 @@
+name: Cinema P30 — reproducible iPhone manual demo bundle with Linux browser proof
+on:
+  push:
+    paths:
+      - 'studio-cinema/p30/**'
+      - '.github/workflows/ci-cinema-p30.yml'
+  pull_request:
+    paths:
+      - 'studio-cinema/p30/**'
+      - '.github/workflows/ci-cinema-p30.yml'
+  workflow_dispatch:
+jobs:
+  iphone-manual-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 34
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read-only experimental NOVA API for inherited P28 contracts
+        uses: actions/checkout@v4
+        with:
+          ref: 982b0d545cf85ca53d429a69f69c71b0d2430286
+          path: crosslab/nova
+          persist-credentials: false
+      - name: Read-only experimental Directeur IA API for inherited P28 contracts
+        uses: actions/checkout@v4
+        with:
+          ref: 79439a5a208248b63691d061b70494dd7711de5f
+          path: crosslab/director
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install processing dependencies and reproducible FFmpeg encoders
+        run: |
+          python -m pip install --disable-pip-version-check 'numpy<3' 'opencv-python-headless>=4.9,<5' playwright
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep libx264
+          ffmpeg -hide_banner -encoders | grep ffv1
+          ffmpeg -hide_banner -encoders | grep -E '(^| )aac( |$)'
+      - name: Validate P30 scripts and all P29 interface source tests
+        run: |
+          node --check studio-cinema/p30/preview/iphone-check.js
+          python -m py_compile studio-cinema/p30/src/p30_package.py studio-cinema/p30/tests/p30_browser_smoke.py
+          node --test studio-cinema/p29/tests/test_p29_contracts.cjs
+      - name: Build original 480 fictional P19/P21 controls
+        run: node studio-cinema/p22/src/build_p22_controls.cjs studio-cinema/p22/results/controls.json
+      - name: Re-run all P15-P28 regression and real Node crosslab contract tests
+        run: |
+          node --test studio-cinema/p27/tests/test_p27_advisory.cjs
+          node --test studio-cinema/p21/tests/test_p21.cjs studio-cinema/p20/tests/test_p20.cjs studio-cinema/p19/tests/test_p19.cjs studio-cinema/p15/tests/test_behavior_ontology.cjs
+          python -m unittest discover -s studio-cinema/p22/tests -p 'test_p22_visual.py' -v
+          python -m unittest discover -s studio-cinema/p23/tests -p 'test_p23_temporal.py' -v
+          python -m unittest discover -s studio-cinema/p24/tests -p 'test_p24_unit.py' -v
+          python -m unittest discover -s studio-cinema/p24/tests -p 'test_p24_browser_static.py' -v
+          python -m unittest discover -s studio-cinema/p25/tests -p 'test_p25_contracts.py' -v
+          python -m unittest discover -s studio-cinema/p26/tests -p 'test_p26_contracts.py' -v
+      - name: Rebuild original P25 H264 videos and decoded synthetic report
+        run: |
+          python studio-cinema/p25/src/p25_crf_matrix.py \
+            --data studio-cinema/p22/results/controls.json \
+            --out studio-cinema/p25/results/proof
+      - name: Rebuild P26 nine second-generation video experiments
+        run: |
+          python studio-cinema/p26/src/p26_recompression.py \
+            --data studio-cinema/p22/results/controls.json \
+            --source-dir studio-cinema/p25/results/proof \
+            --out studio-cinema/p26/results/proof
+      - name: Verify real P28 bridge and P29 builder on newly measured values
+        run: |
+          node --test studio-cinema/p28/tests/test_p28_readonly.cjs
+          node --test studio-cinema/p28/tests/test_p28_real_contracts.cjs
+          node studio-cinema/p28/src/p28_readonly_bridge.cjs \
+            studio-cinema/p25/results/proof/p25_crf_matrix_synthetic_report.json \
+            studio-cinema/p26/results/proof/p26_second_generation_synthetic_report.json \
+            studio-cinema/p28/results/proof
+          node studio-cinema/p29/src/p29_build.cjs \
+            studio-cinema/p28/results/proof/p28_readonly_handoff.json \
+            studio-cinema/p29/results/preview
+      - name: Validate P30 ZIP source and adversarial manipulation refusal
+        run: |
+          python -m unittest discover -s studio-cinema/p30/tests -p 'test_p30_package.py' -v
+      - name: Create and audit deterministic iPhone demonstration ZIP
+        run: |
+          python studio-cinema/p30/src/p30_package.py \
+            --source studio-cinema/p29/results/preview \
+            --out studio-cinema/p30/results/package
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from zipfile import ZipFile
+          root=Path('studio-cinema/p30/results/package')
+          proof=json.loads((root/'p30_package_proof.json').read_text())
+          archive=root/'Cinema_P30_iPhone_demo.zip'
+          assert proof['status']=='synthetic_manual_package_built'
+          assert hashlib.sha256(archive.read_bytes()).hexdigest()==proof['zip_sha256']
+          assert proof['user_media_included'] is False
+          assert proof['automatic_media_export'] is False
+          assert proof['physical_iphone_safari_verified'] is False
+          with ZipFile(archive) as z:
+              assert z.testzip() is None
+              assert set(z.namelist())==set(proof['files_sha256'])|{'MANIFEST_SHA256.txt'}
+              assert len(z.namelist())==9
+              for name,checksum in proof['files_sha256'].items():
+                  assert hashlib.sha256(z.read(name)).hexdigest()==checksum
+          print('P30 deterministic ZIP: SHA256 verified, 9 benign static entries, zero media')
+          PY
+      - name: Install Linux-only Chromium and WebKit engines
+        run: python -m playwright install --with-deps chromium webkit
+      - name: Test extracted ZIP manual checklist, JSON local download and no external requests
+        run: |
+          python studio-cinema/p30/tests/p30_browser_smoke.py \
+            --zip studio-cinema/p30/results/package/Cinema_P30_iPhone_demo.zip \
+            --out studio-cinema/p30/results/browser
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('studio-cinema/p30/results/browser/p30_browser_report.json').read_text())
+          assert r['status']=='synthetic_manual_export_ux_tested_on_linux_engines'
+          assert r['number_of_engines']==2 and r['number_of_valid_viewports']==6
+          assert r['tampered_evidence_test_cases']==2
+          assert r['actual_iphone_safari_physically_tested'] is False
+          assert r['external_requests_observed']==0
+          for result in r['results']:
+              assert result['tampered_evidence_refused']
+              assert result['external_request_count']==0
+              assert result['javascript_error_count']==0
+              assert all(case['local_json_download_works'] for case in result['viewports'])
+          print('P30 Chromium/WebKit Linux manual test passed. No physical iPhone claims.')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinema-p30-iphone-manual-demo-zip-synthetic-evidence
+          path: |
+            studio-cinema/p30/results/package/Cinema_P30_iPhone_demo.zip
+            studio-cinema/p30/results/package/p30_package_proof.json
+            studio-cinema/p30/results/browser/
+          retention-days: 3
+          if-no-files-found: error
