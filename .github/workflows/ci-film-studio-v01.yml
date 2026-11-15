@@ -1,4 +1,4 @@
-name: Film Studio - aperçu WebGL2 expérimental v0.4
+name: Film Studio - Chromium et Safari WebKit expérimental v0.5
 on:
   push:
     branches:
@@ -27,6 +27,9 @@ on:
       - 'studio-3d/film-ui-v04.mjs'
       - 'studio-3d/film-studio-v04.html'
       - 'studio-3d/film-browser-v04.test.mjs'
+      - 'studio-3d/film-ui-v05.mjs'
+      - 'studio-3d/film-studio-v05.html'
+      - 'studio-3d/film-browser-webkit-v05.test.mjs'
       - '.github/workflows/ci-film-studio-v01.yml'
 jobs:
   scenario-contract:
@@ -65,5 +68,31 @@ jobs:
         with:
           name: film-studio-v04-chromium-synthetic
           path: test-results/film-studio-v04-chromium.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+  navigateur-webkit:
+    needs: scenario-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Playwright sur runner temporaire
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Installer WebKit et ses dépendances système
+        run: npx playwright install --with-deps webkit
+      - name: Tester Safari WebKit simulé, mode tactile, repli et export local
+        run: node studio-3d/film-browser-webkit-v05.test.mjs
+      - name: Archiver captures entièrement synthétiques WebKit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: film-studio-v05-webkit-synthetic
+          path: test-results/film-studio-v05-webkit-*.png
           if-no-files-found: ignore
           retention-days: 7
