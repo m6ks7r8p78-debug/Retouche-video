@@ -1,0 +1,106 @@
+name: Cinema P28 — read-only NOVA and Directeur contracts with actual synthetic evidence
+on:
+  push:
+    paths:
+      - 'studio-cinema/p28/**'
+      - '.github/workflows/ci-cinema-p28.yml'
+  pull_request:
+    paths:
+      - 'studio-cinema/p28/**'
+      - '.github/workflows/ci-cinema-p28.yml'
+  workflow_dispatch:
+jobs:
+  crosslab-readonly-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 29
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout P28 Cinema experimental branch
+        uses: actions/checkout@v4
+      - name: Read only — checkout exact NOVA real-preflight experimental revision
+        uses: actions/checkout@v4
+        with:
+          ref: 982b0d545cf85ca53d429a69f69c71b0d2430286
+          path: crosslab/nova
+          persist-credentials: false
+      - name: Read only — checkout exact Directeur IA experimental revision
+        uses: actions/checkout@v4
+        with:
+          ref: 79439a5a208248b63691d061b70494dd7711de5f
+          path: crosslab/director
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free offline numeric and codec utilities
+        run: |
+          python -m pip install --disable-pip-version-check 'numpy<3' 'opencv-python-headless>=4.9,<5'
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep libx264
+          ffmpeg -hide_banner -encoders | grep ffv1
+          ffmpeg -hide_banner -encoders | grep -E '(^| )aac( |$)'
+      - name: Verify unchanged actual crosslab revision and runtime API contracts
+        run: |
+          cd crosslab/nova
+          test "$(git rev-parse HEAD)" = "982b0d545cf85ca53d429a69f69c71b0d2430286"
+          cd ../director
+          test "$(git rev-parse HEAD)" = "79439a5a208248b63691d061b70494dd7711de5f"
+          cd ../..
+          node --check crosslab/nova/experiences/nova-real-preflight.js
+          node --check crosslab/nova/experiences/nova-decision.js
+          node --check crosslab/director/directeur-qualite.js
+      - name: Generate 480 authentic procedural P19-P21 synthetic poses
+        run: node studio-cinema/p22/src/build_p22_controls.cjs studio-cinema/p22/results/controls.json
+      - name: P15-P27 regression tests on the P28 branch
+        run: |
+          node --test studio-cinema/p27/tests/test_p27_advisory.cjs
+          node --test studio-cinema/p21/tests/test_p21.cjs studio-cinema/p20/tests/test_p20.cjs studio-cinema/p19/tests/test_p19.cjs studio-cinema/p15/tests/test_behavior_ontology.cjs
+          python -m unittest discover -s studio-cinema/p22/tests -p 'test_p22_visual.py' -v
+          python -m unittest discover -s studio-cinema/p23/tests -p 'test_p23_temporal.py' -v
+          python -m unittest discover -s studio-cinema/p24/tests -p 'test_p24_unit.py' -v
+          python -m unittest discover -s studio-cinema/p24/tests -p 'test_p24_browser_static.py' -v
+          python -m unittest discover -s studio-cinema/p25/tests -p 'test_p25_contracts.py' -v
+          python -m unittest discover -s studio-cinema/p26/tests -p 'test_p26_contracts.py' -v
+      - name: Rebuild actual P25 H264 reference videos and synthetic report
+        run: |
+          python studio-cinema/p25/src/p25_crf_matrix.py             --data studio-cinema/p22/results/controls.json             --out studio-cinema/p25/results/proof
+      - name: Rebuild actual P26 second-generation videos and synthetic report
+        run: |
+          python studio-cinema/p26/src/p26_recompression.py             --data studio-cinema/p22/results/controls.json             --source-dir studio-cinema/p25/results/proof             --out studio-cinema/p26/results/proof
+      - name: Verify P28 redaction and fail-closed contracts on real P25/P26 evidence
+        run: |
+          node --check studio-cinema/p28/src/p28_readonly_bridge.cjs
+          node --test studio-cinema/p28/tests/test_p28_readonly.cjs
+      - name: Verify actual NOVA and Directeur APIs with synthetic values only
+        run: node --test studio-cinema/p28/tests/test_p28_real_contracts.cjs
+      - name: Produce read-only contract artifact with zero media bytes
+        run: |
+          node studio-cinema/p28/src/p28_readonly_bridge.cjs             studio-cinema/p25/results/proof/p25_crf_matrix_synthetic_report.json             studio-cinema/p26/results/proof/p26_second_generation_synthetic_report.json             studio-cinema/p28/results/proof
+          node - <<'JS'
+          const fs=require('node:fs');
+          const path='studio-cinema/p28/results/proof/p28_readonly_handoff.json';
+          const x=JSON.parse(fs.readFileSync(path,'utf8'));
+          if(x.status!=='research_reference_only_no_export_clearance'||x.schema!=='retouche-cinema-p28-crosslab-readonly-v1')throw Error('P28 handoff status incorrect');
+          if(x.cinema_synthetic_research.applies_to_user_file!==false)throw Error('Cinema overclaim');
+          if(x.cinema_synthetic_research.cases_compared!==9)throw Error('Wrong case count');
+          if(Object.values(x.permissions).some(v=>v!==false))throw Error('Unsafe permission');
+          if(x.codec_recommendation!==null||x.advice_for_personal_file!==null)throw Error('Unsafe automatic recommendation');
+          if(x.nova_real_preflight_status.connection!=='not_supplied')throw Error('NOVA state fabricated');
+          if(x.director_technical_quality_status.connection!=='not_supplied')throw Error('Director state fabricated');
+          console.log('P28 OFFLINE SYNTHETIC CROSS-LAB CONTRACT PASS',x.cinema_synthetic_research);
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinema-p28-readonly-crosslab-synthetic-proof
+          path: |
+            studio-cinema/p28/results/proof/p28_readonly_handoff.json
+            studio-cinema/p28/results/proof/p28_readonly_handoff_fr.md
+          retention-days: 3
+          if-no-files-found: error
