@@ -16,7 +16,7 @@ from p30_package import (
  SCHEMA,P29_SCHEMA,P29_FILES,P30_FILES,GUIDE,bundle,valid_p29,sha
 )
 
-ROOT=Path(__file__).resolve().parents[3]
+ROOT=Path(__file__).resolve().parents[2]
 P29_GENERATED=Path(os.environ.get("P30_P29_SOURCE","studio-cinema/p29/results/preview"))
 
 
@@ -53,7 +53,7 @@ class TestCinemaP30Zip(unittest.TestCase):
         self.assertGreater(z.stat().st_size,3500)
         with ZipFile(z) as arch:
             self.assertIsNone(arch.testzip())
-            self.assertEqual(len(arch.namelist()),10)
+            self.assertEqual(len(arch.namelist()),9)
             self.assertIn("index.html",arch.namelist())
             self.assertIn("test-iphone.html",arch.namelist())
             self.assertIn("GUIDE_IPHONE.txt",arch.namelist())
@@ -72,7 +72,7 @@ class TestCinemaP30Zip(unittest.TestCase):
         self.make()
         folder=self.root/"results"/"Cinema_P30_iPhone_demo"
         lines=(folder/"MANIFEST_SHA256.txt").read_text().splitlines()[1:]
-        self.assertEqual(len(lines),9)
+        self.assertEqual(len(lines),8)
         for line in lines:
             expected,name=line.split("  ",1)
             self.assertEqual(expected,sha((folder/name).read_bytes()),name)
