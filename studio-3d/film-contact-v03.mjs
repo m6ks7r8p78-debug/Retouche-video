@@ -82,17 +82,31 @@ function buildSyntheticFilmSceneV03(request,generator){
  model.nodes[onTable].children=[];
  model.nodes[onHand].children=[];
  // Géométrie du point de prise : épaule + bras + avant-bras + ancrage.
- const wristPosition=i=>{
-   const sit=actorTrack.values[i][1];
-   const a=rad(shoulderTrack.values[i]),b=rad(elbowTrack.values[i]),sum=a+b;
+ // Échantillonnage dense de la trajectoire : éviter l’écart entre
+ // l’interpolation des articulations et une translation en ligne droite.
+ const sampleTrack=(track,t)=>{
+   let i=0;while(i<track.times.length-2&&track.times[i+1]<t)i++;
+   const a=track.times[i],b=track.times[i+1]??a;
+   const mix=b===a?0:clamp((t-a)/(b-a),0,1);
+   const v=track.values[i].map((x,k)=>x+(track.values[i+1]?.[k]??x-x)*mix);
+   if(track.path==='rotation'){const n=Math.hypot(...v)||1;return v.map(x=>x/n);}
+   return v;
+ };
+ const wristAt=t=>{
+   const sit=sampleTrack(actorTrack,t)[1];
+   const a=rad(sampleTrack(shoulderTrack,t));
+   const b=rad(sampleTrack(elbowTrack,t)),sum=a+b;
    return [
      cupTarget[0],
      sit*(1.51-.41*Math.cos(a)-.51*Math.cos(sum)-.065*Math.sin(sum)),
      -.41*Math.sin(a)-.51*Math.sin(sum)+.065*Math.cos(sum)
    ];
  };
- const positions=times.map((_,i)=>handTrack.values[i][0]>.5?wristPosition(i):cupTarget.slice());
- channels.push({node:cupId,path:'translation',times:times.slice(),values:positions});
+ const duration=output.duration;
+ const extra=Array.from({length:Math.ceil(duration/.025)},(_,i)=>round(Math.min(duration,(i+1)*.025)));
+ const fineTimes=[...new Set([...times,...extra])].sort((a,b)=>a-b);
+ const positions=fineTimes.map(t=>sampleTrack(handTrack,t)[0]>.5?wristAt(t):cupTarget.slice());
+ channels.push({node:cupId,path:'translation',times:fineTimes,values:positions});
  handTrack.values=times.map(()=>[.0001,.0001,.0001]);
  tableTrack.values=times.map(()=>[.0001,.0001,.0001]);
  model.animations[0].name='film_scene_v03';
