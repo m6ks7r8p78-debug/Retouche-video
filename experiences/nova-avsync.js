@@ -69,7 +69,7 @@ function analyserMoov(b){
    if(!safe(ticks)||!safe(samples)||samples>200000)fail("durée audio débordante");
   }
   const edts=one(t,"edts"),elst=one(enfants(b,edts),"elst");
-  let leadingEmptyTicks=0,mediaTime=0,edits=0;
+  let leadingEmptyTicks=0,mediaTime=0,edits=0,editSegmentTicks=null;
   if(elst){
    const v=b[elst.start];edits=dv.getUint32(elst.start+4);
    if((v!==0&&v!==1)||edits<1||edits>2)fail("liste de montage audio complexe");
@@ -87,17 +87,28 @@ function analyserMoov(b){
    if(edits===2){
     if(entries[0].media!==-1||entries[1].media<0)fail("enchaînement d'éditions audio inconnu");
     leadingEmptyTicks=entries[0].seg;mediaTime=entries[1].media;
+    editSegmentTicks=entries[1].seg;
    }else{
     if(entries[0].media<0)fail("édition audio vide sans segment");
     mediaTime=entries[0].media;
+    editSegmentTicks=entries[0].seg;
    }
   }
   const delayUs=Math.round(leadingEmptyTicks*1e6/movieTimescale);
   const trimUs=Math.round(mediaTime*1e6/timescale);
   const durationUs=Math.round(ticks*1e6/timescale);
-  if(![delayUs,trimUs,durationUs].every(safe))fail("temps audio non représentables");
+  const editSegmentUs=editSegmentTicks==null?null:
+    Math.round(editSegmentTicks*1e6/movieTimescale);
+  const mediaAvailableUs=durationUs-trimUs;
+  if(![delayUs,trimUs,durationUs].every(safe)||!safe(mediaAvailableUs)||
+     (editSegmentUs!=null&&(!safe(editSegmentUs)||editSegmentUs>mediaAvailableUs+10000)))
+   fail("liste de montage audio dépassant les échantillons décodables");
+  // Un elst raccourcit la durée présentée même si stts couvre davantage.
+  // Ne jamais prétendre avoir 2 s de son lorsque l'édition en expose 1 s.
+  const presentedUs=Math.min(mediaAvailableUs,editSegmentUs??mediaAvailableUs);
   audios.push(Object.freeze({codec:"mp4a",samples,timescale,movieTimescale,
-    delayUs,trimUs,durationUs,presentationEndUs:delayUs+durationUs-trimUs,
+    delayUs,trimUs,durationUs,editSegmentUs,
+    presentationEndUs:delayUs+presentedUs,
     edits,qualification:"analyse stts/mdhd/elst, sans mesure du son décodé"}));
  }
  if(audios.length>1)fail("plusieurs pistes audio : correspondance non garantie");
