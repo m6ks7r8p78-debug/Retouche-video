@@ -1,0 +1,73 @@
+name: Cinema P23 — temporal continuity and reduced-size pixel QA
+on:
+  push:
+    paths:
+      - 'studio-cinema/p23/**'
+      - '.github/workflows/ci-cinema-p23.yml'
+  pull_request:
+    paths:
+      - 'studio-cinema/p23/**'
+      - '.github/workflows/ci-cinema-p23.yml'
+  workflow_dispatch:
+jobs:
+  synthetic-temporal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install reproducible free image-processing dependencies
+        run: python -m pip install --disable-pip-version-check 'numpy<3' 'opencv-python-headless>=4.9,<5'
+      - name: Verify real P15-P21 legacy contracts
+        run: |
+          node --test studio-cinema/p21/tests/test_p21.cjs studio-cinema/p20/tests/test_p20.cjs studio-cinema/p19/tests/test_p19.cjs studio-cinema/p15/tests/test_behavior_ontology.cjs
+      - name: Create audited 480 synthetic control poses
+        run: node studio-cinema/p22/src/build_p22_controls.cjs studio-cinema/p22/results/controls.json
+      - name: Verify P22 legacy pixel invariants
+        run: python -m unittest discover -s studio-cinema/p22/tests -p 'test_p22_visual.py' -v
+      - name: Run P23 continuity and 240/360 px checks
+        run: python -m unittest discover -s studio-cinema/p23/tests -p 'test_p23_temporal.py' -v
+      - name: Install FFmpeg only when missing
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep 'libx264'
+          ffmpeg -hide_banner -encoders | grep -E '(^| )aac( |$)'
+      - name: Render P23 temporal synthetic video and validate H264 AAC 480 frames
+        run: |
+          python studio-cinema/p23/src/temporal_blend.py --data studio-cinema/p22/results/controls.json --out studio-cinema/p23/results/proof --render-preview
+          python - <<'PY'
+          import json,subprocess
+          from pathlib import Path
+          d=Path('studio-cinema/p23/results/proof')
+          r=json.loads((d/'p23_temporal_qa.json').read_text())
+          assert r['status']=='synthetic_temporal_gate_pass',r
+          assert all(v['onset_jump_reduced'] for v in r['gesture_onsets'].values()),r
+          assert all(v['peak_changed_pixels_360px']>0 for v in r['gesture_onsets'].values()),r
+          movie=d/'P23_temporal_blend_synthetic_60fps.mp4'
+          assert movie.stat().st_size>10000
+          cmd=['ffprobe','-v','error','-count_frames','-show_entries','stream=codec_type,codec_name,r_frame_rate,nb_read_frames:format=duration','-of','json',str(movie)]
+          result=json.loads(subprocess.check_output(cmd,text=True))
+          video=next(s for s in result['streams'] if s['codec_type']=='video')
+          audio=next(s for s in result['streams'] if s['codec_type']=='audio')
+          assert (video['codec_name'],video['r_frame_rate'],int(video['nb_read_frames']))==('h264','60/1',480),result
+          assert audio['codec_name']=='aac',result
+          assert abs(float(result['format']['duration'])-8)<.1,result
+          subprocess.run(['ffmpeg','-v','error','-i',str(movie),'-f','null','-'],check=True)
+          print('P23 SYNTHETIC VIDEO PASSED',movie.stat().st_size,'bytes')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinema-p23-temporal-synthetic-proof
+          path: studio-cinema/p23/results/proof/
+          if-no-files-found: error
+          retention-days: 3
