@@ -38,3 +38,10 @@ Le panneau avancé propose désormais « Vérifier la stabilité · 3 essais syn
 ## NOVA 0.27 — interruptions Safari et résultats tardifs
 
 Le banc local exige maintenant que toute annulation (y compris la réception tardive du troisième résultat d'une série) soit classée comme **abstention**, jamais « trois succès ». Le rapport de stabilité JSON est limité à des codes prédéfinis, sans champs libres. Le laboratoire vérifie le signal d'annulation avant le probe MOV, après les étapes attendues et avant de retourner un MP4 réussi ; l'interface restaure les commandes et indique l'interruption. Un **nouveau test Playwright en Chromium et WebKit Linux** simule `pagehide` tandis qu'un export synthétique différé finit par annoncer un succès : aucun MP4 ni JSON ne doit devenir téléchargeable. Cette simulation ne mesure pas les processus suspendus ou la mémoire iPhone et ne remplace pas un véritable essai Safari physique.
+
+
+## NOVA 0.28 — reçu local d'interruption, uniquement si la page survit
+
+Quand un **test volontaire déjà commencé** est interrompu par l'utilisateur, un `pagehide` ou le passage de la page en arrière-plan, le laboratoire peut afficher un lien **« Enregistrer le reçu local d'interruption »**. Ce fichier JSON contient seulement un motif technique de trois valeurs possibles (`user`, `pagehide`, `visibility-hidden`), le type d'essai, sa durée approximative et des avertissements ; **aucune vidéo, nom, PTS, donnée GPS ou identifiant d'appareil**. Il n'est pas téléchargé automatiquement et aucun MP4/rapport de réussite tardif n'est proposé. Une fermeture réelle de Safari peut détruire la page avant que le reçu soit accessible : **absence de reçu ne prouve pas absence d'interruption**, et sa présence ne prouve ni la suspension de l'iPhone ni la libération de RAM native.
+
+Le rapport principal de diagnostic Safari utilise en outre une **liste blanche stricte** à tous les niveaux (environnement, source, couleur, étapes, sortie, codes de refus). Les clés libres d'un fichier ou d'une app connectée ne sont jamais recopiées dans le JSON. Le module n'envoie rien sur le réseau et demeure disponible uniquement dans le prototype isolé.

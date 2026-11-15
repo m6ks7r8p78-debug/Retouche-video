@@ -9,21 +9,24 @@ const run=$("iphoneBenchRun"),demo=$("iphoneBenchSynthetic"),status=$("iphoneBen
  adviceText=$("iphoneBenchAdvice"),
  json=$("iphoneBenchJson"),video=$("iphoneBenchMp4"),panel=$("iphoneBenchPanel"),
  stability=$("iphoneBenchStabilityRun"),stabilityStatus=$("iphoneBenchStabilityStatus"),
- stabilityJson=$("iphoneBenchStabilityJson");
+ stabilityJson=$("iphoneBenchStabilityJson"),
+ interruptionJson=$("iphoneBenchInterruptionJson");
 if(!run||!status||!json||!video||!panel)return;
 let file=null,generation=0,controller=null,urls=[];
+let activeWorkflow=null,activeSourceKind=null,activeStarted=null;
 const runLabel="Tester Safari sur cette vidéo";
 const demoLabel="Tester Safari sans vidéo personnelle";
 function clearURLs(){
  for(const url of urls)URL.revokeObjectURL(url);
  urls=[];
- for(const link of [json,video,stabilityJson].filter(Boolean)){
+ for(const link of [json,video,stabilityJson,interruptionJson].filter(Boolean)){
   link.hidden=true;link.removeAttribute("href")
  }
 }
 function reset(){
  generation++;
  controller?.abort();controller=null;
+ activeWorkflow=null;activeSourceKind=null;activeStarted=null;
  file=null;clearURLs();run.disabled=true;
  if(adviceText){adviceText.textContent="";adviceText.hidden=true}
  if(demo){demo.disabled=false;demo.textContent=demoLabel}
@@ -43,13 +46,27 @@ function linkBlob(blob,label,element){
  const url=URL.createObjectURL(blob);
  urls.push(url);element.href=url;element.download=label;element.hidden=false;
 }
-window.addEventListener("pagehide",()=>controller?.abort());
+function cancelActive(trigger){
+ if(!controller||controller.signal.aborted)return;
+ controller.abort();
+ // Le reçu est une preuve d'annulation observée DANS CE DOCUMENT,
+ // jamais une preuve de libération RAM iOS ni une collecte automatique.
+ if(interruptionJson&&activeWorkflow){
+  const receipt=NOVA_IPHONE_INTERRUPTION.create({
+   trigger,sourceKind:activeSourceKind,workflow:activeWorkflow,
+   elapsedMs:activeStarted===null?null:performance.now()-activeStarted
+  });
+  linkBlob(new Blob([NOVA_IPHONE_INTERRUPTION.serialize(receipt)],
+   {type:"application/json"}),"NOVA_028_interruption_locale.json",interruptionJson);
+ }
+}
+window.addEventListener("pagehide",()=>cancelActive("pagehide"));
 document.addEventListener("visibilitychange",()=>{
- if(document.hidden)controller?.abort();
+ if(document.hidden)cancelActive("visibility-hidden");
 });
 async function execute(selectFile,button,synthetic){
  if(controller){
-  controller.abort();button.disabled=true;
+  cancelActive("user");button.disabled=true;
   status.textContent="Annulation du diagnostic local…";
   return;
  }
@@ -60,6 +77,9 @@ async function execute(selectFile,button,synthetic){
  if(stabilityStatus)stabilityStatus.textContent="";
  const myGeneration=generation,ctrl=new AbortController();
  controller=ctrl;
+ activeWorkflow="single-export";
+ activeSourceKind=synthetic?"synthetic-generated":"local-user-file";
+ activeStarted=performance.now();
  run.disabled=button!==run;
  if(demo)demo.disabled=button!==demo;
  button.textContent="Annuler le test";
@@ -112,6 +132,7 @@ async function execute(selectFile,button,synthetic){
    if(ctrl.signal.aborted&&myGeneration===generation)
     status.textContent="Diagnostic annulé ou interrompu par Safari. Aucun nouvel export.";
    controller=null;
+   activeWorkflow=null;activeSourceKind=null;activeStarted=null;
    run.textContent=runLabel;run.disabled=!file;
    if(demo){demo.textContent=demoLabel;demo.disabled=false}
    if(stability)stability.disabled=false;
@@ -128,7 +149,7 @@ function syntheticMedia(signal){
 }
 async function repeatSynthetic(){
  if(controller){
-  controller.abort();
+  cancelActive("user");
   if(stabilityStatus)stabilityStatus.textContent="Annulation demandée.";
   return;
  }
@@ -136,6 +157,8 @@ async function repeatSynthetic(){
  if(adviceText){adviceText.textContent="";adviceText.hidden=true}
  const activeGeneration=generation,ctrl=new AbortController();
  controller=ctrl;
+ activeWorkflow="three-synthetic-runs";activeSourceKind="synthetic-generated";
+ activeStarted=performance.now();
  run.disabled=true;if(demo)demo.disabled=true;
  stability.textContent="Annuler les trois essais";
  if(stabilityStatus)stabilityStatus.textContent="Chargement du clip de test synthétique local…";
@@ -168,6 +191,7 @@ async function repeatSynthetic(){
    if(ctrl.signal.aborted&&activeGeneration===generation&&stabilityStatus)
     stabilityStatus.textContent="Série annulée ou interrompue par Safari : aucun bilan de réussite.";
    controller=null;run.disabled=!file;
+   activeWorkflow=null;activeSourceKind=null;activeStarted=null;
    if(demo)demo.disabled=false;
    stability.textContent="Vérifier la stabilité · 3 essais synthétiques";
   }
