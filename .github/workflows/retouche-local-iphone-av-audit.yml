@@ -1,0 +1,58 @@
+name: RetoucheProAI — Local iPhone AV Metadata Audit (experimental)
+on:
+  push:
+    branches:
+      - lab-smallmotion-iphone-av-audit-v1
+    paths:
+      - 'research/preprod/**'
+      - 'index.html'
+      - 'sw.js'
+      - '.github/workflows/retouche-local-iphone-av-audit.yml'
+  pull_request:
+    paths:
+      - 'research/preprod/**'
+      - 'index.html'
+      - 'sw.js'
+      - '.github/workflows/retouche-local-iphone-av-audit.yml'
+jobs:
+  local-private-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify production-grade full-manifest PWA fingerprint
+        run: |
+          node tests/sw.test.mjs --maj
+          git diff --exit-code -- sw.js
+          node tests/sw.test.mjs
+          python research/preprod/tests/test_av_fidelity_wiring.py
+      - name: Ensure legal free CPU synthetic tooling
+        run: |
+          python -m pip install playwright
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
+          if ! command -v chromium >/dev/null && ! command -v google-chrome >/dev/null && ! command -v chromium-browser >/dev/null; then
+            python -m playwright install --with-deps chromium
+          fi
+      - name: MP4 atom parser — real AAC priming, truncation, file privacy
+        run: node research/preprod/tests/test_av_fidelity_local.cjs
+      - name: Browser on actual RetoucheProAI — import and compare MP4s in 2 viewports
+        run: python research/preprod/tests/test_av_fidelity_browser.py
+      - name: Preview ZIP builder PWA offline parity
+        run: python research/preprod/tests/test_preview_bundle.py
+      - name: Upload sanitized synthetic-only evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: retouche-av-audit-local-synthetic
+          path: |
+            research/preprod/results/av_audit_browser.json
+            research/preprod/results/preview_offline_smoke.json
+          if-no-files-found: error
