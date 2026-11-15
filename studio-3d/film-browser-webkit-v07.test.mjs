@@ -67,7 +67,7 @@ async function run(page,label,origin){
    page.waitForEvent('download'),
    page.locator('#saveDiagnostic').click()
  ]);
- assert.match(diagnosticDownload.suggestedFilename(),/diagnostic-v06\.json$/);
+ assert.match(diagnosticDownload.suggestedFilename(),/diagnostic-v07\.json$/);
  const diagnostic=JSON.parse(await readFile(await diagnosticDownload.path(),'utf8'));
  assert.equal(diagnostic.schema,'retoucheproai.film-studio.device-diagnostic.v0.6');
  assert.equal(diagnostic.validation.physicalIPhoneCertified,false);
