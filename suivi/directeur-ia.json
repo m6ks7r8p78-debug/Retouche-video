@@ -74,7 +74,8 @@
       "outils/rne/rne22/evaluate_locked.py",
       "tests/test_rne22_markerless.py",
       "RETOUCHE_NEURAL_ENGINE_22.md",
-      ".github/workflows/rne-cpu.yml"
+      ".github/workflows/rne-cpu.yml",
+      "outils/rne/rne22/export_synthetic_glb.py"
     ],
     "preuve_locale": "43 tests synthetiques + validation dans arborescence CI, images synthetiques uniquement",
     "statut_ci": "a_verifier",
@@ -2253,9 +2254,10 @@
       "outils/rne/rne22/evaluate_locked.py",
       "tests/test_rne22_markerless.py",
       "RETOUCHE_NEURAL_ENGINE_22.md",
-      ".github/workflows/rne-cpu.yml"
+      ".github/workflows/rne-cpu.yml",
+      "outils/rne/rne22/export_synthetic_glb.py"
     ],
-    "private_archive": "RetoucheProAI_RNE22_MASKFIT_Reconstruction_Sans_Reperes_Synthetique.zip",
+    "private_archive": "RetoucheProAI_RNE22_MASKFIT_Laboratoire_Final.zip",
     "privacy": {
       "historical_157_used": false,
       "recent_41_used": false,
@@ -2266,6 +2268,8 @@
     "website_deployed": false,
     "main_merged": false,
     "iphone_safari_validated": false,
-    "neural_model_trained": false
+    "neural_model_trained": false,
+    "archive_files": 17,
+    "synthetic_glb_pose_files": 3
   }
 }
