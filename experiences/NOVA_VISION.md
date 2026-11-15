@@ -404,3 +404,38 @@ Le test ajoute des cas unitaires `elst` v1 à un et deux segments, avec/sans pri
 ### Poursuite prioritaire
 
 Éprouver sur appareil iPhone physique le MP4 progressif avec edits v0/v1 et les délais AAC ; ensuite isoler les cas source HEVC orienté/VFR et les pistes multiples, sans étendre les formats non testés ni sacrifier l'audio.
+
+
+## NOVA 0.14 — véritable banc WebKit Linux, orientation portrait et source HEVC (15 novembre 2026)
+
+### Deuxième moteur de navigateur réellement mis en place
+
+La PR expérimentale possédait déjà des tests Chromium, mais **pas de tests WebKit**. Le workflow `.github/workflows/nova-check.yml` exécute maintenant **trois jobs obligatoires** : `unitaires`, `navigateur` (Chromium) et `webkit`. Le job WebKit installe librement et localement Playwright WebKit et ses dépendances dans GitHub Actions ; aucun compte GPU payant ni publication de média n'est nécessaire.
+
+- `tests/nova-webkit.test.mjs` vérifie une **photo importée localement** sur viewport iPhone 390 px : traitement réel, PNG exporté, aucune requête vers un domaine externe, absence d'erreurs JS et aucun débordement horizontal.
+- Le **premier vrai run WebKit** a découvert **89 px de défilement horizontal** malgré une interface invisible sur l'écran. Cause confirmée : le champ `input[type=file]` avait une largeur CSS de 1 px, mais WebKit calculait encore ses 107 px de largeur de contenu interne à droite du viewport. `experiences/nova.html` place et clippe maintenant ce champ et coupe son débordement interne, tout en conservant la commande d'import accessible via son `label`. La correction passe sous WebKit sans cacher artificiellement le défilement de la page entière.
+- Le banc WebKit importe un **vrai MP4 H.264/AAC** de FFmpeg, analyse ses pistes locales, teste les API WebCodecs, puis **effectue un export audiovisuel NOVA réel**. `ffprobe` confirme les flux vidéo `h264` et audio `aac` dans le MP4 téléchargé. Une assertion additionnelle compare les **empreintes SHA-256 des paquets AAC** source et sortie pour démontrer la copie bit-identique ; sa CI doit être vérifiée sur le HEAD correspondant, sans supposer sa réussite.
+- Les premiers résultats WebKit/Linux indiquent `VideoDecoder` et `VideoEncoder` présents, `canPlayType` indiquant « probably » pour H.264/AAC et HEVC, mais **`canPlayType` seul ne prouve pas la décodabilité**. Le test d'export lui-même constitue la preuve utile.
+
+### Garde-fou pour les orientations MP4 iPhone
+
+`experiences/nova-demux.js` comprend maintenant `analyserOrientation(W,H,mt)`. Cette fonction refuse les matrices de piste `tkhd` présentant cisaillement, zoom, déformation, perspective, rotation non orthogonale, coordonnées non finies ou dimensions impossibles. Les **rotations de 0°, 90°, 180°, 270°**, et les réflexions orthogonales, sont conservées par une matrice de rendu exacte au pixel, avec normalisation des dimensions de présentation. La validation est non destructive : NOVA refuse les matrices non représentables au lieu d'étirer involontairement le sujet. `tests/nova-demux.test.mjs` protège ces cas et fait partie des unitaires CI.
+
+### Banc d'import HEVC + orientation 90°
+
+`tests/nova-hevc-browser.test.mjs` fabrique un **vrai MP4 H.265/HEVC** (FFmpeg `libx265`, AAC), puis modifie uniquement sa matrice `tkhd` pour exprimer une orientation portrait de 90° comme peut le faire une vidéo iPhone. Le lecteur `NOVA_DEMUX` reconstruit correctement les dimensions **160×90 codées → 90×160 présentées**, avec la transformation `[0,1,-1,0,90,0]`.
+
+**Constat limité de Chromium Linux :** `VideoDecoder.isConfigSupported` a répondu **false** pour la source HEVC générée ; NOVA a donc **refusé l'export**. Ce refus est le résultat correct : le banc ne prétend pas que le HEVC a été décodé ou exporté. Le test doit devenir un export HEVC réel sur une plateforme qui dispose du codec.
+
+### Exécution GitHub Actions et limites
+
+- **[Run 43690257054](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43690257054)** : 3 jobs success, **90/90 unitaires, 14/14 Chromium, 2/2 WebKit**, sans tests ignorés — premier banc multi-moteur vert et correction du viewport.
+- **[Run 43690410066](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43690410066)** : 3 jobs success, **90/90 unitaires, 15/15 Chromium (dont refus HEVC portrait contrôlé), 2/2 WebKit**.
+- **[Run 43690802104](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43690802104)** : 3 jobs success, **90/90 unitaires, 15/15 Chromium, 3/3 WebKit**, dont le vrai MP4 exporté avec pistes H.264 et AAC vérifiées par `ffprobe`. Le dernier test ajouté de comparaison des empreintes AAC est à revalider séparément sur son propre commit.
+- Le WebKit fourni par Playwright **n'est pas Safari officiel** ; sur Linux, les codecs disponibles diffèrent de ceux d'iOS et macOS. Voir [Playwright — Browsers](https://playwright.dev/docs/browsers) et [W3C — HEVC WebCodecs Registration](https://www.w3.org/TR/webcodecs-hevc-codec-registration/). Aucun essai matériel iPhone n'a été effectué.
+
+**Plafonds inchangés :** 12 secondes, 60 Mo de fichier, sortie côté long ≤640 px, 15 images/s, décodage source jusqu'au Full HD selon capacités. Aucun entraînement 3D, aucune restauration neuronale réelle ou test sur les 157 médias privés n'a été réalisé dans cette étape. La PR #3 reste en brouillon, aucune fusion ni déploiement sur `retoucheproai.com`.
+
+### Prochaine étape vérifiable
+
+Obtenir des mesures HEVC + rotation et AAC sur un environnement macOS Safari ou un iPhone physique, comparer le rendu pixel et la chronologie avant/après, et tester les cas 30/60 fps/VFR sans augmenter les plafonds avant certification mémoire/énergie et qualité.
