@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "indexedAt": "2026-11-15",
+  "repository": "m6ks7r8p78-debug/Retouche-video",
+  "coordinationBranch": "coordination-retoucheproai-v1",
+  "scope": "Index de coordination asynchrone; inventaire vérifié de branches/PR, pas audit du code ni validation de compatibilité",
+  "privacy": "public-metadata-only",
+  "integrationRule": "no-main-change-no-production-deploy-no-private-media",
+  "labs": [
+    {
+      "id": "nova",
+      "label": "NOVA / Safari / HEVC-AAC",
+      "branch": "chatgpt-studio-nova-v01",
+      "pr": 3,
+      "observation": "draft-pr-observed",
+      "interface": "Traitement vidéo local, export, codec, son, profils et essais iPhone",
+      "workBoundary": "experiences/nova-*; tests/nova-*; outils/nova-*",
+      "validationGap": "Safari physique iPhone non certifié par tests CI",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/3"
+      ]
+    },
+    {
+      "id": "smallmotion",
+      "label": "SmallMotion / PWA / budgets",
+      "branch": "preprod-retoucheproai-local-v1",
+      "pr": 28,
+      "observation": "draft-pr-observed",
+      "interface": "Mouvement consultatif local, limitations appareil, mise à jour PWA sans risques",
+      "workBoundary": "research/3d-* et composants SmallMotion et préproduction propres au labo",
+      "validationGap": "Préproduction non déployée; essai physique distinct requis",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/28"
+      ]
+    },
+    {
+      "id": "cinema-p20",
+      "label": "Cinema P20 / preuve temporelle",
+      "branch": "chatgpt-cinema-p20-temporal-evidence-20261115",
+      "pr": 32,
+      "observation": "draft-pr-observed",
+      "interface": "Comparaison des comportements P15 aux commandes P19; ne pas assimiler commande et observation",
+      "workBoundary": "research/cinema-* (à confirmer dans la PR)",
+      "validationGap": "Ne pas considérer 60 Hz comme mouvement réel mesuré",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/32"
+      ]
+    },
+    {
+      "id": "cinema-p21",
+      "label": "Cinema P21 / gestes",
+      "branch": "chatgpt-cinema-p21-gesture-layer-20261115",
+      "pr": null,
+      "observation": "branch-observed",
+      "interface": "Prototypes de gestes et interaction temporelle, séparés des observations certifiées",
+      "workBoundary": "Composants et bancs P21 sur sa propre branche",
+      "validationGap": "PR et résultats de tests non vérifiés dans cet index initial",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/tree/chatgpt-cinema-p21-gesture-layer-20261115"
+      ]
+    },
+    {
+      "id": "camera-3d",
+      "label": "3D / caméra / profondeur",
+      "branch": "lab-3d-v43-camera-evidence",
+      "pr": null,
+      "observation": "branch-observed",
+      "interface": "Données de caméra et profondeur expérimentales, reconstruction distincte de vérité terrain",
+      "workBoundary": "research/3d-camera-v43 et laboratoires 3D isolés",
+      "validationGap": "Aucune conclusion sur entraînement ou rendu final sans preuve",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/tree/lab-3d-v43-camera-evidence"
+      ]
+    },
+    {
+      "id": "director",
+      "label": "Directeur IA / arbitrage",
+      "branch": "chatgpt-ai-director-v01",
+      "pr": 1,
+      "observation": "branch-observed",
+      "interface": "Choix des moteurs, fidélité et qualité adaptative",
+      "workBoundary": "Expériences du directeur IA et contrats inter-modules",
+      "validationGap": "Vérifier l'état de PR #1 et les tests avant import",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/tree/chatgpt-ai-director-v01"
+      ]
+    },
+    {
+      "id": "design-aura",
+      "label": "AURA / interface et UX",
+      "branch": "design-aura-native-handoff-v1-20261115",
+      "pr": null,
+      "observation": "branch-observed",
+      "interface": "Interfaces tactiles et parcours grand public à un bouton; direction artistique",
+      "workBoundary": "Prototypes/branches design; pas de réécriture app.js publique sans PR d'intégration",
+      "validationGap": "Comparaison et intégration à l'app non présumées",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/tree/design-aura-native-handoff-v1-20261115"
+      ]
+    },
+    {
+      "id": "restauration",
+      "label": "Restauration / AR / visages",
+      "branch": "main",
+      "pr": null,
+      "observation": "main-observed",
+      "interface": "Restauration naturelle, filtres AR, visages, image et stabilité temporelle",
+      "workBoundary": "Registre F01-F31 et modules de production; expérimenter sur une nouvelle branche",
+      "validationGap": "Les niveaux de validation diffèrent par fonction dans REGISTRE_LIVRAISON_PERMANENT.md",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/blob/main/REGISTRE_LIVRAISON_PERMANENT.md"
+      ]
+    },
+    {
+      "id": "export-x",
+      "label": "Export X / médias",
+      "branch": "main",
+      "pr": null,
+      "observation": "main-observed",
+      "interface": "Préparation/optimisation locale des fichiers puis publication manuelle par l'utilisateur",
+      "workBoundary": "F21 (état à contrôler dans le registre permanent) et futurs tests de profils",
+      "validationGap": "Ne pas promettre une suppression de la compression appliquée par X",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/blob/main/REGISTRE_LIVRAISON_PERMANENT.md"
+      ]
+    }
+  ],
+  "proposedHandoffs": [
+    {
+      "from": "smallmotion",
+      "to": "nova",
+      "topic": "transmettre uniquement budgets appareil et constats de mouvement; aucune modification vidéo automatique",
+      "state": "proposal"
+    },
+    {
+      "from": "cinema-p20",
+      "to": "cinema-p21",
+      "topic": "contrat de traçabilité entre observation de geste et commande 60 Hz",
+      "state": "proposal"
+    },
+    {
+      "from": "camera-3d",
+      "to": "director",
+      "topic": "contrat de niveau de confiance profondeur/reconstruction, refus si incertitude",
+      "state": "proposal"
+    },
+    {
+      "from": "nova",
+      "to": "export-x",
+      "topic": "évaluation des profils d'export avec audit A/V et couleurs, sans publication directe",
+      "state": "proposal"
+    },
+    {
+      "from": "design-aura",
+      "to": "nova",
+      "topic": "exposer le pilote seulement derrière contrôle explicite dans une UI non intrusive",
+      "state": "proposal"
+    }
+  ],
+  "statusSemantics": {
+    "draft-pr-observed": "PR brouillon repérée, sans preuve implicite de tests",
+    "branch-observed": "branche repérée, sans preuve implicite de tests",
+    "main-observed": "présence en branche principale, vérifier statut fonctionnel dans registre et code"
+  }
+}
