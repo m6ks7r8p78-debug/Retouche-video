@@ -66,6 +66,6 @@ function analyze(a,b){
    candidates:regions.slice(0,4),globalMotionPx:[globalDx,globalDy],matched:tiles.length,
    confidence:'non calibrée',limitations:'Essai local 2D : pas de segmentation, identité, contact, profondeur 3D ni preuve de mouvement indépendant'};
 }
-root.RetoucheLocalMotion={analyze};
+root.RetoucheLocalMotion={analyze,build:'smallmotion-pwa-bundle-v1'};
 if(typeof module!=='undefined'&&module.exports)module.exports=root.RetoucheLocalMotion;
 })(typeof globalThis!=='undefined'?globalThis:this);
