@@ -19,7 +19,7 @@ const messages=Object.freeze({
  "container-unreadable":"MOV/MP4 non analysable par le parseur local expérimental.",
  "unsupported-video-codec":"Codec vidéo non reconnu par ce laboratoire. La source reste intacte ; aucun export automatique.",
  "native-hd-unavailable":"La source H.264 est reconnue, mais le moteur HD natif ne peut pas encore confirmer codec, couleurs, présentation et audio sur cet appareil. Ce n’est pas un refus du format par l’application finale.",
- "hevc-profile-or-timeline-incompatible":"Profil HEVC, BT.709, durée, cadence, présentation ou PTS incompatibles avec les limites du pilote.",
+ "hevc-profile-or-timeline-incompatible":"Export non autorisé : le pilote HD natif ne peut pas certifier la source. Les plafonds ci-dessous concernent seulement l’ancien moteur HEVC WebAssembly.",
  "resource-budget":"Dimensions, durée ou budget mémoire estimé hors limites du pilote.",
  "audio-not-preservable":"Copie de la piste AAC d'origine non vérifiable ; aucun export sans son automatique.",
  "analysis-unavailable":"Un module de vérification manque ou a échoué ; aucun résultat favorable.",
@@ -29,13 +29,33 @@ const messages=Object.freeze({
 // bornés. Les autres critères restent non vérifiés en cas de refus précoce.
 function details(report){
  const reasons=Array.isArray(report?.blockers)?report.blockers:[];
+ const c=report?.colorEvidence;
+ const colorDetails=Object.freeze({
+  "absent-colr":"Aucune métadonnée couleur colr vérifiable dans le MOV/MP4.",
+  "unknown-colr":"Profil colr inconnu : conversion fidèle impossible à certifier.",
+  "hdr-pq-hlg":"Transfert HDR PQ ou HLG indiqué : une conversion HDR vers SDR nécessite un traitement dédié.",
+  "wide-gamut-primaries":"Primaires étendues P3 ou BT.2020 signalées : sortie SDR BT.709 non équivalente.",
+  "full-range":"Plage de niveaux complète : la sortie actuelle exige une plage limitée.",
+  "unspecified-tags":"Une ou plusieurs valeurs couleur sont absentes ou marquées « non spécifié ».",
+  "non-bt709-tags":"Le conteneur signale une colorimétrie autre que BT.709.",
+  "hevc-over8bit":"Le SPS HEVC annonce une profondeur supérieure à 8 bits.",
+  "bt709-tags":"Le conteneur annonce BT.709. Ce n'est pas une preuve suffisante du contrat HD complet."
+ });
  const src=report?.source||{},limits=report?.pilotLimits||{};
  const items=[];
+ if(c&&colorDetails[c.classification]){
+  items.push("Diagnostic couleur local : "+colorDetails[c.classification]);
+  const v=[c.primaries,c.transfer,c.matrix];
+  if(v.every(x=>Number.isSafeInteger(x)))items.push("Codes normalisés colr (P/T/M) : "+v.join("/")+".");
+  if(c.lumaBits!=null)items.push("Profondeur luminance HEVC : "+c.lumaBits+" bits.");
+  if(c.hevcSps==="verified")items.push("SPS/VUI HEVC vérifié, cohérent avec le conteneur.");
+  else if(c.hevcSps==="not-confirmed")items.push("SPS/VUI HEVC non confirmé ; aucune conversion forcée.");
+ }
  // Motif technique strictement catégorisé; jamais d'exception native brute
  // (susceptible de contenir un chemin, une information privée ou un codec).
  const nativeDetail=Object.freeze({
   "module-missing":"Le module de traitement HD natif n'est pas chargé.",
-  "source-contract-unverified":"Le format source, la couleur, l'orientation ou les horodatages ne satisfont pas le contrat HD vérifiable.",
+  "source-contract-unverified":"Le moteur HD natif a refusé le contrat source (couleur, orientation, horodatages ou budget). Le diagnostic couleur ci-dessous ne garantit pas que les autres points sont compatibles.",
   "decoder-unavailable":"Le décodeur natif pour ce codec n'est pas confirmé sur cet appareil.",
   "encoder-unavailable":"L'encodeur H.264 natif ne peut pas être confirmé sur cet appareil.",
   "aac-analysis-unavailable":"Le précontrôle de la piste audio AAC est indisponible ou a échoué.",
@@ -45,13 +65,13 @@ function details(report){
  if(reasons.includes("coded-pixels-over-limit")){
   const w=src.width,h=src.height;
   const dims=Number.isSafeInteger(w)&&Number.isSafeInteger(h)?w+" × "+h+" ; ":"";
-  items.push("Résolution trop élevée : "+dims+
-   "plafond de calcul du moteur HEVC = "+(limits.codedPixelAreaMax||230400)+
-   " pixels codés (640 × 360).");
+  items.push("Ancien moteur WebAssembly uniquement : "+dims+
+   "plafond historique = "+(limits.codedPixelAreaMax||230400)+
+   " pixels codés (640 × 360), pas le plafond du HD natif.");
  }
  if(reasons.includes("source-frames-over-limit"))
-  items.push("Trop d'images : "+(Number.isSafeInteger(src.frames)?src.frames+" ; ":"")+
-   "plafond actuel = "+(limits.sourceFramesMax||90)+".");
+  items.push("Ancien moteur WebAssembly uniquement : "+(Number.isSafeInteger(src.frames)?src.frames+" images ; ":"")+
+   "plafond historique = "+(limits.sourceFramesMax||90)+", pas celui du HD natif.");
  if(reasons.includes("duration-over-limit"))
   items.push("Durée supérieure à "+((limits.maxDurationMs||12000)/1000)+" secondes.");
  if(reasons.includes("coded-dimensions-not-even"))
@@ -60,8 +80,8 @@ function details(report){
     report.advisories.includes("source-rate-above-output-rate")){
   const fps=typeof src.estimatedSourceFps==="number"&&
    Number.isFinite(src.estimatedSourceFps)?src.estimatedSourceFps+" images/s environ":"cadence supérieure";
-  items.push("Attention à la fidélité du mouvement : source estimée à "+fps+
-   ", mais le pilote d'export est limité à 15 images/s.");
+  items.push("Ancien moteur WebAssembly : "+fps+
+   " contre sa limite historique de 15 images/s. Le moteur HD natif ne doit pas réduire la cadence.");
  }
  if(reasons.length)
   items.push("Autres vérifications non concluantes ou non exécutées : notamment la couleur, les PTS et l'audio. Aucun export automatique.");
