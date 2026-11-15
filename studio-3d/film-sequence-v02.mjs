@@ -208,7 +208,7 @@ function buildSyntheticFilmSequence(request, generator) {
   return {
     schema: 'retoucheproai.film-motion-preview.v0.2',
     status: 'apercu_partiel_glb_anime',
-    project, glb: result.bytes, timeline, duration,
+    project, glb: result.bytes, internalModel: model, timeline, duration,
     animatedActions: selected, unanimatedActions: missingActions,
     sceneObjects: ['chaise', 'table', 'tasse'],
     synthetic: true, photorealistic: false, renderedFilm: false,
