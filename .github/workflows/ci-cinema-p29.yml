@@ -1,0 +1,117 @@
+name: Cinema P29 — mobile preview from verified synthetic P28 evidence
+on:
+  push:
+    paths:
+      - 'studio-cinema/p29/**'
+      - '.github/workflows/ci-cinema-p29.yml'
+  pull_request:
+    paths:
+      - 'studio-cinema/p29/**'
+      - '.github/workflows/ci-cinema-p29.yml'
+  workflow_dispatch:
+jobs:
+  synthetic-mobile-ux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read-only actual NOVA revision for P28 regression
+        uses: actions/checkout@v4
+        with:
+          ref: 982b0d545cf85ca53d429a69f69c71b0d2430286
+          path: crosslab/nova
+          persist-credentials: false
+      - name: Read-only actual Director revision for P28 regression
+        uses: actions/checkout@v4
+        with:
+          ref: 79439a5a208248b63691d061b70494dd7711de5f
+          path: crosslab/director
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install free processing and browser tools
+        run: |
+          python -m pip install --disable-pip-version-check 'numpy<3' 'opencv-python-headless>=4.9,<5' playwright
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+          ffmpeg -hide_banner -encoders | grep 'libx264'
+          ffmpeg -hide_banner -encoders | grep 'ffv1'
+          ffmpeg -hide_banner -encoders | grep -E '(^| )aac( |$)'
+      - name: Verify new P29 evidence boundary and HTML safety rules
+        run: |
+          node --check studio-cinema/p29/src/p29_build.cjs
+          node --check studio-cinema/p29/preview/preview.js
+          node --test studio-cinema/p29/tests/test_p29_contracts.cjs
+      - name: Generate real procedural P19-P21 source poses
+        run: node studio-cinema/p22/src/build_p22_controls.cjs studio-cinema/p22/results/controls.json
+      - name: Re-run P15-P27 regression and contract tests
+        run: |
+          node --test studio-cinema/p27/tests/test_p27_advisory.cjs
+          node --test studio-cinema/p21/tests/test_p21.cjs studio-cinema/p20/tests/test_p20.cjs studio-cinema/p19/tests/test_p19.cjs studio-cinema/p15/tests/test_behavior_ontology.cjs
+          python -m unittest discover -s studio-cinema/p22/tests -p 'test_p22_visual.py' -v
+          python -m unittest discover -s studio-cinema/p23/tests -p 'test_p23_temporal.py' -v
+          python -m unittest discover -s studio-cinema/p24/tests -p 'test_p24_unit.py' -v
+          python -m unittest discover -s studio-cinema/p24/tests -p 'test_p24_browser_static.py' -v
+          python -m unittest discover -s studio-cinema/p25/tests -p 'test_p25_contracts.py' -v
+          python -m unittest discover -s studio-cinema/p26/tests -p 'test_p26_contracts.py' -v
+      - name: Rebuild authentic P25 first-generation H264 synthetic proof
+        run: |
+          python studio-cinema/p25/src/p25_crf_matrix.py             --data studio-cinema/p22/results/controls.json             --out studio-cinema/p25/results/proof
+      - name: Rebuild authentic P26 nine-pair second-generation H264 proof
+        run: |
+          python studio-cinema/p26/src/p26_recompression.py             --data studio-cinema/p22/results/controls.json             --source-dir studio-cinema/p25/results/proof             --out studio-cinema/p26/results/proof
+      - name: Re-run P28 contract and real NOVA/Director API regression
+        run: |
+          node --test studio-cinema/p28/tests/test_p28_readonly.cjs
+          node --test studio-cinema/p28/tests/test_p28_real_contracts.cjs
+      - name: Rebuild checked P28 anonymized handoff
+        run: |
+          node studio-cinema/p28/src/p28_readonly_bridge.cjs             studio-cinema/p25/results/proof/p25_crf_matrix_synthetic_report.json             studio-cinema/p26/results/proof/p26_second_generation_synthetic_report.json             studio-cinema/p28/results/proof
+      - name: Generate P29 actual standalone mobile preview and verify no export permissions
+        run: |
+          node studio-cinema/p29/src/p29_build.cjs             studio-cinema/p28/results/proof/p28_readonly_handoff.json             studio-cinema/p29/results/preview
+          node - <<'JS'
+          const fs=require('node:fs');
+          const dir='studio-cinema/p29/results/preview/';
+          const r=JSON.parse(fs.readFileSync(dir+'p29_synthetic_preview_report.json','utf8'));
+          if(r.proof.schema!=='retouche-cinema-p29-synthetic-mobile-preview-v1')throw Error('Unverified P29');
+          if(r.proof.benchmark_cases!==9||r.proof.cases_color_error_increase!==9||r.proof.cases_file_larger_no_gain!==3)throw Error('Unexpected evidence');
+          if(r.proof.user_video_analyzed!==false||r.proof.may_modify_or_export_video!==false||r.proof.recommendation!==null)throw Error('Unwanted app action');
+          for(const x of ['index.html','preview.js','preview.css','preview-data.js']){
+            if(!fs.statSync(dir+x).size||fs.statSync(dir+x).size>100_000)throw Error('Unsafe preview file');
+          }
+          console.log('P29 generated synthetic-only static preview: 9 experiments, 3 size warnings, zero exported media');
+          JS
+      - name: Install headless Chromium and WebKit Linux test engines
+        run: python -m playwright install --with-deps chromium webkit
+      - name: Verify 390px and 320px mobile UX, safe click, corrupted-proof refusal and zero external requests
+        run: |
+          python studio-cinema/p29/tests/p29_browser_smoke.py             --preview studio-cinema/p29/results/preview             --out studio-cinema/p29/results/browser
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('studio-cinema/p29/results/browser/p29_browser_report.json').read_text())
+          assert r['status']=='synthetic_browser_layout_and_interaction_measured'
+          assert len(r['results'])==2
+          assert r['tests_exercised']==6
+          assert all(x['corrupt_evidence_refused'] and x['external_request_count']==0
+                     and x['javascript_error_count']==0 for x in r['results'])
+          assert r['no_actual_iphone_safari_test']
+          print('P29 preview verified only on Linux desktop Chromium + WebKit test engines')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cinema-p29-mobile-ux-synthetic-preview-and-evidence
+          path: |
+            studio-cinema/p29/results/preview/
+            studio-cinema/p29/results/browser/
+          if-no-files-found: error
+          retention-days: 3
