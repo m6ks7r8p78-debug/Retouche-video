@@ -208,7 +208,10 @@ async function planifier(file,{durationSeconds,signal}={}){
  if(parsed.editMediaTime>0&&parsed.rollDistance==null)
   fail("priming AAC non représentable sans groupes roll");
  return Object.freeze({...parsed,packets,outputEnd,
-   outputEditSeconds:durationSeconds,editStartUs,
+   // Ne jamais allonger la portion audible au-delà de l'edit-list originale.
+   // Une fin sonore plus courte de <=30ms reste plus fidèle qu'un son inventé.
+   outputEditSeconds:parsed.editDurationSeconds==null?durationSeconds:
+     Math.min(durationSeconds,parsed.editDurationSeconds),editStartUs,
    mode:"aac-copy",qualification:parsed.editMediaTime>0?
      "AAC-LC original copié avec préchargement roll et elst conservés":
      "AAC-LC original copié sans réencodage"});
