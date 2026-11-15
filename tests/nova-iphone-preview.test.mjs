@@ -22,6 +22,8 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.ok(names.includes("experiences/nova-iphone-report.js"));
   assert.ok(names.includes("experiences/nova-smallmotion-bridge.js"));
   assert.ok(names.includes("experiences/nova-smallmotion-ui.js"));
+  assert.ok(names.includes("experiences/nova-real-preflight.js"));
+  assert.ok(names.includes("experiences/nova-real-preflight-ui.js"));
   assert.ok(names.includes("experiences/vendor/smallmotion/smallmotion-local.js"));
   assert.ok(names.includes("experiences/vendor/hevc/wasm/hevc-decode.wasm"));
   assert.ok(names.includes("experiences/vendor/hevc/LICENSE.txt"));
@@ -73,6 +75,8 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.match(html,/Tester Safari sans vidéo personnelle/);
   assert.match(html,/SmallMotion · mouvement local/);
   assert.match(html,/Tester SmallMotion sans vidéo personnelle/);
+  assert.match(html,/Précontrôle d\x27une vidéo réelle/);
+  assert.match(html,/nova-real-preflight.js/);
   assert.match(html,/nova-smallmotion-bridge.js/);
   assert.ok(html.includes('src="./vendor/smallmotion/smallmotion-local.js"'));
   assert.match(html,/nova-iphone-report.js/);
