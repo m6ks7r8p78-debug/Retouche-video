@@ -47,7 +47,8 @@ test("NOVA AV : moov en fin de fichier et priming AAC simple",async()=>{
  const a=await AV.analyser(movie({after:true,tracks:[track({edit:[[1200,1024]]})]}));
  assert.equal(a.trimUs,21333);
  assert.equal(a.delayUs,0);
- assert.equal(a.presentationEndUs,1258667);
+ assert.equal(a.presentationEndUs,1200000);
+ assert.equal(a.editSegmentUs,1200000);
  assert.ok(AV.verifier(a,{durationSeconds:1.2}).aligned);
 });
 test("NOVA AV : édition vide initiale de 320 ms détectée et refusée",async()=>{
@@ -80,4 +81,14 @@ test("NOVA AV : refuse les edit lists multiples sans synchronisation prouvée",a
 test("NOVA AV : rejette les fichiers tronqués ou sans moov",async()=>{
  await assert.rejects(AV.analyser(new Blob([Buffer.from([0,0,0,99,109,111,111,118])])),/malformée/);
  await assert.rejects(AV.analyser(new Blob([box("mdat",Buffer.alloc(4))])),/introuvable/);
+});
+
+test("NOVA AV : l'elst raccourcit la durée réellement présentable",async()=>{
+ const a=await AV.analyser(movie({tracks:[track({edit:[[300,1024]]})]}));
+ assert.equal(a.durationUs,1280000,"stts couvre plus d'une seconde");
+ assert.equal(a.presentationEndUs,300000,"elst ne présente que 300 ms");
+ assert.throws(()=>AV.verifier(a,{durationSeconds:1.2}),/trop précoce/);
+});
+test("NOVA AV : interdit les edit lists référençant une fin sonore inexistante",async()=>{
+ await assert.rejects(AV.analyser(movie({tracks:[track({edit:[[1400,1024]]})]})),/dépassant/);
 });
