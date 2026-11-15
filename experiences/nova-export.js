@@ -135,7 +135,7 @@ function transformateur(moteur,arbitre){
  return {traiter,fermer};
 }
 async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=false,onProgress=()=>{},signal,
-  maxEncodedBytes}={}){
+  maxEncodedBytes,storageMode="memory"}={}){
  if(!file||typeof file.arrayBuffer!=="function"||!moteur?.restituer||!arbitre?.arbitrer)throw new TypeError("Fichier et moteurs NOVA requis");
  if(typeof VideoEncoder==="undefined"||typeof VideoFrame==="undefined"||typeof Mp4Muxer==="undefined")
    throw new Error("WebCodecs ou muxer MP4 indisponible sur cet appareil");
@@ -173,6 +173,12 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  const windowedH264=nativeH264Color709&&
    Number.isSafeInteger(probe?.durationUs)&&probe.durationUs>12000000&&
    probe.durationUs<=24000000;
+ // Opt-in local OPFS, aucun repli silencieux vers un export en mémoire.
+ if(!["memory","opfs"].includes(storageMode))throw new Error("Mode de stockage MP4 inconnu");
+ const useOpfs=storageMode==="opfs";
+ if(useOpfs&&(!windowedH264||allowSilent||allowApproximate||
+    !globalThis.NOVA_OPFS_STREAM?.supported()))
+  throw new Error("Écriture OPFS réservée au H.264 SDR 12–24 s vérifié avec copie AAC");
  // Garde-fou optionnel interne : l'interface ne peut pas relever la limite
  // de 24 Mio de payloads + MP4 final in-memory.
  const exportMeter=useHevcWasm||windowedH264?
@@ -186,6 +192,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  const url=media?URL.createObjectURL(file):null;
  const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d",{willReadFrequently:true});
  let videoEnc=null,audioEnc=null,trans=null,sourcePTS=null,error=null,sourceMode="pts";
+ let opfsSink=null,outputCommitted=false;
  try{
   if(media){media.src=url;await pret(media)}
   const hevcMeta=useHevcWasm?NOVA_HEVC_RENDER.metadata(probe):null;
@@ -284,9 +291,15 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   }
   if(signal?.aborted)throw new Error("Export annulé");
   exportMeter?.stage("video");
-  const target=new Mp4Muxer.ArrayBufferTarget();
+  if(useOpfs){
+   if(!audioCopy)throw new Error("Écriture OPFS refusée : copie AAC intégrale impossible");
+   opfsSink=await NOVA_OPFS_STREAM.create({signal});
+   onProgress({stage:"storage",mode:"opfs-local-stream"});
+  }
+  const target=opfsSink?.target??new Mp4Muxer.ArrayBufferTarget();
   const audioConfig=audioCopy?{sampleRate:audioCopy.sampleRate,numberOfChannels:audioCopy.channels}:audio?.cfg;
-  const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",video:{codec:"avc",width:settings.width,height:settings.height,
+  const muxer=new Mp4Muxer.Muxer({target,fastStart:useOpfs?false:"in-memory",
+   video:{codec:"avc",width:settings.width,height:settings.height,
     ...(verifiedColorPath?{colorMetadata:"bt709-limited"}:{})},
     ...(audioConfig?{audio:{codec:"aac",sampleRate:audioConfig.sampleRate,numberOfChannels:audioConfig.numberOfChannels,
       // Autorise le seul elst AAC original validé sur la durée 12-24 s.
@@ -352,6 +365,11 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     bufferBytes:processed.data.byteLength+settings.width*settings.height*3/2});
    if(videoEnc.encodeQueueSize>5)await NOVA_GUARD.attendreEncodeur(videoEnc,{maxQueue:3,signal});
    if(error)throw error;
+   if(opfsSink&&(entry.index+1)%30===0){
+    await videoEnc.flush();
+    if(error)throw error;
+    await opfsSink.drain();
+   }
    onProgress({stage:"video",progress:(entry.index+1)/settings.frames,
      frame:entry.index+1,total:settings.frames});
   }
