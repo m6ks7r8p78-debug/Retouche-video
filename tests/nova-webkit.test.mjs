@@ -75,7 +75,16 @@ test("NOVA WebKit : photo locale, rendu, export PNG et aucun transfert externe",
         right:Math.round(r.right),left:Math.round(r.left),width:Math.round(r.width),
         scroll:el.scrollWidth,client:el.clientWidth};
     }).filter(x=>x.right>innerWidth+3).sort((a,b)=>b.right-a.right).slice(0,12);
-    return {w,viewport:innerWidth,offenders};
+    const scrollSources=[document.documentElement,document.body,
+      ...document.querySelectorAll("body *")].map(el=>{
+      const r=el.getBoundingClientRect(),style=getComputedStyle(el);
+      return {tag:el.tagName,id:el.id,cls:String(el.className||"").slice(0,40),
+        left:Math.round(r.left),right:Math.round(r.right),
+        sw:el.scrollWidth,cw:el.clientWidth,
+        cssOverflow:style.overflowX,cssMinWidth:style.minWidth};
+    }).filter(x=>x.sw>x.cw+4).sort((a,b)=>b.sw-b.cw-(a.sw-a.cw)).slice(0,14);
+    return {w,viewport:innerWidth,htmlScroll:document.documentElement.scrollWidth,
+      bodyScroll:document.body.scrollWidth,offenders,scrollSources};
   });
   assert.ok(overflow.w<4,"débordement horizontal sur viewport iPhone : "+JSON.stringify(overflow));
   assert.deepEqual(errors,[]);
