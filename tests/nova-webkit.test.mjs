@@ -184,8 +184,8 @@ test("NOVA WebKit : vrai export H.264/AAC quand les deux codecs sont opérationn
       null,{timeout:90000});
     const status=await page.locator("#exportStatus").innerText();
     const href=await page.locator("#downloadVideo").getAttribute("href");
-    if(canAttempt){
-     assert.match(href||"",/^blob:/,"WebKit supporte ce H.264, export attendu : "+status);
+    if(href){
+     assert.match(href,/^blob:/,"le fichier audiovisuel doit être une URL blob locale");
      assert.match(status,/audio AAC original copié/);
      const pending=page.waitForEvent("download");
      await page.locator("#downloadVideo").click();
@@ -195,10 +195,12 @@ test("NOVA WebKit : vrai export H.264/AAC quand les deux codecs sont opérationn
      const streams=JSON.parse(ff.stdout).streams||[];
      assert.ok(streams.some(x=>x.codec_type==="video"&&x.codec_name==="h264"));
      assert.ok(streams.some(x=>x.codec_type==="audio"&&x.codec_name==="aac"));
-     t.diagnostic("WebKit vrai export audiovisuel MP4 H.264/AAC : "+JSON.stringify(cap));
+     t.diagnostic("WebKit vrai export audiovisuel MP4 H.264/AAC : "+JSON.stringify({
+       ...cap,codecImportProbeComplete:canAttempt,streams
+     }));
     }else{
-     assert.equal(href,null,
-      "WebKit incomplet ne doit pas présenter une vidéo exportée avec du son perdu");
+     assert.equal(canAttempt,false,
+      "WebKit annonçait tous les codecs disponibles, refus à investiguer : "+status);
      assert.match(status,/Export refusé/);
      t.diagnostic("WebKit refuse explicitement codecs manquants : "+JSON.stringify(cap)+
        " ; "+status);
