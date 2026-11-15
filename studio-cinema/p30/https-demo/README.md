@@ -11,3 +11,5 @@ Ce dossier est une copie statique à usage de test des seuls fichiers contenus d
 **Évaluation :** une vraie compatibilité iPhone physique nécessite l'ouverture de ce lien sur Safari iPhone, une validation manuelle, et éventuellement le renvoi volontaire du rapport. Les tests automatisés Linux ne sont pas des tests physiques Safari.
 
 **Historique :** issu de Cinema P30 PR #56 ; la publication de cette démo à titre expérimental découle d'une demande expresse de l'utilisateur d'éviter toute opération manuelle.
+
+**Contrôle de livraison :** un workflow expérimental vérifie séparément les empreintes des sept fichiers du ZIP et leur disponibilité HTTPS via le proxy public. Les informations utilisateur ne sont pas envoyées par le formulaire.
