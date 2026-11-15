@@ -38,17 +38,17 @@ test("NOVA color: sRGB SDR transfert 13 peut être converti correctement vers BT
  assert.equal(e.confirmed,true);
  assert.equal(COLOR.verifyFrame(frame("bt709","iec61966-2-1","bt709",false),e).frameFullyTagged,true);
 });
-test("NOVA color: P3, BT2020, PQ/HLG ou plage entière explicitement signalés ne sont jamais rebaptisés SDR",()=>{
+test("NOVA color: P3, BT2020 et PQ/HLG explicitement signalés ne sont jamais rebaptisés SDR",()=>{
  for(const color of [
   {kind:"nclx",primaries:9,transfer:16,matrix:9,fullRange:false},
   {kind:"nclx",primaries:12,transfer:13,matrix:1,fullRange:false},
   {kind:"nclx",primaries:1,transfer:18,matrix:1,fullRange:false},
-  {kind:"nclx",primaries:1,transfer:1,matrix:1,fullRange:true},
   {kind:"prof"}
  ])assert.throws(()=>COLOR.metadata({...base,color}));
  const proof=COLOR.metadata(base);
  assert.throws(()=>COLOR.verifyFrame(frame("bt2020","hlg","bt2020-ncl",false),proof));
- assert.throws(()=>COLOR.verifyFrame(frame("bt709","bt709","bt709",true),proof));
+ assert.throws(()=>COLOR.verifyFrame(frame("bt709","bt709","bt709",true),proof),
+  /contradictoires/);
 });
 test("NOVA color: le SPS/VUI HEVC confirme 709 même en l'absence de colr",()=>{
  const oldA=globalThis.NOVA_HEVC_ANNEXB,oldV=globalThis.NOVA_HEVC_VUI;
@@ -78,4 +78,14 @@ test("NOVA color: rapport technique est borné, ne sérialise aucun nom ou médi
  for(const word of ["PRIVATE","rawMedia","fileName","device","userAgent"]){
   assert.equal(s.includes(word),false,word);
  }
+});
+
+test("NOVA color: plage SDR complète réellement décodée convertie en plage limitée, sans la confondre avec HDR",()=>{
+ const e=COLOR.metadata({...base,color:{...base.color,fullRange:true}});
+ assert.equal(e.sourceFullRange,true);
+ assert.equal(e.confirmed,true);
+ const result=COLOR.verifyFrame(frame("bt709","bt709","bt709",true),e);
+ assert.equal(result.rangeConversion,true);
+ assert.equal(result.method,"decoded-frame-sdr-full-to-limited");
+ assert.throws(()=>COLOR.verifyFrame(frame("bt709","bt709","bt709",false),e),/contradictoires/);
 });
