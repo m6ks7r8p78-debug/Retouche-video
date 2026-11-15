@@ -47,3 +47,13 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.doesNotMatch(html,/<script src="https?:\/\//);
  }finally{await fs.rm(dir,{recursive:true,force:true})}
 });
+
+test("NOVA 0.24 : consignes Safari et lien de coordination traçables",async()=>{
+ const doc=await fs.readFile(path.join(root,"experiences","NOVA_IPHONE_TEST.md"),"utf8");
+ assert.match(doc,/^# NOVA 0\.24/m);
+ assert.match(doc,/Tester Safari sans vidéo personnelle/);
+ assert.match(doc,/coordination-retoucheproai-v1/);
+ assert.ok(!doc.includes(String.raw`\n3.`),"numérotation Markdown réelle requise");
+ assert.ok(!doc.includes(String.raw`\nLe rapport`),"retours ligne réels requis");
+ assert.match(doc,/aucun essai sur un iPhone réel certifié/);
+});
