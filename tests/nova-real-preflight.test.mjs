@@ -50,7 +50,7 @@ test("contexte et capacités WebCodecs : pas de faux positif",async()=>{
   assert.equal(r.status,expected);
  }
 });
-test("MP4 invalide ou H264 : le pilote HEVC ne préconise pas l'export",async()=>{
+test("MP4 invalide et H264 sans moteur natif : pas de faux export favorable",async()=>{
  const unreadable=await AUDIT.inspect(options({probe:async()=>null}));
  assert.equal(unreadable.status,"container-unreadable");
  const broken=await AUDIT.inspect(options({probe:async()=>{throw Error("PRIVATE_FILE.mov")}}));
@@ -58,7 +58,8 @@ test("MP4 invalide ou H264 : le pilote HEVC ne préconise pas l'export",async()=
  const h264=await AUDIT.inspect(options({probe:async()=>({...track,codec:"avc1.42C01E"}),
   validate:()=>{throw Error("not reached")}}));
  assert.equal(h264.source.codec,"h264");
- assert.equal(h264.status,"unsupported-video-codec");
+ assert.equal(h264.status,"native-hd-unavailable");
+ assert.equal(h264.readyForExportAttempt,false);
  assert.ok(!AUDIT.serialiser(broken).includes("PRIVATE_FILE"));
 });
 test("HDR/P3 ou PTS ambigu : refus fidèle avant toute tentative AAC",async()=>{
@@ -183,5 +184,88 @@ test("NOVA Directeur HD : vidéo iPhone 1088×1920 195 images testée sur moteur
  }finally{
   if(original===undefined)delete globalThis.NOVA_NATIVE_HD;
   else globalThis.NOVA_NATIVE_HD=original;
+ }
+});
+
+test("NOVA HD H264 : précontrôle natif positif sans WebAssembly et sans ancien validateur HEVC",async()=>{
+ const saved=globalThis.NOVA_NATIVE_HD;
+ let n=0;
+ globalThis.NOVA_NATIVE_HD={
+  analyse:(info,bytes)=>{
+   n++;assert.equal(info.codec,"avc1.4d4028");assert.equal(bytes,file.size);
+   return {width:1088,height:1920,sourceFrames:195,sourceFps:30,durationSeconds:6.5};
+  },
+  configDecoder:async()=>{n++;return {codec:"avc1.4d4028"}},
+  configEncoder:async()=>{n++;return {codec:"avc1.4d4028"}}
+ };
+ try{
+  const h264={...track,codec:"avc1.4d4028",W:1920,H:1088,dw:1088,dh:1920,
+   ns:195,durationUs:6500000};
+  const r=await AUDIT.inspect(options({
+   getEnvironment:()=>({...env,webAssembly:false}),
+   probe:async()=>h264,
+   validate:()=>{throw Error("HEVC WASM forbidden for H264")},
+   audioPlan:async()=>({mode:"aac-copy",packets:[{offset:5,size:20}]})
+  }));
+  assert.equal(r.status,"ready-for-native-hd-attempt");
+  assert.equal(r.source.codec,"h264");
+  assert.equal(r.readyForExportAttempt,true);
+  assert.deepEqual(r.blockers,[]);
+  assert.deepEqual(r.advisories,[]);
+  assert.deepEqual(r.exportProposal,{width:1088,height:1920,frames:195,fps:30});
+  assert.equal(n,3);
+  const json=AUDIT.serialiser(r);
+  assert.equal(JSON.parse(json).status,"ready-for-native-hd-attempt");
+  assert.ok(!json.includes(file.name));
+ }finally{
+  if(saved===undefined)delete globalThis.NOVA_NATIVE_HD;
+  else globalThis.NOVA_NATIVE_HD=saved;
+ }
+});
+test("NOVA HD H264 : codec natif indisponible ou AAC absent n'est jamais annoncé compatible",async()=>{
+ const saved=globalThis.NOVA_NATIVE_HD;
+ const probe=async()=>({...track,codec:"avc1.4d4028",W:1920,H:1088,
+  dw:1088,dh:1920,ns:195,durationUs:6500000});
+ const optionsNative={
+  probe,validate:()=>{throw Error("old HEVC validator should never run")}
+ };
+ try{
+  globalThis.NOVA_NATIVE_HD={
+   analyse:()=>({width:1088,height:1920,sourceFrames:195,
+    sourceFps:30,durationSeconds:6.5}),
+   configDecoder:async()=>{throw Error("unsupported VideoDecoder")},
+   configEncoder:async()=>({codec:"avc1"})
+  };
+  const bad=await AUDIT.inspect(options(optionsNative));
+  assert.equal(bad.status,"native-hd-unavailable");
+  assert.equal(bad.readyForExportAttempt,false);
+  assert.equal(bad.audio,"not-tested");
+  const safe=JSON.parse(AUDIT.serialiser(bad));
+  assert.equal(safe.exportProposal,null);
+  assert.ok(!JSON.stringify(safe).includes("unsupported VideoDecoder"));
+  globalThis.NOVA_NATIVE_HD.configDecoder=async()=>({codec:"avc1"});
+  const audioBad=await AUDIT.inspect(options({
+   ...optionsNative,audioPlan:async()=>({mode:"silent",packets:[]})
+  }));
+  assert.equal(audioBad.status,"audio-not-preservable");
+  assert.equal(audioBad.readyForExportAttempt,false);
+  assert.equal(audioBad.audio,"not-tested");
+ }finally{
+  if(saved===undefined)delete globalThis.NOVA_NATIVE_HD;
+  else globalThis.NOVA_NATIVE_HD=saved;
+ }
+});
+test("Précontrôle : WebAssembly absent bloque uniquement le repli HEVC historique",async()=>{
+ const saved=globalThis.NOVA_NATIVE_HD;
+ delete globalThis.NOVA_NATIVE_HD;
+ try{
+  const r=await AUDIT.inspect(options({
+   getEnvironment:()=>({...env,webAssembly:false}),
+   validate:()=>{throw Error("HEVC WASM must not execute")}
+  }));
+  assert.equal(r.status,"browser-unavailable");
+  assert.equal(r.readyForExportAttempt,false);
+ }finally{
+  if(saved!==undefined)globalThis.NOVA_NATIVE_HD=saved;
  }
 });
