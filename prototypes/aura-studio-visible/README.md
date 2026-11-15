@@ -48,8 +48,8 @@ Changements réels :
 
 ### Preuves et limites
 
-- Captures du vrai HTML prises dans Chromium à 390, 430 et 768 pixels : `captures/accueil_final_390.png`, `captures/outil_sur_photo_390.png` etc.
-- Tests `tests/smoke.py` de la base et `tests/test_refinement.py` de cette évolution : **6 tailles (320, 375, 390, 430, 768, 1024)**, contrôles tactiles/clavier, correction et export PNG, vidéo MP4 synthétique en lecture seule et molette vitesse.
+- Captures du vrai HTML prises dans Chromium à 390, 430 et 768 pixels : disponibles dans l'archive ZIP de revue, non ajoutées au dépôt GitHub.
+- Tests `tests/check_smoke.py` de la base et `tests/check_refinement.py` de cette évolution : **6 tailles (320, 375, 390, 430, 768, 1024)**, contrôles tactiles/clavier, correction et export PNG, vidéo MP4 synthétique en lecture seule et molette vitesse.
 - **Pas de Safari iPhone physique testé ; pas de moteur IA connecté ni d'export vidéo.** Rendu colorimétrique local seulement. La vidéo ne reçoit pas de traitement exportable ; la lecture ralentie ne change pas le fichier original.
 - Aucun média personnel ni appareil de l'utilisateur n'a été sollicité. Aucun nouveau consentement, aucune publication, aucun remplacement de `main` ou du site.
 - La finition HTML est une interprétation technique encore à examiner par l'utilisateur : **elle n'est pas déclarée visuellement identique à la maquette**.
