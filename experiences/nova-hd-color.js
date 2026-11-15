@@ -105,7 +105,8 @@ function verifyFrame(frame,evidence){
   err("primaires MOV/SPS et trame décodée contradictoires");
  if(evidence.expectedMatrix&&matrix&&
     !matrixEquivalent(matrix,evidence.expectedMatrix))
-  err("matrice MOV/SPS et trame décodée contradictoires");
+  err("matrice MOV/SPS et trame décodée contradictoires (source "+
+   evidence.expectedMatrix+", décodeur "+String(matrix)+")");
  if(typeof range==="boolean"&&typeof evidence.sourceFullRange==="boolean"&&
     range!==evidence.sourceFullRange)
   err("plage déclarée et décodée contradictoires");
