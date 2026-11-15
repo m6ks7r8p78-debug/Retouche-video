@@ -5,9 +5,10 @@
       "height": 844,
       "state": "local_motion_candidate",
       "candidates": 1,
-      "ms": 40.7,
+      "ms": 33.4,
       "no_http": true,
       "no_js_errors": true,
+      "codec_tested": "h264",
       "times": [
         0.0333,
         0.1667
@@ -18,14 +19,16 @@
       "height": 800,
       "state": "local_motion_candidate",
       "candidates": 1,
-      "ms": 31.9,
+      "ms": 48.6,
       "no_http": true,
       "no_js_errors": true,
+      "codec_tested": "h264",
       "times": [
         0.0333,
         0.1667
       ]
     }
   ],
-  "syntheticVideoSHA256": "a989bc341ef7079b24ec054c6bb15ef2a268e1afea412f5dccb4a5904f8e2694"
+  "syntheticH264SHA256": "a989bc341ef7079b24ec054c6bb15ef2a268e1afea412f5dccb4a5904f8e2694",
+  "syntheticWebmSHA256": "9c70bbfd58452a7e5827841b7057e3a11bfe99ac02f4b4ad634fe05d56450d1b"
 }
