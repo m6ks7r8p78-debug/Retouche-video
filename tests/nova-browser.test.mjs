@@ -132,12 +132,15 @@ test("NOVA : MP4 court exporté avec son préservé ou refus, puis MP4 sans son 
      const d=document.querySelector("#downloadVideo");
      return !d.hidden||document.querySelector("#exportStatus").textContent.startsWith("Export refusé");
     },null,{timeout:90000});
-    if(!await page.locator("#downloadVideo").isVisible()){
+    if(await page.locator("#downloadVideo").getAttribute("href")===null){
      if(silent)throw new Error(await page.locator("#exportStatus").innerText());
      assert.match(await page.locator("#exportStatus").innerText(),/Export refusé/);
      continue;
     }
-    const pending=page.waitForEvent("download");await page.locator("#downloadVideo").click();
+    const href=await page.locator("#downloadVideo").getAttribute("href");
+    assert.match(href||"",/^blob:/,"ne télécharger que le vrai MP4");
+    const pending=page.waitForEvent("download",{timeout:12000});
+    await page.locator("#downloadVideo").click();
     const result=await pending;
     const {stdout}=await runBinary("ffprobe",["-v","error","-show_entries","stream=codec_type",
      "-of","json",await result.path()]);
