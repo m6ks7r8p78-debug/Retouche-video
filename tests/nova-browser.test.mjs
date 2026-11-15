@@ -439,9 +439,11 @@ async function audioPacketHashes(filename){
    "-of","json",filename],{maxBuffer:4*1024*1024});
  return (JSON.parse(stdout).packets||[]).map(x=>x.data_hash);
 }
-async function decodeAudioEvents(filename){
+async function decodeAudioEvents(filename,{alignPresentation=false}={}){
  const {stdout}=await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
-   "-i",filename,"-map","0:a:0","-ac","1","-ar","48000","-f","f32le","-"],
+   "-i",filename,"-map","0:a:0",
+   ...(alignPresentation?["-af","aresample=async=1:first_pts=0"]:[]),
+   "-ac","1","-ar","48000","-f","f32le","-"],
    {encoding:null,maxBuffer:8*1024*1024});
  return impulsionsPCM(stdout,{sampleRate:48000});
 }
@@ -737,7 +739,7 @@ test("NOVA 0.12 : retard audio de 250 ms conserve elst vide, AAC et sync AV",asy
   const orig=new Blob([await fs.readFile(src)]);
   const [meta,copy,a0,v0]=await Promise.all([
    AVSYNC.analyser(orig),AAC_COPY.planifier(orig,{durationSeconds:2}),
-   decodeAudioEvents(src),decodeVideoEvents(src)
+   decodeAudioEvents(src,{alignPresentation:true}),decodeVideoEvents(src)
   ]);
   assert.equal(meta.edits,2,"FFmpeg doit produire deux edits AAC");
   assert.ok(meta.delayUs>=200000&&meta.delayUs<=270000,
@@ -748,6 +750,8 @@ test("NOVA 0.12 : retard audio de 250 ms conserve elst vide, AAC et sync AV",asy
    "le media_time doit correspondre au priming du MP4 source (y compris zéro)");
   assert.equal(copy.rollDistance,-1);
   assert.deepEqual([a0.length,v0.length],[2,2]);
+  assert.ok(a0[0]>.42&&a0[0]<.62,
+   "FFmpeg doit insérer le silence du lead-in dans le PCM de présentation : "+a0[0]);
   await new Promise(resolve=>app.listen(0,"127.0.0.1",resolve));
   const browser=await chromium.launch({headless:true,
    ...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
@@ -770,7 +774,7 @@ test("NOVA 0.12 : retard audio de 250 ms conserve elst vide, AAC et sync AV",asy
    const outBlob=new Blob([await fs.readFile(out)]);
    const [after,oldHash,newHash,a1,v1]=await Promise.all([
     AVSYNC.analyser(outBlob),audioPacketHashes(src),audioPacketHashes(out),
-    decodeAudioEvents(out),decodeVideoEvents(out)
+    decodeAudioEvents(out,{alignPresentation:true}),decodeVideoEvents(out)
    ]);
    assert.equal(after.edits,2,"l'édition vide est réellement présente à la sortie");
    assert.ok(Math.abs(after.delayUs-meta.delayUs)<=1000,
