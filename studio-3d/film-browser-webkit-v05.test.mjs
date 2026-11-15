@@ -101,9 +101,9 @@ async function run(page,label,origin){
  await page.setViewportSize({width:844,height:390});
  const wide=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
  assert.ok(wide.scroll<=wide.width+2,'Débordement après rotation paysage : '+JSON.stringify(wide));
- await page.getByRole('button',{name:/Lire/}).click();
+ await page.locator('#play').click();
  await page.waitForTimeout(120);
- await page.getByRole('button',{name:/Lire/}).click();
+ await page.locator('#play').click();
  await page.locator('#prompt').fill('Une femme boit puis parle.');
  await page.getByRole('button',{name:'Créer mon animation 3D'}).click();
  assert.equal(await page.locator('#download').isVisible(),false);
