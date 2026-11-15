@@ -1,6 +1,7 @@
 import sys,copy,unittest
 from pathlib import Path
-sys.path.insert(0,str(Path(__file__).resolve().parents[1] / 'public'))
+root = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(root / 'public' if (root / 'public' / 'p10_review.py').exists() else root))
 from p10_review import validate,match_annotations,AnnotationError
 A={'schema':'retouche-cinema-p9-private-human-annotations-v1','source':{'local_filename':'fiction.mp4','video_id':'FICTION','duration_s':8},'annotations':[{'channel':'levres','phase':'contact','visibility':'observe','start_s':2.,'end_s':3.,'point':[.5,.5], 'smoke_origin':'unknown'}, {'channel':'fumee','phase':'expiration','visibility':'observe','start_s':4.,'end_s':5.,'point':[.52,.56], 'smoke_origin':'mouth'}]}
 def cp():return copy.deepcopy(A)
