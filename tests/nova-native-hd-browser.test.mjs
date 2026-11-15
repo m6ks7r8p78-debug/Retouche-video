@@ -236,7 +236,15 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
      colorSpace:{primaries:cs.primaries,transfer:cs.transfer,matrix:"bt709",
       fullRange:cs.fullRange}
     };
-    const checked=await original(opaque,evidence);
+    let checked;
+    try{checked=await original(opaque,evidence)}
+    catch(error){
+     throw Error("Synthetic opaque-frame mismatch "+JSON.stringify({
+      sourceMatrix:evidence.sourceMatrix,sourcePrimaries:evidence.sourcePrimaries,
+      expectedMatrix:evidence.expectedMatrix,expectedPrimaries:evidence.expectedPrimaries,
+      confirmed:evidence.confirmed,range:evidence.sourceFullRange,
+      reported:opaque.colorSpace,originalError:error.message}));
+    }
     if(checked.proof.method!=="native-safari-sdr-bt709-display")
      throw Error("Opaque Safari fallback not selected");
     // Garder la vraie VideoFrame native pour que Canvas la dessine.
