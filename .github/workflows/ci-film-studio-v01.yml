@@ -1,4 +1,4 @@
-name: Film Studio - Chromium et Safari WebKit expérimental v0.5
+name: Film Studio - navigateur WebKit et diagnostic local v0.6
 on:
   push:
     branches:
@@ -30,6 +30,11 @@ on:
       - 'studio-3d/film-ui-v05.mjs'
       - 'studio-3d/film-studio-v05.html'
       - 'studio-3d/film-browser-webkit-v05.test.mjs'
+      - 'studio-3d/film-diagnostic-v06.mjs'
+      - 'studio-3d/film-diagnostic-v06.test.mjs'
+      - 'studio-3d/film-ui-v06.mjs'
+      - 'studio-3d/film-studio-v06.html'
+      - 'studio-3d/film-browser-webkit-v06.test.mjs'
       - '.github/workflows/ci-film-studio-v01.yml'
 jobs:
   scenario-contract:
@@ -43,7 +48,7 @@ jobs:
         with:
           node-version: '22'
       - name: Verifier le contrat de scenario sans medias prives
-        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs studio-3d/film-viewer-v03.test.mjs studio-3d/film-ui-v03.test.mjs studio-3d/film-contact-v03.test.mjs studio-3d/film-webgl-v04.test.mjs
+        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs studio-3d/film-viewer-v03.test.mjs studio-3d/film-ui-v03.test.mjs studio-3d/film-contact-v03.test.mjs studio-3d/film-webgl-v04.test.mjs studio-3d/film-diagnostic-v06.test.mjs
 
   navigateur-webgl2:
     needs: scenario-contract
@@ -87,12 +92,49 @@ jobs:
       - name: Installer WebKit et ses dépendances système
         run: npx playwright install --with-deps webkit
       - name: Tester Safari WebKit simulé, mode tactile, repli et export local
-        run: node studio-3d/film-browser-webkit-v05.test.mjs
+        run: node studio-3d/film-browser-webkit-v06.test.mjs
       - name: Archiver captures entièrement synthétiques WebKit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: film-studio-v05-webkit-synthetic
-          path: test-results/film-studio-v05-webkit-*.png
+          name: film-studio-v06-webkit-synthetic
+          path: test-results/film-studio-v06-webkit-*.png
           if-no-files-found: ignore
           retention-days: 7
+
+  paquet-iphone-isole:
+    needs: [scenario-contract, navigateur-webkit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Préparer un paquet statique sans médias ni données privées
+        run: |
+          mkdir -p dist/film-studio-iphone-v06
+          cp studio-3d/film-studio-v06.html dist/film-studio-iphone-v06/index.html
+          for name in \
+            generateur.js \
+            film-ui-v06.mjs film-diagnostic-v06.mjs \
+            film-contact-v03.mjs film-sequence-v02.mjs \
+            film-project-v01.mjs film-viewer-v03.mjs film-webgl-v04.mjs; do
+            cp "studio-3d/$name" "dist/film-studio-iphone-v06/$name"
+          done
+          cat > dist/film-studio-iphone-v06/_headers <<'HEADERS'
+          /*
+            Cache-Control: no-store
+            Referrer-Policy: no-referrer
+            X-Content-Type-Options: nosniff
+            Permissions-Policy: camera=(), microphone=(), geolocation=()
+            Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'
+          HEADERS
+          test "$(find dist/film-studio-iphone-v06 -maxdepth 1 -type f | wc -l)" -eq 10
+          ! find dist/film-studio-iphone-v06 -type f -name '*.mp4' -o -name '*.jpg' -o -name '*.png'
+      - name: Préparer le téléchargement du paquet de laboratoire iPhone
+        uses: actions/upload-artifact@v4
+        with:
+          name: film-studio-v06-iphone-https-package
+          path: dist/film-studio-iphone-v06/
+          retention-days: 14
+          if-no-files-found: error
