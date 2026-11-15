@@ -48,7 +48,7 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.match(html,/Tester Safari sans vidéo personnelle/);
   assert.match(html,/SmallMotion · mouvement local/);
   assert.match(html,/nova-smallmotion-bridge.js/);
-  assert.match(html,/vendor\\/smallmotion\\/smallmotion-local.js/);
+  assert.ok(html.includes('src="./vendor/smallmotion/smallmotion-local.js"'));
   assert.match(html,/nova-iphone-report.js/);
   assert.doesNotMatch(html,/<script src="https?:\/\//);
  }finally{await fs.rm(dir,{recursive:true,force:true})}
