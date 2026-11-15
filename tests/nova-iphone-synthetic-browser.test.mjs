@@ -60,6 +60,14 @@ test("NOVA 0.24 : un clic charge le clip HEVC/AAC synthétique sans upload ni vi
   const report=JSON.parse(await fs.readFile(await downloaded.path(),"utf8"));
   assert.equal(report.schema,"retoucheproai.nova.iphone-lab.v1");
   assert.equal(report.sourceKind,"synthetic-generated");
+  assert.equal(report.deviceAdvice?.schema,"retoucheproai.nova.device-advice.v1");
+  assert.equal(report.deviceAdvice?.state,
+   report.result==="success"?"one-run-success":"abstain");
+  assert.equal(report.deviceAdvice?.physicalIphoneCertified,false);
+  assert.equal(report.deviceAdvice?.settingsChanged,false);
+  assert.equal(report.deviceAdvice?.automaticUpload,false);
+  assert.match(await page.locator("#iphoneBenchAdvice").innerText(),
+   /iPhone|Safari|fichier/);
   assert.equal(report.source.containerVideo,"hevc");
   assert.equal(report.source.width,160);
   assert.equal(report.source.height,90);

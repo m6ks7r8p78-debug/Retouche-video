@@ -146,7 +146,7 @@ async function executer({file,moteur,arbitre,allowSilent=false,synthetic=false,s
  return Object.freeze({report:Object.freeze(record),
   outputBlob:record.result==="success"?processed?.blob:null});
 }
-function serialiser(report){
+function serialiser(report,advice=null){
  if(!report||report.schema!=="retoucheproai.nova.iphone-lab.v1")
   throw new TypeError("rapport NOVA iPhone invalide");
  // Le générateur ne sérialise que les champs de son propre objet ;
@@ -157,7 +157,9 @@ function serialiser(report){
   requestedAudio:report.requestedAudio,sourceKind:report.sourceKind,
   source:report.source,output:report.output,
   phase:report.phase,result:report.result,errorCode:report.errorCode,
-  elapsedMs:report.elapsedMs,limitation:report.limitation
+  elapsedMs:report.elapsedMs,limitation:report.limitation,
+  deviceAdvice:typeof NOVA_DEVICE_ADVICE==="object"&&NOVA_DEVICE_ADVICE?
+   NOVA_DEVICE_ADVICE.publicFields(advice):null
  },null,2);
  if(s.length>14000)throw new RangeError("rapport trop volumineux");
  return s+"\n";

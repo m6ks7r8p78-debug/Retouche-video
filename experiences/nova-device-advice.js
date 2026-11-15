@@ -97,6 +97,28 @@ const messages=Object.freeze({
 function message(advice){
  return messages[advice?.reason]||messages["invalid-report"];
 }
-return Object.freeze({LIMITS,assess,message});
+/* Allowlist stricte pour un relais JSON aux autres laboratoires.
+ * Ne copie jamais de champs libres du rapport utilisateur.
+ */
+const publicStates=new Set(["abstain","caution","one-run-success"]);
+const publicNext=new Set(["review-refusal","retry-foreground","inspect-codec-support",
+ "reduce-workload-next-run","review-audio-output","test-an-authorized-local-file",
+ "repeat-on-physical-iphone"]);
+const publicEvidence=new Set(["insufficient","synthetic-run-in-current-browser",
+ "one-file-run-in-current-browser"]);
+function publicFields(advice){
+ if(!advice||advice.schema!=="retoucheproai.nova.device-advice.v1")return null;
+ return Object.freeze({
+  schema:"retoucheproai.nova.device-advice.v1",
+  state:publicStates.has(advice.state)?advice.state:"abstain",
+  reason:Object.hasOwn(messages,advice.reason)?advice.reason:"invalid-report",
+  next:publicNext.has(advice.next)?advice.next:"review-refusal",
+  evidence:publicEvidence.has(advice.evidence)?advice.evidence:"insufficient",
+  nearLimit:advice.nearLimit===true,
+  mediaModified:false,settingsChanged:false,automaticUpload:false,
+  physicalIphoneCertified:false,totalRamKnown:false
+ });
+}
+return Object.freeze({LIMITS,assess,message,publicFields});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_DEVICE_ADVICE;

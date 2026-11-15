@@ -35,6 +35,7 @@ jobs:
           node --check experiences/nova-color709.js
           node --check experiences/nova-export-meter.js
           node --check experiences/nova-iphone-report.js
+          node --check experiences/nova-device-advice.js
           node --check experiences/nova-iphone-lab-ui.js
           node --check tests/nova-iphone-synthetic-browser.test.mjs
           node --check outils/build-nova-iphone-preview.mjs
@@ -53,7 +54,7 @@ jobs:
             sudo apt-get install -y -qq ffmpeg
           fi
       - name: Garde-fous NOVA
-        run: node --test tests/nova-iphone-preview.test.mjs tests/nova-iphone-report.test.mjs tests/nova-export-meter.test.mjs tests/nova-color709.test.mjs tests/nova-hevc-assets.test.mjs tests/nova-decision.test.mjs tests/nova-zones.test.mjs tests/nova-video.test.mjs tests/nova-demux.test.mjs tests/nova-timeline.test.mjs tests/nova-pts.test.mjs tests/nova-guard.test.mjs tests/nova-avsync.test.mjs tests/nova-aac-copy.test.mjs tests/nova-hevc-annexb.test.mjs tests/nova-av-pulses.test.mjs tests/nova-export.test.mjs
+        run: node --test tests/nova-device-advice.test.mjs tests/nova-iphone-preview.test.mjs tests/nova-iphone-report.test.mjs tests/nova-export-meter.test.mjs tests/nova-color709.test.mjs tests/nova-hevc-assets.test.mjs tests/nova-decision.test.mjs tests/nova-zones.test.mjs tests/nova-video.test.mjs tests/nova-demux.test.mjs tests/nova-timeline.test.mjs tests/nova-pts.test.mjs tests/nova-guard.test.mjs tests/nova-avsync.test.mjs tests/nova-aac-copy.test.mjs tests/nova-hevc-annexb.test.mjs tests/nova-av-pulses.test.mjs tests/nova-export.test.mjs
       - name: Préparer l'aperçu iPhone isolé (aucun déploiement)
         run: node outils/build-nova-iphone-preview.mjs
       - name: Archiver le banc Safari sans média privé

@@ -73,3 +73,17 @@ test("NOVA 0.25 : rapport non fiable et métadonnées privées ne transitent jam
   "physicalIphoneCertified","reason","schema","settingsChanged","state","totalRamKnown"
  ].sort());
 });
+
+test("NOVA 0.25 : transmission JSON à liste blanche stricte",()=>{
+ const a=P.publicFields(P.assess(base()));
+ assert.equal(a.state,"one-run-success");
+ assert.equal(a.physicalIphoneCertified,false);
+ assert.equal(a.totalRamKnown,false);
+ const poisoned=P.publicFields({...a,reason:"private_url_secret",
+  next:"privateFile.mov",evidence:"personName",filename:"sensitive.mov"});
+ assert.equal(poisoned.reason,"invalid-report");
+ assert.equal(poisoned.next,"review-refusal");
+ assert.equal(poisoned.evidence,"insufficient");
+ assert.equal(JSON.stringify(poisoned).includes("sensitive.mov"),false);
+ assert.equal(P.publicFields({schema:"wrong"}),null);
+});

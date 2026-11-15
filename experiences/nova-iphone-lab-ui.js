@@ -6,6 +6,7 @@
 "use strict";
 const $=id=>document.getElementById(id);
 const run=$("iphoneBenchRun"),demo=$("iphoneBenchSynthetic"),status=$("iphoneBenchStatus"),
+ adviceText=$("iphoneBenchAdvice"),
  json=$("iphoneBenchJson"),video=$("iphoneBenchMp4"),panel=$("iphoneBenchPanel");
 if(!run||!status||!json||!video||!panel)return;
 let file=null,generation=0,controller=null,urls=[];
@@ -20,6 +21,7 @@ function reset(){
  generation++;
  controller?.abort();controller=null;
  file=null;clearURLs();run.disabled=true;
+ if(adviceText){adviceText.textContent="";adviceText.hidden=true}
  if(demo){demo.disabled=false;demo.textContent=demoLabel}
  run.textContent=runLabel;
  status.textContent="Importez une vidéo HEVC ou essayez le clip synthétique sans média privé.";
@@ -47,6 +49,7 @@ async function execute(selectFile,button,synthetic){
  }
  if(!synthetic&&!file)return;
  clearURLs();
+ if(adviceText){adviceText.textContent="";adviceText.hidden=true}
  const myGeneration=generation,ctrl=new AbortController();
  controller=ctrl;
  run.disabled=button!==run;
@@ -71,7 +74,15 @@ async function execute(selectFile,button,synthetic){
    }
   });
   if(myGeneration!==generation||ctrl.signal.aborted)return;
-  const contents=NOVA_IPHONE_REPORT.serialiser(report);
+  const advice=NOVA_DEVICE_ADVICE.assess(report,{
+   visibility:document.hidden?"hidden":"visible"
+  });
+  if(adviceText){
+   adviceText.textContent=NOVA_DEVICE_ADVICE.message(advice)+
+    " Aucun profil automatique ni validation physique iPhone.";
+   adviceText.hidden=false;
+  }
+  const contents=NOVA_IPHONE_REPORT.serialiser(report,advice);
   linkBlob(new Blob([contents],{type:"application/json"}),
    "NOVA_024_rapport_Safari_local.json",json);
   if(report.result==="success"&&outputBlob){
