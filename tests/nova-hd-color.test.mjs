@@ -163,7 +163,7 @@ test("Safari HEVC format=null : décodeur matériel BT709 avec source 601 produi
  assert.equal(result.proof.colorFidelity,"uncertified-against-source");
  assert.match(result.proof.warning,/Comparer les couleurs/);
 });
-test("Safari HEVC format=null : garder le refus HDR/P3, plage et primaires incohérentes",async()=>{
+test("Safari HEVC format=null : garder le refus HDR/P3 et plage incohérente, signaler les métadonnées SDR partielles",async()=>{
  const src={...base,color:{kind:"nclx",primaries:1,transfer:1,matrix:6,fullRange:false}};
  const evidence=COLOR.metadata(src);
  for(const cs of [
@@ -178,9 +178,11 @@ test("Safari HEVC format=null : garder le refus HDR/P3, plage et primaires incoh
  }
  const unverified=COLOR.metadata({...src,color:{kind:"nclx",primaries:2,
   transfer:2,matrix:6,fullRange:false}});
- await assert.rejects(()=>COLOR.imagePourRendu({format:null,
+ const native=await COLOR.imagePourRendu({format:null,
   colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false}},
-  unverified),/non certifiable/);
+  unverified);
+ assert.equal(unverified.confirmed,false);
+ assert.equal(native.proof.colorFidelity,"uncertified-against-source");
 });
 test("Safari HEVC NV12 non copiable : recours natif uniquement si WebCodecs déclare NotSupportedError",async()=>{
  const evidence=COLOR.metadata({...base,color:{...base.color,matrix:6}});
