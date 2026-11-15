@@ -9,6 +9,8 @@ import {promisify} from "node:util";
 import {fileURLToPath} from "node:url";
 import {chromium} from "playwright";
 import {impulsionsPCM,impulsionsVideo,comparerImpulsions} from "./nova-av-pulses.mjs";
+import AAC_COPY from "../experiences/nova-aac-copy.js";
+import AVSYNC from "../experiences/nova-avsync.js";
 
 const root=path.resolve(fileURLToPath(new URL("../",import.meta.url)));
 function server(){
@@ -560,6 +562,73 @@ test("NOVA 0.10 : vrai MP4 AAC + B-frames VFR, copie audio et contrôle A/V",asy
      intervals:source.intervals,packets:outputHashes.length,
      offsetMs:audit.offsetMs,driftMs:audit.driftMs,sourceVideo,outputVideo}));
    assert.deepEqual(errors,[]);
+  }finally{await browser.close()}
+ }finally{
+  if(app.listening)await new Promise(r=>app.close(r));
+  await fs.rm(tmp,{recursive:true,force:true});
+ }
+});
+
+
+test("NOVA 0.11 : AAC priming réel FFmpeg, elst et roll conservés de bout en bout",async(t)=>{
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-priming-"));
+ const src=path.join(tmp,"primed.mp4"),app=server();
+ try{
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
+   "-f","lavfi","-i",
+   "color=c=black:s=160x90:r=15:d=2,drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='between(t,0.395,0.465)+between(t,1.195,1.265)'",
+   "-f","lavfi","-i",
+   "aevalsrc=if(lt(abs(t-0.42)\\,0.03)\\,0.7*sin(2*PI*1000*t)\\,0)+if(lt(abs(t-1.22)\\,0.03)\\,0.7*sin(2*PI*1400*t)\\,0):s=48000:d=2",
+   "-map","0:v:0","-map","1:a:0","-c:v","libx264","-bf","0",
+   "-pix_fmt","yuv420p","-c:a","aac","-b:a","128k",
+   "-movflags","+faststart","-use_editlist","1","-y",src]);
+  const originalBlob=new Blob([await fs.readFile(src)]);
+  const original=await AAC_COPY.planifier(originalBlob,{durationSeconds:2});
+  const inputAudit=await AVSYNC.analyser(originalBlob);
+  assert.ok(original.editMediaTime>0,"fichier FFmpeg doit contenir un vrai priming AAC");
+  assert.equal(original.rollDistance,-1,"source FFmpeg AAC doit décrire roll=-1");
+  assert.equal(inputAudit.trimUs,Math.round(original.editMediaTime*1e6/original.sampleRate));
+  const [a0,v0]=await Promise.all([decodeAudioEvents(src),decodeVideoEvents(src)]);
+  assert.deepEqual([a0.length,v0.length],[2,2]);
+  await new Promise(r=>app.listen(0,"127.0.0.1",r));
+  const browser=await chromium.launch({headless:true,
+    ...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  try{
+   const page=await browser.newPage({viewport:{width:390,height:844},acceptDownloads:true});
+   const errs=[];page.on("pageerror",e=>errs.push(e.message));
+   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
+   await page.locator("#file").setInputFiles(src);
+   await page.waitForFunction(()=>!document.querySelector("#exportVideo").disabled);
+   await page.locator("#exportVideo").click();
+   await page.waitForFunction(()=>!!document.querySelector("#downloadVideo")?.getAttribute("href")||
+     document.querySelector("#exportStatus").textContent.startsWith("Export refusé"),
+     null,{timeout:90000});
+   const msg=await page.locator("#exportStatus").innerText();
+   assert.match(await page.locator("#downloadVideo").getAttribute("href")||"",/^blob:/,msg);
+   assert.match(msg,/audio AAC original copié/);
+   const pending=page.waitForEvent("download");await page.locator("#downloadVideo").click();
+   const d=await pending,out=await d.path();
+   const outBlob=new Blob([await fs.readFile(out)]);
+   const after=await AVSYNC.analyser(outBlob);
+   assert.ok(Math.abs(after.trimUs-inputAudit.trimUs)<25,
+     "la sortie doit garder elst media_time en échantillons source : "+JSON.stringify({after,inputAudit}));
+   const [ha,hb,roll,a1,v1]=await Promise.all([
+     audioPacketHashes(src),audioPacketHashes(out),audioRollInfo(out),
+     decodeAudioEvents(out),decodeVideoEvents(out)
+   ]);
+   assert.ok(hb.length>=80);
+   assert.deepEqual(hb,ha.slice(0,hb.length),"AAC primed doit rester bitexact");
+   assert.equal(roll?.distance,-1);
+   assert.equal(roll?.samples,hb.length);
+   const audit=comparerImpulsions({sourceAudio:a0,sourceVideo:v0,outputAudio:a1,
+     outputVideo:v1,toleranceMs:90});
+   assert.ok(audit.offsetMs<=35,"prime AAC : décalage ajouté "+audit.offsetMs);
+   assert.ok(audit.driftMs<=35,"prime AAC : dérive "+audit.driftMs);
+   t.diagnostic("NOVA elst AAC conservé : "+JSON.stringify({
+     trimInputUs:inputAudit.trimUs,trimOutputUs:after.trimUs,
+     samples:hb.length,offsetMs:audit.offsetMs,driftMs:audit.driftMs
+   }));
+   assert.deepEqual(errs,[]);
   }finally{await browser.close()}
  }finally{
   if(app.listening)await new Promise(r=>app.close(r));
