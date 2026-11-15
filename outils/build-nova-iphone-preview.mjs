@@ -78,6 +78,29 @@ manifest.push({path:motionFixture,bytes:motionBytes.length,
  sha256:crypto.createHash("sha256").update(motionBytes).digest("hex"),
  origin:"ffmpeg-synthetic-only"});
 
+// Deuxième mire distincte H.264/AAC : vraie source WebCodecs+AAC pour tester
+// l'export de bout en bout (la mire SmallMotion historique reste sans son).
+const h264AvFixture="experiences/nova-h264-aac-synthetic.mp4";
+const h264AvPath=path.join(out,h264AvFixture);
+await execFileAsync("ffmpeg",[
+ "-hide_banner","-loglevel","error","-nostdin",
+ "-f","lavfi","-i","testsrc2=size=160x90:rate=15:duration=1.2",
+ "-f","lavfi","-i","sine=frequency=740:sample_rate=48000:duration=1.2",
+ "-map","0:v:0","-map","1:a:0",
+ "-c:v","libx264","-preset","ultrafast","-threads","1","-bf","0",
+ "-pix_fmt","yuv420p","-color_primaries","bt709",
+ "-color_trc","bt709","-colorspace","bt709",
+ "-c:a","aac","-b:a","48k","-ac","1",
+ "-movflags","+faststart+write_colr","-f","mp4","-y",h264AvPath
+],{timeout:60000});
+const h264AvBytes=await fs.readFile(h264AvPath);
+if(h264AvBytes.length<1000||h264AvBytes.length>250000)
+ throw Error("La mire H264/AAC dépasse les bornes prévues");
+manifest.push({path:h264AvFixture,bytes:h264AvBytes.length,
+ sha256:crypto.createHash("sha256").update(h264AvBytes).digest("hex"),
+ origin:"ffmpeg-synthetic-only"});
+
+
 const html=await fs.readFile(path.join(out,"experiences/nova.html"),"utf8");
 const scripts=[...html.matchAll(/<script\s+src="([^"]+)"/g)].map(x=>x[1]);
 // Politique de sécurité d'un site statique isolé : hachage exact du seul
