@@ -669,3 +669,14 @@ Le panneau repliable HEVC affiche maintenant la chronologie des phases du **pipe
 **Portée honnête :** les octets encodés et la capacité du tas WASM ne représentent **pas** la RAM totale/RSS, ni la consommation GPU/CPU/thermique de l'iPhone. Le muxage `in-memory` peut allouer des copies supplémentaires. Les limites précédentes (12 s, entrée 60 Mo, sortie 640 px / 15 i/s, source HEVC 90 échantillons/640×360, SDR BT.709 8 bits) restent actives. Pas de Safari iPhone physique, HDR/4K/8K ni sortie 60 i/s validés ; aucun déploiement, fusion, ni média privé utilisé.
 
 **Suite** : banc iPhone physique reproductible et stress mémoire/codec sur médias consentis, avant toute élévation des plafonds.
+
+
+## NOVA 0.23 — Banc de validation Safari iPhone local et rapport JSON (expérimental)
+
+Les choix réutilisés des travaux antérieurs RetoucheProAI / SmallMotion / laboratoire 3D sont un **parcours gratuit et utilisable uniquement depuis Safari iPhone**, une commande simple et des diagnostics JSON sans téléversement. Aucun module PWA ou IA 3D non validé conjointement n'est importé : leur mécanique de test local et leurs principes de confidentialité sont réutilisés, pas leur code exécutable ni leurs médias privés.
+
+`experiences/nova-iphone-report.js` prépare un rapport de **liste blanche** des capacités WebCodecs et WebAssembly, informations techniques du MOV HEVC, statut de l'essai réel, mesures des phases d'export et taille MP4, pic de capacité WASM et tas JS optionnel. Il **exclut** nom de fichier, chemin, contenu binaire, PTS par image, données GPS, empreinte utilisateur ou userAgent. Le navigateur n'envoie pas ce rapport automatiquement : il produit seulement un lien `Blob` de téléchargement quand l'utilisateur clique sur « Tester Safari sur cette vidéo », dans un `details` avancé fermé par défaut. Les refus et annulations peuvent également produire un diagnostic, sans MP4 partiel.
+
+`experiences/nova-iphone-lab-ui.js` fournit la commande opt-in et le téléchargement volontaire du JSON et, après réussite seulement, du MP4 de vérification. L'audio est **conservé par défaut**, et le choix explicite « sans son » reste celui du parcours export existant. Une sélection de fichier ne démarre jamais de calcul automatiquement. Le panneau est caché lorsque le pilote export n'est pas disponible ; aucune publicité du prototype n'est faite sur la production.
+
+**Les mesures de laboratoire ne sont pas un test Safari physique.** Les bancs Chromium/WebKit Linux et les tests de confidentialité du JSON s'exécutent en CI ; la vraie validation exige l'ouverture de l'aperçu expérimental dans Safari sur un iPhone et un fichier consenti, et l'enregistrement volontaire du rapport. Aucun lien de prévisualisation publique n'est déployé par ce commit. Les limites NOVA 0.22 (12 s / 60 Mo, HEVC 90 images 640×360, sortie H.264 15 i/s) restent inchangées.

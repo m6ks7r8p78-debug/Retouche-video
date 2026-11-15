@@ -163,6 +163,35 @@ for(const inputFPS of [30,60])test(
   assert.deepEqual(jsErrors,[]);
   assert.deepEqual(external,[],"aucun média ou décodeur chargé d'un domaine tiers");
   if(inputFPS===30){
+   // Banc Safari opt-in : même pipeline, rapport JSON strict sans
+   // nom du fichier ni données brutes, téléchargement volontaire.
+   assert.equal(await page.locator("#iphoneBenchRun").isEnabled(),true);
+   assert.equal(await page.locator("#iphoneBenchJson").getAttribute("href"),null);
+   await page.locator("#iphoneBenchPanel summary").click();
+   await page.locator("#iphoneBenchRun").click();
+   await page.waitForFunction(()=>!!document.querySelector("#iphoneBenchJson")?.getAttribute("href"),
+    null,{timeout:90000});
+   const benchStatus=await page.locator("#iphoneBenchStatus").innerText();
+   assert.match(benchStatus,/Test réussi localement/,benchStatus);
+   assert.match(await page.locator("#iphoneBenchMp4").getAttribute("href")||"",/^blob:/);
+   const reportDownload=page.waitForEvent("download");
+   await page.locator("#iphoneBenchJson").click();
+   const downloaded=await reportDownload;
+   assert.match(downloaded.suggestedFilename(),/NOVA_023_rapport_Safari_local\.json/);
+   const report=JSON.parse(await fs.readFile(await downloaded.path(),"utf8"));
+   assert.equal(report.result,"success");
+   assert.equal(report.source.containerVideo,"hevc");
+   assert.equal(report.output.audio,"aac-copy");
+   assert.equal(report.output.colorVerified,true);
+   assert.ok(report.output.wasmHeapCapacityPeakBytes>=1000000);
+   assert.ok(report.output.pipelineElapsedMs>0);
+   assert.equal(report.privacy.mediaUploaded,false);
+   assert.ok(!Object.hasOwn(report.source,"name"));
+   assert.ok(!Object.hasOwn(report,"userAgent"));
+   t.diagnostic("NOVA 0.23 local JSON : "+JSON.stringify({
+    result:report.result,frames:report.output.outputFrames,
+    ms:report.output.pipelineElapsedMs,wasmCapacity:report.output.wasmHeapCapacityPeakBytes}));
+
    // Injection de seuil uniquement via l'API laboratoire, pas de réglage
    // accessible dans l'interface. Refus avant publication de MP4 partiel.
    const beforeHref=await page.locator("#downloadVideo").getAttribute("href");

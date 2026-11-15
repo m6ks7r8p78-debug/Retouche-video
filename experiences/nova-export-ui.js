@@ -21,6 +21,9 @@ function clear(){
 }
 function choisir(f){
  clear();file=null;
+ // Message local de sélection pour les bancs de validation opt-in.
+ // La File n'est ni enregistrée, ni transmise sur le réseau.
+ window.dispatchEvent(new CustomEvent("nova:source-selected",{detail:{file:f||null}}));
  if(!f||!f.type.startsWith("video/"))return;
  file=f;panel.hidden=false;
  if(f.size>60*1024*1024){msg("Pilote limité à 60 Mo. Utilisez la version principale.");return}

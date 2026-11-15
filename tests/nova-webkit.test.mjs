@@ -102,6 +102,20 @@ test("NOVA WebKit : son MP4 analysé localement et WebCodecs contrôlé sans rep
    "-movflags","+faststart","-shortest","-y",source]);
   await session(async({page,errors,external})=>{
    await page.locator("#file").setInputFiles(source);
+   // Même sans HEVC natif, WebKit peut enregistrer un diagnostic
+   // d'échec sans envoyer le MP4 ni solliciter l'utilisateur.
+   assert.equal(await page.locator("#iphoneBenchRun").isEnabled(),true);
+   await page.locator("#iphoneBenchPanel summary").click();
+   await page.locator("#iphoneBenchRun").click();
+   await page.waitForFunction(()=>!!document.querySelector("#iphoneBenchJson")?.getAttribute("href"),
+    null,{timeout:30000});
+   const reportDownload=page.waitForEvent("download");
+   await page.locator("#iphoneBenchJson").click();
+   const report=JSON.parse(await fs.readFile(await (await reportDownload).path(),"utf8"));
+   assert.equal(report.result,"refused");
+   assert.equal(report.source.containerVideo,"other-or-unknown");
+   assert.equal(report.privacy.includesFileName,false);
+   assert.equal(await page.locator("#iphoneBenchMp4").getAttribute("href"),null);
    const check=await page.evaluate(async()=>{
     const f=document.querySelector("#file").files[0];
     const a=await NOVA_AVSYNC.analyser(f);
