@@ -152,7 +152,7 @@ test("Director photo result cannot be attached to Cinema video evidence",()=>{
 });
 test("Director unknown verdict rejected",()=>{
  const p=validQuality();p.verdict="physical-realism-proven";
- assert.throws(()=>projectQuality(p),/Director quality verdict/);
+ assert.throws(()=>projectQuality(p),/Directeur quality verdict/);
 });
 test("Director invalid count totals rejected",()=>{
  const p=validQuality();p.compte.compare=999;
