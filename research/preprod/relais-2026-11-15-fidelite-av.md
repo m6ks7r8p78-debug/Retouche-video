@@ -2,7 +2,7 @@
 
 **LABORATOIRE :** SmallMotion / préproduction (PR #28 en amont)
 
-**BRANCHE / PR / COMMIT :** à remplir depuis la PR de recherche dédiée après validation CI.
+**BRANCHE / PR / COMMIT :** `lab-smallmotion-export-fidelity-gate-20261115` / [PR brouillon #36](https://github.com/m6ks7r8p78-debug/Retouche-video/pull/36) / code et tests synthétiques committés dans l'historique de la PR ; la CI exacte est reportée dans la description après exécution.
 
 **OBJET :** contrat de validation *lecture seule* de l'export local sans modification automatique du moteur.
 
