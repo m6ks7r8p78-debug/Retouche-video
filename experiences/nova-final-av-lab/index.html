@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; media-src blob:; img-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; worker-src 'none'; form-action 'none'; base-uri 'none'">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./style.css">
+<title>NOVA — tester mon MP4 avec image et son</title>
+<script defer src="../../mp4-muxer.js"></script>
+<script defer src="../nova-decision.js"></script>
+<script defer src="../nova-zones.js"></script>
+<script defer src="../nova-demux.js"></script>
+<script defer src="../nova-hevc-annexb.js"></script>
+<script defer src="../nova-hevc-vui.js"></script>
+<script defer src="../nova-color709.js"></script>
+<script defer src="../nova-guard.js"></script>
+<script defer src="../nova-aac-copy.js"></script>
+<script defer src="../nova-aac-native.js"></script>
+<script defer src="../nova-hd-color.js"></script>
+<script defer src="../nova-native-hd.js"></script>
+<script defer src="./core.js"></script>
+<script defer src="./ui.js"></script>
+</head><body><main>
+<header><strong>✦ RETOUCHEPROAI / NOVA LAB</strong><span>ESSAI AUDIO + IMAGE</span></header>
+<section class="hero">
+<p class="eyebrow">SUR TON IPHONE · SANS ENVOI</p>
+<h1>Créer un MP4 et vérifier son et image.</h1>
+<p>Ton précédent test a réussi à décoder et réencoder le son en AAC. Cette étape utilise le moteur HD expérimental de NOVA pour tenter un **vrai MP4 H.264 avec piste AAC**, puis te laisser le lire avant de l’enregistrer.</p>
+<div class="privacy"><strong>Aucune vidéo envoyée.</strong> La conversion s’exécute uniquement dans Safari. Tu choisis si tu souhaites conserver le nouveau fichier. Ton original reste inchangé.</div>
+</section>
+<section class="card" aria-labelledby="test-title">
+<p class="kicker">UN FICHIER · UN ESSAI</p>
+<h2 id="test-title">Essai local HD</h2>
+<p>Choisis une vidéo MP4 ou MOV de 12 secondes maximum et de 16 Mio maximum. Les fichiers HDR, les couleurs non vérifiées, les formats non compatibles et les exports sans piste audio fiable seront refusés.</p>
+<label class="fileLabel" for="local-video">Choisir ma vidéo sur l’iPhone</label>
+<input id="local-video" type="file" accept="video/mp4,video/quicktime,video/*,.mov,.mp4,.m4v" aria-describedby="selected-file">
+<p class="note" id="selected-file">Aucune vidéo sélectionnée. Le test ne démarre jamais automatiquement.</p>
+<button id="start" type="button" disabled>Créer le MP4 de test</button>
+<button id="cancel" type="button" class="secondary" hidden>Annuler le traitement</button>
+<p id="status" role="status" aria-live="polite" class="status">Prêt pour un essai local, sans export automatique.</p>
+</section>
+<section class="card" id="playback-panel" hidden aria-labelledby="preview-title">
+<p class="kicker">VÉRIFICATION AVANT ENREGISTREMENT</p>
+<h2 id="preview-title">Regarder et écouter le MP4</h2>
+<p>NOVA a construit le fichier et contrôlé ses métadonnées vidéo et sa piste AAC. <strong>Toi seul peux vérifier ici que les images s’affichent et que le son est audible.</strong> Appuie sur Lecture et écoute un passage.</p>
+<video id="output-preview" controls playsinline preload="metadata" aria-label="Aperçu du MP4 généré avec image et son"></video>
+<fieldset aria-label="Mes observations de lecture">
+<legend>Après avoir regardé et écouté</legend>
+<label><input id="video-visible" type="checkbox"> Je vois correctement les images.</label>
+<label><input id="audio-audible" type="checkbox"> J’entends le son de la vidéo.</label>
+<label><input id="sync-plausible" type="checkbox"> Le son semble synchronisé avec l’image, lorsque c’est vérifiable.</label>
+</fieldset>
+<p class="note">Le troisième point peut rester décoché si tu ne peux pas juger la synchronisation. Un essai réussi ne certifie pas automatiquement la fidélité visuelle ou sonore.</p>
+<a id="save" class="download" hidden download="NOVA_HD_test_image_son.mp4">Enregistrer ce MP4 testé sur l’iPhone</a>
+<p id="review-status" class="status" role="status" aria-live="polite">Vérifie les images et le son pour activer l’enregistrement.</p>
+</section>
+<section class="card" id="report-panel" hidden aria-labelledby="report-title">
+<p class="kicker">RAPPORT CONFIDENTIEL</p>
+<h2 id="report-title">Diagnostic de l’essai</h2>
+<p>Ce rapport ne contient ni nom de fichier, ni image, ni son, ni vidéo. Il n’est pas transmis automatiquement.</p>
+<label for="report-json">Texte JSON à copier volontairement</label>
+<textarea id="report-json" rows="13" readonly spellcheck="false"></textarea>
+<button id="copy" class="secondary" type="button">Copier le rapport technique</button>
+<p id="copy-status" role="status" aria-live="polite" class="note"></p>
+</section>
+<section class="explainer">
+<h2>Ce que cet essai ne garantit pas</h2>
+<p>Le moteur peut corriger légèrement la lumière et convertir certaines couleurs SDR en BT.709. Il ne reconstruit pas les détails perdus, ne produit pas de 8K et refuse les formats HDR non pris en charge. Les contrôles structuraux ne remplacent pas une écoute et un examen visuel humains.</p>
+<p>La page est servie par un hébergeur HTTPS expérimental qui voit les requêtes nécessaires au chargement de son code, mais elle ne transmet pas la vidéo sélectionnée, le MP4 créé ou ton rapport.</p>
+</section>
+<footer>Laboratoire autonome · MP4 local seulement · aucun téléversement · aucun changement de l’original</footer>
+</main></body></html>
