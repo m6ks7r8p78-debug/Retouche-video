@@ -251,7 +251,7 @@ function encodeGLB(model){
  const nodes=model.nodes.map(n=>{let c={name:n.name,translation:n.translation.slice()};if(n.scale)c.scale=n.scale.slice();if(n.children)c.children=n.children.slice();if(n.mesh!==undefined)c.mesh=n.extras?.materialIndex??0;return c;});
  const animations=[];
  for(const clip of model.animations){const samplers=[],channels=[];
-  for(const motion of clip.channels){let ti=accessor(new Float32Array(motion.times),5126,'SCALAR');let path=motion.path||'rotation';let values=motion.values||motion.rotation;let data=accessor(new Float32Array(values.flat()),5126,path==='scale'?'VEC3':'VEC4');let si=samplers.length;samplers.push({input:ti,output:data,interpolation:'LINEAR'});channels.push({sampler:si,target:{node:motion.node,path}});}
+  for(const motion of clip.channels){let ti=accessor(new Float32Array(motion.times),5126,'SCALAR');let path=motion.path||'rotation';let values=motion.values||motion.rotation;let data=accessor(new Float32Array(values.flat()),5126,path==='rotation'?'VEC4':'VEC3');let si=samplers.length;samplers.push({input:ti,output:data,interpolation:'LINEAR'});channels.push({sampler:si,target:{node:motion.node,path}});}
   animations.push({name:clip.name,samplers,channels});
  }
  while(pos%4){bytes.push(0);pos++}
