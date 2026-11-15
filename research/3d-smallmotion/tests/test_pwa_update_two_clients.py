@@ -21,7 +21,7 @@ from playwright.sync_api import sync_playwright
 
 REPO=Path(__file__).resolve().parents[3]
 SW=(REPO/'sw.js').read_text(encoding='utf-8')
-assert 'const C="retouche-v86"' in SW
+assert 'const C="retouche-v87"' in SW
 assert 'self.skipWaiting(' not in SW, 'Forced SW activation can mix two generations'
 F=json.loads(re.search(r'\bF=(\[[^\]]+\])',SW).group(1))
 REQUIRED=['research/3d-smallmotion/smallmotion-local.js',
@@ -49,14 +49,14 @@ def write_atomic(path:Path,data:str):
 
 def install_release(name:str):
  """Mimic server deploying a second coherent generation, byte by byte."""
- if name == 'v86':
+ if name == 'v87':
   sw=BASE_SW
-  html_version='86'
- else:
-  assert name == 'v87'
-  sw=BASE_SW.replace('const C="retouche-v86"','const C="retouche-v87"').replace(
-      'const H="9b3586a6271e8c09"','const H="1234567890abcdef"')
   html_version='87'
+ else:
+  assert name == 'v88'
+  sw=BASE_SW.replace('const C="retouche-v87"','const C="retouche-v88"').replace(
+      'const H="PENDING_________"','const H="1234567890abcdef"')
+  html_version='88'
   for f in REQUIRED:
    path=STAGE/f
    old=path.read_text('utf-8')
@@ -70,7 +70,7 @@ def install_release(name:str):
  <script src="research/3d-smallmotion/smallmotion-worker-runner.js"></script>
  </body></html>''')
 
-install_release('v86')
+install_release('v87')
 
 class Quiet(SimpleHTTPRequestHandler):
  def __init__(self,*args,**kwargs):super().__init__(*args,directory=str(STAGE),**kwargs)
@@ -99,7 +99,7 @@ def check(page,version):
  outcome=page.evaluate(EVIDENCE)
  assert outcome['path']=='worker' and outcome['parity'],outcome
  assert outcome['runner']==outcome['local'],outcome
- assert outcome['local'].endswith('v'+str(version-85)),outcome
+ assert outcome['local'].endswith('v'+str(version-86)),outcome
  assert outcome['release']==str(version),outcome
  return outcome
 
@@ -117,10 +117,10 @@ try:
   b=ctx.new_page();b.goto(SITE,wait_until='load');b.wait_for_function('!!navigator.serviceWorker.controller')
   for page in [a,b]:
    page.evaluate('window.__unsavedEditorState={openVideo:true,unexportedEdits:7}')
-   check(page,86)
-  assert a.evaluate('async()=> (await caches.keys()).includes("retouche-v86")')
-  # Publishing release two while two active pages are still controlled by v86.
-  install_release('v87')
+   check(page,87)
+  assert a.evaluate('async()=> (await caches.keys()).includes("retouche-v87")')
+  # Publishing release two while two active pages are still controlled by v87.
+  install_release('v88')
   a.evaluate('async()=>{const reg=await navigator.serviceWorker.getRegistration();await reg.update()}')
   # Chromium can schedule a second installing worker while replacing a waiting
   # worker during update(). Observe a stable installed/waiting state, not a
@@ -133,20 +133,20 @@ try:
   stable=0;state=None
   for attempt in range(90):
    state=a.evaluate(state_js)
-   assert 'retouche-v86' in state['caches'],state
-   assert state['controller']=='activated' and state['release']=='86',state
+   assert 'retouche-v87' in state['caches'],state
+   assert state['controller']=='activated' and state['release']=='87',state
    stable=stable+1 if state['waiting']=='installed' and not state['installing'] else 0
    if stable>=3:break
    time.sleep(0.25)
   assert stable>=3,('new release never reached stable waiting state',state)
   bstate=b.evaluate(state_js)
-  assert bstate['release']=='86' and bstate['controller']=='activated',bstate
+  assert bstate['release']=='87' and bstate['controller']=='activated',bstate
   assert bstate['waiting']=='installed' and not bstate['installing'],bstate
-  assert 'retouche-v86' in bstate['caches'] and 'retouche-v87' in bstate['caches'],bstate
+  assert 'retouche-v87' in bstate['caches'] and 'retouche-v88' in bstate['caches'],bstate
   assert a.evaluate('async()=>!!(await navigator.serviceWorker.getRegistration()).waiting')
   for page in [a,b]:
    assert page.evaluate('window.__unsavedEditorState?.unexportedEdits')==7
-   check(page,86) # Crucial: new files are online, but old clients use old cache.
+   check(page,87) # Crucial: new files are online, but old clients use old cache.
   rows.append({'phase':'waiting_two_clients','oldCacheRetained':True,'newCachePrepared':True,
                'unsavedEditorStatePreserved':True,'oldWorkerCoherent':True})
   ctx.set_offline(True)
@@ -154,8 +154,8 @@ try:
   # Tab B remains open with unexported edits and still uses old SW OFFLINE.
   assert b.evaluate('window.__unsavedEditorState?.openVideo') is True
   assert b.evaluate('async()=>!!(await navigator.serviceWorker.getRegistration()).waiting')
-  assert b.evaluate('async()=>(await caches.keys()).includes("retouche-v86")')
-  check(b,86)
+  assert b.evaluate('async()=>(await caches.keys()).includes("retouche-v87")')
+  check(b,87)
   rows.append({'phase':'waiting_one_client_offline','oldCacheRetained':True,'oldWorkerCoherent':True})
   b.close() # Last old client closes -> new SW may safely activate.
   # A new client can race activation. If it does, close and retry rather than
@@ -166,16 +166,16 @@ try:
    fresh=ctx.new_page()
    try:
     fresh.goto(SITE,wait_until='load',timeout=10000)
-    if fresh.evaluate('document.documentElement.dataset.release')=='87':
+    if fresh.evaluate('document.documentElement.dataset.release')=='88':
      migrated=fresh;break
    except Exception:
     pass
    fresh.close()
   assert migrated,'After all old tabs closed, new SW must own offline clients'
   migrated.wait_for_function('!!navigator.serviceWorker.controller')
-  evidence=check(migrated,87)
+  evidence=check(migrated,88)
   keys=migrated.evaluate('async()=>await caches.keys()')
-  assert 'retouche-v87' in keys and 'retouche-v86' not in keys,keys
+  assert 'retouche-v88' in keys and 'retouche-v87' not in keys,keys
   assert not foreign,foreign
   assert not errors,errors
   rows.append({'phase':'new_client_offline','newBundle':'smallmotion-pwa-bundle-v2',
