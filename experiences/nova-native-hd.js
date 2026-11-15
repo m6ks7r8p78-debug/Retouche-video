@@ -116,23 +116,26 @@ function rgba709(data,w,h,timestamp,duration){
   timestamp,duration,colorSpace:{primaries:"bt709",transfer:"bt709",
    matrix:"bt709",fullRange:false}});
 }
-function frameToOutput(frame,info,canvas,moteur,arbitre,duration,evidence){
- const colorProof=globalThis.NOVA_HD_COLOR.verifyFrame(frame,evidence);
- const w=canvas.width,h=canvas.height;
- const ctx=canvas.getContext("2d",{willReadFrequently:true});
- if(!ctx)fail("canvas 2D indisponible");
- ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,w,h);
- const m=info.mat;
- ctx.setTransform(m[0]*w/info.dw,m[1]*h/info.dh,
-  m[2]*w/info.dw,m[3]*h/info.dh,m[4]*w/info.dw,m[5]*h/info.dh);
- ctx.drawImage(frame,0,0,info.W,info.H);
- ctx.setTransform(1,0,0,1,0,0);
- const img=ctx.getImageData(0,0,w,h);
- const restored=moteur.restituer(img,{size:256,arbitre});
- if(!restored?.data||restored.data.length!==img.data.length||
-    !restored?.bilan)fail("restauration classique invalide");
- return {out:rgba709(restored.data,w,h,frame.timestamp,duration),
-  modified:!!restored.bilan.intervention,colorProof};
+async function frameToOutput(frame,info,canvas,moteur,arbitre,duration,evidence){
+ const prepared=await globalThis.NOVA_HD_COLOR.imagePourRendu(frame,evidence);
+ try{
+  const colorProof=prepared.proof;
+  const w=canvas.width,h=canvas.height;
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});
+  if(!ctx)fail("canvas 2D indisponible");
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,w,h);
+  const m=info.mat;
+  ctx.setTransform(m[0]*w/info.dw,m[1]*h/info.dh,
+   m[2]*w/info.dw,m[3]*h/info.dh,m[4]*w/info.dw,m[5]*h/info.dh);
+  ctx.drawImage(prepared.frame,0,0,info.W,info.H);
+  ctx.setTransform(1,0,0,1,0,0);
+  const img=ctx.getImageData(0,0,w,h);
+  const restored=moteur.restituer(img,{size:256,arbitre});
+  if(!restored?.data||restored.data.length!==img.data.length||
+     !restored?.bilan)fail("restauration classique invalide");
+  return {out:rgba709(restored.data,w,h,frame.timestamp,duration),
+   modified:!!restored.bilan.intervention,colorProof};
+ }finally{if(prepared.owned)prepared.frame.close()}
 }
 async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  probe,demux,checkAudio,clock=()=>performance.now()}={}){
@@ -221,7 +224,7 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    if(frame){
     decoded.delete(next);
     try{
-     const result=frameToOutput(frame,info,canvas,moteur,arbitre,durations[next],p.colorEvidence);
+     const result=await frameToOutput(frame,info,canvas,moteur,arbitre,durations[next],p.colorEvidence);
      confirmedColor=result.colorProof.method;
      modified+=Number(result.modified);
      try{encoder.encode(result.out,{keyFrame:next===0||next%90===0})}

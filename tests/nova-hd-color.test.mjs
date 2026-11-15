@@ -89,3 +89,59 @@ test("NOVA color: plage SDR complète réellement décodée convertie en plage l
  assert.equal(result.method,"decoded-frame-sdr-full-to-limited");
  assert.throws(()=>COLOR.verifyFrame(frame("bt709","bt709","bt709",false),e),/contradictoires/);
 });
+
+test("NOVA SDR : matrice BT.601 SMPTE 170M (6), primaires BT709, plage limitée",()=>{
+ const info={...base,color:{...base.color,matrix:6}};
+ const evidence=COLOR.metadata(info);
+ assert.equal(evidence.kind,"mp4-colr-bt601");
+ assert.equal(evidence.expectedMatrix,"smpte170m");
+ const verified=COLOR.verifyFrame(frame("bt709","bt709","smpte170m",false),evidence);
+ assert.equal(verified.matrixConversion,true);
+ assert.equal(verified.method,"decoded-frame-sdr-matrix-to-bt709");
+ assert.throws(()=>COLOR.verifyFrame(frame("bt709","bt709","bt709",false),evidence),/contradictoires/);
+});
+test("NOVA SDR : BT.601 PAL (5) et transfert SMPTE170M (6) admis avec validation native",()=>{
+ const info={...base,color:{kind:"nclx",primaries:5,transfer:6,matrix:5,fullRange:false}};
+ const proof=COLOR.metadata(info);
+ assert.equal(proof.expectedMatrix,"bt470bg");
+ const v=COLOR.verifyFrame(frame("bt470bg","smpte170m","bt470bg",false),proof);
+ assert.equal(v.matrixConversion,true);
+ assert.equal(v.frameFullyTagged,true);
+ const sameMatrix=COLOR.verifyFrame(frame("bt470bg","smpte170m","smpte170m",false),proof);
+ assert.equal(sameMatrix.matrixConversion,true);
+});
+test("NOVA SDR : matrice BT.2020 NCL (9) avec primaires 709 et transfert SDR, décodeur requis",()=>{
+ const info={...base,color:{...base.color,matrix:9}};
+ const proof=COLOR.metadata(info);
+ assert.equal(proof.expectedMatrix,"bt2020-ncl");
+ assert.equal(proof.kind,"mp4-colr-bt2020-matrix");
+ const verified=COLOR.verifyFrame(frame("bt709","bt709","bt2020-ncl",false),proof);
+ assert.equal(verified.matrixConversion,true);
+ assert.throws(()=>COLOR.verifyFrame(frame("bt709","pq","bt2020-ncl",false),proof),/HDR/);
+ assert.throws(()=>COLOR.verifyFrame(frame("bt2020","bt709","bt2020-ncl",false),proof),/gamut/);
+});
+test("NOVA SDR : matrice 5 versus 6 autorisées dans colr et SPS, mais matrices non 601 contradictoires refusées",()=>{
+ const oldA=globalThis.NOVA_HEVC_ANNEXB,oldV=globalThis.NOVA_HEVC_VUI;
+ globalThis.NOVA_HEVC_ANNEXB={configuration:()=>({parameterSets:[new Uint8Array([66,1,2])]})};
+ globalThis.NOVA_HEVC_VUI={lireSPS:()=>({width:1920,height:1088,chroma:1,
+   lumaBits:8,chromaBits:8,primaries:1,transfer:6,matrix:6,fullRange:false})};
+ try{
+  const info={...base,desc:new Uint8Array([1]),color:{...base.color,matrix:5}};
+  const proof=COLOR.metadata(info);
+  assert.equal(proof.sourceMatrix,6);
+  assert.equal(proof.confirmed,true);
+  assert.equal(COLOR.verifyFrame(frame("bt709","smpte170m","smpte170m",false),proof).matrixConversion,true);
+  assert.throws(()=>COLOR.metadata({...info,color:{...info.color,matrix:9}}),/contradictoires/);
+ }finally{
+  if(oldA===undefined)delete globalThis.NOVA_HEVC_ANNEXB;
+  else globalThis.NOVA_HEVC_ANNEXB=oldA;
+  if(oldV===undefined)delete globalThis.NOVA_HEVC_VUI;
+  else globalThis.NOVA_HEVC_VUI=oldV;
+ }
+});
+test("NOVA SDR : diagnostic JSON donne matrice colr et SPS anonymisées",()=>{
+ const r=COLOR.report({...base,color:{...base.color,matrix:6},name:"PRIVATE-file.mov"});
+ assert.equal(r.colr.matrix,6);
+ assert.equal(r.expectedMatrix,"smpte170m");
+ assert.ok(!JSON.stringify(r).includes("PRIVATE"));
+});

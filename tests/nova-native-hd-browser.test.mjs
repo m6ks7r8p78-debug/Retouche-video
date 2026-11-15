@@ -115,6 +115,58 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
   assert.equal(checkSecond.streams.find(x=>x.codec_type==="video")?.width,160);
   assert.equal(checkSecond.streams.find(x=>x.codec_type==="video")?.height,120);
   assert.equal(checkSecond.streams.find(x=>x.codec_type==="audio")?.codec_name,"aac");
+  // Test de conversion couleur SDR réel, pas simple injection de JSON.
+  // ffmpeg produit H.264/AAC explicitement tagué matrice BT.601 SMPTE170M,
+  // primaires BT709; le navigateur décode puis convertit en Canvas sRGB et
+  // le MP4 final doit être marqué BT709 avec AAC et images complètes.
+  const matrix601=path.join(dir,"video-matrice-601.mp4");
+  await run("ffmpeg",["-hide_banner","-loglevel","error","-nostdin",
+   "-f","lavfi","-i","testsrc2=size=160x120:rate=15:duration=1",
+   "-f","lavfi","-i","sine=frequency=440:sample_rate=48000:duration=1",
+   "-map","0:v:0","-map","1:a:0","-c:v","libx264","-pix_fmt","yuv420p",
+   "-bf","0","-preset","ultrafast","-threads","1",
+   "-color_primaries","bt709","-color_trc","smpte170m",
+   "-colorspace","smpte170m","-movflags","+faststart+write_colr",
+   "-c:a","aac","-b:a","64k","-y",matrix601],{timeout:45000});
+  const inputColor=JSON.parse((await run("ffprobe",["-v","error","-select_streams","v:0",
+    "-show_streams","-of","json",matrix601])).stdout).streams[0];
+  assert.equal(inputColor.color_space,"smpte170m");
+  await page.reload();
+  await page.locator("#novaHdPanel summary").click();
+  await page.locator("#file").setInputFiles(matrix601);
+  await page.waitForFunction(()=>!document.querySelector("#novaHdRun").disabled);
+  await page.locator("#novaHdRun").click();
+  await page.waitForFunction(()=>{
+   const t=document.querySelector("#novaHdStatus")?.textContent||"";
+   return !!document.querySelector("#novaHdSave")?.getAttribute("href")||
+    /Essai HD non abouti/.test(t);
+  },null,{timeout:100000});
+  const matrixStatus=await page.locator("#novaHdStatus").textContent();
+  assert.match(matrixStatus,/MP4 HD exporté/,
+    "La vraie matrice 601 ne doit pas provoquer de refus arbitraire : "+matrixStatus);
+  const matrixDownload=page.waitForEvent("download");
+  await page.locator("#novaHdSave").click();
+  const matrixOutput=await (await matrixDownload).path();
+  const matrixCheck=JSON.parse((await run("ffprobe",["-v","error","-show_streams",
+    "-of","json",matrixOutput])).stdout);
+  const converted=matrixCheck.streams.find(x=>x.codec_type==="video");
+  assert.equal(converted.width,160);
+  assert.equal(converted.height,120);
+  assert.equal(Number(converted.nb_frames),15);
+  assert.equal(converted.color_space,"bt709");
+  assert.equal(matrixCheck.streams.find(x=>x.codec_type==="audio")?.codec_name,"aac");
+  // Contrôle perceptuel minimum : convertir source BT.601 et sortie BT.709
+  // en RGB par FFmpeg, comparer les images après transcodage classique NOVA.
+  // Le score ne constitue PAS une certification de fidélité iPhone.
+  const comparison=await run("ffmpeg",["-hide_banner","-nostdin","-v","info",
+   "-i",matrix601,"-i",matrixOutput,
+   "-filter_complex","[0:v:0]format=rgb24[reference];[1:v:0]format=rgb24[converted];[reference][converted]psnr",
+   "-an","-f","null","-"],{timeout:30000});
+  const matches=[...comparison.stderr.matchAll(/PSNR [^\n]*average:([0-9.]+)/g)];
+  assert.ok(matches.length>0,"PSNR RGB absent : "+comparison.stderr.slice(-600));
+  const psnr=Number(matches.at(-1)[1]);
+  assert.ok(psnr>25,"Conversion BT.601->BT.709 trop différente : PSNR "+psnr);
+
   assert.deepEqual(failures,[]);
   assert.deepEqual(external,[]);
   assert.deepEqual(upload,[]);
