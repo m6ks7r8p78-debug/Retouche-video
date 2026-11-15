@@ -216,3 +216,30 @@ Cycle **expérimental sur `chatgpt-studio-nova-v01` uniquement**.
 - [QuickTime File Format — AAC priming](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFAppenG/QTFFAppenG.html)
 
 Prochaine étape : un test de synchronisation de bout en bout (impulsions audio + flashs vidéo synchronisés, FFprobe + analyse du PCM décodé) ; analyser le délai ajouté par l'encodeur AAC sur plusieurs environnements avant de prétendre à une préservation parfaite. Préparer ensuite une alternative de copie sans réencodage de l'audio AAC **uniquement** sur les sources avec chronologie de conteneur intégralement comprise.
+
+
+## NOVA 0.8 — banc de synchronisation AV à impulsions et références (15 novembre 2026)
+
+### Fonctionnalités test ajoutées
+
+- `tests/nova-av-pulses.mjs` : extraction temporelle d'impulsions PCM décodées (Float32 LE mono) et de flashs vidéo (trames grises 8×8), puis mesure des **offsets audio/vidéo avant/après** et de la dérive entre deux événements. Les fonctions refusent les signaux absents, les données malformées, un décalage ajouté >90 ms ou une dérive >90 ms. Tolérance propre à **ce banc 15 fps**, pas garantie universelle.
+- `tests/nova-av-pulses.test.mjs` : cinq scénarios unitaires (réussite, signaux invalides, délai introduit, dérive).
+- `tests/nova-browser.test.mjs` : source synthétique 160×90, 15 fps, flashs à 0,4 et 1,2 secondes, impulsions sonores correspondantes ; export expérimental NOVA et décodage FFmpeg à partir du MP4 téléchargé pour mesurer l'écart **si AAC est encodable**.
+- **Calibrage indépendant de l'encodeur WebCodecs** : vraie réencapsulation/édition AAC avec FFmpeg. Un fichier témoin de référence et un second fichier auquel 250 ms de silence ont été injectées sont **décodés physiquement** ; le banc doit accepter le premier et identifier le second. Ce calibrage ne prétend pas valider l'export audio de NOVA.
+
+### Résultats GitHub Actions honnêtes sur le commit `d1f073327a5bf3194ca12796e6ef9bbea711fe3b`
+
+[Run GitHub Actions 43682496977](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43682496977) : **deux jobs verts**, 59 tests unitaires réussis sur 59, 8 tests navigateur réussis sur 9 ; **un test navigateur ignoré**, aucun échec.
+- Le témoin FFmpeg **sain** affiche une différence ajoutée de **0,0 ms**.
+- Le témoin FFmpeg **désynchronisé** affiche **250,0 ms** de retard audio mesuré ; ce témoin doit provoquer le refus du banc.
+- Le test de la sortie audiovisuelle complète de NOVA a été explicitement **ignoré** : l'environnement Chromium CI ne dispose pas d'encodeur AAC WebCodecs utilisable pour ce scénario. Une CI verte n'est **pas** une preuve de synchronisation du MP4 restauré par NOVA avec son.
+
+### Limites qui restent bloquantes
+
+1. Réaliser le test exact AV sur un navigateur disposant d'AAC WebCodecs, puis sur **Safari d'un iPhone 15 Pro Max physique**, sans téléverser les vidéos privées.
+2. Réduire les allocations et instrumenter les temps de traitement du décodeur/encodeur sous contraintes mémoire et énergie réelles.
+3. Étendre le banc à des cadences source 23,976 / 25 / 29,97 / 30 / 60 et des edits AAC difficiles.
+4. Mesurer colorimétrie, détails, visages et métriques perceptuelles avant d'annoncer une restauration supérieure.
+5. Ne débloquer ni Full HD en sortie ni 4K/8K sans ces validations.
+
+**Les limites opérationnelles restent inchangées :** 12 s / 60 Mo, sortie 640 px / 15 fps, décodage PTS source Full HD au plus. PR #3 toujours brouillon, aucune fusion ni déploiement, aucune publication de média privé.
