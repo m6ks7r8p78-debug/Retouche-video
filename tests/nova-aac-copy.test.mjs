@@ -23,12 +23,13 @@ function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=
   ]:sampleGroup?[box("sgpd",Buffer.alloc(8))]:[]));
  let edts=Buffer.alloc(0);
  if(edit!=null){
-  const elst=Buffer.alloc(20);elst.writeUInt32BE(1,4);elst.writeUInt32BE(3072,8);
+  const elst=Buffer.alloc(20);elst.writeUInt32BE(1,4);elst.writeUInt32BE(edit>0?43:64,8);
   elst.writeInt32BE(edit,12);elst.writeInt32BE(65536,16);
   edts=box("edts",box("elst",elst));
  }
  const mdat=box("mdat",Buffer.from([1,2,3,4,5,6,7,8,9,10,11,12]));
- const moov=box("moov",box("trak",edts,
+ const mvhd=Buffer.alloc(24);mvhd.writeUInt32BE(1000,12);
+ const moov=box("moov",box("mvhd",mvhd),box("trak",edts,
   box("mdia",box("mdhd",mdhd),box("hdlr",handler),box("minf",stbl))));
  return new Blob([mdat,moov],{type:"video/mp4"});
 }
@@ -79,4 +80,24 @@ test("NOVA AAC copy : recopie le groupe roll=-1 sur un fichier compatible",async
  const packets=[];
  await AAC.copier(file,plan,{addAudioChunkRaw:(buf,type,t,d,meta)=>packets.push([...buf])});
  assert.equal(packets.length,3);
+});
+
+test("NOVA AAC copy : amorçage 1024 samples et roll=-1 restent conservables",async()=>{
+ const src=fixture({edit:1024,sampleGroup:"roll"});
+ const plan=await AAC.planifier(src,{durationSeconds:.042});
+ assert.equal(plan.rollDistance,-1);
+ assert.equal(plan.editMediaTime,1024);
+ assert.equal(plan.editDurationSeconds,.043);
+ assert.equal(plan.editStartUs,21333);
+ assert.equal(plan.packets.length,3,"conserver aussi le paquet de préchargement");
+ assert.ok(plan.outputEditSeconds>.04);
+ const actual=[];
+ await AAC.copier(src,plan,{addAudioChunkRaw:(data)=>actual.push([...data])});
+ assert.deepEqual(actual,[[1,2,3,4],[5,6,7,8],[9,10,11,12]]);
+});
+test("NOVA AAC copy : refuse montage AAC qui introduit un délai de démarrage ambigu",async()=>{
+ await assert.rejects(
+   AAC.planifier(fixture({edit:1024,sampleGroup:false}),{durationSeconds:.042}),
+   /groupes roll|priming AAC/
+ );
 });
