@@ -76,17 +76,27 @@ function extract(b,sizeLimit,mdatRanges){
   if(hdlr.start+12>hdlr.end)fail("hdlr tronqué");
   if(four(b,hdlr.start+8)!=="soun")continue;
   const edits=select(kids(b,select(kids(b,tr),"edts")),"elst");
-  let editMediaTime=0,editMovieDuration=null;
+  let editMediaTime=0,editMovieDuration=null,leadingEmptyTicks=0;
   if(edits){
-   // Un segment unique, sans édition vide, vitesse 1x. Le décodeur doit
-   // recevoir les unités AAC de pre-roll et le muxer doit recopier elst.
-   if(edits.start+20>edits.end||b[edits.start]!==0||v.getUint32(edits.start+4)!==1||
-      v.getInt32(edits.start+16)!==65536)
+   // Support conservateur : une édition média seule OU exactement
+   // [édition vide -1, édition média]. Pas de boucle / vitesse / concat.
+   const version=b[edits.start],count=v.getUint32(edits.start+4);
+   if(version!==0||(count!==1&&count!==2)||
+      edits.start+8+count*12>edits.end)
     fail("montage AAC trop complexe pour copier les échantillons");
-   editMovieDuration=v.getUint32(edits.start+8);
-   editMediaTime=v.getInt32(edits.start+12);
-   if(!safe(editMediaTime)||!editMovieDuration)
-    fail("segment AAC vide, décalé ou négatif non pris en charge");
+   const read=(i)=>{
+     const p=edits.start+8+i*12,seg=v.getUint32(p),media=v.getInt32(p+4),
+       rate=v.getInt32(p+8);
+     if(!seg||rate!==65536)fail("édition AAC invalide ou vitesse différente de 1");
+     return {seg,media};
+   };
+   const first=read(0),last=count===2?read(1):first;
+   if(count===2){
+     if(first.media!==-1||last.media<0)fail("enchaînement AAC sans vide initial identifiable");
+     leadingEmptyTicks=first.seg;
+   }
+   if(last.media<0)fail("édition AAC média négative");
+   editMovieDuration=last.seg;editMediaTime=last.media;
   }
   const mdhd=need(b,mdia,"mdhd");
   const version=b[mdhd.start];if(version!==0&&version!==1)fail("mdhd inconnu");
@@ -155,6 +165,9 @@ function extract(b,sizeLimit,mdatRanges){
   if(packets.length!==count||!safe(t))fail("chronologie des AAC incomplète");
   const mediaDurationSeconds=t/timescale;
   const editDurationSeconds=editMovieDuration==null?null:editMovieDuration/movieTimescale;
+  const leadingEmptySeconds=leadingEmptyTicks/movieTimescale;
+  if(leadingEmptySeconds>0.5)
+    fail("délai de début audio supérieur à la limite pilote 500 ms");
   // Un edit-list ne doit pas promettre des samples décodés après le dernier
   // paquet. Un excès de 120 ms cacherait plusieurs trames audio manquantes.
   // 5 ms couvre seulement l'arrondi des unités movie-timescale habituelles.
@@ -163,7 +176,8 @@ function extract(b,sizeLimit,mdatRanges){
        mediaDurationSeconds-editMediaTime/timescale+0.005))
    fail("montage AAC sortant de la durée audio encodée");
   found.push({sampleRate,channels,asc,packets,rollDistance,
-    editMediaTime,editDurationSeconds,movieTimescale});
+    editMediaTime,editDurationSeconds,movieTimescale,
+    leadingEmptyTicks,leadingEmptySeconds});
  }
  if(found.length!==1)fail(found.length?"pistes AAC multiples":"piste AAC absente");
  return found[0];
@@ -196,11 +210,12 @@ async function planifier(file,{durationSeconds,signal}={}){
  const parsed=extract(media,file.size,mdatRanges),outputEnd=Math.round(durationSeconds*1e6);
  const editStartUs=Math.round(parsed.editMediaTime*1e6/parsed.sampleRate);
  const sourceEditedUs=parsed.editDurationSeconds==null?null:Math.round(parsed.editDurationSeconds*1e6);
- // Autoriser tout au plus une courte incertitude de fin (30 ms), et
- // pas un silence involontaire de ~160 ms.
- if(sourceEditedUs!=null&&sourceEditedUs+30000<outputEnd)
+ const emptyUs=Math.round(parsed.leadingEmptySeconds*1e6);
+ // Un lead-in n'est PAS du son. Il prend sa place sur la timeline movie,
+ // sans consommer de sample AAC et sans devoir être comblé artificiellement.
+ if(emptyUs>=outputEnd||sourceEditedUs!=null&&sourceEditedUs+emptyUs+30000<outputEnd)
   fail("durée audio présentée par elst insuffisante pour le film");
- const neededEnd=outputEnd+editStartUs;
+ const neededEnd=outputEnd-emptyUs+editStartUs;
  const packets=parsed.packets.filter(p=>p.timestamp<neededEnd);
  if(!packets.length||packets[0].timestamp!==0||packets.at(-1).timestamp+
     packets.at(-1).duration<neededEnd-30000)
@@ -210,11 +225,14 @@ async function planifier(file,{durationSeconds,signal}={}){
  return Object.freeze({...parsed,packets,outputEnd,
    // Ne jamais allonger la portion audible au-delà de l'edit-list originale.
    // Une fin sonore plus courte de <=30ms reste plus fidèle qu'un son inventé.
-   outputEditSeconds:parsed.editDurationSeconds==null?durationSeconds:
-     Math.min(durationSeconds,parsed.editDurationSeconds),editStartUs,
-   mode:"aac-copy",qualification:parsed.editMediaTime>0?
-     "AAC-LC original copié avec préchargement roll et elst conservés":
-     "AAC-LC original copié sans réencodage"});
+   outputEditSeconds:parsed.editDurationSeconds==null?durationSeconds-parsed.leadingEmptySeconds:
+     Math.min(durationSeconds-parsed.leadingEmptySeconds,parsed.editDurationSeconds),
+   outputEditGapSeconds:parsed.leadingEmptySeconds,editStartUs,
+   mode:"aac-copy",qualification:parsed.leadingEmptyTicks>0?
+     "AAC-LC original copié, délai initial vide elst conservé":
+     parsed.editMediaTime>0?
+      "AAC-LC original copié avec préchargement roll et elst conservés":
+      "AAC-LC original copié sans réencodage"});
 }
 async function copier(file,plan,muxer,{signal,onPacket=()=>{}}={}){
  if(!plan?.packets?.length||typeof muxer?.addAudioChunkRaw!=="function")
