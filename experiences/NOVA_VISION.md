@@ -16,15 +16,15 @@ La plateforme cible n'applique plus aveuglément un profil unique à toute la vi
 ### Ce qui fonctionne vraiment dans le prototype livré
 
 - `experiences/nova.html` : interface responsive nouvelle, import local photo/vidéo, aperçu sombre neutre, grande scène, comparateur tactile avant/après et bande d'instants.
-- Pour la **photo** : deux traitements d'aperçu déterministes, **éclaircissement gamma modéré** et **accentuation de contours légère**. Calcul local ; le moteur `nova-decision.js` choisit un candidat seulement s'il satisfait des contrôles prudents (sinon original).
+- Pour la **photo** (v0.2) : `nova-zones.js` compare les régions de 128 px, applique uniquement un **éclaircissement local non génératif** lorsque l'arbitre l'autorise et lisse les forces entre régions. La source reste intacte. Un calque permet de voir les zones sélectionnées. Les anciennes hypothèses globales existent encore dans le prototype historique mais ne sont plus le chemin actif.
 - Mesures transparentes : luminance moyenne, proportion de très hautes lumières, variation locale horizontale de luminance, écart de pixels. **Ce sont des proxies ; ils ne mesurent ni vérité terrain ni esthétique.**
 - Export PNG **de l'aperçu seulement**, limité à 1 600 pixels sur le plus grand côté ; pas de fausse promesse d'un traitement 4K/8K. La source n'est jamais écrasée.
-- Pour la **vidéo** : lecteur natif et prélèvement de cinq instants (si décodables), dont le bilan de lumière. **Ce n'est pas une détection fiable de coupes**, ni une restauration, ni un export vidéo.
-- Aucun CDN, service tiers, transfert réseau, téléchargement de modèle, identification faciale, reconnaissance AR ou entraînement activé par cette page.
+- Pour la **vidéo** (v0.2) : lecteur natif et prélèvement de cinq instants (si décodables), puis **aperçu restauré basse résolution** par copies de trames, avec comparaison tactile. La cadence cible des rendus est d'environ 220 ms, les calculs sont déportés dans un Web Worker local quand disponible, une seule trame en vol. Le son/lecture restent natifs. **Pas d'export vidéo, pas de vraie détection de scènes, pas d'inférence neuronale, pas de reconstruction des détails disparus.**
+- `nova-worker.js` exécute la correction locale hors du fil principal ; si indisponible, repli local synchrone. Aucun CDN, service tiers, transfert du média vers un serveur, téléchargement de modèle, identification faciale, reconnaissance AR ou entraînement activé par cette page.
 
 ### Ce qui n'est PAS implémenté aujourd'hui
 
-- Aucun raccordement de cette page au pipeline d'export existant, ni orchestration vidéo par scène/région.
+- Aucun raccordement de cette page au pipeline d'export WebCodecs existant, ni orchestration neuronale vidéo par scène/région ; la correction vidéo est un aperçu échantillonné seulement.
 - Aucune comparaison réelle entre tous les spécialistes neuraux ni apprentissage sur les 157 médias depuis ce prototype.
 - Aucune détection AR v4 ou reconstruction 3D réellement activée.
 - Aucun test matériel Safari iPhone 15 Pro Max pour ce prototype ; l'interface doit être éprouvée physiquement.
@@ -38,7 +38,7 @@ Le banc AR de la PR #1 a encore 62,5 % d'échecs sur 8 cas artificiels et le fil
 Après un checkout de cette branche, servir le dépôt en local, puis ouvrir `/experiences/nova.html`.
 Exemple : `python3 -m http.server 8080` à la racine puis `http://localhost:8080/experiences/nova.html`.
 
-Tests du module pur : `node --test tests/nova-decision.test.mjs`.
+Tests des modules : `node --test tests/nova-decision.test.mjs tests/nova-zones.test.mjs tests/nova-video.test.mjs`. Test navigateur Chromium : `node --test tests/nova-browser.test.mjs` (Playwright et FFmpeg nécessaires).
 Le navigateur doit prendre en charge Canvas 2D et les codecs du média. L'arbitrage ne remplace jamais une validation visuelle ni un banc de vérité terrain.
 
 ## Design cible (parcours iPhone en trois gestes)
@@ -58,3 +58,14 @@ Direction visuelle : papier clair et typographie éditoriale pour la navigation 
 5. Tests d'accessibilité et d'usage d'une personne non experte (import → un bouton → résultat), avec possibilité claire de revenir à l'original.
 
 **Décision de diffusion** : ne pas fusionner dans `main` ni modifier le site publié sans examen et validation.
+
+## Cycle NOVA 0.2 — 15 novembre 2026
+
+- Éclairage par **tuiles** 32–512 px (128 px par défaut pour les photos), choisi selon la luminance et les indicateurs de risque. Chaque tuile obtient un choix explicite par `NOVA_DECISION` et un état traçable. Mélange bilinéaire des intensités entre tuiles afin de diminuer les joints visibles. Les zones lumineuses et les zones sans preuve restent inchangées.
+- Visualiseur de masque actionnable (photo) : montrer/masquer les régions sélectionnées ; carte non incluse dans le PNG.
+- **Véritable prévisualisation vidéo** des trames : le navigateur dessine les images sur Canvas, le calcul local traite les régions puis le résultat s'affiche dans un calque pour la comparaison. Ce n'est pas le traitement du fichier vidéo de sortie. Le prototype utilise au plus 320 px sur le plus grand côté pour le flux vidéo.
+- **Web Worker** isolé : les calculs de photo et de vidéo peuvent se faire hors thread UI, sans connexion serveur. Retour synchrone local en cas d'indisponibilité ; il convient de benchmarker les temps et la température sur l'iPhone physique avant toute promotion.
+- **20 tests de fonctions validés dans le moteur d'exécution JS** lors de la préparation (9 arbitre, 7 zones, 4 vidéo). Des tests Chromium mobile/desktop et vidéo MP4 synthétique sont ajoutés en CI, mais leur **statut distant doit être confirmé**. Ceci n'est pas une mesure de qualité visuelle ni un essai Safari réel.
+- Limites : détection de zones sombres heuristique, pas de nettoyage AR réel, pas de preuve que la texture naturelle est mieux conservée, aucun critère perceptuel validé. L'éclaircissement de pixels existants n'est pas une restauration de vrais détails absents. Travaux orientés **filiation et sécurité du rendu**, pas promesse 8K.
+
+**Jalon suivant** : tester les masques et le rendu sur de vrais médias autorisés avec revues perceptuelles, mesurer les coûts iPhone, puis raccorder progressivement l'export vidéo au moteur validé sans écraser l'application historique.
