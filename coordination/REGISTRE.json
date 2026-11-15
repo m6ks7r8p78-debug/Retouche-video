@@ -42,10 +42,24 @@
       "observation": "draft-pr-observed",
       "interface": "ZIP statique testable sans média privé, deux mires FFmpeg, CSP hash, rapport de diagnostic local et export manuel sur hébergeur distinct",
       "workBoundary": "outils/build-nova-iphone-preview.mjs; experiences/nova-smallmotion-*; tests/nova-smallmotion-*; tests/nova-iphone-preview.test.mjs; workflow nova-iphone-https-manual",
-      "validationGap": "26 tests unitaires + 1 test Chromium sous CSP réussis; aucune URL HTTPS publiée et aucun Safari iPhone physique testé; PR non fusionnée",
+      "validationGap": "Tests synthétiques automatisés réussis, aperçu manuel publié sur Cloudflare Pages par l'utilisateur ; lecture image grise et bip AAC du MP4 synthétique confirmée sur iPhone par l'utilisateur. Cela ne valide PAS encore l'import de vidéo réelle ni le module précontrôle #42.",
       "links": [
         "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/38",
         "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43712320533"
+      ]
+    },
+    {
+      "id": "nova-real-preflight",
+      "label": "NOVA — précontrôle lecture seule de vidéos réelles HEVC/AAC",
+      "branch": "chatgpt-nova-real-video-preflight-v1",
+      "pr": 42,
+      "observation": "draft-pr-observed",
+      "interface": "Vérification locale et volontaire avant export : codec, BT.709, PTS, budget, copie audio AAC, JSON borné sans noms de média",
+      "workBoundary": "experiences/nova-real-preflight*; tests/nova-real-preflight*; research/relais/nova-real-preflight*; workflow nova-real-video-preflight",
+      "validationGap": "26 tests unitaires et 1 test navigateur Chromium sous CSP réussis sur mires synthétiques ; aucune vidéo réelle testée sur Safari iPhone, aucun déploiement ni fusion de ce module",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/42",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43716033911"
       ]
     },
     {
@@ -194,6 +208,12 @@
       "from": "nova-https-preview",
       "to": "nova-smallmotion-bridge",
       "topic": "ZIP HTTPS manuel, diagnostics SmallMotion synthétiques et locaux sous CSP; ne prétendre ni Safari physique ni déploiement sans action explicite.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-real-preflight",
+      "to": "nova",
+      "topic": "Précontrôle HEVC/AAC et mémoire en lecture seule avant tentative d'export; statut favorable non suffisant pour validation de fidélité, PR #42 non fusionnée.",
       "state": "proposal"
     }
   ],
