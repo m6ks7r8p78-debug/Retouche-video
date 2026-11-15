@@ -35,6 +35,20 @@
       ]
     },
     {
+      "id": "nova-https-preview",
+      "label": "NOVA iPhone — paquet HTTPS manuel, mire synthétique SmallMotion",
+      "branch": "chatgpt-nova-iphone-https-package-v1",
+      "pr": 38,
+      "observation": "draft-pr-observed",
+      "interface": "ZIP statique testable sans média privé, deux mires FFmpeg, CSP hash, rapport de diagnostic local et export manuel sur hébergeur distinct",
+      "workBoundary": "outils/build-nova-iphone-preview.mjs; experiences/nova-smallmotion-*; tests/nova-smallmotion-*; tests/nova-iphone-preview.test.mjs; workflow nova-iphone-https-manual",
+      "validationGap": "26 tests unitaires + 1 test Chromium sous CSP réussis; aucune URL HTTPS publiée et aucun Safari iPhone physique testé; PR non fusionnée",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/38",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43712320533"
+      ]
+    },
+    {
       "id": "smallmotion",
       "label": "SmallMotion / PWA / budgets",
       "branch": "preprod-retoucheproai-local-v1",
@@ -174,6 +188,12 @@
       "from": "nova-smallmotion-bridge",
       "to": "nova",
       "topic": "À évaluer en revue : diagnostic deux images 2D consultatif sans décision automatique, passerelle de provenance et rapport local; aucune promotion production.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-https-preview",
+      "to": "nova-smallmotion-bridge",
+      "topic": "ZIP HTTPS manuel, diagnostics SmallMotion synthétiques et locaux sous CSP; ne prétendre ni Safari physique ni déploiement sans action explicite.",
       "state": "proposal"
     }
   ],
