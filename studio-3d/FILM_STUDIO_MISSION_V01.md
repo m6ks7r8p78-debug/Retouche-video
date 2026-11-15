@@ -125,3 +125,22 @@ Effectuer un test navigateur effectif de la page locale, puis inspection visuell
 - **WebKit Playwright sous Linux n'est pas Safari physique sur iPhone 15 Pro Max** : GPU Apple, thermiques, mémoire, version iOS, téléchargement iOS et PWA non attestés.
 - Animations toujours stylisées, posture assise approximative, doigts sans préhension physique, pas de voix, de film MP4, de photoréalisme ni d'entraînement sur les 157 vidéos privées.
 - Aucune fusion, aucun déploiement, aucun changement public. PR en brouillon.
+
+
+## Film Studio v0.6 — diagnostic iPhone local, paquet HTTPS isolé (15 novembre 2026)
+
+### Livré dans la PR expérimentale
+- film-diagnostic-v06.mjs : métriques locales sur 90 images, cadence moyenne/effective, médiane et 95e percentile du temps par image, compteur des images >50 ms ; compteurs de perte/restauration de contexte WebGL et code d'erreur GPU. Mesures réelles du navigateur, pas télémétrie du système iOS.
+- film-ui-v06.mjs et film-studio-v06.html : bouton facultatif de diagnostic, compte-rendu lisible et export volontaire d'un JSON local. Aucun contenu de scénario, photo, vidéo, user-agent détaillé, géolocalisation ou identité dans ce JSON. Le diagnostic n'est pas envoyé à un serveur et les anciens liens sont retirés quand un nouveau scénario est refusé.
+- film-diagnostic-v06.test.mjs : sept tests Node de cadence, d'entrées malformées, de confidentialité et d'interruption.
+- film-browser-webkit-v06.test.mjs : test du clic de diagnostic dans un vrai navigateur WebKit Playwright sous Linux, en mode WebGL2 et avec repli Canvas 2D forcé ; téléchargement du JSON au lieu d'une simple inspection de lien, vérification du contenu et du refus.
+- FILM_STUDIO_IPHONE_QA_V06.md : protocole séparé de test manuel Safari réel.
+- Paquet HTML/JS autonome sans médias privés : index.html + huit scripts et _headers restrictif. Produit seulement après la validation WebKit et disponible dans les artefacts GitHub Actions sous film-studio-v06-iphone-https-package. Pas de déploiement automatique ni de fusion.
+
+### Résultats vérifiés
+GitHub Actions **43749104454**, SHA dacb8c1c39b376d6c7560151541e5b88b669d6c8 : **45/45 tests Node, Chromium WebGL2, WebKit standard et WebKit repli forcé réussis**, plus job de paquet HTTPS réussi.
+WebKit standard : 16 441 pixels de premier plan ; repli 2D : 148 760 pixels. Les deux parcours ont contrôlé l'export JSON local et les protections contre les anciens liens de téléchargement. Les captures et le paquet sont des artefacts temporaires de CI, sans diffusion publique.
+
+### Limites
+Le test WebKit sous Linux **ne certifie pas Safari sur un iPhone réel**, ni les thermiques, l'autonomie, la mémoire du système ou la possibilité de sauvegarder un GLB vers Fichiers sur iOS. Les FPS mesurés par requestAnimationFrame reflètent la cadence de l'animation dans ce navigateur précis, pas la vitesse garantie de traitement d'un film.
+La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune voix, ni reconstruction fidèle de personne ou entraînement des modèles. PR brouillon, aucune modification de main, aucune donnée privée publiée.
