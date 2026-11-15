@@ -130,7 +130,7 @@ jobs:
             Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'
           HEADERS
           test "$(find dist/film-studio-iphone-v06 -maxdepth 1 -type f | wc -l)" -eq 10
-          ! find dist/film-studio-iphone-v06 -type f -name '*.mp4' -o -name '*.jpg' -o -name '*.png'
+          test -z "$(find dist/film-studio-iphone-v06 -type f \( -name '*.mp4' -o -name '*.jpg' -o -name '*.png' \))"
       - name: Préparer le téléchargement du paquet de laboratoire iPhone
         uses: actions/upload-artifact@v4
         with:
