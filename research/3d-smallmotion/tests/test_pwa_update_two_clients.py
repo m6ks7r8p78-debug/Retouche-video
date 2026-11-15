@@ -99,7 +99,7 @@ def check(page,version):
  outcome=page.evaluate(EVIDENCE)
  assert outcome['path']=='worker' and outcome['parity'],outcome
  assert outcome['runner']==outcome['local'],outcome
- assert outcome['local'].endswith('v'+str(version-86)),outcome
+ assert outcome['local'].endswith('v'+str(version-87)),outcome
  assert outcome['release']==str(version),outcome
  return outcome
 
@@ -119,7 +119,7 @@ try:
    page.evaluate('window.__unsavedEditorState={openVideo:true,unexportedEdits:7}')
    check(page,88)
   assert a.evaluate('async()=> (await caches.keys()).includes("retouche-v88")')
-  # Publishing release two while two active pages are still controlled by v87.
+  # Publishing release two while two active pages are still controlled by v88.
   install_release('v89')
   a.evaluate('async()=>{const reg=await navigator.serviceWorker.getRegistration();await reg.update()}')
   # Chromium can schedule a second installing worker while replacing a waiting
