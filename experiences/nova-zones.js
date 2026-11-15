@@ -52,10 +52,9 @@ function restituer(image,options={}){
   const intention=eligible?clamp((.34-m.luminance)*.75,.035,.18):0;
   let finalStrength=0,why=eligible?"En cours de comparaison":"Zone préservée (lumière ou mesures insuffisantes)";
   if(eligible){
-   const local=new Uint8ClampedArray(src.length<0?1:rect.width*rect.height*4);
+   const local=new Uint8ClampedArray(rect.width*rect.height*4);
    for(let ly=0;ly<rect.height;ly++)for(let lx=0;lx<rect.width;lx++){
     const si=((y+ly)*w+x+lx)*4,di=(ly*rect.width+lx)*4;
-    lever(src,intention,local,di===-1?0:si); // overwritten below with correct contiguous output
     for(let ch=0;ch<4;ch++)local[di+ch]=src[si+ch];
     lever(local,intention,local,di);
    }
