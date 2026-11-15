@@ -19,7 +19,7 @@ async function ffprobe(file,args=[]){
   {timeout:30000,maxBuffer:8*1024*1024});
  return JSON.parse(stdout);
 }
-for(const seconds of [20])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 local, aucun ArrayBuffer final, AAC intact",async(t)=>{
+for(const seconds of [20,24])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 local, aucun ArrayBuffer final, AAC intact",async(t)=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),"nova-"+seconds+"s-windowed-"));
  let server=null,browser=null;
  try{
@@ -100,6 +100,13 @@ for(const seconds of [20])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 local, auc
    document.addEventListener("nova:window-progress",e=>{
     window.__nova_test_progress.push({...e.detail});
    });
+  });
+  await page.evaluate(()=>{
+   // Interdire le tampon MP4 géant durant cette expérience OPFS.
+   const original=globalThis.Mp4Muxer;
+   globalThis.Mp4Muxer={...original,ArrayBufferTarget:class {
+    constructor(){throw Error("UNEXPECTED_IN_MEMORY_MUXER")}
+   }};
   });
   await page.locator("details:has(#writeOpfs) summary").click();
   assert.equal(await page.locator("#writeOpfs").isDisabled(),false,
