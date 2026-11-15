@@ -41,15 +41,17 @@
     "RNE09: 246 historic synthetic stress cases, photometric attenuation rejected; stricter confidence-invariant gate refused 164/164 deliberately mismatched histories while preserving 82/82 valid examples. 23 new tests PASS; not deployable.",
     "RNE10: 328 stress essais sur anciens groupes; RNE09 laisse passer 164/164 faux alignements sous confiance recalculée malgré 20/41 pertes graves sur LR propre 1px. Garde-fou causal de provenance de sessions, 27 tests synthétiques PASS, aucune promotion.",
     "RNE11: recherche Reddit/OpenCV, capteur indépendant Lucas-Kanade vs Farneback, 23 tests synthétiques locaux PASS, 41 paires historiques de calibration. 1px de décalage synthétique détecté après réglage du seuil sur le même lot (résultats post-hoc, non indépendants). Non déployé.",
-    "RNE12: troisième observateur par corrélation de phase; 144 cas nouveaux synthétiques, acceptations erronées 24/74→0/74 ; limite multi-plans 12/12→5/12 ; 26 tests PASS. Validation hors distribution et iPhone manquantes; non promu."
+    "RNE12: troisième observateur par corrélation de phase; 144 cas nouveaux synthétiques, acceptations erronées 24/74→0/74 ; limite multi-plans 12/12→5/12 ; 26 tests PASS. Validation hors distribution et iPhone manquantes; non promu.",
+    "RNE13: contrôle local 16 régions sur 54 scènes multicouches et 288 scènes synthétiques d'artefacts. 26/26 tests locaux; 22/39 régions à faux mouvement encore acceptées; coût ~101ms/720p CPU hors réseau/flux. NON promu; aucun média utilisé."
   ],
   "prochaines_etapes": [
-    "Préserver tous les 41 envois récents hors de l'entraînement ET de la calibration des nouveaux contrôles RNE; ne pas réutiliser le banc pour régler les seuils.",
-    "Concevoir un contrôle de motion spatial et occlusion local (RNE13) en conservant les 5 erreurs multi-plans RNE12 comme cas de diagnostic, puis évaluer sur d'autres distributions synthétiques/annotées non consultées.",
-    "Ne pas traiter une 'provisional_agreement' RNE12 comme un certificat de qualité: deux flux peuvent être d'accord tout en étant faux, et un test de translation globale n'est pas adapté à un visage/mouvement non rigide.",
-    "Optimiser le coût CPU RNE12 avant tout usage par frame à 720p: 80ms pour le contrôle seul, sur CPU labo, hors décodage et inférence.",
-    "Récupérer un jeu de référence inédit avec mouvement naturel et vérité optique, références avant/après filtre AR vérifiées et garanties de droits.",
-    "Vérifier CI Github réelle et tests Safari iPhone avant toute promotion; RNE04 reste référence expérimentale et bicubique repli."
+    "Ne pas promouvoir RNE13: 22 faux supports sur 39 régions de mouvement incorrect multicouches; JPEG et textures répétitives laissent passer des erreurs.",
+    "Étudier la robustesse d'accord photométrique aux changements d'éclairage sans valider un flux incorrect; mesurer faux refus et faux supports par zone.",
+    "Créer jeux synthétiques hors famille (mouvements non rigides, articulations, transparences, flou directionnel, disocclusions et zoom), tests sur flux connus.",
+    "Réutiliser les champs Farneback déjà estimés plutôt que les recalculer, analyser le coût des points LK 720p et optimiser avant toute idée iPhone Safari.",
+    "Ne pas ouvrir les 41 vidéos récentes pour entraîner ou régler des seuils; demander de vraies nouvelles scènes hors distribution pour toute validation.",
+    "Conserver RNE04 et bicubique comme références expérimentales sans nouvelle activation; aucun site retoucheproai.com déployé.",
+    "Contrôler l'exécution distante de la CI Github; PR brouillon, aucun merge sur main."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -60,14 +62,14 @@
   "jalon_en_attente_ci": {
     "date": "2026-11-15",
     "objets": [
-      "outils/rne/rne12/phase_motion_guard.py",
-      "tests/test_rne12_phase_motion_guard.py",
-      "RETOUCHE_NEURAL_ENGINE_12.md",
+      "outils/rne/rne13/regional_motion_audit.py",
+      "tests/test_rne13_regional_motion_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_13.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "26/26 tests synthétiques RNE12, 23 tests RNE11; 288 cas de translation + 54 deux couches, benchmark CPU",
+    "preuve_locale": "26 tests synthétiques verts, deux bancs procéduraux distincts (54 + 288 scènes), CPU benchmark 192/360/720",
     "statut_ci": "a_verifier",
-    "observations": "Aucune image, vidéo, poids ni nom de média personnel sur GitHub, pas de déploiement."
+    "observations": "aucun média/poids publié, aucune vidéo perso ouverte dans ces tests"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -1386,5 +1388,101 @@
     "production_deployed": false,
     "main_merged": false,
     "safari_iphone_tested": false
+  },
+  "jalon_neural_engine_13": {
+    "date": "2026-11-15",
+    "status": "regional motion research prototype and synthetic evaluation; NOT DEPLOYED",
+    "objective": "audit local sparse LK vs dense Farneback and photometric residual, 4x4 tiles; abstention on insufficient evidence; NO neural retraining",
+    "basis": "Research on occlusions/uncertainty (OCAI CVPR2024; Jeong arXiv 2025) and r/computervision distributed tracking",
+    "synthetic_layered": {
+      "trials": 54,
+      "ground_truth_scored_tiles": 840,
+      "gt_bad": 39,
+      "gt_good": 801,
+      "rne11_old": {
+        "bad_accepted": 39,
+        "good_accepted": 801
+      },
+      "rne12_global": {
+        "bad_accepted": 24,
+        "good_accepted": 443
+      },
+      "rne13_local": {
+        "bad_accepted": 22,
+        "good_accepted": 598
+      },
+      "conjunction_12_13": {
+        "bad_accepted": 19,
+        "good_accepted": 318
+      },
+      "warning": "new procedural seeds but same generator family as preceding experiments; not valid evidence for real user videos"
+    },
+    "synthetic_robustness": {
+      "trials": 288,
+      "conditions": 6,
+      "scenes_per_condition": 48,
+      "clean": {
+        "bad_accepted": 136,
+        "bad_gt": 316,
+        "good_accepted": 307,
+        "good_gt": 452
+      },
+      "blur": {
+        "bad_accepted": 81,
+        "bad_gt": 319,
+        "good_accepted": 53,
+        "good_gt": 449
+      },
+      "occlusion": {
+        "bad_accepted": 122,
+        "bad_gt": 297,
+        "good_accepted": 258,
+        "good_gt": 371
+      },
+      "illumination_shift": {
+        "bad_accepted": 0,
+        "bad_gt": 316,
+        "good_accepted": 0,
+        "good_gt": 452
+      },
+      "jpeg": {
+        "bad_accepted": 174,
+        "bad_gt": 341,
+        "good_accepted": 319,
+        "good_gt": 427
+      },
+      "scene_cut": {
+        "ground_truth_valid": false,
+        "insufficient_tiles": 765,
+        "total_tiles": 768
+      },
+      "failure": "large false rejects under illumination changes and blur; false accepts on JPEG and periodic textures, no guarantee of regional motion correctness"
+    },
+    "local_cpu_ms": {
+      "exclude_decode_flow_and_model": true,
+      "width192_height192": 9.63,
+      "width640_height360": 27.29,
+      "width1280_height720": 100.86,
+      "iphone_safari_tested": false
+    },
+    "tests": "26/26 unit tests passed locally against synthetic frames; remote GitHub Actions status unverified",
+    "code_public": [
+      "outils/rne/rne13/regional_motion_audit.py",
+      "tests/test_rne13_regional_motion_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_13.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE13_Controle_Regional_Mouvement_Prive.zip",
+    "archive_files": 9,
+    "privacy": {
+      "new_41_videos_used": false,
+      "new_41_videos_training": false,
+      "old_157_videos_used": false,
+      "media_published": false,
+      "model_weights_published": false
+    },
+    "model_promoted": false,
+    "production_site_deployed": false,
+    "main_merged": false
   }
 }
