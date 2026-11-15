@@ -46,6 +46,29 @@ test("24s exactement = 4 fenêtres de 90 trames, mais 24.1s impossible",()=>{
  assert.equal(r.windows.length,4);
  assert.equal(r.durationUs,24000000);
 });
+test("OPFS explicite 48s : 720 images, 8 fenêtres contiguës, ancienne voie toujours limitée",()=>{
+ assert.throws(()=>EXPORT.plan({duration:48,width:320,height:180,bytes:10000,
+  profile:"h264-windowed-24s"}),/24 secondes/);
+ assert.throws(()=>EXPORT.plan({duration:48.01,width:320,height:180,bytes:10000,
+  profile:"h264-opfs-48s"}),/48 secondes/);
+ const settings=EXPORT.plan({duration:48,width:320,height:180,bytes:10000,
+  profile:"h264-opfs-48s"});
+ assert.equal(settings.frames,720);
+ const timeline=TIMELINE.calculer(48,15,720);
+ assert.throws(()=>WINDOWS.creer(timeline.entries),/timeline/);
+ const windows=WINDOWS.creer(timeline.entries,{profile:"h264-opfs-48s"});
+ assert.equal(windows.frames,720);
+ assert.equal(windows.durationUs,48000000);
+ assert.equal(windows.windows.length,8);
+ assert.deepEqual(windows.windows.map(w=>w.startUs),[
+  0,6000000,12000000,18000000,24000000,30000000,36000000,42000000
+ ]);
+ assert.ok(windows.windows.every(w=>w.frameCount===90));
+ for(let i=1;i<windows.windows.length;i++)
+  assert.equal(windows.windows[i].startUs,windows.windows[i-1].endUs);
+ assert.throws(()=>WINDOWS.creer(timeline.entries,{profile:"h264-opfs-96s"}),/timeline/);
+});
+
 test("Précontrôle local H264 20s sérialise 300 images, HEVC reste 12s",async()=>{
  const video={
   codec:"avc1.42C01E",W:320,H:180,dw:320,dh:180,ns:300,
