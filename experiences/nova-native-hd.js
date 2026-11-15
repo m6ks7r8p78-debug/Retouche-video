@@ -10,7 +10,7 @@ const MiB=1048576, MAX_PIXELS=2200000, MAX_FRAMES=360, MAX_BYTES=60*MiB;
 const MAX_US=12000000, MAX_ENCODED=32*MiB;
 const fail=s=>{throw new Error("NOVA HD : "+s)};
 const safe=n=>Number.isSafeInteger(n);
-const codes=["avc1.640028","avc1.4d4028","avc1.42e028"];
+const codes=["avc1.640028","avc1.4d4028","avc1.42e028","avc1.42e01f"];
 function analyse(info,size,{testCodec=false}={}){
  if(!info||!safe(size)||size<1||size>MAX_BYTES)fail("source ou taille invalide");
  if(!/^(hvc1|hev1|avc1|avc3)\./.test(info.codec||""))fail("codec vidéo non pris en charge");
@@ -75,11 +75,13 @@ async function configEncoder(plan,VideoEncoderClass=globalThis.VideoEncoder){
 }
 async function configDecoder(info,VideoDecoderClass=globalThis.VideoDecoder){
  if(!VideoDecoderClass?.isConfigSupported)fail("décodeur natif WebCodecs indisponible");
- const cfg={codec:info.codec,codedWidth:info.W,codedHeight:info.H,
-  hardwareAcceleration:"prefer-hardware",optimizeForLatency:false,
-  ...(info.desc?{description:info.desc}:{})};
- try{if((await VideoDecoderClass.isConfigSupported(cfg)).supported)return cfg}
- catch{}
+ const common={codec:info.codec,codedWidth:info.W,codedHeight:info.H,
+  optimizeForLatency:false,...(info.desc?{description:info.desc}:{})};
+ for(const hardwareAcceleration of ["prefer-hardware","no-preference"]){
+  const cfg={...common,hardwareAcceleration};
+  try{if((await VideoDecoderClass.isConfigSupported(cfg)).supported)return cfg}
+  catch{}
+ }
  fail("décodage natif HEVC/H264 non disponible pour ce fichier");
 }
 function plannedMemory(plan,size){
