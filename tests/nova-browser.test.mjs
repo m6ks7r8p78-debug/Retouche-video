@@ -42,7 +42,7 @@ for(const width of [390,1350]){
      assert.equal(await page.locator("#before").isVisible(),true);
      assert.equal(await page.locator("#after").isVisible(),true);
      assert.match(await page.locator("#metrics").innerText(),/Décision technique/);
-     await page.locator("#compare").fill("70");
+     await page.locator("#compare").evaluate(el=>{el.value="70";el.dispatchEvent(new Event("input",{bubbles:true}))});
      assert.match(await page.locator("#after").evaluate(el=>el.style.clipPath),/30%/);
      const download=page.waitForEvent("download");
      await page.locator("#save").click();
