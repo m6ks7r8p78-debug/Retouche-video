@@ -93,3 +93,20 @@ Direction visuelle : papier clair et typographie éditoriale pour la navigation 
 4. Après validation : préférer l'export image-par-image horodaté et un muxage audio robuste de la version principale pour les fichiers longs ; ne pas étendre arbitrairement les limites de ce premier pilote.
 
 La PR reste en brouillon. Aucun changement de `main` ou de déploiement public.
+
+
+## Cycle NOVA 0.4 — contrat temporel et contrôle d'export (15 novembre 2026)
+
+- **Incident CI corrigé** : le test navigateur 0.3 confirmait la photo mobile, la photo bureau et l'aperçu MP4, mais le dernier test attendait un téléchargement qui ne démarrait pas. La règle CSS `.pilot a{display:block}` annulait le masquage natif du lien ; le lien était visuellement présent sans `href`. Corrigé par `.pilot a[hidden]{display:none!important}` et par un test qui exige un véritable `blob:` avant de cliquer.
+- **`nova-timeline.js`** : génération explicite des timestamps et durées CFR à 15 images/s ; contrôle de continuité, de monotonie et des durées ; limite du nombre de frames ; tolérance contrôlée de l'écart entre la position demandée et la position courante du lecteur.
+- **Contrôle audio** : compare la durée PCM réellement décodée à la durée vidéo CFR prévue ; refuse une piste audio trop courte (tolérance limitée), coupe proprement le nombre de samples injectés dans l'encodeur à la durée vidéo, et conserve le principe « AAC ou refus, sauf sortie muette explicitement autorisée ».
+- **Validation FFprobe renforcée** : vérifie le codec H.264, les dimensions de sortie, le nombre de frames, la durée, la présence/absence de piste audio selon le choix et l'écart des durées de piste.
+- **Limite majeure conservée** : la chronologie CFR détermine la *sortie* ; tant que le décodage source repose sur des recherches HTMLVideoElement, il n'existe PAS de garantie de récupération exacte de chaque frame du film (PTS originaux non exposés), ni de parfaite synchronisation labiale ou de conservation HDR/couleur/metadata. Les valeurs `media.currentTime` peuvent signaler un écart manifeste, mais ne prouvent pas les PTS des images décodées. Le véritable chaînage démultiplexeur → VideoDecoder → NOVA par frame → VideoEncoder, avec remux AAC de référence, reste l'étape suivante.
+- Aucune mise en production automatique ; pas de traitement des médias privés de recherche dans cette branche.
+
+### Portes de qualité supplémentaires
+
+1. CI « unitaires » et « navigateur » totalement vertes sur le même SHA ; rapport final du MP4 avec FFprobe.
+2. Vrai essai Safari sur iPhone physique (réactivité, température, mémoire et reprise après verrouillage).
+3. Tests de scènes très mouvementées et de durée sonore non alignée, comparés au pipeline historique.
+4. N'autoriser ensuite une augmentation progressive des limites d'export qu'après ces mesures.
