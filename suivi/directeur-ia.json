@@ -49,14 +49,17 @@
     "RNE17 AEGIS: 2305-param residual gate trained on 600 private-data-free synthetic scenes; dev 180: 7→0 severe; locked 270: 16→3 severe, mean -0.048dB vs bicubic; learned not better than fixed 0.70 => REJECTED, 41 synthetic tests PASS.",
     "RNE18 OBSERVABLE3D: 3D synthetic view evidence atlas; UV observed 21.1%/47.1%/76.0% with 1/4/10 views, 24% unknown left. Calibrated camera and geometry are provided by simulator; 47 tests PASS, 8 independent procedural textures exposed forged UV calibration. NOT a human 3D reconstruction.",
     "RNE19 OBSERVABLE ARTICULE: simulateur 3D synthétique de 11 pièces, contact géométrique main-objet, profondeur/occlusion, 2 GLB, atlas partiels, 50 nouveaux tests + 47 regressions RNE18 PASS. Générique GitHub sans médias privés, aucune reconstruction réelle.",
-    "RNE20: inversion d'un mannequin synthétique connu à partir d'images; 16 contrôles gelés, erreur caméra 0,7421° et articulation 5,1231°. 26 tests PASS. Contact indéterminé 12/16, pas de relâché identifié. GLB issu d'une pose estimée; aucun humain réel reconstruit."
+    "RNE20: inversion d'un mannequin synthétique connu à partir d'images; 16 contrôles gelés, erreur caméra 0,7421° et articulation 5,1231°. 26 tests PASS. Contact indéterminé 12/16, pas de relâché identifié. GLB issu d'une pose estimée; aucun humain réel reconstruit.",
+    "RNE21 ANCRAGE: nouvelle inversion synthétique à 10 fiduciaux sur 5 vues, 42 tests locaux, 42 séquences comparatives et 36 séquences de contrôle d'abstention, cinq GLB de démonstration. Les longueurs multi-vues restent moins justes que l'inversion indépendante; non promu."
   ],
   "prochaines_etapes": [
-    "Développer RNE21: nouveau squelette paramétrique multi-articulations et variation de caméra/géométrie, avec test d'inversion hors du gabarit connu.",
-    "Évaluer explicitement les cas relâchés: le système RNE20 n'a émis aucune classification relâchée certaine.",
-    "Étudier le suivi multi-vues et l'élévation des incertitudes par articulation, préserver les régions réellement invisibles.",
-    "Maintenir 41 récentes hors apprentissage/calibration; aucune vidéo personnelle utilisée dans RNE20 ou publiée dans GitHub.",
-    "Valider la CI distante et le rendu iPhone Safari avant tout merge ou déploiement."
+    "Ne pas présenter les fiduciaux artificiels comme une détection réelle de corps humain. Tester l'inversion à partir de silhouettes/rendus SANS pastilles ni pose cachée, avec variations de géométrie et d'appareil.",
+    "Prototyper un vrai modèle caméra perspective avec intrinsics et distorsion inconnus. Évaluer identifiabilité échelle/profondeur; ne jamais inventer de mètres depuis des pixels sans ancre métrique.",
+    "Ajouter plusieurs articulations et estimations contact relâché/tenu fondées sur références géométriques; conserver les hypothèses non décidables.",
+    "Conserver l'ajustement image par image comme baseline forte : RNE21 partagé est moins précis sur longueur, ne pas déployer malgré phase améliorée.",
+    "Vérifier CI GitHub distante et licence de toute future architecture externe; n'utiliser aucun poids personnel ni média privé sur dépôt.",
+    "Maintenir 157 vidéos historiques et 41 récentes strictement hors de ce laboratoire synthétique; aucun entraînement ni calibration sur 41 nouvelles.",
+    "Préparer un contrôle avec sources réellement hors générateur (autre moteur graphique / vidéos synthétiques sous une autre caméra) avant toute prétention de généralisation ou test iPhone."
   ],
   "garde_fous": {
     "main_intouchable": true,
@@ -66,20 +69,19 @@
   },
   "jalon_en_attente_ci": {
     "date": "2026-11-15",
-    "statut_ci": "a_verifier",
     "objets": [
-      "outils/rne/rne19/articulated_observable.py",
-      "outils/rne/rne19/export_synthetic_glb.py",
-      "outils/rne/rne20/inverse_pose.py",
-      "outils/rne/rne20/evaluate_inverse.py",
-      "outils/rne/rne20/aggregate_evaluation.py",
-      "outils/rne/rne20/demo_inverse_glb.py",
-      "tests/test_rne20_inverse_pose.py",
-      "RETOUCHE_NEURAL_ENGINE_20.md",
+      "outils/rne/rne21/anchorage.py",
+      "outils/rne/rne21/evidence_audit.py",
+      "outils/rne/rne21/locked_evaluation.py",
+      "outils/rne/rne21/audit_frozen.py",
+      "outils/rne/rne21/export_inverse_glb.py",
+      "tests/test_rne21_anchorage.py",
+      "tests/test_rne21_evidence_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_21.md",
       ".github/workflows/rne-cpu.yml"
     ],
-    "preuve_locale": "26/26 tests miroir GitHub et images synthétiques de contrôle, GLB 11 éléments",
-    "observations": "PR en brouillon, aucun média personnel publié, pas d'identité réelle restaurée"
+    "preuve_locale": "42 tests locaux et CI miroir réussis; 42 + 36 cas synthétiques évalués avec rapports anonymes; 5 GLBs rechargés",
+    "statut_ci": "a_verifier"
   },
   "jalon_specialiste_bruit_fort": {
     "date": "2026-11-14",
@@ -2078,5 +2080,123 @@
     "iphone_safari_validated": false,
     "main_merged": false,
     "website_deployed": false
+  },
+  "jalon_neural_engine_21": {
+    "date": "2026-11-15",
+    "name": "RNE21 ANCRAGE — inverse multi-vues à proportions relatives",
+    "status": "research_only; code + 42 tests synthetic pass; no deployment",
+    "scientific_constraints": "Original bounded fiducial-only research prototype, not generic human reconstruction or novel unproven human method. Perspective unknown, contact and metric scale not recovered.",
+    "sources": [
+      "CVPR2026 Mocap-2-to-3",
+      "CVPR2025 MV-SSM",
+      "CVPR2026 CARI4D",
+      "CHOIR arXiv 2026",
+      "r/computervision rapid-motion pose complaints"
+    ],
+    "architecture": {
+      "synthetic_visible_fiducials": 10,
+      "independent_frame_inverse": "unknown arm proportions, yaw, phase and image scale optimized from detected pixels",
+      "multi_frame_inverse": "shared right upper/forearm relative lengths; frame-wise yaw, phase, image scale with robust soft-L1",
+      "image_only_inference": true,
+      "simulator_gt_used_only_for_scoring": true,
+      "evidence_audit": "require genuinely diverse estimated camera angles, several wrist observations, agreement between single frame and shared shape; abstain otherwise",
+      "metric_scale_recovered": false,
+      "contact_verified": false,
+      "identity_reconstructed": false
+    },
+    "first_benchmark": {
+      "cases": 42,
+      "images": 210,
+      "groups": {
+        "clean": 18,
+        "partial_occlusion": 12,
+        "synthetic_marker_outliers": 12
+      },
+      "mean_length_errors": {
+        "fixed_shape_multiframe": {
+          "upper": 0.149548,
+          "forearm": 0.135503
+        },
+        "variable_shape_per_frame": {
+          "upper": 0.00479,
+          "forearm": 0.004843
+        },
+        "variable_shape_multiframe": {
+          "upper": 0.007973,
+          "forearm": 0.00777
+        }
+      },
+      "mean_camera_yaw_error_deg": {
+        "fixed": 3.854579,
+        "single": 0.665571,
+        "multi": 0.693167
+      },
+      "mean_articulation_error_deg": {
+        "fixed": 4.28069,
+        "single": 0.791707,
+        "multi": 0.541869
+      },
+      "decision": "Shared shape improves articulation vs per-frame in this synthetic sample but WORSE length fidelity; no promotion."
+    },
+    "frozen_additional_audit": {
+      "cases": 36,
+      "images": 180,
+      "clean": {
+        "accepted": 8,
+        "abstained": 0
+      },
+      "partial_occlusion": {
+        "accepted": 8,
+        "abstained": 0
+      },
+      "synthetic_marker_outliers": {
+        "accepted": 8,
+        "abstained": 0
+      },
+      "duplicated_camera_views": {
+        "accepted": 0,
+        "abstained": 6
+      },
+      "missing_wrist_evidence": {
+        "accepted": 0,
+        "abstained": 6
+      },
+      "accepted_with_max_length_error_gt_point1": 0,
+      "warning": "New seeds from SAME synthetic generator family; neither independent real footage nor calibrated reliability."
+    },
+    "tests": {
+      "synthetic_local": "42/42 pass",
+      "ci_mirror": "42/42 pass",
+      "remote_ci": "unverified"
+    },
+    "demo": {
+      "glb_static_models": 5,
+      "meshes_per_model": 16,
+      "known_topology": true,
+      "pixel_fitted_pose_and_proportions": true,
+      "real_person_scan": false
+    },
+    "privacy": {
+      "old_157_used": false,
+      "new_41_used": false,
+      "private_weights_published": false,
+      "private_images_published": false,
+      "personal_media_exported": false
+    },
+    "public_code": [
+      "outils/rne/rne21/anchorage.py",
+      "outils/rne/rne21/evidence_audit.py",
+      "outils/rne/rne21/locked_evaluation.py",
+      "outils/rne/rne21/audit_frozen.py",
+      "outils/rne/rne21/export_inverse_glb.py",
+      "tests/test_rne21_anchorage.py",
+      "tests/test_rne21_evidence_audit.py",
+      "RETOUCHE_NEURAL_ENGINE_21.md",
+      ".github/workflows/rne-cpu.yml"
+    ],
+    "private_archive": "RetoucheProAI_RNE21_ANCRAGE_Multivues_Synthetique.zip",
+    "no_production_deployment": true,
+    "main_merged": false,
+    "iphone_safari_tested": false
   }
 }
