@@ -11,7 +11,7 @@ function box(type,...parts){
 }
 function full(n){return Buffer.alloc(n)}
 function ui32(n){const b=Buffer.alloc(4);b.writeUInt32BE(n);return b}
-function track({kind="soun",edit=null,second=false,codec="mp4a",count=60}={}){
+function track({kind="soun",edit=null,second=false,codec="mp4a",count=60,editFlags=0}={}){
  const mh=full(24);mh.writeUInt32BE(48000,12);
  const handler=full(16);handler.write(kind,8,"ascii");
  const d=Buffer.alloc(16);d.writeUInt32BE(16,0);d.write(codec,4,"ascii");
@@ -23,7 +23,8 @@ function track({kind="soun",edit=null,second=false,codec="mp4a",count=60}={}){
    const e=Buffer.alloc(12);e.writeUInt32BE(duration,0);
    e.writeInt32BE(mediaTime,4);e.writeInt32BE(65536,8);return e;
   });
-  edts=box("edts",box("elst",full(4),ui32(entries.length),...entries));
+  const editHead=full(4);editHead[3]=editFlags;
+  edts=box("edts",box("elst",editHead,ui32(entries.length),...entries));
  }
  return box("trak",box("mdia",box("mdhd",mh),box("hdlr",handler),
    box("minf",box("stbl",stsd,stts))),edts);
@@ -112,4 +113,12 @@ test("NOVA AV : aucun contournement pour un délai audio initial de 501ms",async
  assert.throws(()=>AV.verifier(a,{
   durationSeconds:1.15,allowLeadingGap:true
  }),/supérieur à 500 ms/);
+});
+
+test("NOVA 0.13 : l'audit AV refuse la répétition implicite des edits AAC",async()=>{
+ for(const flags of [1,2]){
+  await assert.rejects(
+   AV.analyser(movie({tracks:[track({edit:[[1200,1024]],editFlags:flags})]})),
+   /répétition ou flags/);
+ }
 });
