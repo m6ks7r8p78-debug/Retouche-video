@@ -27,7 +27,7 @@ Les images sont **100 % synthétiques**, produites par le moteur RNE 0.19 : essa
 | Recherche grossière silhouette/rendus | 4,54° | 27,84° | 8/16 |
 | **Recherche affinée par rendu et couleurs RNE20** | **0,74°** | **5,12°** | **12/16** |
 
-- **Contact** : 4 bonnes décisions sur les 4 décisions explicites ; **12/16 abstentions**, donc aucune preuve d’exactitude sur toutes les vues.
+- **Contact** : 4 bonnes décisions sur les 4 décisions explicites ; **12/16 abstentions**. Point crucial : **les quatre décisions explicites sont toutes « objet tenu » ; aucun exemple « objet relâché » n’est affirmativement identifié dans ce contrôle**. Cela ne démontre pas la classification des états relâchés.
 - **Ambiguïté de pose signalée** : 9/16 images de contrôle.
 - **Huit stress tests supplémentaires** avec variations d’éclairage, flou ou JPEG : erreur moyenne d’articulation **9,91°**, erreur moyenne caméra **0,77°** ; quatre images sont rejetées par l’heuristique de qualité, **7/8 contacts indéterminés**.
 - Les 8 cas de développement sont distincts des 16 cas de contrôle ; aucun seuil n’a été modifié ensuite. Échantillons petits, **même géométrie et même moteur de rendu** : ne pas confondre nouvelles graines synthétiques et généralisation indépendante sur humains réels.
