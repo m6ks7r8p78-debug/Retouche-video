@@ -4,6 +4,8 @@
 (() => {
   'use strict';
   const CHANNEL = 'retoucheproai:aura:handoff:v1';
+  // Permet au parent de ne pas lancer le mécanisme de secours en double.
+  Object.defineProperty(window, '__AURA_NATIVE_BRIDGE_V1__', {value:true});
   const seen = new Map();
   window.addEventListener('message', event => {
     if (event.origin !== location.origin || event.source !== window.parent || window.parent === window) return;
