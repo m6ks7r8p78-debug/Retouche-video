@@ -14,7 +14,10 @@
    missing_local_video:"Aucun fichier vidéo local disponible.",
    decoded_audio_not_usable:"Le son décodé n'est pas exploitable avec cette méthode.",
    encoded_audio_not_verified:"Les paquets AAC obtenus n'ont pas passé tous les contrôles.",
-   local_audio_validation_failed:"Essai audio non concluant ; aucune vidéo n'a été modifiée.",
+   local_audio_validation_failed:"Erreur non classée dans le pilote. Aucun média modifié.",
+   aac_description_unusable:"Safari fournit une description AAC non validée. Le test refuse une piste potentiellement muette.",
+   aac_encoder_runtime_failed:"Le décodage a pu réussir, mais l'encodeur AAC a échoué à l'exécution. Le fichier original est intact.",
+   aac_timing_not_verified:"Les horodatages AAC ne permettent pas de garantir la couverture audio. Aucun export n'est lancé.",
    source_video_metadata_unavailable:"Safari ne peut pas lire la durée de cette vidéo dans ce test.",
    cancelled:"Essai annulé ; original intact.",
    nova_native_audio_module_missing:"Le module audio expérimental n'est pas disponible.",
@@ -23,7 +26,12 @@
   last=JSON.stringify(x,null,2)+"\n";
   json.value=last;
   summary.textContent=messages[x.status]||"État inconnu, aucune validation d'export.";
-  status.textContent="Diagnostic local terminé : "+x.status;
+  const safeSteps=new Set(["source_decode","decoded_pcm_validation","aac_capability",
+    "aac_encode","encoded_packet_validation","completed","source_budget",
+    "native_module","before_media","source_selection","combined_legacy",
+    "unexpected_diagnostic_error"]);
+  const phase=safeSteps.has(x.diagnostic_phase)?x.diagnostic_phase:"non déterminée";
+  status.textContent="Diagnostic local terminé : "+x.status+" · étape : "+phase;
   feedback.textContent="";
   area.hidden=false;
  }

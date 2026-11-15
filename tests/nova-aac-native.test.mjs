@@ -114,3 +114,77 @@ test("AAC natif Safari : durée EncodedAudioChunk nullable reconstruite depuis 1
  assert.ok(report.packets.every(p=>p.duration>0));
  assert.ok(report.packets.at(-1).timestamp+report.packets.at(-1).duration>=995000);
 });
+
+const WEBKIT_302253_MONO=new Uint8Array([
+ 3,128,128,128,34,0,0,0,4,128,128,128,20,64,20,0,24,0,0,0,0,0,
+ 0,0,0,0,5,128,128,128,2,17,136,6,128,128,128,1,2
+]);
+function webkitDesc(channels=1){
+ const b=new Uint8Array(WEBKIT_302253_MONO);
+ // AudioSpecificConfig présent dans le DecoderSpecificInfo (tag 05).
+ // Ne jamais faire « slice(-8) » : la longueur et l'intégrité comptent.
+ if(channels===2)b[32]=0x90;
+ return b;
+}
+test("WebKit #302253 : decoderConfig.description = ES_Descriptor natif, extraction ASC mono",()=>{
+ const actual=NATIVE.normalizeDescription(webkitDesc(1),48000,1);
+ assert.deepEqual([...actual],[0x11,0x88]);
+ assert.ok(actual.length<WEBKIT_302253_MONO.length);
+});
+test("WebKit #302253 : ES_Descriptor Safari stéréo 48 kHz valide",async()=>{
+ const desc=webkitDesc(2);
+ assert.deepEqual([...NATIVE.normalizeDescription(desc,48000,2)],[0x11,0x90]);
+ class WebkitEncoder extends EncoderMock{
+  encode(input){
+   const bytes=webkitDesc(2);
+   this.output({timestamp:input.timestamp,duration:Math.round(input.numberOfFrames*1e6/input.sampleRate),
+    byteLength:4,copyTo(b){b.set([3,4,5,6])}},{
+    decoderConfig:{codec:"mp4a.40.2",sampleRate:48000,
+     numberOfChannels:2,description:bytes.buffer}
+   });
+  }
+ }
+ const result=await NATIVE.planifier(file,{durationSeconds:1},
+  {EncoderClass:WebkitEncoder,DataClass:AudioDataMock,decoder:async()=>makePCM()});
+ assert.equal(result.mode,"aac-native-encode");
+ assert.equal(result.packets.length,47);
+ assert.deepEqual([...result.asc],[0x11,0x90]);
+ const packets=[];
+ await NATIVE.copier(file,result,{addAudioChunkRaw(...a){packets.push(a)}});
+ assert.deepEqual([...packets[0][4].decoderConfig.description],[0x11,0x90],
+  "MP4 muxer receives ASC only, not Safari's full ES descriptor");
+});
+test("WebKit #302253 : accepte DataView, esds FullBox ou atome MP4, pas seulement Uint8Array",()=>{
+ const raw=webkitDesc(1);
+ const dv=new DataView(raw.buffer.slice(0));
+ assert.deepEqual([...NATIVE.normalizeDescription(dv,48000,1)],[17,136]);
+ const fullbox=new Uint8Array(4+raw.length);
+ fullbox.set(raw,4);
+ assert.deepEqual([...NATIVE.normalizeDescription(fullbox,48000,1)],[17,136]);
+ const atom=new Uint8Array(12+raw.length);
+ new DataView(atom.buffer).setUint32(0,atom.length);
+ atom.set([101,115,100,115],4);
+ atom.set(raw,12);
+ assert.deepEqual([...NATIVE.normalizeDescription(atom,48000,1)],[17,136]);
+});
+test("WebKit #302253 : rejette les descriptions corrompues et les canaux différents",()=>{
+ const valid=webkitDesc(1);
+ assert.throws(()=>NATIVE.normalizeDescription(valid,44100,1),/fréquence\/canaux/);
+ assert.throws(()=>NATIVE.normalizeDescription(valid,48000,2),/fréquence\/canaux/);
+ const corrupt=new Uint8Array(valid);corrupt[4]=127;
+ assert.throws(()=>NATIVE.normalizeDescription(corrupt,48000,1),/incohérent|ambig|descripteur/);
+ const wrongCodec=new Uint8Array(valid);wrongCodec[13]=0x20;
+ assert.throws(()=>NATIVE.normalizeDescription(wrongCodec,48000,1),/DecoderConfig/);
+ const noLC=new Uint8Array(valid);noLC[31]=0x29;
+ assert.throws(()=>NATIVE.normalizeDescription(noLC,48000,1),/pas AAC-LC/);
+ assert.throws(()=>NATIVE.normalizeDescription(new Uint8Array(300),48000,2),/hors limites/);
+});
+test("WebKit AAC : ne crée plus d'ASC fictive quand l'encodeur ne fournit aucune description",async()=>{
+ class NoMeta extends EncoderMock{
+  encode(input){this.output({timestamp:input.timestamp,duration:Math.round(input.numberOfFrames*1e6/input.sampleRate),
+   byteLength:4,copyTo(buf){buf.set([3,4,5,6])}},{});}
+ }
+ await assert.rejects(NATIVE.planifier(file,{durationSeconds:1},
+  {EncoderClass:NoMeta,DataClass:AudioDataMock,
+   decoder:async()=>makePCM()}),/n'a pas fourni d'AudioSpecificConfig/);
+});
