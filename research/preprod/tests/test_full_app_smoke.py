@@ -137,7 +137,7 @@ def run():
                     try:
                         page.wait_for_function('''()=>window.RetoucheMotionLabUI?.observe()!=null''',timeout=17000)
                         evidence=page.evaluate('''()=>window.RetoucheMotionLabUI.observe()''')
-                        status=page.locator('#smallmotion-app-panel [role="status"]').inner_text()
+                        status=page.locator('#smallmotion-app-panel > [role="status"]').inner_text()
                         assert evidence.get('action')=='no_automatic_change',evidence
                         assert evidence.get('processingPath')=='worker',evidence
                         assert evidence.get('status') in ('local_motion_candidate','no_supported_local_motion','abstain_cut_or_flash','abstain_texture','abstain_matches','abstain_resource_budget'),evidence
@@ -149,7 +149,7 @@ def run():
                         page.wait_for_function('''()=>window.RetoucheMotionLabUI?.observe()===null''',timeout=9000)
                         reset=True
                     except Exception as exc:
-                        status=page.locator('#smallmotion-app-panel [role="status"]').inner_text()
+                        status=page.locator('#smallmotion-app-panel > [role="status"]').inner_text()
                         raise AssertionError(f'full app analysis failed: {str(exc)}; init={init}; status={status}; errors={errors[-8:]}') from exc
                     assert not any(item['method'] not in ('GET','HEAD') for item in external),external
                     # Requests originating from a decoded blob: URL are local, not an upload.
