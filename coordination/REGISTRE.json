@@ -161,6 +161,20 @@
       ]
     },
     {
+      "id": "nova-safari-color-diagnostic-034",
+      "label": "NOVA HD 0.34 — décodeur Safari BT.709 vs source BT.601, diagnostic local d'une trame",
+      "branch": "chatgpt-nova-safari-color-evidence-034",
+      "pr": 78,
+      "observation": "draft-pr-observed",
+      "interface": "Sortie SDR native provisoire signalée non certifiée, si source matrix 5/6 et tags connus non HDR; capture privée localisée des enums VideoFrame sur refus",
+      "workBoundary": "experiences/nova-hd-color.js; experiences/nova-export-ui.js; experiences/nova.html; tests/nova-hd-color.test.mjs; tests/nova-native-hd-browser.test.mjs",
+      "validationGap": "81 tests unitaires + 1 navigateur Chromium H264/AAC synthétique réussis sous CSP; l'export de la vidéo HEVC privée sur Safari iPhone n'est pas encore validé et les couleurs doivent être comparées",
+      "links": [
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/pull/78",
+        "https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43736820901"
+      ]
+    },
+    {
       "id": "smallmotion",
       "label": "SmallMotion / PWA / budgets",
       "branch": "preprod-retoucheproai-local-v1",
@@ -348,6 +362,12 @@
       "from": "nova-safari-frame-format-033",
       "to": "nova",
       "topic": "Refus répété source SMPTE170M / décodeur BT709 : ajouter fallback SDR natif quand frame non YUV/copyTo/constructor indisponibles, afficher build 0.33, ne pas certifier couleurs sans comparaison HEVC Safari réelle.",
+      "state": "proposal"
+    },
+    {
+      "from": "nova-safari-color-diagnostic-034",
+      "to": "nova",
+      "topic": "Le v0.33 est prouvé installé sur Cloudflare mais refus BT601/709 persiste. NOVA 0.34 avertit lorsque l'affichage SDR du navigateur est utilisé sans garantie de couleur et collecte les enums source/trame dans un JSON local sans image/son. Ne pas certifier HEVC iPhone avant test physique.",
       "state": "proposal"
     }
   ],
