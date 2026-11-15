@@ -47,3 +47,21 @@ test("PTS : validations des paramètres",()=>{
  assert.throws(()=>PTS.choisir([],1),/invalide/);
  assert.throws(()=>PTS.choisir([{ptsUs:0}],-1),/invalide/);
 });
+
+
+test("PTS : choix proche borne le décalage CFR à une demi-image",()=>{
+ const pts=[21021,87688,154354,221021,287688,354688,421354,488021]
+   .map((ptsUs,index)=>({ptsUs,index}));
+ assert.equal(PTS.choisir(pts,.4).index,5,"historique : image déjà présentée");
+ assert.equal(PTS.choisirProche(pts,.4,15).index,6,"choix proche : vraie image +21ms");
+ assert.equal(PTS.choisirProche(pts,.333333,15).index,5);
+ assert.equal(PTS.choisirProche(pts,.36,15).index,5);
+ assert.throws(()=>PTS.choisirProche(pts,.4,0),/Cadence/);
+});
+test("PTS : ne dépasse pas l'avance de demi-image sur une longue pause VFR",()=>{
+ const pts=[0,66667,200000].map((ptsUs,index)=>({ptsUs,index}));
+ assert.equal(PTS.choisirProche(pts,.16,15).index,1,
+   "ne doit pas anticiper de 40ms");
+ assert.equal(PTS.choisirProche(pts,.18,15).index,2,
+   "anticipe 20ms au plus pour la trame réellement disponible");
+});
