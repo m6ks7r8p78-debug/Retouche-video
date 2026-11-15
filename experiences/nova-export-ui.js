@@ -60,7 +60,8 @@ start.addEventListener("click",async()=>{
      if(step.stage==="source")msg("Traitement HD : "+step.width+" × "+step.height+
       ", "+step.frames+" images, environ "+step.fps+" i/s.");
      if(step.stage==="video")msg("Traitement HD : "+step.frame+" / "+step.total+
-      " images ; AAC conservé.");
+      " images ; piste audio en préparation.");
+     if(step.stage==="audio")msg("Copie AAC impossible : essai d'encodage AAC-LC local autorisé par Safari…");
      if(step.stage==="complete")msg("Vérification finale du MP4 HD et de son audio…");
     }
    });
@@ -73,7 +74,8 @@ start.addEventListener("click",async()=>{
    download.hidden=false;
    msg("MP4 HD disponible : "+hd.originalWidth+" × "+hd.originalHeight+
     ", "+hd.outputFrames+" / "+hd.sourceFrames+" images, "+
-    hd.sourceFps+" i/s d'origine ; piste AAC copiée. "+
+    hd.sourceFps+" i/s d'origine ; "+(hd.audioMode==="aac-copy"?
+     "AAC original conservé sans réencodage": "AAC-LC réencodé localement (contrôler la synchronisation)")+". "+
     hd.modifiedFrames+" images avec corrections locales de lumière. "+
     "Vérifiez image et son. Pas de reconstruction neuronale.");
    return;
