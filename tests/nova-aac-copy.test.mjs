@@ -121,3 +121,11 @@ test("NOVA AAC copy : refuse un montage edit-list présentant une région audio 
  const file=fixture({edit:1024,editDurationMs:15,packetCount:3,sampleGroup:"roll"});
  await assert.rejects(AAC.planifier(file,{durationSeconds:.10}),/insuffisante/);
 });
+
+test("NOVA AAC copy : ne prolonge pas le segment audible au-delà de l'elst original",async()=>{
+ const file=fixture({edit:1024,editDurationMs:20,packetCount:3,sampleGroup:"roll"});
+ const plan=await AAC.planifier(file,{durationSeconds:.04});
+ assert.equal(plan.editStartUs,21333);
+ assert.equal(plan.editDurationSeconds,.02);
+ assert.equal(plan.outputEditSeconds,.02,"ne pas révéler les échantillons hors segment audio");
+});
