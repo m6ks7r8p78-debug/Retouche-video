@@ -58,13 +58,15 @@ async function flashTimes(file){
  }
  return found;
 }
-test("NOVA 0.19 : MOV HEVC VFR BT.709 + AAC vers MP4 H.264/AAC avec synchro réelle",async(t)=>{
+for(const inputFPS of [30,60])test(
+ "NOVA 0.20 : MOV HEVC VFR "+inputFPS+" i/s + AAC vers MP4 H.264/AAC sans dérive",
+ async(t)=>{
  const d=await fs.mkdtemp(path.join(os.tmpdir(),"nova-hevc-export-"));
  const input=path.join(d,"source.mov"),app=server();let browser;
  try{
   await run("ffmpeg",["-hide_banner","-loglevel","error",
    "-f","lavfi","-i",
-   "color=c=black:s=160x90:r=30:d=2,drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='between(t,0.395,0.47)+between(t,1.195,1.27)'",
+   "color=c=black:s=160x90:r="+inputFPS+":d=2,drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='between(t,0.395,0.47)+between(t,1.195,1.27)'",
    "-f","lavfi","-i",
    "aevalsrc=if(lt(abs(t-0.42)\\,0.03)\\,0.7*sin(2*PI*1000*t)\\,0)+if(lt(abs(t-1.22)\\,0.03)\\,0.7*sin(2*PI*1400*t)\\,0):s=48000:d=2",
    "-map","0:v:0","-map","1:a:0",
@@ -80,7 +82,8 @@ test("NOVA 0.19 : MOV HEVC VFR BT.709 + AAC vers MP4 H.264/AAC avec synchro rée
   assert.deepEqual([info.color?.primaries,info.color?.transfer,info.color?.matrix],[1,1,1],
    "BT.709 source déclaré dans colr");
   const pts=PTS.planifier(info).nonnegative.map(x=>x.ptsUs);
-  assert.ok(pts.length>25&&pts.length<=90);
+  assert.ok(pts.length>25&&pts.length<=90,"VFR source 30/60 reste dans 90 échantillons");
+  if(inputFPS===60)assert.ok(pts.length>55,"vraie source 60 i/s avec >55 images");
   assert.ok(new Set(pts.slice(1).map((x,i)=>x-pts[i])).size>1,"cadence réellement variable");
   assert.ok(info.ptsUs.some((v,i)=>i&&v<info.ptsUs[i-1]),"B-frames réelles");
   const {stdout:sourceVideoMeta}=await run("ffprobe",["-v","error","-select_streams","v:0",
@@ -139,7 +142,7 @@ test("NOVA 0.19 : MOV HEVC VFR BT.709 + AAC vers MP4 H.264/AAC avec synchro rée
   assert.deepEqual(jsErrors,[]);
   assert.deepEqual(external,[],"aucun média ou décodeur chargé d'un domaine tiers");
   t.diagnostic("NOVA HEVC WASM->MP4 + AAC : "+JSON.stringify({
-   sourceFrames:pts.length,sourceDurationUs:info.durationUs,
+   inputFPS,sourceFrames:pts.length,sourceDurationUs:info.durationUs,
    inputAudio:audio0,inputVideo:video0,outputAudio:audio1,outputVideo:video1,
    copiedAAC:hash1.length,offsetMs:measured.offsetMs,driftMs:measured.driftMs}));
  }finally{
