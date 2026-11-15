@@ -154,6 +154,18 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    NOVA_HEVC_RENDER.metadata(probe); // PTS/tailles/couleur avant export
   }
  }
+ // Réutiliser le convertisseur sRGB -> I420 BT.709 uniquement si le
+ // conteneur AVC déclare EXPLICITEMENT la plage limitée SDR BT.709.
+ // Un nclc ambigu est accepté UNIQUEMENT si le SPS/VUI H.264 indique
+ // explicitement BT.709 limité et ne contredit pas le conteneur.
+ // Le mode temporel approximatif ne reçoit jamais ce niveau de preuve.
+ let nativeH264Color709=false;
+ if(!useHevcWasm&&!allowApproximate&&probe&&/^avc[13]\./.test(probe.codec||"")&&
+    typeof globalThis.NOVA_AVC_VUI?.analyser==="function"){
+  try{nativeH264Color709=NOVA_AVC_VUI.analyser(probe).verified===true}
+  catch{nativeH264Color709=false}
+ }
+ const verifiedColorPath=useHevcWasm||nativeH264Color709;
  // Garde-fou optionnel interne : l'interface ne peut pas relever la limite
  // de 24 Mio de payloads + MP4 final in-memory.
  const exportMeter=useHevcWasm?NOVA_EXPORT_METER.create({maxEncodedBytes}):null;
@@ -258,7 +270,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   const target=new Mp4Muxer.ArrayBufferTarget();
   const audioConfig=audioCopy?{sampleRate:audioCopy.sampleRate,numberOfChannels:audioCopy.channels}:audio?.cfg;
   const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",video:{codec:"avc",width:settings.width,height:settings.height,
-    ...(useHevcWasm?{colorMetadata:"bt709-limited"}:{})},
+    ...(verifiedColorPath?{colorMetadata:"bt709-limited"}:{})},
     ...(audioConfig?{audio:{codec:"aac",sampleRate:audioConfig.sampleRate,numberOfChannels:audioConfig.numberOfChannels,
       ...(audioCopy?.rollDistance!=null?{rollDistance:audioCopy.rollDistance}:{}),
       ...(audioCopy?.editDurationSeconds!=null?{
@@ -309,7 +321,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    ctx.putImageData(new ImageData(processed.data,processed.width,processed.height),0,0);
    // Le Canvas sRGB ne doit pas être déclaré BT.709 par simple boîte colr.
    // Convertir réellement les pixels en YCbCr I420 BT.709 plage limitée.
-   const frame=useHevcWasm?
+   const frame=verifiedColorPath?
      NOVA_COLOR709.videoFrame(processed.data,processed.width,processed.height,
       entry.timestamp,entry.duration):
      new VideoFrame(canvas,{timestamp:entry.timestamp,duration:entry.duration});
@@ -384,10 +396,11 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   onProgress({stage:"verification",progress:1});
   const validation=await verifierMp4(blob,settings,signal);
   // Le MP4 de sortie doit porter réellement la boîte colr nclx
-  // BT.709 + plage limitée si la source HEVC a été contrôlée.
-  // Aucun succès n'est déclaré si le muxer ne la conserve pas.
+  // BT.709 limité si la source HEVC ou H.264 est suffisamment caractérisée.
+  // Aucun succès n'est déclaré si le muxer ne conserve pas le champ nclx.
+  // La boîte nclx NE prouve pas à elle seule la fidélité perceptuelle.
   let colorAudit=null;
-  if(useHevcWasm){
+  if(verifiedColorPath){
     if(signal?.aborted)throw new Error("Export annulé");
     const output=await NOVA_DEMUX.analyser(blob);
     const color=output?.color;

@@ -23,6 +23,7 @@ const deps=()=>({
  plan:()=>proposal,
  guard:()=>({admissible:true,mebibytes:51.4}),
  checkDecoder:success,checkEncoder:success,
+ checkColor:()=>({verified:true,primaries:1,transfer:1,matrix:1,fullRange:false}),
  audioPlan:audio,
  avsyncAnalyze:async()=>({durationUs:1200000}),
  avsyncVerify:()=>({aligned:true})
@@ -51,7 +52,7 @@ test("H264 : couleurs imprécises ou HDR et aspect non carré refusés",async()=
  for(const color of [null,
   {kind:"nclx",primaries:9,transfer:16,matrix:9,fullRange:false},
   {kind:"nclx",primaries:1,transfer:1,matrix:1,fullRange:true}]){
-  assert.equal((await inspect({info:{...goodInfo,color}})).status,"h264-unsafe-color");
+  assert.equal((await inspect({info:{...goodInfo,color},checkColor:()=>({verified:false})})).status,"h264-unsafe-color");
  }
  assert.equal((await inspect({info:{...goodInfo,pixelAspect:{h:4,v:3}}})).status,
   "h264-unsafe-metadata");

@@ -27,12 +27,13 @@ const result=(status,{proposal=null,estimatedMiB=null,audio="not-tested",sourceF
   mediaUploaded:false,mediaModified:false
  });
 const safe=n=>Number.isSafeInteger(n)&&n>0;
-function colorSafe(c){
- return !!c&&["nclc","nclx"].includes(c.kind)&&c.primaries===1&&
-  c.transfer===1&&c.matrix===1&&c.fullRange!==true;
+function colorSafe(info,checkColor){
+ const fn=checkColor||globalThis.NOVA_AVC_VUI?.analyser;
+ if(typeof fn!=="function")return false;
+ try{return fn(info)?.verified===true}catch{return false}
 }
 async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
- avsyncAnalyze,avsyncVerify,checkDecoder,checkEncoder,sourceAudit}={}){
+ avsyncAnalyze,avsyncVerify,checkDecoder,checkEncoder,sourceAudit,checkColor}={}){
  const stop=()=>signal?.aborted===true;
  if(stop())return result("cancelled");
  try{
@@ -50,7 +51,7 @@ async function inspect({file,info,signal,ptsPlan,plan,guard,audioPlan,
      (!safe(info.pixelAspect.h)||!safe(info.pixelAspect.v)||
       info.pixelAspect.h!==info.pixelAspect.v))
     return result("h264-unsafe-metadata");
-  if(!colorSafe(info.color))return result("h264-unsafe-color");
+  if(!colorSafe(info,checkColor))return result("h264-unsafe-color");
   const presentation=globalThis.NOVA_DEMUX?.exigerPresentationFidele;
   if(typeof presentation==="function"){
    try{presentation(info)}catch{return result("h264-unsafe-metadata")}
