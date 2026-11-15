@@ -17,9 +17,22 @@ Cache v84, même liste `F` que v83, même empreinte SHA-256 des ressources `ab91
 - Validation statique du manifeste et des marqueurs des trois scripts du Worker : réussie hors calcul de l'empreinte globale, impossible sans tous les fichiers du dépôt.
 - Le navigateur Chromium local bloque les connexions localhost par politique administrateur. **Aucun vrai test navigateur local de cette transition** n'est déclaré réussi.
 
-## Tests distants à confirmer
+## Échec de validation découvert et protocole corrigé
 
-Le workflow GitHub Actions, qui dispose du dépôt complet, doit recalculer `H`, exécuter les tests de non-régression, répéter le redémarrage hors ligne antérieur, puis exécuter le nouveau scénario de deux fenêtres avec tout le manifeste F. Les résultats positifs et les échecs resteront distincts.
+La première CI a passé les contrôles de manifeste, d'installation, les 139 tests et le redémarrage hors ligne. Elle a ensuite détecté une course dans le nouveau test multi-fenêtres : un second cycle d'installation Chromium était encore en cours alors que la première fenêtre d'observation avait vu un état `waiting`. Le journal montrait simultanément les caches v84 et v85, la page ancienne v84 et `registration.installing` en cours ; **rien ne prouvait une activation prématurée**. Le test a été renforcé pour exiger trois relevés consécutifs `waiting=installed` et `installing=null` avant les assertions et la coupure du réseau.
+
+## Validation distante obtenue — GitHub Actions #43699604844
+
+La **troisième exécution du scénario** a réussi après une amélioration de synchronisation du test. Les contrôles d'empreinte PWA ont vérifié la totalité du dépôt, les 139 tests Python et les tests Node précédents ont réussi, et les deux expériences Chromium ont été exécutées. Artéfact vérifié : `SmallMotion_PWA_Safe_Update_GitHub_CI.zip`.
+
+- Scénario `test_pwa_update_two_clients.py` : **65 ressources du manifeste réel F précachées** (index de test minimal, poids lourds différés exclus du protocole). Phase `waiting_two_clients` : ancienne cache conservée, nouvelle génération installée et en attente, état d'édition non exportée préservé, ancien Worker cohérent.
+- Phase `waiting_one_client_offline` : première fenêtre fermée, deuxième encore ouverte, ancien cache et ancien Worker opérationnels malgré l'absence de réseau.
+- Phase `new_client_offline` : dernière fenêtre fermée, activation v85, Worker nouvelle génération (`smallmotion-pwa-bundle-v2`) cohérent, cache v84 retiré, zéro requête externe, statut détecteur `no_supported_local_motion` sur une scène synthétique sans mouvement.
+- Ancien test hors connexion : deux formats Chromium 390×844 et 1280×800, parité exacte avec le détecteur, origine du Worker correcte, rejet d'un Worker artificiellement obsolète, zéro requête externe.
+
+**Contexte des échecs initiaux :** le nouveau test lisait un état transitoire de `registration.waiting` avant la fin d'une installation concurrente. La version corrigée exige trois contrôles consécutifs `waiting=installed` et `installing=null`, tout en vérifiant que l'ancien cache et le contrôleur restent actifs. Cette correction concerne le **banc de test**, pas une modification cachée du mécanisme de production.
+
+Le résultat démontre le **cycle de mise à jour d'un Service Worker avec 65 ressources précachées**, pas l'absence de perte de travail dans tous les parcours du véritable éditeur vidéo. Safari physique reste à mesurer.
 
 ## Références générales
 
