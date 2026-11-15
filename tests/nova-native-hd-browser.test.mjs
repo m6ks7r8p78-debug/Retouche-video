@@ -233,7 +233,7 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
     const cs=frame.colorSpace;
     const opaque={
      format:null,
-     colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",
+     colorSpace:{primaries:cs.primaries,transfer:cs.transfer,matrix:"bt709",
       fullRange:cs.fullRange}
     };
     const checked=await original(opaque,evidence);
