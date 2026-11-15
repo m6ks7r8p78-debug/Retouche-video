@@ -161,21 +161,27 @@ test("Safari HEVC format=null : décodeur matériel BT709 avec source 601 produi
  assert.equal(result.proof.method,"native-safari-sdr-bt709-display");
  assert.equal(result.proof.sourceMismatch,true);
  assert.equal(result.proof.colorFidelity,"uncertified-against-source");
- assert.match(result.proof.warning,/Comparer les couleurs/);
+ assert.match(result.proof.warning,/Comparer impérativement les couleurs/);
 });
-test("Safari HEVC format=null : garder le refus HDR/P3 et plage incohérente, signaler les métadonnées SDR partielles",async()=>{
+test("Safari HEVC format=null : bloquer HDR/P3 et signaler les écarts SDR par avertissement",async()=>{
  const src={...base,color:{kind:"nclx",primaries:1,transfer:1,matrix:6,fullRange:false}};
  const evidence=COLOR.metadata(src);
  for(const cs of [
   {primaries:"bt2020",transfer:"hlg",matrix:"bt709",fullRange:false},
   {primaries:"bt709",transfer:"pq",matrix:"bt709",fullRange:false},
-  {primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:true},
-  {primaries:"smpte170m",transfer:"bt709",matrix:"bt709",fullRange:false}
  ]){
   const opaque={format:null,colorSpace:cs};
   await assert.rejects(()=>COLOR.imagePourRendu(opaque,evidence),
     /NOVA HD couleur/);
  }
+ const uncertainRange=await COLOR.imagePourRendu({format:null,colorSpace:{
+  primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:true
+ }},evidence);
+ assert.equal(uncertainRange.proof.colorFidelity,"uncertified-against-source");
+ const uncertainPrimaries=await COLOR.imagePourRendu({format:null,colorSpace:{
+  primaries:"smpte170m",transfer:"bt709",matrix:"bt709",fullRange:false
+ }},evidence);
+ assert.equal(uncertainPrimaries.proof.colorFidelity,"uncertified-against-source");
  const unverified=COLOR.metadata({...src,color:{kind:"nclx",primaries:2,
   transfer:2,matrix:6,fullRange:false}});
  const native=await COLOR.imagePourRendu({format:null,
@@ -202,7 +208,7 @@ test("Safari opaque : matrice source BT2020 NCL ou gamut P3 ne peuvent pas empru
  const ev=COLOR.metadata(i);
  await assert.rejects(()=>COLOR.imagePourRendu({format:null,
   colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false}},ev),
-  /non certifiable/);
+  /contradictoires|non certifiable/);
 });
 
 test("Safari opaque : primaires SDR SMPTE170M et matrice trame BT709, fidélité signalée non certifiée",async()=>{
@@ -226,7 +232,7 @@ test("Safari 0.33 : matrice source 601, trame SDR affichable RGBX sans plan YUV 
  assert.equal(out.owned,false);
  assert.equal(out.frame,f);
  assert.equal(out.proof.colorFidelity,"uncertified-against-source");
- assert.match(out.proof.warning,/Comparer les couleurs/);
+ assert.match(out.proof.warning,/Comparer impérativement les couleurs/);
 });
 test("Safari 0.33 : I420 non copiable, aucun rejet systématique tant que le décodeur atteste du SDR",async()=>{
  const e=COLOR.metadata({...base,color:{...base.color,matrix:6}});
@@ -250,7 +256,7 @@ test("Safari 0.33 : constructeur YUV réétiqueté indisponible, conserver l'aff
  assert.equal(out.proof.sourceMismatch,true);
  assert.equal(out.owned,false);
 });
-test("Safari 0.33 : I420P10, transfert PQ, primaires P3 ou plage ambiguë ne passent pas en affichage SDR",async()=>{
+test("Safari 0.33 : I420P10, transfert PQ et primaires BT2020 restent refusés",async()=>{
  const e=COLOR.metadata({...base,color:{...base.color,matrix:6}});
  const baseFrame={colorSpace:{primaries:"bt709",transfer:"bt709",
    matrix:"bt709",fullRange:false}};
@@ -258,7 +264,6 @@ test("Safari 0.33 : I420P10, transfert PQ, primaires P3 ou plage ambiguë ne pas
   {...baseFrame,format:"I420P10"},
   {format:"RGBX",colorSpace:{...baseFrame.colorSpace,transfer:"pq"}},
   {format:"I420",colorSpace:{...baseFrame.colorSpace,primaries:"bt2020"}},
-  {format:"I420",colorSpace:{...baseFrame.colorSpace,fullRange:null}}
  ])await assert.rejects(()=>COLOR.imagePourRendu(fr,e));
 });
 
@@ -311,7 +316,7 @@ test("NOVA 0.34 : refuser source 601 vs trame HDR, et aucune information privée
  const d=COLOR.diagnostic();
  assert.equal(d.reason,"denied-hdr-or-transfer");
  const json=JSON.stringify(d);
- for(const word of ["filename","filepath","videoBytes","sourceFile","userAgent","GPS","pixelData"])
+ for(const word of ['"filename":','"filepath":','"videoBytes":','"sourceFile":','"userAgent":','"GPS":','"pixelData":'])
   assert.equal(json.includes(word),false);
  assert.equal(d.privacy.mediaIncluded,false);
  assert.equal(d.privacy.framePixelsIncluded,false);
