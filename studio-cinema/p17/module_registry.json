@@ -1,0 +1,56 @@
+{
+  "schema": "retouche-cinema-p17-module-registry-v1",
+  "policy": {
+    "default_state": "disconnected",
+    "require_explicit_consent_for_private_media": true,
+    "require_real_execution_before_capability_claims": true,
+    "require_physical_iphone_safari_validation_before_production": true,
+    "require_independent_tests_before_upgrading_version": true,
+    "do_not_merge_experimental_branches_automatically": true
+  },
+  "modules": [
+    {
+      "id": "cinema_director_p2",
+      "source_branch": "chatgpt-cinema-ai-rfc-v01",
+      "state": "planning_integrated",
+      "capability": "text_to_validated_clip_manifest",
+      "real_video_rendering": false
+    },
+    {
+      "id": "actor_presence_p16",
+      "source_branch": "chatgpt-cinema-ai-rfc-v01",
+      "state": "planning_integrated",
+      "capability": "timed_performance_cues",
+      "real_video_rendering": false
+    },
+    {
+      "id": "nova",
+      "source_branch": "chatgpt-studio-nova-v01",
+      "pull_request": 3,
+      "state": "contract_only",
+      "capability": "av_sync_and_color_and_export",
+      "requires": ["real_provider_execution", "media_compatibility_tests", "safari_iphone_test"]
+    },
+    {
+      "id": "cameraguard_v43",
+      "source_branch": "lab-3d-v43-camera-evidence",
+      "state": "contract_only",
+      "capability": "2d_camera_motion_and_abstention",
+      "requires": ["annotated_real_scene_evaluation", "no_unproven_anatomical_inference"]
+    },
+    {
+      "id": "smallmotion_pwa_safe_update",
+      "source_branch": "lab-3d-smallmotion-pwa-safe-update-v1",
+      "pull_request": 26,
+      "state": "policy_only",
+      "capability": "preserve_active_edits_on_update",
+      "requires": ["service_worker_integration", "two_client_regression", "safari_iphone_test"]
+    },
+    {
+      "id": "video_generation_gpu",
+      "state": "not_connected",
+      "capability": "generate_original_film_frames",
+      "requires": ["model_license_review", "gpu_execution", "identity_and_motion_qa", "cost_and_privacy_controls"]
+    }
+  ]
+}
