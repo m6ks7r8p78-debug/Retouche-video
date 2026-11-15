@@ -5,10 +5,12 @@
  */
 var NOVA_EXPORT=(()=>{
 "use strict";
-const MAX_SECONDS=12,MAX_BYTES=60*1024*1024,MAX_SIDE=640,FPS=15;
+const MAX_SECONDS=12,MAX_LONG_SECONDS=24,MAX_BYTES=60*1024*1024,MAX_SIDE=640,FPS=15;
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
-function plan({duration,width,height,bytes,fps=FPS,maxSide=MAX_SIDE}={}){
- if(!finite(duration)||duration<=0||duration>MAX_SECONDS)throw new RangeError("NOVA : durée limitée à 12 secondes");
+function plan({duration,width,height,bytes,fps=FPS,maxSide=MAX_SIDE,profile}={}){
+ const maxSeconds=profile==="h264-windowed-24s"?MAX_LONG_SECONDS:MAX_SECONDS;
+ if(!finite(duration)||duration<=0||duration>maxSeconds)
+  throw new RangeError("NOVA : durée limitée à "+maxSeconds+" secondes");
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<2||height<2)throw new RangeError("Dimensions source invalides");
  if(!finite(bytes)||bytes<1||bytes>MAX_BYTES)throw new RangeError("Fichier limité à 60 Mo pour ce pilote");
  if(!finite(fps)||fps<5||fps>FPS)throw new RangeError("Cadence pilote limitée à 15 images/s");
@@ -17,7 +19,7 @@ function plan({duration,width,height,bytes,fps=FPS,maxSide=MAX_SIDE}={}){
  const outW=Math.max(2,Math.round(width*factor/2)*2);
  const outH=Math.max(2,Math.round(height*factor/2)*2);
  return {width:outW,height:outH,fps,frames:Math.max(1,Math.floor(duration*fps+1e-8)),
-   duration, maxSeconds:MAX_SECONDS, audio:"conserver ou refuser",pilot:true};
+   duration, maxSeconds, audio:"conserver ou refuser",pilot:true};
 }
 function disposer(media){
  if(!media)return;
@@ -166,9 +168,15 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   catch{nativeH264Color709=false}
  }
  const verifiedColorPath=useHevcWasm||nativeH264Color709;
+ // L'unique chemin de durée étendue requiert AVANT tout décodage le contrôle
+ // SPS/VUI H.264, un fichier local et des PTS natifs; HEVC reste à 12 s.
+ const windowedH264=nativeH264Color709&&
+   Number.isSafeInteger(probe?.durationUs)&&probe.durationUs>12000000&&
+   probe.durationUs<=24000000;
  // Garde-fou optionnel interne : l'interface ne peut pas relever la limite
  // de 24 Mio de payloads + MP4 final in-memory.
- const exportMeter=useHevcWasm?NOVA_EXPORT_METER.create({maxEncodedBytes}):null;
+ const exportMeter=useHevcWasm||windowedH264?
+  NOVA_EXPORT_METER.create({maxEncodedBytes}):null;
  const media=useHevcWasm?null:document.createElement("video");
  if(media){
   media.muted=true;media.playsInline=true;media.preload="auto";
@@ -184,7 +192,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   const sourceDuration=hevcMeta?.durationSeconds??media.duration;
   const sourceWidth=hevcMeta?.width??media.videoWidth;
   const sourceHeight=hevcMeta?.height??media.videoHeight;
-  const settings=plan({duration:sourceDuration,width:sourceWidth,height:sourceHeight,bytes:file.size});
+  const settings=plan({duration:sourceDuration,width:sourceWidth,height:sourceHeight,
+    bytes:file.size,profile:windowedH264?"h264-windowed-24s":undefined});
   if(!globalThis.NOVA_GUARD)throw new Error("Garde-fous mémoire NOVA indisponibles");
   const budget=NOVA_GUARD.exigerBudget({sourceBytes:file.size,
     sourceWidth,sourceHeight,
@@ -192,8 +201,12 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
     durationSeconds:sourceDuration,withAudio:!allowSilent});
   onProgress({stage:"budget",estimatedMiB:budget.mebibytes,limitMiB:budget.limitMiB});
   if(!globalThis.NOVA_TIMELINE)throw new Error("Horodatage NOVA indisponible");
-  const timeline=NOVA_TIMELINE.calculer(sourceDuration,settings.fps);
+  const timeline=NOVA_TIMELINE.calculer(sourceDuration,settings.fps,
+    windowedH264?360:200);
   if(timeline.count!==settings.frames)throw new Error("Incohérence du plan temporel");
+  if(windowedH264&&!globalThis.NOVA_WINDOWS)
+   throw new Error("Planificateur de fenêtres vidéo indisponible");
+  const windowPlan=windowedH264?NOVA_WINDOWS.creer(timeline.entries):null;
   exportMeter?.stage("audio");
   let sourceAudit=null;
   if(useHevcWasm){
@@ -252,6 +265,10 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
       allowLeadingGap:!!audioCopy
     });
   }
+  // Une durée étendue exige le bitstream AAC complet, vérifiable et
+  // recopié UNE FOIS. Pas de PCM ou de remplissage inventé aux frontières.
+  if(windowedH264&&!allowSilent&&!audioCopy)
+   throw new Error("NOVA fenêtres : copie AAC intégrale non démontrée, export refusé");
   let audio=null;
   if(!allowSilent&&!audioCopy){
     try{audio=await audioDuFichier(file,false,globalThis.AudioContext||globalThis.webkitAudioContext)}
@@ -313,7 +330,7 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    if(trace.premierPTSUs===null)trace.premierPTSUs=source.selectedPTSUs;
    trace.dernierPTSUs=source.selectedPTSUs;
   }
-  async function encoderImage(entry){
+  async function encoderImage(entry,forceKeyFrame=false){
    if(signal?.aborted)throw new Error("Export annulé");
    if(error)throw error;
    const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
@@ -325,7 +342,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
      NOVA_COLOR709.videoFrame(processed.data,processed.width,processed.height,
       entry.timestamp,entry.duration):
      new VideoFrame(canvas,{timestamp:entry.timestamp,duration:entry.duration});
-   try{videoEnc.encode(frame,{keyFrame:entry.keyFrame})}finally{frame.close()}
+   try{videoEnc.encode(frame,{keyFrame:entry.keyFrame||forceKeyFrame})}
+   finally{frame.close()}
    exportMeter?.frame({queue:videoEnc.encodeQueueSize,
     bufferBytes:processed.data.byteLength+settings.width*settings.height*3/2});
    if(videoEnc.encodeQueueSize>5)await NOVA_GUARD.attendreEncodeur(videoEnc,{maxQueue:3,signal});
@@ -343,20 +361,37 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    hevcDiagnostics=Object.freeze({...result.metrics,
     outputFrames:result.frames,
     qualification:"WASM heap capacity, not browser or iPhone total RAM"});
-  }else for(const entry of timeline.entries){
-   if(signal?.aborted)throw new Error("Export annulé");
-   if(error)throw error;
-   const t=Math.min(sourceDuration-.001,entry.seekSeconds);
-   if(sourcePTS){
-    noter(await sourcePTS.imageA(t,canvas));
-   }else{
-    await seek(media,t,signal);
-    const position=NOVA_TIMELINE.validerPosition(media.currentTime,t,sourceDuration);
-    if(!position.ok)throw new Error("Recherche vidéo imprécise : export refusé ("+
-     position.distance.toFixed(3)+" s)");
-    ctx.drawImage(media,0,0,canvas.width,canvas.height);
+  }else{
+   // Fenêtres consécutives, mais UN seul VideoDecoder, encodeur, muxer,
+   // horodatage global et piste AAC. Aucune concaténation de fichiers.
+   const windows=windowPlan?.windows??[{index:1,startIndex:0,
+    endIndex:timeline.entries.length,startUs:0,endUs:timeline.durationUs}];
+   for(const window of windows){
+    if(windowPlan)onProgress({stage:"window",index:window.index,
+     total:windows.length,startMs:Math.round(window.startUs/1000),
+     endMs:Math.round(window.endUs/1000)});
+    for(let i=window.startIndex;i<window.endIndex;i++){
+     const entry=timeline.entries[i];
+     if(signal?.aborted)throw new Error("Export annulé");
+     if(error)throw error;
+     const t=Math.min(sourceDuration-.001,entry.seekSeconds);
+     if(sourcePTS){
+      noter(await sourcePTS.imageA(t,canvas));
+     }else{
+      await seek(media,t,signal);
+      const position=NOVA_TIMELINE.validerPosition(media.currentTime,t,sourceDuration);
+      if(!position.ok)throw new Error("Recherche vidéo imprécise : export refusé ("+
+       position.distance.toFixed(3)+" s)");
+      ctx.drawImage(media,0,0,canvas.width,canvas.height);
+     }
+     await encoderImage(entry,!!windowPlan&&i===window.startIndex);
+    }
+    // Vide la file encodeur entre fenêtres, sans remettre les PTS à zéro.
+    if(windowPlan){
+     await videoEnc.flush();
+     if(error)throw error;
+    }
    }
-   await encoderImage(entry);
   }
   exportMeter?.stage("video-flush");
   await videoEnc.flush();
@@ -414,7 +449,11 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   const pipelineAudit=exportMeter?.snapshot()??null;
   if(hevcDiagnostics)hevcDiagnostics=Object.freeze({...hevcDiagnostics,pipelineAudit});
   onProgress({stage:"fini",progress:1});
-  return {blob,plan:settings,validation,colorAudit,hevcDiagnostics,pipelineAudit,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
+  return {blob,plan:settings,windowPlan:windowPlan?{
+    mode:windowPlan.mode,count:windowPlan.windows.length,
+    windowFrames:windowPlan.windowFrames,frames:windowPlan.frames,
+    durationUs:windowPlan.durationUs}:null,
+   validation,colorAudit,hevcDiagnostics,pipelineAudit,hasAudio:!!audioConfig,audioMode,sourceMode,sourceInfo:sourcePTS?.info??null,sourceAudit,audioSourceAudit,audioAudit,budget,trace:sourcePTS?trace:null,timeline:{
     frames:timeline.count,durationUs:timeline.durationUs,audioAvailableSeconds:audioCheck?.availableSeconds??null,
     audit:sourceMode==="hevc-wasm"?"HEVC MIT WASM local, PTS MOV et sortie CFR":sourceMode==="pts"?"PTS MP4 et décodage séquentiel VideoDecoder (fichiers compatibles), sortie CFR":"Compatibilité : images HTMLVideoElement cherchées par temps, PTS natifs non disponibles"
   },report:sourceMode==="hevc-wasm"?"HEVC SDR BT.709 traité localement, sortie audiovisuelle à contrôler sur iPhone":sourceMode==="pts"?"Sortie pilote à PTS source natifs, audio et rendu perceptuel à vérifier sur iPhone réel":"Sortie en mode approximatif demandé, risque de trames manquées à vérifier"};
