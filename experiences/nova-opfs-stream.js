@@ -10,6 +10,10 @@ var NOVA_OPFS_STREAM=(()=>{
 const MiB=1048576,CHUNK_SIZE=65536,MAX_PENDING=2*MiB,MAX_FILE=24*MiB;
 const fail=reason=>new Error("NOVA OPFS local : "+reason);
 const bytes=n=>Number.isSafeInteger(n)&&n>=0;
+// Marque les exports en cours et les fichiers achevés encore téléchargeables
+// dans CET onglet; le nettoyage ne doit pas retirer leur contenu.
+const activeFiles=new Set();
+const isActive=name=>typeof name==="string"&&activeFiles.has(name);
 const supported=()=>typeof navigator!=="undefined"&&
  !!navigator.storage&&typeof navigator.storage.getDirectory==="function"&&
  typeof globalThis.Mp4Muxer?.StreamTarget==="function"&&
@@ -35,6 +39,7 @@ async function create({signal,storage,maxPendingBytes=MAX_PENDING,maxFileBytes=M
   dir=await root.getDirectoryHandle("nova-opfs-local-v1",{create:true});
   handle=await dir.getFileHandle(name,{create:true});
   writable=await handle.createWritable();
+  activeFiles.add(name);
  }catch(e){
   if(dir)try{await dir.removeEntry(name)}catch{}
   throw fail("impossible d'ouvrir le stockage privé local");
@@ -96,9 +101,11 @@ async function create({signal,storage,maxPendingBytes=MAX_PENDING,maxFileBytes=M
  async function release(){
   if(removed)return;
   removed=true;
-  try{await chain}catch{}
-  if(!finished)try{await writable.abort()}catch{}
-  try{await dir.removeEntry(name)}catch{}
+  try{
+   try{await chain}catch{}
+   if(!finished)try{await writable.abort()}catch{}
+   try{await dir.removeEntry(name)}catch{}
+  }finally{activeFiles.delete(name)}
  }
  return Object.freeze({target,drain,finish,release,
   snapshot:()=>Object.freeze({mode:"opfs-local-stream",pendingBytes,
@@ -120,6 +127,6 @@ async function probe({signal,storage,muxer,random}={}){
   if(sink)await sink.release();
  }
 }
-return Object.freeze({supported,create,probe});
+return Object.freeze({supported,create,probe,isActive});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_OPFS_STREAM;
