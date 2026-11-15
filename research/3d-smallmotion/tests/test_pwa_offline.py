@@ -30,7 +30,7 @@ for file in SOURCE_FILES:shutil.copy2(file,jsroot/file.name)
 # unrelated application manifest, which is independently checked by CI.
 sw=re.sub(r'F=\[[^\]]*\]', 'F='+json.dumps(['./','index.html']+['research/3d-smallmotion/'+p for p in REQUIRED]),SW_SRC,count=1)
 sw=re.sub(r'const LOURDS=\[[^\]]*\]', 'const LOURDS=[]',sw,count=1)
-sw=sw.replace('retouche-v86','retouche-v8601')
+sw=sw.replace('retouche-v87','retouche-v8701')
 (STAGING/'sw.js').write_text(sw,encoding='utf8')
 (STAGING/'index.html').write_text('''<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>SmallMotion offline lifecycle harness</title></head><body>
 <div id="state">Local only</div>
@@ -79,7 +79,7 @@ try:
    page.reload(wait_until='load')
    page.wait_for_function('!!navigator.serviceWorker.controller',timeout=12000)
    cacheinfo=page.evaluate('''async()=>{
-    const keys=await caches.keys();const target=keys.filter(k=>k.startsWith('retouche-v8601'))[0];
+    const keys=await caches.keys();const target=keys.filter(k=>k.startsWith('retouche-v8701'))[0];
     const cached=await caches.open(target); const must=['index.html','research/3d-smallmotion/smallmotion-worker.js','research/3d-smallmotion/smallmotion-local.js','research/3d-smallmotion/smallmotion-worker-runner.js'];
     const present=[];for(let p of must)present.push(!!await cached.match(p));return {target,present};
    }''')
@@ -94,7 +94,7 @@ try:
    # Cache a deliberately stale Worker under a unique URL. It returns a
    # plausible candidate but omits the build marker. Client must reject.
    stale=page.evaluate('''async()=>{
-      const c=await caches.open((await caches.keys()).find(k=>k.startsWith('retouche-v8601')));
+      const c=await caches.open((await caches.keys()).find(k=>k.startsWith('retouche-v8701')));
       const path='research/3d-smallmotion/smallmotion-worker.js?incompatible=1';
       await c.put(path,new Response(`onmessage=e=>postMessage({id:e.data.id,ok:true,result:{status:'local_motion_candidate',candidates:[{box:[1,1,10,10]}]}})`,{status:200,headers:{'Content-Type':'text/javascript'}}));
       const prev=RetoucheMotionWorkerRunner.DEFAULT_WORKER;
