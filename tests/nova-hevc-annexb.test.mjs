@@ -24,7 +24,7 @@ test("HEVC Annex B : extrait des NAL de plusieurs échantillons sans les réordo
  assert.deepEqual(Array.from(a.bytes.slice(0,7)),[0,0,0,1,64,1,7]);
 });
 test("HEVC Annex B : refuse NAL tronquées, faux paramétrages et surcharges",async()=>{
- const bad=config();bad[bad.length-2]=255;
+ const bad=config();bad[bad.length-4]=255; // corrompt la longueur NAL (pas ses données)
  assert.throws(()=>ANNEXB.configuration(bad),/NAL hvcC hors limites/);
  const cfg=config();
  assert.throws(()=>ANNEXB.decouper(new Uint8Array([0,0,0,9,2,1,3]),4),/NAL hors limites/);
