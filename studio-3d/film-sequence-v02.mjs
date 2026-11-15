@@ -29,7 +29,8 @@ function buildSyntheticFilmSequence(request, generator) {
   }
   const requested = project.scenes[0].steps.map(s => s.intent);
   const missingActions = [...new Set(requested.filter(s => !SUPPORTED.has(s)))];
-  const selected = requested.filter(s => SUPPORTED.has(s)).slice(0, 10);
+  const selected = requested.filter(s => SUPPORTED.has(s));
+  if (selected.length > 10) return blocked('Le pilote est limité à dix gestes animés pour une seule scène.');
   if (!selected.length) return blocked('Aucun geste encore animé dans le prototype v0.2.');
   if (selected.includes('poser_objet') && !selected.includes('boire')) {
     return blocked('Impossible de poser une tasse qui n’a pas été prise dans le scénario.');
@@ -46,7 +47,19 @@ function buildSyntheticFilmSequence(request, generator) {
       selected.indexOf('boire') < selected.indexOf('s_asseoir')) {
     return blocked('Le pilote du café assis nécessite de s’asseoir avant de boire.');
   }
+  let holdingCup = false;
+  for (const intent of selected) {
+    if (intent === 'poser_objet' && !holdingCup) {
+      return blocked('Le scénario tente de déposer une tasse non tenue.');
+    }
+    if (intent === 'boire') holdingCup = true;
+    if (intent === 'poser_objet') holdingCup = false;
+  }
   const config = generator.parsePrompt(project.originalPrompt);
+  // Les accessoires/gestes non pris en charge par cette animation ne doivent pas apparaître.
+  config.smoke = false;
+  config.tobacco = null;
+  config.actions = ['pose'];
   const model = generator.build(config);
   if (!Array.isArray(model.nodes) || !Array.isArray(model.materials) || !model.nodes[0]) {
     throw new Error('Structure du générateur 3D inattendue.');
