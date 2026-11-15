@@ -162,9 +162,9 @@ test("NOVA HD : PNG source original conservé, H264+AAC synthétique exporté 1:
    "-i",matrix601,"-i",matrixOutput,
    "-filter_complex","[0:v:0]format=rgb24[reference];[1:v:0]format=rgb24[converted];[reference][converted]psnr",
    "-an","-f","null","-"],{timeout:30000});
-  const matches=[...comparison.stderr.matchAll(/PSNR y:([\d.]+) u:([\d.]+) v:([\d.]+) average:([\d.]+)/g)];
+  const matches=[...comparison.stderr.matchAll(/PSNR [^\n]*average:([0-9.]+)/g)];
   assert.ok(matches.length>0,"PSNR RGB absent : "+comparison.stderr.slice(-600));
-  const psnr=Number(matches.at(-1)[4]);
+  const psnr=Number(matches.at(-1)[1]);
   assert.ok(psnr>25,"Conversion BT.601->BT.709 trop différente : PSNR "+psnr);
 
   assert.deepEqual(failures,[]);
