@@ -30,7 +30,7 @@ try:
       const a=make(0),b=make(1),same=RetoucheLocalMotion.analyze(a,b);
       const result=await RetoucheMotionWorkerRunner.run(a,b,{analyzer:RetoucheLocalMotion.analyze,workerURL:workerUrl});
       // Verify main-thread responsiveness independently from Worker startup.
-      const slow=URL.createObjectURL(new Blob([`onmessage=e=>{const t=performance.now();while(performance.now()-t<210){};postMessage({id:e.data.id,ok:true,computeMs:210,result:{status:'no_supported_local_motion',candidates:[]}})}`],{type:'text/javascript'}));
+      const slow=URL.createObjectURL(new Blob([`onmessage=e=>{const t=performance.now();while(performance.now()-t<210){};postMessage({id:e.data.id,build:'smallmotion-pwa-bundle-v1',ok:true,computeMs:210,result:{status:'no_supported_local_motion',candidates:[]}})}`],{type:'text/javascript'}));
       let done=false,ticked=false;const job=RetoucheMotionWorkerRunner.run(a,b,{analyzer:RetoucheLocalMotion.analyze,workerURL:slow}).then(()=>{done=true});
       await new Promise(resolve=>setTimeout(()=>{ticked=!done;resolve()},40));await job;
       const ac=new AbortController();const pending=RetoucheMotionWorkerRunner.run(a,b,{signal:ac.signal,analyzer:RetoucheLocalMotion.analyze,workerURL:slow});
