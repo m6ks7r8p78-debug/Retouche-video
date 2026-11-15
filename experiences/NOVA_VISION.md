@@ -142,3 +142,39 @@ La première CI 0.4 avait les deux jobs verts : **4/4 tests Chromium** (photo mo
 ### Étape après NOVA 0.5
 
 Garantir la qualité colorimétrique et la synchronisation audio sur plusieurs fichiers réellement autorisés ; comparer la cadence temporelle à la source ; intégrer ensuite au pipeline vidéo historique sans casser les profils normal / maximum / X et sans exposer de médias privés dans le dépôt. Ne pas augmenter les limites avant les mesures de mémoire, température, énergie et débit sur iPhone réel.
+
+
+## NOVA 0.6 — protection mémoire, PTS, AAC et pression WebCodecs (15 novembre 2026)
+
+Cycle **expérimental sur `chatgpt-studio-nova-v01` uniquement**.
+
+### Modifications effectives
+
+- `nova-guard.js` applique un **budget préventif de 160 Mio estimés** aux exports : fichier et éventuelle copie audio, jusqu'à dix surfaces décodées, buffers RGBA/Worker, PCM, muxage en mémoire, réserve fixe. Ce chiffre est **un seuil de prudence configurable en code**, ni une limite mémoire officielle d'iOS, ni une mesure matérielle. Un fichier trop coûteux est rejeté avant l'export. Les appareils peuvent néanmoins échouer sous le seuil : il faut tester Safari physique.
+- Le parcours PTS natif libère maintenant l'élément vidéo HTML dès que l'analyse source / orientation et les métadonnées utiles sont acquises, afin d'éviter de garder **deux lecteurs de la source** inutilement. Le mode de recherche HTML approximatif conserve naturellement le lecteur jusqu'à la fin.
+- L'audit de PTS vérifie l'absence de départ vidéo artificiel : une première image trop tardive provoque un refus explicite. Il relève aussi les longues lacunes temporelles pour les diagnostics, **sans les qualifier systématiquement comme erreurs de source**.
+- `VideoEncoder` et `AudioEncoder` évitent les `flush()` intermédiaires utilisés pour désengorger la file, au profit d'une attente sur l'événement `dequeue`, avec annulation et délai maximum. Le `flush()` de fin de flux reste nécessaire.
+- Pour le son, les paquets AAC réellement encodés sont comptés : une piste annoncée sans paquet, des timestamps incohérents, un départ très décalé ou une durée AAC manifestement mauvaise entraînent un refus, **pas une sortie silencieuse maquillée en vidéo avec son**.
+- Tests : `tests/nova-guard.test.mjs` vérifie budgets source, projections 1080p/4K/8K, départ PTS, trous temporels, paquets AAC, suspension et annulation d'encodeur. `tests/nova-browser.test.mjs` ajoute un vrai MP4 synthétique **portrait à 30000/1001 i/s**, puis audit FFprobe des dimensions, de la cadence de sortie et du mouvement.
+
+### Portée des garanties
+
+- **Aucune montée des limites** : 12 s, 60 Mo de source, sortie <= 640 px / 15 i/s, source PTS <= Full HD.
+- Le budget mémoire est une **projection**, pas une mesure de RAM, de chauffage, de batterie ni une preuve que Safari ne sera pas interrompu.
+- L'audit AAC porte sur les timestamps des paquets **de sortie**. Les PTS de toutes les pistes audio à la source, les `edit lists` complexes, les délais perceptifs, les décalages labiaux et la qualité audible demandent toujours une instrumentation supplémentaire et des fichiers de référence.
+- Les exports AV ne sont **pas** annoncés compatibles iPhone réel sans test sur un iPhone 15 Pro Max ; la CI Chromium n'est pas un substitut.
+- Un résultat de tests ne doit être annoncé vert qu'après le dernier run GitHub Actions du **SHA exact**.
+- Aucun média privé ni fichier d'entraînement ajouté au dépôt, aucune fusion ni mise en production.
+
+### Fondements techniques
+
+- [Spécification W3C WebCodecs](https://www.w3.org/TR/webcodecs/) : fermeture des `VideoFrame` après usage.
+- [MDN WebCodecs](https://developer.mozilla.org/en-US/docs/Web/API/WebCodecs_API) : queues asynchrones et encodage/décodage natif.
+- [MDN VideoDecoder.decodeQueueSize](https://developer.mozilla.org/en-US/docs/Web/API/VideoDecoder/decodeQueueSize) : limitation de la pression d'entrée.
+
+### Suite mesurable
+
+1. Vérifier le dernier SHA en CI, puis mesurer les prévisualisations/export **sur iPhone réel**, dont mémoire, son et interruption.
+2. Vérifier des fichiers tournés à 23,976 / 25 / 29,97 / 30 / 60 fps, de vraies rotations MP4 et des variantes AAC / VFR / HDR / edit lists.
+3. Construire un audit **des pistes audio sources** (PTS, offsets, délais AAC) avant d'affirmer une synchronisation frame-perfect.
+4. Obtenir un jeu de référence autorisé avec comparaisons perceptuelles et objective sans publication ; n'activer la montée 1080p/4K qu'après validation.
