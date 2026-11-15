@@ -399,7 +399,8 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
    ]);
    const audit=comparerImpulsions({sourceAudio,sourceVideo,outputAudio,outputVideo,
      toleranceMs:90});
-   assert.ok(audit.offsetMs<=90);
+   assert.ok(audit.offsetMs<=34,
+     "décalage ajouté doit rester inférieur à une demi-image CFR : "+audit.offsetMs.toFixed(1)+" ms");
    assert.ok(audit.driftMs<=90);
    t.diagnostic("Horloges source audio/vidéo : "+JSON.stringify({sourceAudio,sourceVideo})+
      " ; sortie : "+JSON.stringify({outputAudio,outputVideo}));
@@ -430,7 +431,15 @@ async function decodeVideoEvents(filename){
  const {stdout}=await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
    "-i",filename,"-map","0:v:0","-vf","scale=8:8,format=gray",
    "-f","rawvideo","-"],{encoding:null,maxBuffer:8*1024*1024});
- return impulsionsVideo(stdout,{width:8,height:8,fps:15});
+ const events=impulsionsVideo(stdout,{width:8,height:8,fps:15});
+ const probed=await runBinary("ffprobe",["-v","error","-select_streams","v:0",
+   "-show_entries","frame=best_effort_timestamp_time","-of","json",filename]);
+ const pts=(JSON.parse(probed.stdout).frames||[]).map(x=>Number(x.best_effort_timestamp_time));
+ return events.map(t=>{
+   const index=Math.round(t*15);
+   if(!Number.isFinite(pts[index]))throw new Error("PTS vidéo FFprobe non disponible pour l'événement "+index);
+   return pts[index];
+ });
 }
 
 
