@@ -1,4 +1,4 @@
-/* NOVA : 20 s H.264/AAC écrit dans un fichier temporaire OPFS. Video/mp4 finale vérifiée. 
+/* NOVA : MP4 H.264/AAC 20–48 s écrit en OPFS, fichier final vérifié.
  * Banc réel Chromium sous CSP, source 100% FFmpeg synthétique.
  * La même piste AAC est copiée une seule fois avec horodatages continus.
  */
@@ -19,7 +19,7 @@ async function ffprobe(file,args=[]){
   {timeout:30000,maxBuffer:8*1024*1024});
  return JSON.parse(stdout);
 }
-for(const seconds of [20,24])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 local, aucun ArrayBuffer final, AAC intact",async(t)=>{
+for(const seconds of [20,24,36,48])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 local, aucun ArrayBuffer final, AAC intact",async(t)=>{
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),"nova-"+seconds+"s-windowed-"));
  let server=null,browser=null;
  try{
@@ -88,7 +88,8 @@ for(const seconds of [20,24])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 local, 
   assert.equal(before.source.codec,"h264");
   assert.equal(before.source.durationMs,seconds*1000);
   assert.deepEqual(before.exportProposal,{width:320,height:180,fps:15,frames:seconds*15});
-  assert.equal(before.pilotLimits.maxDurationMs,24000);
+  assert.equal(before.pilotLimits.maxDurationMs,48000);
+  assert.equal(before.advisories.includes("h264-opfs-required"),seconds>24);
   assert.equal(before.audio,"aac-copy-verified");
   assert.equal(before.privacy.mediaUploaded,false);
   assert.equal(await page.locator("#downloadVideo").getAttribute("href"),null,
@@ -108,6 +109,16 @@ for(const seconds of [20,24])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 local, 
     constructor(){throw Error("UNEXPECTED_IN_MEMORY_MUXER")}
    }};
   });
+  if(seconds>24){
+   // Une vidéo longue ne doit JAMAIS passer par le muxer RAM par défaut.
+   await page.locator("#exportVideo").click();
+   await page.waitForFunction(()=>
+    document.querySelector("#exportStatus").textContent.startsWith("Export refusé"),
+    null,{timeout:30000});
+   const refused=await page.locator("#exportStatus").innerText();
+   assert.match(refused,/Au-delà de 24 secondes, activer explicitement/);
+   assert.equal(await page.locator("#downloadVideo").getAttribute("href"),null);
+  }
   await page.locator("details:has(#writeOpfs) summary").click();
   assert.equal(await page.locator("#writeOpfs").isDisabled(),false,
    "OPFS navigateur disponible pour le test");
@@ -119,13 +130,14 @@ for(const seconds of [20,24])test("NOVA "+seconds+"s H264/AAC OPFS : MP4 local, 
    null,{timeout:180000});
   const status=await page.locator("#exportStatus").innerText();
   assert.match(await page.locator("#downloadVideo").getAttribute("href")||"",/^blob:/,status);
-  assert.match(status,/4 fenêtres vidéo, une piste AAC continue/);
+  assert.match(status,new RegExp(Math.ceil(seconds/6)+" fenêtres vidéo, une piste AAC continue"));
   assert.match(status,/écrit progressivement en stockage privé local/);
   assert.match(status,/AAC original copié/);
   const windows=await page.evaluate(()=>window.__nova_test_progress);
-  assert.deepEqual(windows.map(w=>[w.index,w.startMs,w.endMs]),[
-   [1,0,6000],[2,6000,12000],[3,12000,18000],[4,18000,seconds*1000]
-  ]);
+  assert.deepEqual(windows.map(w=>[w.index,w.startMs,w.endMs]),
+   Array.from({length:Math.ceil(seconds/6)},(_,i)=>[
+    i+1,i*6000,Math.min(seconds*1000,(i+1)*6000)
+   ]));
   const pending=page.waitForEvent("download");
   await page.locator("#downloadVideo").click();
   const output=await (await pending).path();
