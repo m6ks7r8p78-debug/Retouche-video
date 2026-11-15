@@ -5,10 +5,11 @@
  */
 var NOVA_EXPORT=(()=>{
 "use strict";
-const MAX_SECONDS=12,MAX_LONG_SECONDS=24,MAX_BYTES=60*1024*1024,MAX_SIDE=640,FPS=15;
+const MAX_SECONDS=12,MAX_LONG_SECONDS=24,MAX_OPFS_SECONDS=48,MAX_BYTES=60*1024*1024,MAX_SIDE=640,FPS=15;
 const finite=x=>typeof x==="number"&&Number.isFinite(x);
 function plan({duration,width,height,bytes,fps=FPS,maxSide=MAX_SIDE,profile}={}){
- const maxSeconds=profile==="h264-windowed-24s"?MAX_LONG_SECONDS:MAX_SECONDS;
+ const maxSeconds=profile==="h264-opfs-48s"?MAX_OPFS_SECONDS:
+  profile==="h264-windowed-24s"?MAX_LONG_SECONDS:MAX_SECONDS;
  if(!finite(duration)||duration<=0||duration>maxSeconds)
   throw new RangeError("NOVA : durée limitée à "+maxSeconds+" secondes");
  if(!Number.isInteger(width)||!Number.isInteger(height)||width<2||height<2)throw new RangeError("Dimensions source invalides");
@@ -170,15 +171,20 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
  const verifiedColorPath=useHevcWasm||nativeH264Color709;
  // L'unique chemin de durée étendue requiert AVANT tout décodage le contrôle
  // SPS/VUI H.264, un fichier local et des PTS natifs; HEVC reste à 12 s.
- const windowedH264=nativeH264Color709&&
-   Number.isSafeInteger(probe?.durationUs)&&probe.durationUs>12000000&&
-   probe.durationUs<=24000000;
- // Opt-in local OPFS, aucun repli silencieux vers un export en mémoire.
+ // Les vidéos >24 s ne deviennent admissibles QUE si l'utilisateur a
+ // choisi l'OPFS local; le MP4 en RAM et HEVC gardent leurs anciens plafonds.
  if(!["memory","opfs"].includes(storageMode))throw new Error("Mode de stockage MP4 inconnu");
  const useOpfs=storageMode==="opfs";
+ const windowedH264=nativeH264Color709&&
+   Number.isSafeInteger(probe?.durationUs)&&probe.durationUs>12000000&&
+   probe.durationUs<=(useOpfs?48000000:24000000);
+ const extendedOpfs=useOpfs&&windowedH264&&probe.durationUs>24000000;
+ if(!useOpfs&&nativeH264Color709&&probe?.durationUs>24000000&&
+    probe.durationUs<=48000000)
+  throw new RangeError("Au-delà de 24 secondes, activer explicitement l'écriture progressive OPFS");
  if(useOpfs&&(!windowedH264||allowSilent||allowApproximate||
     !globalThis.NOVA_OPFS_STREAM?.supported()))
-  throw new Error("Écriture OPFS réservée au H.264 SDR 12–24 s vérifié avec copie AAC");
+  throw new Error("Écriture OPFS réservée au H.264 SDR >12–48 s vérifié avec copie AAC");
  // Garde-fou optionnel interne : l'interface ne peut pas relever la limite
  // de 24 Mio de payloads + MP4 final in-memory.
  const exportMeter=useHevcWasm||windowedH264?
@@ -200,7 +206,8 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   const sourceWidth=hevcMeta?.width??media.videoWidth;
   const sourceHeight=hevcMeta?.height??media.videoHeight;
   const settings=plan({duration:sourceDuration,width:sourceWidth,height:sourceHeight,
-    bytes:file.size,profile:windowedH264?"h264-windowed-24s":undefined});
+    bytes:file.size,profile:extendedOpfs?"h264-opfs-48s":
+    windowedH264?"h264-windowed-24s":undefined});
   if(!globalThis.NOVA_GUARD)throw new Error("Garde-fous mémoire NOVA indisponibles");
   const budget=NOVA_GUARD.exigerBudget({sourceBytes:file.size,
     sourceWidth,sourceHeight,
@@ -209,11 +216,13 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   onProgress({stage:"budget",estimatedMiB:budget.mebibytes,limitMiB:budget.limitMiB});
   if(!globalThis.NOVA_TIMELINE)throw new Error("Horodatage NOVA indisponible");
   const timeline=NOVA_TIMELINE.calculer(sourceDuration,settings.fps,
-    windowedH264?360:200);
+    extendedOpfs?720:windowedH264?360:200);
   if(timeline.count!==settings.frames)throw new Error("Incohérence du plan temporel");
   if(windowedH264&&!globalThis.NOVA_WINDOWS)
    throw new Error("Planificateur de fenêtres vidéo indisponible");
-  const windowPlan=windowedH264?NOVA_WINDOWS.creer(timeline.entries):null;
+  const windowPlan=windowedH264?NOVA_WINDOWS.creer(timeline.entries,{
+   profile:extendedOpfs?"h264-opfs-48s":"standard"
+  }):null;
   exportMeter?.stage("audio");
   let sourceAudit=null;
   if(useHevcWasm){
@@ -302,9 +311,11 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
    video:{codec:"avc",width:settings.width,height:settings.height,
     ...(verifiedColorPath?{colorMetadata:"bt709-limited"}:{})},
     ...(audioConfig?{audio:{codec:"aac",sampleRate:audioConfig.sampleRate,numberOfChannels:audioConfig.numberOfChannels,
-      // Autorise le seul elst AAC original validé sur la durée 12-24 s.
-      // Une source sans elst ne demande jamais cette exception au muxer.
-      ...(windowedH264&&audioCopy?.editDurationSeconds!=null?
+      // Edit list AAC originale validée; le profil 48 s exige OPFS.
+      // Sans edit list, aucune exception au muxer n'est demandée.
+      ...(extendedOpfs&&audioCopy?.editDurationSeconds!=null?
+        {windowed48Seconds:"opfs"}:
+        windowedH264&&audioCopy?.editDurationSeconds!=null?
         {windowed24Seconds:useOpfs?"opfs":true}:{}),
       ...(audioCopy?.rollDistance!=null?{rollDistance:audioCopy.rollDistance}:{}),
       ...(audioCopy?.editDurationSeconds!=null?{
