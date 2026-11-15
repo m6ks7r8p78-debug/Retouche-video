@@ -4,7 +4,7 @@ import AAC from "../experiences/nova-aac-copy.js";
 
 const u32=n=>{const b=Buffer.alloc(4);b.writeUInt32BE(n>>>0);return b};
 const box=(type,...parts)=>{const bytes=Buffer.concat(parts),h=Buffer.alloc(8);h.writeUInt32BE(bytes.length+8,0);h.write(type,4);return Buffer.concat([h,bytes])};
-function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=null,sampleGroup=false,packetCount=3,editDurationMs=null,leadingEmptyMs=0,editListVersion=0,rawEditMedia=null,rawEditDuration=null}={}){
+function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=null,sampleGroup=false,packetCount=3,editDurationMs=null,leadingEmptyMs=0,editListVersion=0,editFlags=0,rawEditMedia=null,rawEditDuration=null}={}){
  const esds=box("esds",Buffer.alloc(4),Buffer.from([5,2,0x11,0x90]));
  const entry=Buffer.alloc(36);entry.writeUInt32BE(36+esds.length,0);entry.write(sampleType,4);
  entry.writeUInt16BE(2,24);entry.writeUInt32BE(rate*65536>>>0,32);
@@ -25,7 +25,7 @@ function fixture({edit=null,rate=48000,sampleType="mp4a",sound=true,wrongOffset=
  if(edit!=null||leadingEmptyMs>0){
   const count=leadingEmptyMs>0?2:1,step=editListVersion===1?20:12;
   const elst=Buffer.alloc(8+count*step);
-  elst[0]=editListVersion;
+  elst[0]=editListVersion;elst[3]=editFlags;
   elst.writeUInt32BE(count,4);
   const write=(i,duration,media)=>{
    const at=8+i*step;
@@ -196,4 +196,14 @@ test("NOVA 0.13 : version 1 rejette les grands entiers et le media_time négatif
  await assert.rejects(AAC.planifier(fixture({edit:0,editListVersion:1,
    rawEditMedia:-2n}),{durationSeconds:.06}),
    /média négative/);
+});
+
+test("NOVA 0.13 : rejette explicitement l'elst répétée ou réservée (ISO flags)",async()=>{
+ for(const editListVersion of [0,1]){
+  for(const editFlags of [1,2]){
+   const f=fixture({edit:0,editDurationMs:64,editListVersion,editFlags});
+   await assert.rejects(AAC.planifier(f,{durationSeconds:.06}),
+     /édition AAC répétée ou flags elst/);
+  }
+ }
 });
