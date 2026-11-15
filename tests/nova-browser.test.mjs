@@ -124,6 +124,20 @@ test("NOVA : MP4 court exporté avec son préservé ou refus, puis MP4 sans son 
    const errors=[];page.on("pageerror",e=>errors.push(e.message));
    await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
    await page.locator("#file").setInputFiles(src);
+   const sourceAudit=await page.evaluate(async()=>{
+     const mp4=await NOVA_DEMUX.analyser(document.querySelector("#file").files[0]);
+     if(!mp4)return null;
+     const presentation=NOVA_PTS.planifier(mp4);
+     return {samples:mp4.ns,edits:mp4.editMediaTime,
+       reordered:presentation.sorted.some((item,idx)=>item.index!==idx),
+       firstPTS:presentation.premierPTS,lastPTS:presentation.dernierPTS,
+       codec:mp4.codec,source:mp4.source};
+   });
+   assert.ok(sourceAudit,"le parser doit reconnaître la source MP4 synthétique");
+   assert.ok(sourceAudit.samples>=16,"les trames MP4 doivent être disponibles");
+   assert.equal(sourceAudit.reordered,true,"le test H.264 doit vraiment contenir des B-frames réordonnées");
+   assert.equal(sourceAudit.firstPTS,0,"la liste de montage corrige le début du film");
+   assert.match(sourceAudit.codec,/^avc1/);
    await page.waitForFunction(()=>!document.querySelector("#exportVideo").disabled);
    for(const silent of [false,true]){
     if(silent)await page.locator("#allowSilent").check();
