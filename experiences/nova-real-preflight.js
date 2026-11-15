@@ -140,8 +140,8 @@ async function inspect({file,signal,probe,validate,audioPlan,guard,plan,
    if(h264?.schema!=="retoucheproai.nova.h264-path.v1"||
       !codes.has(h264.status))return finish(r,"analysis-unavailable");
    r.sourceEngine="webcodecs-h264-native-pts";
-   r.outputProfile=outputProfile==="h264-hd720-opfs-3s"?
-    "h264-hd720-opfs-3s":"standard";
+   r.outputProfile=outputProfile==="h264-hd720-opfs-6s"?
+    "h264-hd720-opfs-6s":"standard";
    r.estimatedMiB=small(h264.estimatedMiB);
    if(h264.status==="ready-for-export-attempt"){
     if(h264.audio!=="aac-copy-verified"||!h264.proposal)
@@ -233,19 +233,20 @@ function serialiser(report){
    x=>blockingCodes.has(x)))].slice(0,4):[],
   advisories:Array.isArray(report.advisories)?[...new Set(report.advisories.filter(
    x=>advisoryCodes.has(x)))].slice(0,2):[],
-  outputProfile:report.outputProfile==="h264-hd720-opfs-3s"?
-    "h264-hd720-opfs-3s":"standard",
+  outputProfile:report.outputProfile==="h264-hd720-opfs-6s"?
+    "h264-hd720-opfs-6s":"standard",
   pilotLimits:{codedPixelAreaMax:r.codec==="h264"?1920*1080:MAX_CODED_PIXELS,
    sourceFramesMax:r.codec==="h264"?5000:MAX_SOURCE_FRAMES,
-   maxDurationMs:r.codec==="h264"?48000:MAX_SECONDS_US/1000,
+   maxDurationMs:report.outputProfile==="h264-hd720-opfs-6s"?6000:
+    r.codec==="h264"?48000:MAX_SECONDS_US/1000,
    outputFpsMax:MAX_OUTPUT_FPS,
-   outputSideMax:report.outputProfile==="h264-hd720-opfs-3s"?1280:640},
+   outputSideMax:report.outputProfile==="h264-hd720-opfs-6s"?1280:640},
   exportProposal:p&&[p.width,p.height,p.fps,p.frames].every(Number.isSafeInteger)&&
     p.width>=2&&p.height>=2&&p.fps===15&&
-    p.width<=(report.outputProfile==="h264-hd720-opfs-3s"?1280:640)&&
-    p.height<=(report.outputProfile==="h264-hd720-opfs-3s"?1280:640)&&
-    p.width*p.height<=(report.outputProfile==="h264-hd720-opfs-3s"?1280*720:640*640)&&
-    p.frames>=1&&p.frames<=(report.outputProfile==="h264-hd720-opfs-3s"?45:
+    p.width<=(report.outputProfile==="h264-hd720-opfs-6s"?1280:640)&&
+    p.height<=(report.outputProfile==="h264-hd720-opfs-6s"?1280:640)&&
+    p.width*p.height<=(report.outputProfile==="h264-hd720-opfs-6s"?1280*720:640*640)&&
+    p.frames>=1&&p.frames<=(report.outputProfile==="h264-hd720-opfs-6s"?90:
      r.codec==="h264"?720:180)?
     {width:p.width,height:p.height,fps:p.fps,frames:p.frames}:null,
   privacy:{mediaUploaded:false,rawMediaInReport:false,filenameInReport:false,
