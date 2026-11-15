@@ -1,0 +1,40 @@
+name: NOVA - validation du prototype
+on:
+  push:
+    branches:
+      - chatgpt-studio-nova-v01
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unitaires:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe du module et de l'interface
+        run: |
+          node --check experiences/nova-decision.js
+          node -e "const fs=require('fs'),vm=require('vm');const s=fs.readFileSync('experiences/nova.html','utf8');const code=s.match(/<script>([\\s\\S]*?)<\\/script>/);if(!code)throw Error('inline script absent');new vm.Script(code[1]);console.log('NOVA inline JS valid');"
+      - name: Garde-fous NOVA
+        run: node --test tests/nova-decision.test.mjs
+  navigateur:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Playwright
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.55.0
+      - name: Test d'interface mobile et bureau avec Chromium
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test tests/nova-browser.test.mjs
