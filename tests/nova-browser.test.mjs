@@ -8,6 +8,7 @@ import {execFile} from "node:child_process";
 import {promisify} from "node:util";
 import {fileURLToPath} from "node:url";
 import {chromium} from "playwright";
+import {impulsionsPCM,impulsionsVideo,comparerImpulsions} from "./nova-av-pulses.mjs";
 
 const root=path.resolve(fileURLToPath(new URL("../",import.meta.url)));
 function server(){
@@ -333,3 +334,86 @@ test("NOVA 0.7 : MP4 AAC décalé physiquement et refus explicite de la désynch
   await fs.rm(tmp,{recursive:true,force:true});
  }
 });
+
+
+test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",async(t)=>{
+ const tmp=await fs.mkdtemp(path.join(os.tmpdir(),"nova-av-pulse-"));
+ const src=path.join(tmp,"source_sync.mp4"),app=server();
+ try{
+  // Deux flashs d'une image, deux impulsions de 60 ms : 0,4 s et 1,2 s.
+  // La phase audio commence 10 ms avant l'image ; cet offset doit rester stable.
+  await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
+   "-f","lavfi","-i",
+   "color=c=black:s=160x90:r=15:d=2,drawbox=x=0:y=0:w=iw:h=ih:color=white:t=fill:enable='between(t,0.395,0.465)+between(t,1.195,1.265)'",
+   "-f","lavfi","-i",
+   "aevalsrc=if(lt(abs(t-0.42)\\,0.03)\\,0.7*sin(2*PI*1000*t)\\,0)+if(lt(abs(t-1.22)\\,0.03)\\,0.7*sin(2*PI*1400*t)\\,0):s=48000:d=2",
+   "-c:v","libx264","-pix_fmt","yuv420p","-c:a","aac","-b:a","128k",
+   "-movflags","+faststart","-y",src]);
+
+  const [sourceAudio,sourceVideo]=await Promise.all([
+   decodeAudioEvents(src),decodeVideoEvents(src)
+  ]);
+  assert.equal(sourceAudio.length,2,"la source contient deux impulsions audio");
+  assert.equal(sourceVideo.length,2,"la source contient deux flashs vidéo");
+
+  await new Promise(r=>app.listen(0,"127.0.0.1",r));
+  const browser=await chromium.launch({headless:true,
+   ...(process.env.CHROME?{executablePath:process.env.CHROME}:{})});
+  try{
+   const page=await browser.newPage({viewport:{width:390,height:844},acceptDownloads:true});
+   const errors=[];page.on("pageerror",e=>errors.push(e.message));
+   await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
+   const aacAvailable=await page.evaluate(async()=>{
+     if(typeof AudioEncoder==="undefined")return false;
+     try{return (await AudioEncoder.isConfigSupported({
+       codec:"mp4a.40.2",sampleRate:48000,numberOfChannels:1,bitrate:128000
+     })).supported}catch{return false}
+   });
+   await page.locator("#file").setInputFiles(src);
+   await page.waitForFunction(()=>!document.querySelector("#exportVideo").disabled);
+   await page.locator("#exportVideo").click();
+   await page.waitForFunction(()=>!!document.querySelector("#downloadVideo")?.getAttribute("href")||
+     document.querySelector("#exportStatus").textContent.startsWith("Export refusé"),
+     null,{timeout:90000});
+   const href=await page.locator("#downloadVideo").getAttribute("href");
+   const message=await page.locator("#exportStatus").innerText();
+   if(!aacAvailable){
+     assert.equal(href,null,"si AAC n'est pas pris en charge, aucun MP4 muet n'est offert");
+     assert.match(message,/Export refusé/);
+     t.skip("L'encodeur AAC Chromium est absent : refus audio vérifié, synchronisation non mesurable");
+     return;
+   }
+   assert.match(href||"",/^blob:/,"encodeur AAC disponible, export AV attendu : "+message);
+   assert.match(message,/audio AAC réencodé/);
+   const pending=page.waitForEvent("download");
+   await page.locator("#downloadVideo").click();
+   const saved=await pending;
+   const [outputAudio,outputVideo]=await Promise.all([
+    decodeAudioEvents(await saved.path()),decodeVideoEvents(await saved.path())
+   ]);
+   const audit=comparerImpulsions({sourceAudio,sourceVideo,outputAudio,outputVideo,
+     toleranceMs:90});
+   assert.ok(audit.offsetMs<=90);
+   assert.ok(audit.driftMs<=90);
+   t.diagnostic("Contrôle AV : offset ajouté "+audit.offsetMs.toFixed(1)+
+     " ms, dérive "+audit.driftMs.toFixed(1)+" ms ; événements="+sourceAudio.length);
+   assert.deepEqual(errors,[]);
+  }finally{await browser.close()}
+ }finally{
+  if(app.listening)await new Promise(r=>app.close(r));
+  await fs.rm(tmp,{recursive:true,force:true});
+ }
+});
+
+async function decodeAudioEvents(filename){
+ const {stdout}=await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
+   "-i",filename,"-map","0:a:0","-ac","1","-ar","48000","-f","f32le","-"],
+   {encoding:null,maxBuffer:8*1024*1024});
+ return impulsionsPCM(stdout,{sampleRate:48000});
+}
+async function decodeVideoEvents(filename){
+ const {stdout}=await runBinary("ffmpeg",["-hide_banner","-loglevel","error",
+   "-i",filename,"-map","0:v:0","-vf","scale=8:8,format=gray",
+   "-f","rawvideo","-"],{encoding:null,maxBuffer:8*1024*1024});
+ return impulsionsVideo(stdout,{width:8,height:8,fps:15});
+}
