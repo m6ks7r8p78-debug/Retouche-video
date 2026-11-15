@@ -541,3 +541,12 @@ La CI standard ne réinstalle plus le paquet HEVC : Chromium et WebKit Linux tes
 **Ce qui n'est toujours PAS certifié** : la consommation totale de mémoire (y compris le tas WebAssembly), la vitesse/thermique de l'iPhone, Safari iOS physique, l'export MP4 complet à partir de ce décodeur, les couleurs HDR/P3, la vidéo HEVC 4K/8K, la synchronisation AAC avec le pipeline HEVC, ni la prise en charge de tous les fichiers HEVC du monde réel. Le site public `main` n'a pas été modifié, la PR #3 reste en brouillon, aucune vidéo privée n'est utilisée.
 
 **Note de traçabilité :** ce paragraphe crée un nouveau commit documentaire ; celui-ci doit recevoir sa propre CI verte avant d'être annoncé comme dernier SHA certifié.
+
+
+## NOVA 0.19 — première intégration HEVC WASM à l'export H.264/AAC (expérimentale)
+
+Le convertisseur `NOVA_HEVC_RENDER` lit les plans YCbCr 8 bits 4:2:0 du moteur WebAssembly versionné dans `experiences/vendor/hevc/`, construit une `VideoFrame` I420 annotée BT.709 SDR limité, puis rend les images selon la matrice de rotation/tkhd et les PTS MOV dans le Canvas 2D du pipeline export. Le traitement mosaïque, l'encodage H.264, l'audit AAC et la copie sans réencodage restent les composants NOVA existants. Le chargement est même origine, sans CDN.
+
+**Protection avant ouverture :** cette voie n'est autorisée que lorsque le navigateur ne prend pas en charge le HEVC natif, que la source a une boîte `colr` identifiée exactement comme BT.709 (primaires 1, courbe 1, matrice 1, gamme non explicitement complète), que la durée et les PTS sont cohérents et que le pilote respecte 12 s / 640×360 / 90 échantillons. HDR/P3, colorimétrie absente ou non répertoriée, vidéo hors limites ou incohérence des frames : refus, jamais de conversion silencieuse. Le moteur reste versionné et chargé exclusivement depuis le même site expérimental.
+
+Un nouveau test `tests/nova-hevc-export-browser.test.mjs` fabrique une véritable vidéo MOV HEVC VFR/B-frames BT.709 à deux flashs et une piste AAC avec deux impulsions audio, lance l'export de l'interface sous Chromium puis inspecte le vrai MP4 H.264/AAC produit, les empreintes SHA-256 des paquets AAC et les timings FFmpeg/FFprobe. **Le code et le banc sont soumis à CI : ne pas déduire leur réussite tant que le SHA exact n'est pas vert.** Aucun essai matériel iPhone Safari ni restauration de HDR/4K/8K n'a été effectué.

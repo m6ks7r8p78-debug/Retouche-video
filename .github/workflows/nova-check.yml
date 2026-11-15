@@ -30,6 +30,7 @@ jobs:
           node --check experiences/nova-demux.js
           node --check experiences/nova-hevc-annexb.js
           node --check experiences/nova-hevc-lab.js
+          node --check experiences/nova-hevc-render.js
           node --check experiences/nova-pts.js
           node --check experiences/nova-guard.js
           node --check experiences/nova-avsync.js
@@ -61,7 +62,7 @@ jobs:
         run: |
           export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -x "$CHROME"
-          node --test tests/nova-browser.test.mjs tests/nova-hevc-browser.test.mjs tests/nova-iphone-cadence.test.mjs tests/nova-iphone-color.test.mjs tests/nova-iphone-mov-browser.test.mjs tests/nova-hevc-wasm-browser.test.mjs
+          node --test tests/nova-browser.test.mjs tests/nova-hevc-browser.test.mjs tests/nova-iphone-cadence.test.mjs tests/nova-iphone-color.test.mjs tests/nova-iphone-mov-browser.test.mjs tests/nova-hevc-wasm-browser.test.mjs tests/nova-hevc-export-browser.test.mjs
 
   webkit:
     runs-on: ubuntu-latest

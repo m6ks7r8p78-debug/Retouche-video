@@ -43,7 +43,8 @@ start.addEventListener("click",async()=>{
    onProgress:step=>{
     if(generation!==thisGen)return;
     if(step.stage==="budget")msg("Protection mémoire : "+step.estimatedMiB+" Mio estimés / "+step.limitMiB+" Mio de budget pilote…");
-    if(step.stage==="source")msg(step.mode==="pts"?
+    if(step.stage==="source")msg(step.mode==="hevc-wasm"?
+     "HEVC WASM local : "+step.frames+" images source BT.709 SDR analysées par PTS…":step.mode==="pts"?
      "Décodage vidéo selon les PTS MP4 natifs ("+step.frames+" images source)":
      "Mode compatibilité approximatif choisi : les images peuvent être dupliquées.");
     if(step.stage==="audio")msg("Vérification de la piste audio d’origine…");
@@ -61,7 +62,7 @@ start.addEventListener("click",async()=>{
   download.hidden=false;
   msg("MP4 prêt : "+result.plan.width+" × "+result.plan.height+", "+
     (result.audioMode==="aac-copy"?"audio AAC original copié":result.audioMode==="aac-encode"?"audio AAC réencodé":"sans son, selon votre choix")+
-    ", "+(result.sourceMode==="pts"?"PTS natifs":"recherche approximative") +
+    ", "+(result.sourceMode==="hevc-wasm"?"HEVC WASM local à PTS source":result.sourceMode==="pts"?"PTS natifs":"recherche approximative") +
     ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Métadonnées contrôlées : "+result.validation.width+" × "+result.validation.height+", "+result.validation.duration.toFixed(2)+" s."+ (result.trace?" Cadence : "+result.trace.repetitions+" répétitions et "+result.trace.sautsDeSource+" images source sautées lors de la conversion.":"")+" Vérifiez l’image et le son.");
  }catch(err){
   if(generation===thisGen)msg(ctl.signal.aborted?"Export annulé. Aucun fichier créé.":"Export refusé : "+(err?.message||"erreur inconnue"));
