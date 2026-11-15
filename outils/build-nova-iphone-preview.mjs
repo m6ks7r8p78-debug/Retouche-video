@@ -6,6 +6,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import {fileURLToPath} from "node:url";
+import {execFile} from "node:child_process";
+import {promisify} from "node:util";
+const execFileAsync=promisify(execFile);
 const root=path.resolve(fileURLToPath(new URL("../",import.meta.url)));
 const out=path.resolve(process.argv[2]||path.join(root,"dist","nova-iphone-preview"));
 const experience=path.join(root,"experiences");
@@ -32,6 +35,29 @@ for(const rel of paths){
  await fs.writeFile(to,bytes);
  manifest.push({path:rel,bytes:bytes.length,sha256:crypto.createHash("sha256").update(bytes).digest("hex")});
 }
+// Média purement synthétique, produit à la construction par FFmpeg local.
+ // Aucune vidéo de l'utilisateur, aucun téléchargement ni génération sur serveur.
+ // Un gris fixe et un bip AAC permettent de tester HEVC -> H.264 + copie AAC.
+const fixture="experiences/nova-test-synthetic.mov";
+const target=path.join(out,fixture);
+await execFileAsync("ffmpeg",[
+ "-hide_banner","-loglevel","error","-nostdin",
+ "-f","lavfi","-i","color=c=gray:s=160x90:r=15:d=1",
+ "-f","lavfi","-i","sine=frequency=660:sample_rate=48000:duration=1",
+ "-map","0:v:0","-map","1:a:0",
+ "-c:v","libx265","-preset","ultrafast","-threads","1",
+ "-x265-params","pools=none:frame-threads=1:log-level=error:bframes=0:keyint=15:colorprim=bt709:transfer=bt709:colormatrix=bt709:range=limited",
+ "-pix_fmt","yuv420p","-color_primaries","bt709",
+ "-color_trc","bt709","-colorspace","bt709",
+ "-c:a","aac","-b:a","16k","-ac","1",
+ "-movflags","+write_colr","-f","mov","-y",target
+],{timeout:60000});
+const fixtureBytes=await fs.readFile(target);
+if(fixtureBytes.length<1000||fixtureBytes.length>100000)
+ throw Error("Le média synthétique dépasse les bornes prévues");
+manifest.push({path:fixture,bytes:fixtureBytes.length,
+ sha256:crypto.createHash("sha256").update(fixtureBytes).digest("hex"),
+ origin:"ffmpeg-synthetic-only"});
 const html=await fs.readFile(path.join(out,"experiences/nova.html"),"utf8");
 const scripts=[...html.matchAll(/<script\s+src="([^"]+)"/g)].map(x=>x[1]);
 for(const script of scripts){
@@ -62,7 +88,7 @@ const home=[
 await fs.writeFile(path.join(out,"index.html"),home);
 manifest.push({path:"index.html",bytes:Buffer.byteLength(home),
  sha256:crypto.createHash("sha256").update(home).digest("hex")});
-const record={kind:"NOVA iPhone HTTPS preview, NOT DEPLOYED",version:"0.23",
+const record={kind:"NOVA iPhone HTTPS preview, NOT DEPLOYED",version:"0.24",
  publication:"none",privateMediaIncluded:false,files:manifest.sort((a,b)=>a.path.localeCompare(b.path))};
 await fs.writeFile(path.join(out,"asset-manifest.json"),JSON.stringify(record,null,2)+"\n");
 console.log(JSON.stringify({version:record.version,files:manifest.length,
