@@ -96,13 +96,15 @@ function plannedMemory(plan,size){
 }
 function rgba709(data,w,h,timestamp,duration){
  if(!globalThis.NOVA_COLOR709?.videoFrame)fail("module colorimétrique absent");
- // Cette API est strictement limitée à 640x360 ; ici l'extension locale
- // utilise la même conversion sRGB->BT709 avec un plafond HD contrôlé.
+ // Les trames décodées BT.709 produisent déjà des valeurs RGB de code
+ // dans Canvas. L'aller-retour sRGB EOTF -> BT.709 OETF appliqué ici
+ // écrasait les ombres sur une mire BT.709 pourtant non retouchée :
+ // jusqu'à 15/255 de dérive sur Chrome dans le test H264/AAC.
+ // En voie HD, préserver ces codes avant la matrice YCbCr. Le repli
+ // historique <=640x360 demeure inchangé. La fidélité sur Safari avec
+ // source BT.601 reste expressément non certifiée tant que non testée.
  if(data.length!==w*h*4||w%2||h%2||w*h>MAX_PIXELS)fail("pixels RGBA invalides");
- const t=Array.from({length:256},(_,i)=>{
-  const c=i/255,linear=c<=.04045?c/12.92:((c+.055)/1.055)**2.4;
-  return linear<.018?4.5*linear:1.099*linear**.45-.099;
- });
+ const t=Array.from({length:256},(_,i)=>i/255);
  const y=new Uint8Array(w*h*3/2),n=w*h,clip=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
  let cbAt=n,crAt=n+n/4;
  for(let row=0;row<h;row+=2)for(let col=0;col<w;col+=2){
