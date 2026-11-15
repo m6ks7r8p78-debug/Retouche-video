@@ -1,11 +1,11 @@
-/* NOVA 0.23 — banc Safari local, export JSON volontaire, aucun serveur.
+/* NOVA 0.24 — banc Safari local, export JSON volontaire, aucun serveur.
  * Le rapport est une liste blanche : ni nom, ni chemin, ni octets privés,
  * ni PTS individuels, ni userAgent, ni empreinte d'appareil.
  * Ne prouve jamais un essai iPhone tant que l'utilisateur ne l'exécute pas.
  */
 var NOVA_IPHONE_REPORT=(()=>{
 "use strict";
-const VERSION="NOVA 0.23";
+const VERSION="NOVA 0.24";
 function finiteNumber(v){return typeof v==="number"&&Number.isFinite(v)}
 function count(v){return Number.isSafeInteger(v)&&v>=0?v:null}
 function rounded(v){return finiteNumber(v)&&v>=0?Math.round(v):null}
@@ -88,7 +88,7 @@ function exportSummary(result){
   caveat:"WASM capacity and optional JS heap are not iPhone RAM or thermal metrics"
  };
 }
-async function executer({file,moteur,arbitre,allowSilent=false,signal,
+async function executer({file,moteur,arbitre,allowSilent=false,synthetic=false,signal,
  exporter,probeFile,validateSource,getEnvironment,clock,onProgress=()=>{}}={}){
  const now=typeof clock==="function"?clock:()=>performance.now();
  const start=now(),env=(getEnvironment||environment)();
@@ -99,6 +99,7 @@ async function executer({file,moteur,arbitre,allowSilent=false,signal,
    includesUserAgent:false,includesGPS:false,automaticSharing:false
   },
   environment:env,requestedAudio:allowSilent?"silent-explicit":"preserve",
+  sourceKind:synthetic===true?"synthetic-generated":"local-user-file",
   source:null,output:null,phase:"preflight",result:"refused",errorCode:null,
   elapsedMs:null,
   limitation:"Only a physical Safari iPhone run can validate that device; no RSS/thermal proof"
@@ -153,7 +154,8 @@ function serialiser(report){
  const s=JSON.stringify({
   schema:report.schema,version:report.version,createdAt:report.createdAt,
   privacy:report.privacy,environment:report.environment,
-  requestedAudio:report.requestedAudio,source:report.source,output:report.output,
+  requestedAudio:report.requestedAudio,sourceKind:report.sourceKind,
+  source:report.source,output:report.output,
   phase:report.phase,result:report.result,errorCode:report.errorCode,
   elapsedMs:report.elapsedMs,limitation:report.limitation
  },null,2);
