@@ -82,7 +82,7 @@ const html=await fs.readFile(path.join(out,"experiences/nova.html"),"utf8");
 const scripts=[...html.matchAll(/<script\s+src="([^"]+)"/g)].map(x=>x[1]);
 // Politique de sécurité d'un site statique isolé : hachage exact du seul
 // script inline du laboratoire. Les fichiers personnels ne sont jamais inclus.
-const inlineScripts=[...html.matchAll(/<script(?!\\s+src=)[^>]*>([\\s\\S]*?)<\\/script>/g)]
+const inlineScripts=[...html.matchAll(/<script(?!\s+src=)[^>]*>([\s\S]*?)<\/script>/g)]
  .map(x=>x[1]);
 if(inlineScripts.length!==1)throw Error("Une seule section JS inline attendue");
 const scriptHash=crypto.createHash("sha256").update(inlineScripts[0]).digest("base64");
@@ -95,8 +95,8 @@ const headers=[
  "  Cache-Control: no-store",
  "  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()",
  ""
-].join("\\n");
-const robots="User-agent: *\\nDisallow: /\\n";
+].join("\n");
+const robots="User-agent: *\nDisallow: /\n";
 for(const [p,data] of [["_headers",headers],["robots.txt",robots]]){
  await fs.writeFile(path.join(out,p),data);
  manifest.push({path:p,bytes:Buffer.byteLength(data),
