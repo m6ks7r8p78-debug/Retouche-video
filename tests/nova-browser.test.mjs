@@ -365,6 +365,16 @@ test("NOVA 0.8 : vrai test de synchronisation AV par flash et impulsion audio",a
    await page.goto("http://127.0.0.1:"+app.address().port+"/experiences/nova.html");
 
    await page.locator("#file").setInputFiles(src);
+   const chronology=await page.evaluate(async()=>{
+     const file=document.querySelector("#file").files[0];
+     const info=await NOVA_DEMUX.analyser(file);
+     const presentation=NOVA_PTS.planifier(info);
+     return {pts:info.ptsUs.slice(4,9),
+       chosen06:NOVA_PTS.choisir(presentation.nonnegative,6/15),
+       chosen18:NOVA_PTS.choisir(presentation.nonnegative,18/15),
+       entries:NOVA_TIMELINE.calculer(2,15).entries.slice(5,8)};
+   });
+   t.diagnostic("Diagnostic PTS sources et indices d'export : "+JSON.stringify(chronology));
    await page.waitForFunction(()=>!document.querySelector("#exportVideo").disabled);
    await page.locator("#exportVideo").click();
    await page.waitForFunction(()=>!!document.querySelector("#downloadVideo")?.getAttribute("href")||
