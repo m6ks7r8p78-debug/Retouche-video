@@ -10,9 +10,9 @@
 
 L'export NOVA existant convertissait déjà le Canvas sRGB en trame `VideoFrame I420` BT.709 limitée sur le chemin HEVC WASM. Le chemin H.264 natif passait en revanche par `new VideoFrame(canvas)`, sans preuve équivalente de colorimétrie déclarée.
 
-Cette PR réutilise la fonction existante `NOVA_COLOR709.videoFrame` pour **H.264 natif uniquement si** la source a été démultiplexée, est H.264 `avc1/avc3`, déclare `colr nclx` **BT.709 SDR plage limitée explicite** et que le mode approximatif n'a pas été choisi. Le muxer reçoit alors `colorMetadata: bt709-limited` et le `colr nclx` final est inspecté via `NOVA_DEMUX`. Si l'audit de couleur échoue, l'export n'est pas présenté comme réussi.
+Cette PR réutilise `NOVA_COLOR709.videoFrame` pour le chemin H.264 natif **seulement si** le module nouvellement ajouté `NOVA_AVC_VUI.analyser` vérifie dans l'**avcC/SPS** une VUI **BT.709 SDR plage limitée 8 bits 4:2:0**, cohérente avec les métadonnées `colr` disponibles, et si le mode approximatif n'a pas été choisi. Une déclaration `nclx` de conteneur avec primaires/transfert « non spécifiés » peut être complétée **par une VUI explicite**, mais une déclaration contradictoire est refusée. Le muxer reçoit alors `colorMetadata: bt709-limited` et le `colr nclx` final est inspecté via `NOVA_DEMUX`. Si l'audit de sortie échoue, l'export n'est pas présenté comme réussi.
 
-L'admission H.264 `NOVA_H264_PATH` exige maintenant un `nclx` avec `fullRange: false`. Un vieux `nclc` qui omet le bit de plage ne suffit plus pour annoncer une preuve de couleur fidèle. Aucun contournement automatique des protections audio, des PTS, du budget ou du codec.
+L'admission H.264 `NOVA_H264_PATH` s'appuie maintenant sur ce contrôle SPS/VUI. Un `nclc` sans plage déclarée **ne suffit pas à lui seul**, mais une VUI explicite et non contradictoire peut le valider. Les SPS incomplets, profils non couverts et colorimétries contradictoires restent refusés. Aucun contournement des protections audio, des PTS, du budget ou du codec.
 
 ## Banc réel, exclusivement synthétique
 
@@ -42,4 +42,4 @@ Le test Node supplémentaire refuse les sources H.264 `nclc` avec plage inconnue
 - AURA #31 : décrire honnêtement « source HD analysée, export pilote à résolution réduite », sans promesse de HD exporté.
 - Coordinateur #34 : référence et CI uniquement après preuve du HEAD.
 
-**Statut :** développement et tests en cours avant revue CI. Aucun test physique Safari effectué.
+**Résultat CI vérifié au HEAD `660324263a6be3f881353a31070b3edabb7371bc` :** workflow GitHub Actions #43723769035 **SUCCESS** (2 jobs), **40/40 tests Node** et **3/3 tests Chromium**. La mire source H.264/AAC **1280 × 720 à 30 images/s** a été réellement exportée en MP4 **640 × 360 à 15 images/s** : **30 trames distinctes sur 30**, **95 paquets AAC conservés à l'identique** d'après les SHA-256, et `colr` BT.709 limité validé par FFprobe et le contrôle local du MP4. Ce chiffre prouve le banc Chromium, non une qualité perceptuelle ni un résultat iPhone physique. Aucun média privé publié ni déploiement.
