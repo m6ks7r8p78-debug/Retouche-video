@@ -289,6 +289,10 @@ async function exporter({file,moteur,arbitre,allowSilent=false,allowApproximate=
   const muxer=new Mp4Muxer.Muxer({target,fastStart:"in-memory",video:{codec:"avc",width:settings.width,height:settings.height,
     ...(verifiedColorPath?{colorMetadata:"bt709-limited"}:{})},
     ...(audioConfig?{audio:{codec:"aac",sampleRate:audioConfig.sampleRate,numberOfChannels:audioConfig.numberOfChannels,
+      // Autorise le seul elst AAC original validé sur la durée 12-24 s.
+      // Une source sans elst ne demande jamais cette exception au muxer.
+      ...(windowedH264&&audioCopy?.editDurationSeconds!=null?
+        {windowed24Seconds:true}:{}),
       ...(audioCopy?.rollDistance!=null?{rollDistance:audioCopy.rollDistance}:{}),
       ...(audioCopy?.editDurationSeconds!=null?{
         editMediaTime:audioCopy.editMediaTime,
