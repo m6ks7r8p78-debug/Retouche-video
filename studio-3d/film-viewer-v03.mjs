@@ -106,16 +106,32 @@ function sampleSyntheticPose(scene,time=0,clipName='film_scene_v02'){
  }
  const world=new Array(doc.nodes.length);
  const visited=new Set();
+ const mat4=(n)=>{
+   const [x,y,z,w]=qnorm(n.rotation),[sx,sy,sz]=n.scale;
+   return [
+    (1-2*(y*y+z*z))*sx,(2*(x*y+z*w))*sx,(2*(x*z-y*w))*sx,0,
+    (2*(x*y-z*w))*sy,(1-2*(x*x+z*z))*sy,(2*(y*z+x*w))*sy,0,
+    (2*(x*z+y*w))*sz,(2*(y*z-x*w))*sz,(1-2*(x*x+y*y))*sz,0,
+    ...n.translation,1
+   ];
+ };
+ const mul4=(a,b)=>{const out=new Array(16).fill(0);
+   for(let col=0;col<4;col++)for(let row=0;row<4;row++)
+     for(let k=0;k<4;k++)out[col*4+row]+=a[k*4+row]*b[col*4+k];
+   return out;
+ };
  const visit=(id,parent,depth)=>{
    if(!Number.isInteger(id)||id<0||id>=world.length||depth>100||visited.has(id))
       throw Error('Hiérarchie glTF cyclique ou invalide.');
    visited.add(id);
-   const n=local[id],p=parent||{translation:[0,0,0],scale:[1,1,1],rotation:ID};
-   const relative=qrotate(p.rotation,n.translation.map((x,j)=>x*p.scale[j]));
+   const n=local[id],matrix=parent?mul4(parent.matrix,mat4(n)):mat4(n);
    const transform={
-     translation:relative.map((v,j)=>v+p.translation[j]),
-     scale:n.scale.map((v,j)=>v*p.scale[j]),
-     rotation:qnorm(qmul(p.rotation,n.rotation))
+     matrix,
+     translation:[matrix[12],matrix[13],matrix[14]],
+     scale:[Math.hypot(matrix[0],matrix[1],matrix[2]),
+       Math.hypot(matrix[4],matrix[5],matrix[6]),
+       Math.hypot(matrix[8],matrix[9],matrix[10])],
+     rotation:qnorm(qmul(parent?.rotation||ID,n.rotation))
    };
    world[id]=transform;
    for(const child of doc.nodes[id].children||[])visit(child,transform,depth+1);
