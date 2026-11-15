@@ -195,13 +195,26 @@ async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFra
   // Safari HEVC matériel : format=null signifie plan YUV inaccessible.
   // La trame possède néanmoins une couleur BT709 décodée déclarée.
   // Le rendu natif est permis uniquement dans ce cas SDR clairement borné.
-  if(frame.format==null)
+  // Le navigateur peut livrer une frame SDR affichable mais pas un plan
+  // YUV copiable : format RGB, pixel format non exposé, accès hardware
+  // restreint, rectangle manquant, ou constructeur VideoFrame qui ne
+  // permet pas de ré-étiqueter le YUV.  Ne pas renvoyer l'ancien refus
+  // si Canvas peut dessiner la frame avec sa couleur native annoncée.
+  // Les formats 10/12 bit et alpha restent exclus de cette voie SDR.
+  const drawableNative=new Set([
+    "I420","NV12","I422","I444","RGBA","RGBX","BGRA","BGRX"
+  ]);
+  const canNative=frame.format==null||drawableNative.has(frame.format);
+  const fallback=()=>{
+   if(!canNative)throw e;
    return renduNatifOpaque(frame,evidence);
+  };
+  if(frame.format==null)return fallback();
   if(!["I420","NV12"].includes(frame.format)||
      !VideoFrameClass||typeof frame.allocationSize!=="function"||
-     typeof frame.copyTo!=="function")throw e;
+     typeof frame.copyTo!=="function")return fallback();
   const originalRect=frame.codedRect;
-  if(!originalRect)throw e;
+  if(!originalRect)return fallback();
   const options={rect:originalRect};
   let size,layout,data;
   try{
@@ -211,11 +224,12 @@ async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFra
    data=new Uint8Array(size);
    layout=await frame.copyTo(data,options);
   }catch(copyError){
-   // Si le GPU empêche la copie YUV, ne pas rejeter systématiquement
-   // la vidéo. Utiliser uniquement les couleurs réellement annoncées
-   // par la trame native, en déclarant le manque de certification.
-   if(copyError?.name==="NotSupportedError")
-    return renduNatifOpaque(frame,evidence);
+   // Safari peut refuser la lecture YUV pour une image matérielle sans
+   // que cette image soit invalide pour Canvas. On bascule seulement pour
+   // les erreurs indiquant une opération non prise en charge; les autres
+   // restent visibles (fichier corrompu, mémoire, etc.).
+   if(["NotSupportedError","TypeError"].includes(copyError?.name))
+    return fallback();
    throw copyError;
   }
   const transfer=evidence.sourceTransferCode===6?"smpte170m":
@@ -238,7 +252,15 @@ async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFra
     decoderReportedMatrix:p.matrix,
     sourceMatrix:expected,
     limitation:"Correction de métadonnées YUV sur trame 8 bits brute ; vérifier la fidélité visuelle avec l'original."})};
-  }catch(error){try{corrected?.close()}catch{}throw error}
+  }catch(error){
+   try{corrected?.close()}catch{}
+   // L'étiquetage/reconstruction YUV8 peut être interdit alors que la
+   // VideoFrame native est affichable. Ne pas camoufler un échec couleur,
+   // seulement un format/constructeur matériel refusé.
+   if(["NotSupportedError","TypeError"].includes(error?.name))
+    return fallback();
+   throw error;
+  }
  }
 }
 function report(info){
