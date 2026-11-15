@@ -71,6 +71,9 @@ function analyserMoov(b){
   const edts=one(t,"edts"),elst=one(enfants(b,edts),"elst");
   let leadingEmptyTicks=0,mediaTime=0,edits=0,editSegmentTicks=null;
   if(elst){
+   if(elst.start+8>elst.end)fail("en-tête elst audio tronqué");
+   if((dv.getUint32(elst.start)&0xffffff)!==0)
+    fail("répétition ou flags de liste audio non pris en charge");
    const v=b[elst.start];edits=dv.getUint32(elst.start+4);
    if((v!==0&&v!==1)||edits<1||edits>2)fail("liste de montage audio complexe");
    const step=v===1?20:12;
