@@ -64,13 +64,14 @@ async function run(page,label,origin){
  assert.equal(diagnostic.validation.physicalIPhoneCertified,false);
  assert.equal(diagnostic.validation.memoryMeasured,false);
  assert.equal(diagnostic.privacy.userPromptIncluded,false);
+ assert.equal(diagnostic.privacy.userAgentIncluded,false);
  assert.equal(diagnostic.privacy.sentToServer,false);
  assert.ok(diagnostic.cadence.frameSamples>=80);
  assert.ok(diagnostic.cadence.effectiveFps>0);
  assert.ok(diagnostic.cadence.p95FrameMs>0);
  assert.equal(diagnostic.backend,backend);
  const reportString=JSON.stringify(diagnostic);
- for(const privateField of ['Une femme','userAgent','longitude','latitude','serialNumber']){
+ for(const privateField of ['Une femme','longitude','latitude','serialNumber','Mozilla/5.0']){
    assert.ok(!reportString.includes(privateField),'Contenu sensible dans le rapport : '+privateField);
  }
 
