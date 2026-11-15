@@ -142,6 +142,11 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 </details>
 <a id="downloadVideo" hidden>Enregistrer le fichier MP4</a>
 <div id="exportStatus" role="status" aria-live="polite">Aucun export lancé.</div>
+<details class="sourceAdvanced" id="novaLocalExportReportPanel" hidden>
+<summary>Diagnostic local des ressources (iPhone / laboratoire)</summary>
+<p>Rapport JSON généré sur cet appareil : durée, images, encodage, taille MP4 et file d'écriture OPFS. Le quota OPFS et le tas JavaScript sont des indicateurs partiels, pas une mesure de RAM totale iPhone ou du GPU. Aucun nom de fichier, image, échantillon audio ni téléversement automatique.</p>
+<a id="novaLocalExportReportJson" hidden>Enregistrer le diagnostic JSON anonyme</a>
+</details>
 <details class="sourceAdvanced" id="hevcDiagnosticsPanel" hidden>
 <summary>Diagnostic technique HEVC de cet export</summary>
 <p id="hevcDiagnosticsText"></p>
@@ -212,6 +217,7 @@ Conservez le son par défaut ; « sans son » reste un choix explicite.</p>
 <script src="nova-opfs-stream.js"></script>
 <script src="nova-opfs-recovery.js"></script>
 <script src="nova-opfs-recovery-ui.js"></script>
+<script src="nova-local-export-report.js"></script>
 <script src="nova-export.js"></script>
 <script>
 (()=>{
