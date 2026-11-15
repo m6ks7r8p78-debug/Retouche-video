@@ -1,0 +1,23 @@
+name: Film Studio - contrat experimental v0.1
+on:
+  push:
+    branches:
+      - chatgpt-film-studio-contract-v01-20261115
+  pull_request:
+    paths:
+      - 'studio-3d/film-project-v01.mjs'
+      - 'studio-3d/film-project-v01.test.mjs'
+      - '.github/workflows/ci-film-studio-v01.yml'
+jobs:
+  scenario-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verifier le contrat de scenario sans medias prives
+        run: node --test studio-3d/film-project-v01.test.mjs
