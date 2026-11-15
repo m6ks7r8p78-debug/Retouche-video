@@ -621,3 +621,21 @@ Le pipeline incrémental échantillonne la **capacité du tas Emscripten WASM** 
 Le moteur d'export expose maintenant ses `hevcDiagnostics` issus de `NOVA_HEVC_LAB.decoderFlux`, et l'interface expérimentale les présente dans une section `details` discrète **uniquement après un export HEVC réussi** : capacité maximale du tas WASM, mémoire JS facultative, durée pipeline, nombre de trames et de paramètres en bande, pic de frames par drain. L'interface indique explicitement que ces chiffres **ne représentent pas la RAM totale ni un benchmark Safari iPhone**. Les exports non HEVC restent inchangés. Le banc d'intégration audiovisuel Chromium vérifie la disponibilité et le texte de ces éléments.
 
 **Changements non déclarés certifiés avant validation exacte par la CI du HEAD.**
+
+
+
+### Bilan certifié NOVA 0.21 — surveillance VPS/SPS/PPS et enveloppe WASM (15 novembre 2026)
+
+**Dernier code soumis :** `0d91cbfdf9faf0e6c1155e1051b963151010b7b6`. **GitHub Actions :** [43704450197](https://github.com/m6ks7r8p78-debug/Retouche-video/actions/runs/43704450197) — **4 jobs verts, 138/138 tests, zéro échec et zéro ignoré**, soit 104 unitaires, 28 Chromium, 5 WebKit Linux et un test Node HEVC hors npm. Le commit qui contient le présent bilan documentaire nécessite une validation CI propre avant d'être considéré comme le dernier SHA certifié.
+
+**Contrôle réel des changements de paramètres :** chaque échantillon HEVC est vérifié dans `NOVA_HEVC_ANNEXB.flux` et `extraire` avant passage au moteur WebAssembly. Les VPS/SPS/PPS NAL 32/33/34 en bande doivent correspondre **octet pour octet** à une entrée valide du `hvcC`. Les copies strictement identiques sont tolérées, tout nouveau profil, nouveau jeu de paramètres ou NAL invalide est refusé. Les tests injectent des octets SPS **réellement extraits d'un MOV x265** dans un échantillon `hev1`, puis vérifient le refus après modification d'un octet. NOVA ne prend **pas** encore en charge les changements légitimes de SPS en cours de vidéo ; le comportement sûr est de refuser.
+
+**Un seul décodage HEVC pour le pilote** : même lorsqu'un navigateur annonce HEVC comme natif, le laboratoire utilise le décodeur MIT WASM local pour garantir la même analyse de couleur SPS/VUI, le même contrôle de plage limitée et la même conversion I420/BT.709. Un banc Chromium simule la réponse native positive et vérifie que l'export reste HEVC WASM. Le chemin AVC traditionnel reste inchangé.
+
+**Instrumentation mémoire** : `NOVA_HEVC_LAB.decoderFlux` rapporte `wasmHeapStartBytes/Peak/EndBytes` en mesurant la **capacité du tas Emscripten** `HEAPU8.buffer.byteLength`, le tas JavaScript facultatif `performance.memory.usedJSHeapSize`, les tailles de paquets et de plans YUV, le nombre maximal d'images sorties d'un `drain`, ainsi que la durée du pipeline. Le plafond de capacité WASM est par défaut **384 Mio** ; le test avec une limite de **1024 octets** provoque un refus avant de livrer une image. L'application affiche un diagnostic repliable uniquement après export HEVC réussi. **Les mesures ne représentent pas la RAM/RSS globale ni l'empreinte mémoire d'un iPhone.**
+
+**Mesures de banc, non extrapolables** : sur les sources synthétiques HEVC de 18 et 27 images, la capacité du tas WASM est restée **21 037 056 octets (~20,1 Mio)**, avec au maximum **3 images dans un même lot drain/flush**, sous **Chromium et WebKit Linux**. Chromium a mesuré environ **84/108 ms** de pipeline ; WebKit Linux environ **71/84 ms** sur ces deux exécutions (I/O et callbacks inclus, machines CI non comparables). L'API JS heap n'était pas disponible sous WebKit Linux. Les performances réelles et la chauffe de Safari/iPhone n'ont pas été mesurées.
+
+**Limites persistantes** : pilote expérimental plafonné à 12 s, 60 Mo, sortie 640 px / 15 i/s et source HEVC 640×360 / 90 échantillons ; HDR/P3 et changements de paramètres SPS non couverts, pas de vrai iPhone Safari ni 4K/8K. La PR #3 reste en brouillon ; `main`, le site public et les vidéos privées restent inchangés.
+
+**Prochaine priorité** : mesurer le coût du pipeline complet (export vidéo/audio, pas seulement décodage) et ajouter des scénarios de défaillance mémoire, puis un test iPhone physique contrôlé sans déployer la branche.
