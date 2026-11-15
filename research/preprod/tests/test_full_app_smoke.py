@@ -105,6 +105,27 @@ def run():
                           importBounds:g('pick'),photoBounds:g('pickp'),dropBounds:g('drop'),panelBounds:g('smallmotion-app-panel'),
                           panelParent:document.getElementById('smallmotion-app-panel')?.parentElement?.id
                         }}''')
+                    # Real iPhone screenshot regression: SmallMotion wasn't named and the
+                    # dark action label was unreadable on a charcoal button.
+                    ui=page.evaluate('''()=>{
+                      const p=document.getElementById('smallmotion-app-panel'),
+                            btn=p.querySelector('button'),css=getComputedStyle(btn);
+                      const luminance=col=>{
+                        const v=(col.match(/[\\d.]+/g)||[]).slice(0,3).map(Number);
+                        if(v.length!==3)return 0;
+                        const a=v.map(x=>{x/=255;return x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4)});
+                        return .2126*a[0]+.7152*a[1]+.0722*a[2];
+                      };
+                      const a=luminance(css.color),b=luminance(css.backgroundColor);
+                      return {name:p.querySelector('strong')?.textContent,
+                        buttonLabel:btn.textContent,buttonContrast:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),
+                        buttonWidth:btn.getBoundingClientRect().width,
+                        panelBg:getComputedStyle(p).backgroundColor};
+                    }''')
+                    assert ui['name'] and 'SmallMotion' in ui['name'],('Brand not visible',ui)
+                    assert ui['buttonLabel']=='Analyser localement',ui
+                    assert ui['buttonContrast']>=4.5,('Unreadable action button',ui)
+                    assert ui['buttonWidth']>=150,('SmallMotion action squeezed',ui)
                     assert before['hasSelected']==1 and before['originalExportReady'] and before['videoMode']=='video',before
                     # Avoid the actual v1 mobile UI regression: inserting the advisory
                     # panel as a third child of .drop-acts compressed both import buttons.
