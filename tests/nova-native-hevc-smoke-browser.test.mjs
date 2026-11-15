@@ -111,6 +111,43 @@ test("NOVA HEVC natif : test opt-in via mire synthétique, rapport sans média p
   const report=JSON.stringify(raw);
   for(const forbidden of ["PRIVATE_FACE","userAgent","gps","SECRET","PRIVATE_FILE"])
    assert.ok(!report.includes(forbidden));
+  // Tester le nouveau diagnostic sans dépendre de la disponibilité HEVC
+  // sous Chromium : seul l'export est simulé, source et AAC restent réels.
+  await page.evaluate(()=>{
+   const native=window.NOVA_NATIVE_HD;
+   window.NOVA_NATIVE_HD={
+    ...native,
+    configDecoder:async()=>({}),
+    configEncoder:async()=>({}),
+    exporter:async({onProgress})=>{
+     onProgress({stage:"native-video-feed"});
+     onProgress({stage:"native-image-process",frame:1,total:15});
+     onProgress({stage:"native-image-encode",frame:1,total:15});
+     onProgress({stage:"video",frame:1,total:15});
+     throw new Error("PRIVATE_FILE_SECRET_LOCATION_SHOULD_NOT_LEAK");
+    }
+   };
+  });
+  await page.locator("#novaHdSyntheticRun").click();
+  await page.waitForFunction(()=>!!document.querySelector("#novaHdSyntheticJson")
+   ?.getAttribute("href"),null,{timeout:30000});
+  const diagnostic=await page.evaluate(async()=>{
+   const url=document.getElementById("novaHdSyntheticJson").href;
+   return await (await fetch(url)).json();
+  });
+  assert.equal(diagnostic.result,"failed");
+  assert.equal(diagnostic.failedAt,"native-export");
+  assert.equal(diagnostic.checkpoint,"native-image-encode");
+  assert.equal(diagnostic.framesStarted,1);
+  assert.equal(diagnostic.processedFrames,1);
+  assert.equal(diagnostic.errorClass,"Error");
+  assert.equal(await page.locator("#novaHdSyntheticMp4").getAttribute("href"),null);
+  assert.match(await page.locator("#novaHdSyntheticStatus").textContent(),/encodage H.264/);
+  assert.ok(!JSON.stringify(diagnostic).includes("PRIVATE_FILE_SECRET"));
+  assert.ok(!(await page.locator("#novaHdSyntheticStatus").textContent())
+   .includes("PRIVATE_FILE_SECRET"));
+  // Un test sur un fichier réel nécessiterait un opt-in séparé; la mire
+  // reste le seul média utilisé, sans réseau distant ni télémétrie privée.
   assert.deepEqual(errors,[]);
   assert.deepEqual(uploads,[]);
   assert.deepEqual(external,[]);
