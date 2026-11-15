@@ -91,7 +91,7 @@ test("Rapport de précontrôle HD720 : proposition 1280x720, sans fuite privée"
   h264Inspect:params=>{
    assert.equal(params.outputProfile,"h264-hd720-opfs-3s");
    assert.equal(params.storageMode,"opfs");
-   return H264.inspect({...opt(),...params,checkOpfs:async()=>true,
+   return H264.inspect({...params,...opt(),checkOpfs:async()=>true,
     checkDecoder:async()=>({supported:true}),checkEncoder:async()=>({supported:true}),
     ptsPlan:()=>({nonnegative:[{ptsUs:0}]}),
     sourceAudit:()=>({debutFidele:true}),
