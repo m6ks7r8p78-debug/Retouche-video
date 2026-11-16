@@ -169,7 +169,7 @@ jobs:
             Permissions-Policy: camera=(), microphone=(), geolocation=()
             Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'
           HEADERS
-          test "$(find dist/film-studio-iphone-v12 -maxdepth 1 -type f | wc -l)" -eq 18
+          test "$(find dist/film-studio-iphone-v12 -maxdepth 1 -type f | wc -l)" -eq 17
           test -z "$(find dist/film-studio-iphone-v12 -type f \( -name '*.mp4' -o -name '*.jpg' -o -name '*.png' \))"
       - name: Préparer le téléchargement du paquet de laboratoire iPhone
         uses: actions/upload-artifact@v4
