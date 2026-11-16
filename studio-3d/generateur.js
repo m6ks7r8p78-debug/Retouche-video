@@ -266,10 +266,29 @@ function encodeGLB(model){
   const pp=accessor(new Float32Array(positions),5126,'VEC3',34962),
     nn=accessor(new Float32Array(normals),5126,'VEC3',34962),
     ii=accessor(new Uint16Array(indices),5123,'SCALAR',34963);
+  const primitive={attributes:{POSITION:pp,NORMAL:nn},indices:ii,material:mesh.materialIndex,mode:4};
+  const morph=mesh.morphTargets||[];
+  if(!Array.isArray(morph)||morph.length>2)throw Error('Nombre de déformations morph incompatible.');
+  if(morph.length){
+   primitive.targets=morph.map((target,j)=>{
+    const delta=target?.positions;
+    if(!Array.isArray(delta)||delta.length!==positions.length||
+       delta.some(x=>!Number.isFinite(x)||Math.abs(x)>.1))
+      throw Error('Cible morph du GLB invalide.');
+    return {POSITION:accessor(new Float32Array(delta),5126,'VEC3',34962)};
+   });
+  }
   meshes.push({name:mesh.name||'maillage_synthetique_'+i,
-   primitives:[{attributes:{POSITION:pp,NORMAL:nn},indices:ii,material:mesh.materialIndex,mode:4}]});
+   primitives:[primitive],...(morph.length?{weights:new Array(morph.length).fill(0)}:{})});
  }
- const nodes=model.nodes.map(n=>{let c={name:n.name,translation:n.translation.slice()};if(n.scale)c.scale=n.scale.slice();if(n.children)c.children=n.children.slice();if(n.mesh!==undefined){
+ const nodes=model.nodes.map(n=>{let c={name:n.name,translation:n.translation.slice()};if(n.scale)c.scale=n.scale.slice();if(n.children)c.children=n.children.slice();
+ if(n.morphWeights!==undefined){
+  if(!Array.isArray(n.morphWeights)||n.morphWeights.length!==2||
+     n.morphWeights.some(x=>!Number.isFinite(x)||x<0||x>1))
+    throw Error('Poids initiaux de déformation non conformes.');
+  c.weights=n.morphWeights.slice();
+ }
+ if(n.mesh!==undefined){
   if(n.customMeshIndex!==undefined){
    if(!Number.isInteger(n.customMeshIndex)||n.customMeshIndex<0||
       n.customMeshIndex>=custom.length)throw Error('Référence de maillage personnalisé invalide.');
@@ -278,7 +297,8 @@ function encodeGLB(model){
  }return c;});
  const animations=[];
  for(const clip of model.animations){const samplers=[],channels=[];
-  for(const motion of clip.channels){let ti=accessor(new Float32Array(motion.times),5126,'SCALAR');let path=motion.path||'rotation';let values=motion.values||motion.rotation;let data=accessor(new Float32Array(values.flat()),5126,path==='rotation'?'VEC4':'VEC3');let si=samplers.length;samplers.push({input:ti,output:data,interpolation:'LINEAR'});channels.push({sampler:si,target:{node:motion.node,path}});}
+  for(const motion of clip.channels){let ti=accessor(new Float32Array(motion.times),5126,'SCALAR');let path=motion.path||'rotation';let values=motion.values||motion.rotation;let data=accessor(new Float32Array(values.flat()),5126,
+   path==='rotation'?'VEC4':path==='weights'?'SCALAR':'VEC3');let si=samplers.length;samplers.push({input:ti,output:data,interpolation:'LINEAR'});channels.push({sampler:si,target:{node:motion.node,path}});}
   animations.push({name:clip.name,samplers,channels});
  }
  while(pos%4){bytes.push(0);pos++}
