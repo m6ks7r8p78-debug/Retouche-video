@@ -1,0 +1,55 @@
+name: NOVA RGB stages source 1-1-6 vs Canvas and MP4 (research only)
+on:
+  push:
+    branches:
+      - chatgpt-nova-sdr601-stage-color-trace-v1
+  pull_request:
+    branches:
+      - chatgpt-nova-natural-highlight-guard-av-audit-v1
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-601-stage-trace-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Synthetic FFmpeg dependency
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Syntaxe et tests couleur sans médias privés
+        run: |
+          node --check tests/nova-sdr601-color-stages-browser.test.mjs
+          node --check experiences/nova-native-hd.js
+          node --check experiences/nova-hd-color.js
+          node --check experiences/nova-zones.js
+          node --test tests/nova-natural-highlights.test.mjs tests/nova-hd-color.test.mjs tests/nova-native-hd.test.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Playwright Chromium
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: No-op and zones 1/1/6 real MP4 comparison with per-stage RGB readings
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test --test-concurrency=1 tests/nova-sdr601-color-stages-browser.test.mjs tests/nova-hd-color-ramp-browser.test.mjs tests/nova-safari-034-restored-browser.test.mjs
