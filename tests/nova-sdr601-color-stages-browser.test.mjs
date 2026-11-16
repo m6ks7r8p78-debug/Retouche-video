@@ -61,11 +61,13 @@ test("NOVA 1/1/6 : tracer chaque étape sur huit tons et couleurs sans images ut
    "-f","rawvideo","-pix_fmt","rgb24","-s",W+"x"+H,"-r",String(FPS),"-i",raw,
    "-f","lavfi","-i","sine=frequency=660:sample_rate=48000:duration=1",
    "-map","0:v:0","-map","1:a:0",
-   "-vf","scale=in_range=full:out_range=limited:out_color_matrix=bt601,format=yuv420p",
+   "-vf","scale=in_range=full:out_range=limited:out_color_matrix=bt601,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=smpte170m",
    "-frames:v",String(FPS),"-c:v","libx264","-crf","12","-preset","fast",
    "-bf","0","-threads","1","-pix_fmt","yuv420p",
    "-color_primaries","bt709","-color_trc","bt709",
-   "-colorspace","smpte170m","-movflags","+faststart+write_colr",
+   "-colorspace","smpte170m",
+   "-x264-params","colorprim=bt709:transfer=bt709:colormatrix=smpte170m",
+   "-movflags","+faststart+write_colr",
    "-c:a","aac","-b:a","64k","-ac","1","-y",source],{timeout:60000});
   const sourceProbe=JSON.parse((await exec("ffprobe",["-v","error",
    "-select_streams","v:0","-show_streams","-of","json",source])).stdout).streams[0];
