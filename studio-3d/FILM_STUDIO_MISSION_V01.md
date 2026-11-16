@@ -204,3 +204,27 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - Le seuil de proximité des bouts de doigts à la tasse n'est **pas** une preuve de contact avec la surface, d'une force suffisante pour tenir l'objet, de collisions absentes ni de simulation des mouvements de chaque phalange humaine.
 - L'assise est seulement un ajustement volumétrique ; pas d'équilibre du tronc, de poids corporel, de position des pieds ou de contraintes articulaires réalistes démontrés.
 - Aucune image photoréaliste, aucun film MP4, aucune voix et aucune reconstruction à partir de vidéos privées dans le pilote. Pas de publication, de fusion ni de déploiement sur retoucheproai.com ; Safari physique iPhone non validé.
+
+
+## Film Studio v0.10 — inspection de main rapprochée et estimation doigt–surface (16 novembre 2026)
+
+### Fonctionnement livré
+- film-inspection-v10.mjs : nouvelle mesure **radiale approximative** de la distance des cinq bouts des doigts à l'ellipsoïde représentant le corps de la tasse. Le calcul utilise les matrices 3D issues du GLB réellement encodé, inclinaison et échelle comprises ; échantillonnage local de 30 poses par seconde durant le transport. Rapport synthétique contenant les minima/moyennes/maxima, nombres d'échantillons proches de la surface (<35 mm) et détail par doigt ; aucune donnée privée ni preuve trompeuse de contact.
+- film-scene-v10.mjs : le constructeur reprend le moteur v0.9, son audit de continuité, puis ajoute l'audit doigt–surface. Les scénarios non pris en charge restent refusés sans GLB ni audit factice.
+- film-webgl-v04.mjs et film-viewer-v03.mjs : caméras de **gros plan localisé**, avec centre pouvant suivre la tasse durant le mouvement, distance réduite à 0,77 m, restauration de la caméra générale. WebKit/Canvas 2D agrandit et recentre le même élément avec une projection de secours approximative.
+- film-ui-v10.mjs / film-studio-v10.html : nouveau bouton accessible « Voir la main de près », navigation réversible, caméra qui suit la tasse pendant le déplacement de la chronologie, statut de mesure doigt–surface affiché avec avertissement de non-certification physique. Les exports GLB et JSON locaux restent facultatifs.
+- film-inspection-v10.test.mjs : 5 tests Node (géométrie radiale élémentaire, données GLB, suivi de caméra, zoom Canvas, refus des mauvaises entrées/références).
+- film-browser-v10.test.mjs et film-browser-webkit-v10.test.mjs : vrais tests Chromium et WebKit sur runners Linux, vérification du basculement de caméra, de l'image qui change en gros plan et au cours du temps, du retour à la vue générale, du téléchargement du GLB et de la séparation WebGL2/Canvas.
+- Paquet statique isolé film-studio-v10-iphone-https-package assemblé par CI, jamais déployé ni relié au site public.
+
+### Validation
+- Run GitHub Actions **43792012358**, SHA be5a592b21b261ef9ddb890ac4bc4f79c19fd985 : **67/67 tests Node**, Chromium WebGL2, WebKit Linux normal + repli 2D forcé et assemblage HTTPS, **4/4 jobs au vert**.
+- Chromium : géométrie réelle rendue, 14 934 pixels de premier plan, tests de changement d'angle et de suivi du point d'intérêt, absence d'erreurs JS dans le parcours ; artefact de captures film-studio-v10-chromium-synthetic.
+- WebKit : rendu WebGL2 (14 714 pixels de premier plan), repli Canvas 2D (133 349 pixels de premier plan), zoom et déplacement du point d'intérêt visibles, export et refus contrôlés. Captures sous film-studio-v10-webkit-synthetic.
+- Une capture du gros plan Chromium a été inspectée : plusieurs doigts et la tasse sont visibles, avec le visage partiellement hors champ. Les doigts ne sont pas encore une main anatomique, le contact peut seulement être estimé. La capture est entièrement synthétique.
+
+### Ce qui n'est PAS démontré
+- La distance radiale à un ellipsoïde est une approximation et n'est pas la distance minimale exacte à un corps de tasse réel (cylindre, anse, bord, boisson et géométrie des doigts sont simplifiés).
+- Aucune preuve de collision, de prise ferme, de frottement, de force, de contact lèvres/objet, de stabilité du liquide ni de posture humaine réaliste.
+- WebKit Linux n'est pas un test sur iPhone physique ; aucun export iOS vers Fichiers certifié. Aucun film MP4, aucune voix, aucun photoréalisme ni traitement des 157 vidéos privées.
+- La PR #69 reste en brouillon ; aucun déploiement sur retoucheproai.com et aucune fusion.
