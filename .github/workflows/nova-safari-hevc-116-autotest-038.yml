@@ -81,7 +81,7 @@ jobs:
           test -f dist/nova-iphone-preview/experiences/nova-hevc-601-patches.js
           test -f dist/nova-iphone-preview/experiences/nova-hevc-601-patches-ui.js
           grep -q 'Tester la couleur HEVC 1/1/6 sur cet iPhone' dist/nova-iphone-preview/experiences/nova.html
-          node -e 'const r=require("./dist/nova-iphone-preview/asset-manifest.json");if(r.publication!=="none"||r.privateMediaIncluded!==false||r.version!=="0.38"||r.files.filter(x=>/\\.(mov|mp4|png|jpg|jpeg)$/i.test(x.path)).length!==3||!r.files.filter(x=>/\\.(mov|mp4|png|jpg|jpeg)$/i.test(x.path)).every(x=>x.origin==="ffmpeg-synthetic-only"))process.exit(1)'
+          node -e 'const r=require("./dist/nova-iphone-preview/asset-manifest.json");const media=r.files.filter(x=>[".mov",".mp4",".png",".jpg",".jpeg"].some(ext=>x.path.toLowerCase().endsWith(ext)));if(r.publication!=="none"||r.privateMediaIncluded!==false||r.version!=="0.38"||media.length!==3||!media.every(x=>x.origin==="ffmpeg-synthetic-only"))process.exit(1)'
           cd dist/nova-iphone-preview
           zip -q -X -r ../../NOVA_iPhone_Safari_HEVC_116_Couleurs_038.zip .
           cd ../..
