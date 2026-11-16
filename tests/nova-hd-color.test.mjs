@@ -161,21 +161,27 @@ test("Safari HEVC format=null : décodeur matériel BT709 avec source 601 produi
  assert.equal(result.proof.method,"native-safari-sdr-bt709-display");
  assert.equal(result.proof.sourceMismatch,true);
  assert.equal(result.proof.colorFidelity,"uncertified-against-source");
- assert.match(result.proof.warning,/Comparer les couleurs/);
+ assert.match(result.proof.warning,/Comparer impérativement les couleurs/);
 });
-test("Safari HEVC format=null : garder le refus HDR/P3 et plage incohérente, signaler les métadonnées SDR partielles",async()=>{
+test("Safari HEVC format=null : bloquer HDR/P3 et signaler les écarts SDR par avertissement",async()=>{
  const src={...base,color:{kind:"nclx",primaries:1,transfer:1,matrix:6,fullRange:false}};
  const evidence=COLOR.metadata(src);
  for(const cs of [
   {primaries:"bt2020",transfer:"hlg",matrix:"bt709",fullRange:false},
   {primaries:"bt709",transfer:"pq",matrix:"bt709",fullRange:false},
-  {primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:true},
-  {primaries:"smpte170m",transfer:"bt709",matrix:"bt709",fullRange:false}
  ]){
   const opaque={format:null,colorSpace:cs};
   await assert.rejects(()=>COLOR.imagePourRendu(opaque,evidence),
     /NOVA HD couleur/);
  }
+ const uncertainRange=await COLOR.imagePourRendu({format:null,colorSpace:{
+  primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:true
+ }},evidence);
+ assert.equal(uncertainRange.proof.colorFidelity,"uncertified-against-source");
+ const uncertainPrimaries=await COLOR.imagePourRendu({format:null,colorSpace:{
+  primaries:"smpte170m",transfer:"bt709",matrix:"bt709",fullRange:false
+ }},evidence);
+ assert.equal(uncertainPrimaries.proof.colorFidelity,"uncertified-against-source");
  const unverified=COLOR.metadata({...src,color:{kind:"nclx",primaries:2,
   transfer:2,matrix:6,fullRange:false}});
  const native=await COLOR.imagePourRendu({format:null,
@@ -202,7 +208,7 @@ test("Safari opaque : matrice source BT2020 NCL ou gamut P3 ne peuvent pas empru
  const ev=COLOR.metadata(i);
  await assert.rejects(()=>COLOR.imagePourRendu({format:null,
   colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false}},ev),
-  /non certifiable/);
+  /contradictoires|non certifiable/);
 });
 
 test("Safari opaque : primaires SDR SMPTE170M et matrice trame BT709, fidélité signalée non certifiée",async()=>{
@@ -226,7 +232,7 @@ test("Safari 0.33 : matrice source 601, trame SDR affichable RGBX sans plan YUV 
  assert.equal(out.owned,false);
  assert.equal(out.frame,f);
  assert.equal(out.proof.colorFidelity,"uncertified-against-source");
- assert.match(out.proof.warning,/Comparer les couleurs/);
+ assert.match(out.proof.warning,/Comparer impérativement les couleurs/);
 });
 test("Safari 0.33 : I420 non copiable, aucun rejet systématique tant que le décodeur atteste du SDR",async()=>{
  const e=COLOR.metadata({...base,color:{...base.color,matrix:6}});
@@ -250,7 +256,7 @@ test("Safari 0.33 : constructeur YUV réétiqueté indisponible, conserver l'aff
  assert.equal(out.proof.sourceMismatch,true);
  assert.equal(out.owned,false);
 });
-test("Safari 0.33 : I420P10, transfert PQ, primaires P3 ou plage ambiguë ne passent pas en affichage SDR",async()=>{
+test("Safari 0.33 : I420P10, transfert PQ et primaires BT2020 restent refusés",async()=>{
  const e=COLOR.metadata({...base,color:{...base.color,matrix:6}});
  const baseFrame={colorSpace:{primaries:"bt709",transfer:"bt709",
    matrix:"bt709",fullRange:false}};
@@ -258,8 +264,64 @@ test("Safari 0.33 : I420P10, transfert PQ, primaires P3 ou plage ambiguë ne pas
   {...baseFrame,format:"I420P10"},
   {format:"RGBX",colorSpace:{...baseFrame.colorSpace,transfer:"pq"}},
   {format:"I420",colorSpace:{...baseFrame.colorSpace,primaries:"bt2020"}},
-  {format:"I420",colorSpace:{...baseFrame.colorSpace,fullRange:null}}
  ])await assert.rejects(()=>COLOR.imagePourRendu(fr,e));
+});
+
+test("NOVA 0.34 : trame Safari BT709 avec transfer/range manquants et source BT601 SDR complète passe en affichage prudent",async()=>{
+ const evidence=COLOR.metadata({...base,color:{...base.color,matrix:6}});
+ COLOR.resetDiagnostic();
+ const fr={format:"RGBX",colorSpace:{primaries:"bt709",transfer:null,
+  matrix:"bt709",fullRange:null}};
+ const out=await COLOR.imagePourRendu(fr,evidence);
+ assert.equal(out.proof.sourceMismatch,true);
+ assert.equal(out.proof.colorFidelity,"uncertified-against-source");
+ const d=COLOR.diagnostic();
+ assert.equal(d.version,"0.34");
+ assert.equal(d.source.matrix,6);
+ assert.equal(d.decoded.transfer,"unspecified");
+ assert.equal(d.decoded.fullRange,null);
+ assert.equal(d.reason,"native-sdr-provisional");
+});
+test("NOVA 0.34 : plage source et décodée différente conserve rendu natif SDR avec avertissement, sans certification",async()=>{
+ const evidence=COLOR.metadata({...base,color:{...base.color,matrix:6,fullRange:false}});
+ const out=await COLOR.imagePourRendu({format:null,colorSpace:{
+  primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:true
+ }},evidence);
+ assert.equal(out.proof.colorFidelity,"uncertified-against-source");
+ assert.equal(COLOR.diagnostic().decoded.fullRange,true);
+});
+test("NOVA 0.34 : différence de primaires SDR n'est pas maquillée en correction certifiée",async()=>{
+ const evidence=COLOR.metadata({...base,color:{kind:"nclx",
+  primaries:6,transfer:6,matrix:6,fullRange:false}});
+ const out=await COLOR.imagePourRendu({format:null,colorSpace:{
+  primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:false
+ }},evidence);
+ assert.equal(out.proof.colorFidelity,"uncertified-against-source");
+ assert.equal(COLOR.diagnostic().decoded.primaries,"bt709");
+});
+test("NOVA 0.34 : si source et trame ne confirment pas les autres composantes SDR, refuser avec diagnostic",async()=>{
+ const evidence=COLOR.metadata({...base,color:{kind:"nclx",primaries:2,
+  transfer:2,matrix:6,fullRange:false}});
+ await assert.rejects(()=>COLOR.imagePourRendu({format:"RGBX",colorSpace:{
+  primaries:null,transfer:null,matrix:"bt709",fullRange:null
+ }},evidence),/rendu natif SDR non vérifiable/);
+ assert.equal(COLOR.diagnostic().reason,"denied-insufficient-sdr-evidence");
+});
+test("NOVA 0.34 : refuser source 601 vs trame HDR, et aucune information privée en diagnostic",async()=>{
+ const evidence=COLOR.metadata({...base,color:{...base.color,matrix:6}});
+ const fr={format:"RGBX",colorSpace:{
+  primaries:"bt2020",transfer:"pq",matrix:"bt709",fullRange:false
+ }};
+ await assert.rejects(()=>COLOR.imagePourRendu(fr,evidence));
+ const d=COLOR.diagnostic();
+ assert.equal(d.reason,"denied-hdr-or-transfer");
+ const json=JSON.stringify(d);
+ for(const word of ['"filename":','"filepath":','"videoBytes":','"sourceFile":','"userAgent":','"GPS":','"pixelData":'])
+  assert.equal(json.includes(word),false);
+ assert.equal(d.privacy.mediaIncluded,false);
+ assert.equal(d.privacy.framePixelsIncluded,false);
+ COLOR.resetDiagnostic();
+ assert.equal(COLOR.diagnostic(),null);
 });
 
 test("Safari nclc 1/1/6 : plage source inconnue reste une sortie d'AFFICHAGE non certifiée",async()=>{
@@ -271,7 +333,7 @@ test("Safari nclc 1/1/6 : plage source inconnue reste une sortie d'AFFICHAGE non
  const result=await COLOR.imagePourRendu(opaque,evidence);
  assert.equal(result.proof.colorFidelity,"uncertified-against-source");
  assert.equal(result.proof.sourceRangeVerified,false);
- assert.match(result.proof.warning,/plage source est non renseignée/i);
+ assert.match(result.proof.warning,/rendu natif Safari|paramètres de primaires ou de plage/i);
  assert.equal(result.frame,opaque);
  const details=COLOR.frameEvidence(opaque,evidence);
  assert.equal(details.schema,"retoucheproai.nova.hd-frame-evidence.v1");
@@ -280,22 +342,24 @@ test("Safari nclc 1/1/6 : plage source inconnue reste une sortie d'AFFICHAGE non
  assert.equal(details.eligibleForUncertifiedSafariDisplay,true);
  assert.equal(details.sourceMatrix,"smpte170m");
 });
-test("Safari nclx 1/1/6 : plage explicitement contradictoire, HDR et 10 bits restent refusés",async()=>{
+test("Safari 0.34 : divergences explicites SDR autorisées seulement en rendu non certifié, HDR/10 bits refusés",async()=>{
  const src={...base,color:{kind:"nclx",primaries:1,transfer:1,matrix:6,fullRange:false}};
  const ev=COLOR.metadata(src);
- const frame={format:null,colorSpace:{primaries:"bt709",transfer:"bt709",
-  matrix:"bt709",fullRange:true}};
- await assert.rejects(()=>COLOR.imagePourRendu(frame,ev),/couleur/);
- const diagnosed=COLOR.frameEvidence(frame,ev);
+ const opaque={format:null,colorSpace:{primaries:"bt709",transfer:"bt709",matrix:"bt709",fullRange:true}};
+ const provisional=await COLOR.imagePourRendu(opaque,ev);
+ assert.equal(provisional.proof.colorFidelity,"uncertified-against-source");
+ assert.equal(provisional.proof.sourceMismatch,true);
+ assert.match(provisional.proof.warning,/PAS une correction de matrice certifiée/);
+ const diagnosed=COLOR.frameEvidence(opaque,ev);
  assert.equal(diagnosed.declaredRangeConflict,true);
- assert.equal(diagnosed.eligibleForUncertifiedSafariDisplay,false);
- const big={format:"I420P10",colorSpace:{...frame.colorSpace,fullRange:false}};
- await assert.rejects(()=>COLOR.imagePourRendu(big,ev),/couleur/);
- assert.equal(COLOR.frameEvidence(big,ev).eligibleForUncertifiedSafariDisplay,false);
- for(const cs of [
-  {primaries:"bt2020",transfer:"hlg",matrix:"bt709",fullRange:false},
-  {primaries:"smpte432",transfer:"bt709",matrix:"bt709",fullRange:false}
- ])await assert.rejects(()=>COLOR.imagePourRendu({format:null,colorSpace:cs},ev),/couleur/);
+ assert.equal(diagnosed.sourceRange,"limited");
+ assert.equal(diagnosed.decodedRange,"full");
+ for(const bad of [
+  {format:"I420P10",colorSpace:{...opaque.colorSpace,fullRange:false}},
+  {format:null,colorSpace:{...opaque.colorSpace,transfer:"pq"}},
+  {format:null,colorSpace:{...opaque.colorSpace,primaries:"bt2020"}},
+  {format:null,colorSpace:{...opaque.colorSpace,transfer:"hlg"}}
+ ])await assert.rejects(()=>COLOR.imagePourRendu(bad,ev),/NOVA HD couleur/);
 });
 test("Safari: diagnostic VideoFrame ne divulgue ni format arbitraire ni attributs privés",()=>{
  const ev=COLOR.metadata({...base,color:{kind:"nclc",primaries:1,

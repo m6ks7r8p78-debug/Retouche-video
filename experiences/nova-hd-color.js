@@ -21,6 +21,48 @@ const matrixEquivalent=(a,b)=>a===b||
  a==="bt470bg"&&b==="smpte170m"||
  a==="smpte170m"&&b==="bt470bg";
 const matrixCodeEquivalent=(a,b)=>a===b||[a,b].every(x=>x===5||x===6);
+// Diagnostic d'une seule image, agrégé uniquement en enums/entiers
+// normalisés. Aucun nom de fichier, image, audio, octet, GPS, agent.
+let lastFrameDiagnostic=null;
+const videoFormats=new Set(["I420","NV12","I422","I444","RGBX","BGRX","RGBA","BGRA",
+ "I420P10","I422P10","I444P10"]);
+const listed=(v,allowed)=>v==null?"unspecified":allowed.has(v)?v:"other";
+const VIDEO_MATRIX_TAGS=new Set([...VIDEO_MATRICES]);
+const VIDEO_TRANSFER_TAGS=new Set([...VIDEO_XFER]);
+function markFrame(frame,evidence,reason="inspection"){
+ const cs=frame?.colorSpace||{};
+ const reasonCodes=new Set(["inspection","native-sdr-provisional","source-matrix-restored",
+  "denied-incompatible-primaries","denied-hdr-or-transfer",
+  "denied-not-matrix-mismatch","denied-unsupported-format",
+  "denied-insufficient-sdr-evidence","denied-unsupported-operation"]);
+ lastFrameDiagnostic=Object.freeze({
+  schema:"retoucheproai.nova.safari-color-frame.v1",
+  version:"0.34",
+  source:{
+   matrix:Number.isInteger(evidence?.sourceMatrix)?evidence.sourceMatrix:null,
+   primaries:Number.isInteger(evidence?.sourcePrimaries)?evidence.sourcePrimaries:null,
+   transfer:Number.isInteger(evidence?.sourceTransferCode)?evidence.sourceTransferCode:null,
+   fullRange:typeof evidence?.sourceFullRange==="boolean"?evidence.sourceFullRange:null,
+   expectedMatrix:listed(evidence?.expectedMatrix,VIDEO_MATRIX_TAGS),
+   expectedPrimaries:listed(evidence?.expectedPrimaries,VIDEO_PRIMARIES),
+   colorEvidence:typeof evidence?.kind==="string"&&
+    /^(pending-decoded-frame|mp4-colr-|hevc-sps-vui-)/.test(evidence.kind)?
+    evidence.kind.slice(0,50):"unknown"
+  },
+  decoded:{
+   format:listed(frame?.format,videoFormats),
+   matrix:listed(cs.matrix,VIDEO_MATRIX_TAGS),
+   primaries:listed(cs.primaries,VIDEO_PRIMARIES),
+   transfer:listed(cs.transfer,VIDEO_TRANSFER_TAGS),
+   fullRange:typeof cs.fullRange==="boolean"?cs.fullRange:null
+  },
+  reason:reasonCodes.has(reason)?reason:"inspection",
+  privacy:{mediaIncluded:false,filenameIncluded:false,audioIncluded:false,
+   framePixelsIncluded:false,automaticUpload:false}
+ });
+}
+function diagnostic(){return lastFrameDiagnostic}
+function resetDiagnostic(){lastFrameDiagnostic=null}
 function hvcSps(info){
  if(!/^(hvc1|hev1)\./.test(info?.codec||""))return null;
  if(!globalThis.NOVA_HEVC_ANNEXB?.configuration||
@@ -147,22 +189,27 @@ function renduNatifOpaque(frame,evidence){
  // ni transfert. Safari fournit parfois toute l'information SDR décodée.
  // Dans ce cas, l'export reproduit l'affichage Safari mais n'est PAS
  // qualifié comme conversion fidèle des métadonnées de la source.
- const nativeFullySpecified=VIDEO_PRIMARIES.has(p.primaries)&&
-  VIDEO_XFER.has(p.transfer)&&p.matrix==="bt709"&&
-  typeof p.fullRange==="boolean";
- if(!nativeFullySpecified||![5,6].includes(evidence?.sourceMatrix)||
-    !["bt470bg","smpte170m"].includes(evidence.expectedMatrix)||
-    !VIDEO_PRIMARIES.has(p.primaries)||
-    (evidence.expectedPrimaries&&p.primaries!==evidence.expectedPrimaries)||
-    p.matrix!=="bt709"||
-    !VIDEO_XFER.has(p.transfer)||
-    typeof p.fullRange!=="boolean"||
-    // MOV nclc ne signale pas la plage. Dans ce SEUL cas, le rendu SDR
-    // natif reste possible, mais la plage de la SOURCE reste non certifiée.
-    // Une plage explicitement contradictoire demeure interdite.
-    (typeof evidence.sourceFullRange==="boolean"&&
-      p.fullRange!==evidence.sourceFullRange))
-  err("rendu natif opaque non certifiable (espace ou plage couleur non conforme)");
+ // C'est un mode de visualisation SDR PROVISOIRE, pas une
+ // recolorimétrie fidèle certifiée. La source doit explicitement être
+ // BT.601 (matrice 5/6), les métadonnées ne doivent pas signaler HDR/P3,
+ // et les propriétés CONNUES de la trame ne doivent pas signaler HDR.
+ // Safari peut omettre primaries/transfer/fullRange sur VideoFrame HEVC.
+ const source601=[5,6].includes(evidence?.sourceMatrix)&&
+   ["bt470bg","smpte170m"].includes(evidence?.expectedMatrix);
+ const decGamutKnown=p.primaries!=null,decTransferKnown=p.transfer!=null;
+ const decSdr=( !decGamutKnown||VIDEO_PRIMARIES.has(p.primaries))&&
+   (!decTransferKnown||VIDEO_XFER.has(p.transfer))&&p.matrix==="bt709";
+ const enoughEvidence=(decGamutKnown&&decTransferKnown&&
+   typeof p.fullRange==="boolean")||
+   (evidence?.confirmed&&typeof evidence?.sourceFullRange==="boolean");
+ if(!source601||!decSdr||!enoughEvidence){
+  markFrame(frame,evidence,!source601?"denied-not-matrix-mismatch":
+   !decSdr?"denied-hdr-or-transfer":"denied-insufficient-sdr-evidence");
+  err("rendu natif SDR non vérifiable : voir diagnostic technique local");
+ }
+ // Même quand Safari modifie les primaires ou l'étendue YUV déclarée,
+ // le rendu final suit SES valeurs et porte un avertissement renforcé.
+ markFrame(frame,evidence,"native-sdr-provisional");
  return {frame,owned:false,proof:Object.freeze({
   method:"native-safari-sdr-bt709-display",
   sourceMatrix:evidence.expectedMatrix,
@@ -171,11 +218,11 @@ function renduNatifOpaque(frame,evidence){
   matrixConversion:false,rangeConversion:false,
   frameFullyTagged:true,sourceMismatch:true,
   colorFidelity:"uncertified-against-source",
-  sourceRangeVerified:typeof evidence.sourceFullRange==="boolean",
+  sourceRangeVerified:typeof evidence?.sourceFullRange==="boolean",
   warning:"Le fichier annonce BT.601 et le décodeur annonce BT.709. " +
-   (typeof evidence.sourceFullRange==="boolean"?"":"La plage source est non renseignée. ") +
-   "Le rendu natif du navigateur est utilisé sans réétiqueter les pixels. " +
-   "Comparer les couleurs et la luminosité de l'export à celles de l'original.",
+   "Les paramètres de primaires ou de plage peuvent aussi être incomplets " +
+   "ou différents. Le rendu natif Safari n'est PAS une correction de " +
+   "matrice certifiée. Comparer impérativement les couleurs du MP4 à l'original.",
   processing:"VideoFrame natif -> Canvas sRGB -> I420 BT709 limité"
  })};
 }
@@ -186,18 +233,30 @@ function renduNatifOpaque(frame,evidence){
 // Ce parcours expérimental est interdit aux images opaques/RGB/HDR, et
 // dispose d'un bilan distinct pour un contrôle perceptuel ultérieur.
 async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFrame){
+ markFrame(frame,evidence);
  try{
   const proof=verifyFrame(frame,evidence);
   return {frame,owned:false,proof};
  }catch(e){
   const p=frame?.colorSpace||{};
   const expected=evidence?.expectedMatrix;
-  const acceptableMismatch=expected&&SDR_MATRICES.has(evidence.sourceMatrix)&&
+  const mismatchText=String(e?.message||"");
+  const isMatrixOrPrimaries=mismatchText.includes("matrice MOV/SPS et trame")||
+   mismatchText.includes("primaires MOV/SPS et trame")||
+   mismatchText.includes("plage déclarée et décodée");
+  const acceptableMismatch=isMatrixOrPrimaries&&
+   [5,6].includes(evidence?.sourceMatrix)&&
    p.matrix==="bt709"&&!matrixEquivalent(p.matrix,expected)&&
-   VIDEO_PRIMARIES.has(p.primaries)&&VIDEO_XFER.has(p.transfer)&&
-   (!evidence.expectedPrimaries||p.primaries===evidence.expectedPrimaries)&&
-   (evidence.sourceFullRange===null||evidence.sourceFullRange===p.fullRange);
-  if(!acceptableMismatch)throw e;
+   (p.primaries==null||VIDEO_PRIMARIES.has(p.primaries))&&
+   (p.transfer==null||VIDEO_XFER.has(p.transfer))&&
+   (p.fullRange==null||typeof p.fullRange==="boolean");
+  if(!acceptableMismatch){
+   markFrame(frame,evidence,
+    p.transfer!=null&&!VIDEO_XFER.has(p.transfer)?"denied-hdr-or-transfer":
+    p.primaries!=null&&!VIDEO_PRIMARIES.has(p.primaries)?
+     "denied-incompatible-primaries":"denied-not-matrix-mismatch");
+   throw e;
+  }
   // Safari HEVC matériel : format=null signifie plan YUV inaccessible.
   // La trame possède néanmoins une couleur BT709 décodée déclarée.
   // Le rendu natif est permis uniquement dans ce cas SDR clairement borné.
@@ -212,7 +271,9 @@ async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFra
   ]);
   const canNative=frame.format==null||drawableNative.has(frame.format);
   const fallback=()=>{
-   if(!canNative)throw e;
+   if(!canNative){
+    markFrame(frame,evidence,"denied-unsupported-format");throw e;
+   }
    return renduNatifOpaque(frame,evidence);
   };
   if(frame.format==null)return fallback();
@@ -253,6 +314,7 @@ async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFra
       fullRange:evidence.sourceFullRange??p.fullRange}
    });
    const v=verifyFrame(corrected,evidence);
+   markFrame(frame,evidence,"source-matrix-restored");
    return {frame:corrected,owned:true,proof:Object.freeze({...v,
     method:"raw-yuv-source-matrix-correction",colorFidelity:"source-matrix-confirmed",
     decoderReportedMatrix:p.matrix,
@@ -269,8 +331,6 @@ async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFra
   }
  }
 }
-// Audit d'une VideoFrame SANS pixels : champs typés en listes blanches,
-// sans horodatages, dimensions précises, nom, octets ni messages WebCodecs.
 function frameEvidence(frame,evidence){
  const p=frame?.colorSpace||{};
  const allowedFormat=["I420","NV12","I422","I444","RGBA","RGBX","BGRA",
@@ -328,6 +388,6 @@ function report(info){
   explanation:"Informations techniques locales seulement. L'absence de colr ne prouve ni SDR ni HDR. Aucun média transmis."
  });
 }
-return Object.freeze({metadata,verifyFrame,imagePourRendu,report,frameEvidence});
+return Object.freeze({metadata,verifyFrame,imagePourRendu,report,diagnostic,resetDiagnostic,frameEvidence});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_HD_COLOR;
