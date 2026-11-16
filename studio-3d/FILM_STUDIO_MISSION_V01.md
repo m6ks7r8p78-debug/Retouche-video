@@ -350,3 +350,20 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - Le secours Canvas 2D affiche une **projection approximative** du maillage ; il ne rend pas visuellement chaque modification de sommet morph comme le moteur WebGL2.
 - Le rendu des normales du maillage est encore simplifié pendant la déformation : le relief et l'éclairage doivent être améliorés avant toute prétention de rendu naturel.
 - Aucun photoréalisme, aucune voix ou lip-sync, aucun film MP4, aucun test physique Safari iPhone et aucun déploiement de retoucheproai.com. La PR #69 reste en brouillon.
+
+
+## Film Studio v0.16 — exécution d'actions répétées (16 novembre 2026)
+
+### Architecture codée et rôle dans le moteur
+- film-action-plan-v16.mjs ajoute un planificateur heuristique d'actions **explicites et répétées** : une à cinq répétitions dans une scène avec personnage adulte décrit. Chaque épisode conserve un ordre, un identifiant de ressource unique et quatre phases. Ce n'est ni un LLM ni une compréhension générale du langage.
+- Les déclarations contradictoires, le mélange non encore synchronisé de gestes de cigarette et de boisson, les références privées et la simple présence d'une cigarette **sans action de fumer** ne produisent pas de faux résultat animé.
+- film-actions-v16.mjs introduit un deuxième chemin d'exécution, indépendant du moteur de tasse : il réutilise le petit clip procédural de cigarette déjà présent dans generateur.js, puis l'assemble réellement en **un seul GLB à trois cycles temporels distincts** pour la phrase « une femme fume trois taffes ». Une seule cigarette, un seul personnage, plusieurs cycles main–bouche, une échelle de fumée animée et un retour neutre à chaque cycle sont encodés dans le fichier.
+- L'audit lit le GLB encodé, échantillonne le poignet et les volumes synthétiques de fumée, vérifie le déplacement, le retour de la main et l'ouverture de bouche. Il **mesure** la distance cigarette–lèvres sans la qualifier de contact.
+- film-ui-v16.mjs / film-studio-v16.html conservent l'unique bouton et choisissent entre l'exécution d'actions répétées et le parcours de tasse v0.15. L'ancien moteur de tasse conserve son audit de volumes et son contrôle de déformation. Le bouton de gros plan sur la tasse n'est pas proposé dans la scène de cigarette.
+- film-actions-v16.test.mjs ajoute des tests unitaires : grammaire de répétitions, refus des gestes mixtes et de la cigarette non fumée, non-régression du café, ressources uniques, trois actions chronologiques réelles, échantillonnage des cycles et absence de média privé.
+- Les tests navigateur v0.16 exercent les deux chemins sous Chromium et WebKit, avec rendu WebGL2 ou Canvas 2D de secours. La CI n'enregistre plus automatiquement de vidéo promotionnelle : elle priorise le moteur et sa validation.
+
+### Limites réelles, non négociables
+- Cette version ne produit **pas** un film réaliste d'une femme qui fume. La cigarette et les fumées sont des primitives 3D très simplifiées et l'animation des bras provient de règles déterministes.
+- Il manque un IK de bout de cigarette aux lèvres, des phalanges adaptées à l'objet, une dynamique de fumée cohérente, la respiration anatomique, la gestion de transitions multi-gestes, le skinning humain, les vêtements et décors réalistes, la lumière PBR et l'export MP4 directement sur iPhone.
+- Le test WebKit Linux n'est pas une certification sur Safari physique iPhone. Aucun traitement des 157 vidéos personnelles, aucune fusion de PR ni déploiement retoucheproai.com.
