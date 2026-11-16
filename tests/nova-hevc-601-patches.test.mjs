@@ -9,7 +9,7 @@ const reference=()=>({
  schema:"retoucheproai.nova.synthetic-hevc-601-patches.v1",
  origin:"ffmpeg-synthetic-only",width:384,height:216,
  primaries:1,transfer:1,matrix:6,frames:15,
- patches:ids.map((id,i)=>({id,rgb:colors[i]}))
+ patches:ids.map((id,i)=>({id,rgb:[...colors[i]]}))
 });
 test("HEVC 1/1/6: refuse une mire qui n'est pas strictement synthétique",()=>{
  for(const change of [
