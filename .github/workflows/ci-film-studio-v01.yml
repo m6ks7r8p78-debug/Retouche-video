@@ -131,6 +131,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Vérifier la page complète, les pixels WebGL2, les gestes et le refus
         run: node studio-3d/film-browser-v15.test.mjs
+      - name: Préparer FFmpeg libre pour encoder les captures WebGL2 en H.264
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Enregistrer un MP4 véritablement issu des images WebGL2 du moteur
         run: node studio-3d/film-record-v15.test.mjs
       - name: Archiver la vidéo de preuve réelle du moteur (et non le storyboard)
