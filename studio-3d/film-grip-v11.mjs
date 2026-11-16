@@ -142,9 +142,9 @@ function auditHandleGrip(glb,timeline,{sampleHz=30}={}){
  if(deep>.012)throw Error('Centre de doigt enfoncé dans le corps de la tasse.');
  return report;
 }
-function buildSyntheticFilmSceneV11(request,generator){
+function buildSyntheticFilmSceneV11(request,generator,{decorateModel}={}){
  const out=buildSyntheticFilmSceneV10(request,generator,{
-  decorateModel:args=>ringAndGuidedFingers(args,generator)
+  decorateModel:decorateModel??(args=>ringAndGuidedFingers(args,generator))
  });
  if(out.status!=='apercu_partiel_glb_anime')return out;
  const handleAudit=auditHandleGrip(out.glb,out.timeline);
