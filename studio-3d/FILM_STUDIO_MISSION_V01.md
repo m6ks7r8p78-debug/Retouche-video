@@ -302,3 +302,27 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - L'indicateur de jonction est fondé sur une projection entre ellipsoïdes et des échantillons de surface, pas sur un maillage unique soudé, une simulation biomécanique ou une résolution exacte des collisions triangle-triangle.
 - Aucun photoréalisme, aucune vraie force de préhension, aucune voix, aucun MP4 ou film final, aucun test physique sur iPhone. Ne pas confondre les vérifications WebKit Linux avec une validation Safari iOS.
 - Aucun contenu privé issu des 157 vidéos n'a été utilisé ni publié. La PR #69 reste en brouillon, non fusionnée ; retoucheproai.com demeure inchangé.
+
+
+## Film Studio v0.14 — maillage triangulé fermé de la manchette poignet–paume (16 novembre 2026)
+
+### Implémentation effective
+- L'encodeur GLB dans generateur.js accepte désormais au plus huit maillages triangulés personnalisés, strictement bornés (positions et normales finies, indices entiers dans le tableau, taille limitée). Les anciennes scènes continuent d'utiliser les sphères synthétiques d'origine.
+- film-continuous-v14.mjs génère **un seul tube maillé fermé** suivant une courbe 3D interpolée entre le poignet et la paume. Le tube comporte des anneaux radiaux, des triangles latéraux et deux bouchons ; les normales et les orientations des triangles sont contrôlées. Il remplace **les cinq nœuds sphéroïdaux de raccord de la v0.13**, sans supprimer les cinq doigts articulés ni la tasse unique.
+- Le raccord est rattaché au poignet et se déplace avec lui. Il est rigide (pas de skinning ni de poids d'os). Il ne forme pas un unique maillage soudé avec tout l'avant-bras et toute la paume : ceux-ci restent des volumes distincts.
+- L'audit auditContinuousWrist relit les positions, les normales et les indices du **GLB final**, exige des arêtes orientées appariées (maillage fermé), aucune face dégénérée, des normales valides, un attachement au poignet et un enfoncement limité des sommets et centroïdes des triangles dans le volume approximatif de la tasse.
+- film-viewer-v03.mjs détecte la boîte englobante du nouveau maillage à partir des accessors du GLB : le repli Canvas 2D continue à l'afficher de manière approximative, sans le prendre pour une gigantesque sphère unité. Le moteur WebGL2 affiche les triangles réels et leur matériau.
+- film-continuous-v14.test.mjs ajoute dix tests : maillage fermé, corruption d'arêtes/normales, hiérarchie, lecture du GLB, position dans la scène, suivi du poignet et du mouvement, rendu de secours 2D, homme/femme synthétiques, non-régression v0.12/v0.13, refus des médias personnels, injection d'indices de triangles corrompus dans le GLB.
+- film-ui-v14.mjs, film-studio-v14.html et film-share-v14.mjs gardent le parcours en un bouton, l'inspection de la main, le téléchargement ou partage natif volontaire du GLB, et les limites de validation clairement affichées.
+
+### Preuves GitHub et visuelles
+- **GitHub Actions 43842085062**, révision 7b412f1a140da643d228e8c430827c726ed5aba2 : **100 tests Node sur 100 réussis**, Chromium WebGL2 et lecture du GLB téléchargé, WebKit Linux avec WebGL2 standard et repli Canvas 2D forcé, paquet statique HTTPS v0.14 — **4 jobs sur 4 verts**.
+- Le contrôle de syntaxe Node de l'interface et du module de géométrie s'exécute avant les tests navigateurs afin de prévenir la régression identifiée dans la v0.13.
+- Chromium : 14 947 pixels de premier plan, gros plan de la main, vue de profil du poignet et suivi du mouvement. WebKit : 14 741 pixels de premier plan en WebGL2 et 134 156 dans le repli Canvas, parcours tactile et partage simulés, aucune erreur de page dans les cas testés.
+- La capture de profil a été examinée : le raccord montre une surface uniforme et remplace les anciennes « perles » géométriques. La main, ses cinq doigts et sa paume sont toujours stylisés, et le tube n'est pas une peau réelle.
+- Artefacts : film-studio-v14-chromium-synthetic (images), film-studio-v14-webkit-synthetic (images), film-studio-v14-iphone-https-package (19 fichiers statiques, sans vidéos privées), non déployés sur le site public.
+
+### Frontières de l'affirmation
+- La fermeture topologique d'un tube ne démontre ni une peau déformable sur plusieurs articulations, ni une absence exhaustive de collision avec tous les autres maillages. Le contrôle de tasse repose sur des sommets et centroïdes et une distance radiale approximative.
+- Aucun lip-sync, son, film MP4, photoréalisme, force de préhension, moteur physique ou test physique Safari iPhone. Les 157 médias privés ne sont ni intégrés ni publiés.
+- La PR #69 reste en brouillon, non fusionnée ; aucun déploiement vers retoucheproai.com.
