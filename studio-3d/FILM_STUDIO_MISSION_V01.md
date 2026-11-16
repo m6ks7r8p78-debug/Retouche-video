@@ -252,3 +252,30 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - Mesurer le **centre** des bouts de doigts contre des ellipsoïdes n'est pas tester le vrai contact entre les triangles des maillages. Des pénétrations visibles des volumes complets sont encore possibles.
 - Aucun calcul de pression, friction, force, poids, équilibre du corps, collisions certifiées, bouche ou lèvres réalistes ; aucun film MP4 ni dialogue audio et aucune ressemblance photoréaliste.
 - Aucun test physique sur iPhone, aucune des 157 vidéos privées utilisée, aucun déploiement ou fusion de la PR #69, aucun changement à retoucheproai.com.
+
+
+## Film Studio v0.12 — correction d'intersection paume–tasse et audit des volumes (16 novembre 2026)
+
+### Travail réellement effectué
+- film-volume-v12.mjs : échantillonne de manière déterministe des **surfaces de sphéroïdes** des volumes 3D de la paume, des phalanges proximales et distales des cinq doigts, du corps de la tasse et des douze segments de l'anse. Chaque sphéroïde est calculé à partir de la matrice réellement encodée dans le GLB animé.
+- La comparaison est **bidirectionnelle** : échantillons de surface de A à l'intérieur de B ET de B à l'intérieur de A ; le résultat est un indicateur de pénétration **radiale approximative**, et NON une collision exacte entre triangles.
+- La paume procédurale a été décalée vers l'anse et diminuée : translation locale [0.15,-0.063,-0.04], échelle [0.048,0.088,0.045]. Le poignet, les pistes de la tasse et son ancrage ne sont pas déplacés. Le gros défaut volumique de la v0.11 est ainsi supprimé sur les poses mesurées.
+- L'audit refuse un dépassement >3 mm pour la paume dans le corps de tasse, >12 mm pour n'importe quelle phalange dans le corps de tasse ou >35 mm pour les volumes contre l'anse. La proximité/chevauchement voulu avec l'anse est reporté et ne prouve pas la force de préhension.
+- film-volume-v12.test.mjs : huit nouveaux tests sur sphères de rayon connu, contact tangent, volumes invalides, mesures depuis le GLB, ancien défaut v0.11 volontairement refusé, avatar masculin stylisé, refus de médias réels et injection de coordonnées GLB altérées.
+- Le constructeur v0.11 reçoit un décorateur facultatif : les sorties normales des versions précédentes sont inchangées. film-ui-v12.mjs et film-studio-v12.html conservent le bouton unique et le gros plan, avec la mesure de chevauchement clairement qualifiée d'estimation. Le partage GLB/diagnostic reste local et facultatif.
+
+### Mesures vérifiées sur le scénario synthétique
+- Le diagnostic local v0.11 montrait environ 0.0695 m de pénétration radiale échantillonnée de la paume dans le corps de tasse. Le même scénario avec la v0.12 affiche **0 m de pénétration échantillonnée paume–tasse**.
+- Sur le GLB v0.12 produit par le paquet CI : 30 poses, 38 directions de surface par ellipsoïde, 3 960 comparaisons avec les segments de l'anse ; maximum estimé dans le corps de tasse pour toutes les phalanges **0.00858 m**, maximum entre volumes doigt/anse **0.02367 m**. Ce sont des estimations de surfaces sphéroïdales, **pas** des collisions exactes.
+- Taille du GLB du scénario synthétique mesuré localement : **158 552 octets**. L'exécution a pris environ 561 ms dans l'environnement Node utilisé pour le contrôle ; **aucune conclusion de vitesse ou de température sur iPhone physique** n'en découle.
+- L'inspection manuelle des captures Chromium v0.11 vs v0.12 révèle que le gros volume de paume autrefois apparent sous la tasse a été déplacé vers le côté de l'anse. La liaison visuelle entre l'avant-bras et la nouvelle position de la paume demeure simplifiée.
+
+### Preuves d'exécution
+- GitHub Actions **43824721735**, révision 86c41bda9a046e9d58e05e46281257a6a9652c8d : **82 tests Node sur 82 réussis**, rendu/téléchargement Chromium WebGL2 réussi, WebKit Linux normal + Canvas 2D de secours réussi, paquet HTTPS v0.12 isolé généré — **4 jobs sur 4 verts**.
+- Un premier passage avait réussi tous les contrôles logiciels mais avait échoué lors de l'assemblage par un comptage erroné de 18 fichiers alors que le paquet en comporte 17 (15 scripts, index.html et _headers). Cette assertion de paquet a été corrigée et **la CI suivante est entièrement verte**.
+- Artefacts : film-studio-v12-iphone-https-package (sans média privé), film-studio-v12-chromium-synthetic (captures), film-studio-v12-webkit-synthetic (captures). Le paquet statique est prêt pour un déploiement HTTPS de laboratoire **non réalisé**.
+
+### Limites de validation
+- Sphéroïdes et échantillons discrets ≠ mesure exhaustive du maillage triangulé réel ; le chiffre 0 sur la paume correspond **aux points contrôlés et non à une garantie absolue de non-intersection entre triangles**.
+- Aucun calcul physique de forces, frottement, pression, poids de la tasse, ni anatomie humaine, lip-sync, voix ou film MP4. Aucune vidéo personnelle intégrée à ces tests.
+- Aucune fusion de la PR #69, aucun changement sur retoucheproai.com et aucun essai sur Safari iPhone physique.
