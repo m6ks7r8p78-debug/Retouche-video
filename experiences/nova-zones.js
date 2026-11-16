@@ -27,11 +27,18 @@ function mesures(img,rect,step=2){
          fractionSombre:nb?dark/nb:0,echantillons:nb};
 }
 function lever(src,strength,out,index){
- const l=lum(src,index),weight=1-smooth(.32,.82,l);
+ const l=lum(src,index);
+ // Fidélité naturelle : préserver entièrement les pixels déjà lumineux,
+ // y compris au milieu d'une tuile sombre ; atténuer la correction avant
+ // d'atteindre la zone des peaux claires et des reflets.
+ const weight=1-smooth(.32,.72,l);
  for(let ch=0;ch<3;ch++){
-  const p=src[index+ch]/255;
-  const raised=255*Math.pow(p,.87);
-  out[index+ch]=clamp(Math.round(src[index+ch]+(raised-src[index+ch])*strength*weight),0,255);
+  const code=src[index+ch];
+  // Protéger aussi un canal très clair d'un pixel rouge/bleu mélangé :
+  // pas de nouvelles valeurs écrêtées provoquées par l'éclaircissement.
+  if(code>=235||weight===0){out[index+ch]=code;continue}
+  const p=code/255,raised=255*Math.pow(p,.87);
+  out[index+ch]=clamp(Math.round(code+(raised-code)*strength*weight),0,234);
  }
  out[index+3]=src[index+3];
 }
