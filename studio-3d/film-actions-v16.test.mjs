@@ -30,6 +30,19 @@ test('comptes français et numériques : un à cinq cycles, jamais de sixième i
  assert.throws(()=>compileActionPlanV16('une femme fume 6 taffes'),/une à cinq/);
  assert.throws(()=>compileActionPlanV16('une femme fume 2 taffes puis 3 taffes'),/contradictoire/);
 });
+test('une cigarette tenue sans fumer ne déclenche aucun geste inventé',()=>{
+ for(const prompt of [
+  'Une femme tient une cigarette dans sa main, sans fumer.',
+  'Une femme tient une cigarette dans la main, elle ne fume pas.',
+  'Une femme regarde une cigarette posée sur la table.'
+ ]){
+  const plan=compileActionPlanV16(prompt);
+  assert.equal(plan.eligible,false,prompt);
+  const output=buildSyntheticFilmSceneV16(prompt,generator);
+  assert.equal(output.status,'scenario_seulement',prompt);
+  assert.equal(output.glb,null);
+ }
+});
 test('le pilote refuse les mélanges non synchronisés et les références privées',()=>{
  const mixed=buildSyntheticFilmSceneV16('Une femme boit du café puis fume trois taffes',generator);
  assert.equal(mixed.status,'scenario_seulement');
