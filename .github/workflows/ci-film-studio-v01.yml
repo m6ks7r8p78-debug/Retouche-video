@@ -96,6 +96,7 @@ on:
       - 'studio-3d/film-studio-v15.html'
       - 'studio-3d/film-browser-v15.test.mjs'
       - 'studio-3d/film-browser-webkit-v15.test.mjs'
+      - 'studio-3d/film-record-v15.test.mjs'
       - '.github/workflows/ci-film-studio-v01.yml'
 jobs:
   scenario-contract:
@@ -130,6 +131,15 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Vérifier la page complète, les pixels WebGL2, les gestes et le refus
         run: node studio-3d/film-browser-v15.test.mjs
+      - name: Enregistrer un MP4 véritablement issu des images WebGL2 du moteur
+        run: node studio-3d/film-record-v15.test.mjs
+      - name: Archiver la vidéo de preuve réelle du moteur (et non le storyboard)
+        uses: actions/upload-artifact@v4
+        with:
+          name: film-studio-v15-preuve-moteur-mp4
+          path: test-results/film-studio-v15-moteur-reel.mp4
+          if-no-files-found: error
+          retention-days: 14
       - name: Conserver la capture synthétique pour revue
         if: always()
         uses: actions/upload-artifact@v4
