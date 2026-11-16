@@ -57,7 +57,7 @@ function addMorphWrist({model,output,ids,fineTimes,...rest},generator){
 /** Compare les positions déformées du GLB final à la tasse réelle animée.
  * Ne conclut pas à une collision triangle-triangle exhaustive.
  */
-function auditMorphWrist(glb,timeline,{sampleHz=15}={}){
+function auditMorphWrist(glb,timeline,{sampleHz=30}={}){
  if(!Number.isInteger(sampleHz)||sampleHz<10||sampleHz>30)
   throw Error('Cadence morph invalide.');
  if(!Array.isArray(timeline)||!timeline.length||timeline.length>10)
