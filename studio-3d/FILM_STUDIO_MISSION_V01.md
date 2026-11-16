@@ -279,3 +279,26 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - Sphéroïdes et échantillons discrets ≠ mesure exhaustive du maillage triangulé réel ; le chiffre 0 sur la paume correspond **aux points contrôlés et non à une garantie absolue de non-intersection entre triangles**.
 - Aucun calcul physique de forces, frottement, pression, poids de la tasse, ni anatomie humaine, lip-sync, voix ou film MP4. Aucune vidéo personnelle intégrée à ces tests.
 - Aucune fusion de la PR #69, aucun changement sur retoucheproai.com et aucun essai sur Safari iPhone physique.
+
+
+## Film Studio v0.13 — jonction de l'avant-bras à la paume (16 novembre 2026)
+
+### Implémentation
+- Le constructeur v0.12 accepte un décorateur de rig **facultatif** ; son comportement par défaut n'a pas changé et les tests des versions précédentes restent actifs.
+- film-bridge-v13.mjs ajoute **cinq ellipsoïdes de peau synthétique** entre le poignet et la paume décalée par la v0.12. Ils sont orientés selon les directions successives du raccord, attachés à l'os du poignet dans le GLB et suivent donc les mouvements du bras. L'allongement des volumes a été augmenté dans une seconde révision afin de réduire l'aspect visuellement morcelé.
+- Le contrôle auditBridge lit les matrices du GLB réellement encodé et échantillonne le transport de la tasse à 12 poses par seconde. Il vérifie les jonctions projetées entre segments (3 mm maximum), le chevauchement mesuré des extrémités avec l'avant-bras et la paume (au moins 2 mm), et l'enfoncement échantillonné des raccords dans le corps de tasse (4 mm maximum).
+- Les tests unitaires sont plus stricts que les seuils de sécurité de base pour les extrémités : au moins 30 mm de chevauchement échantillonné avec l'avant-bras et la paume dans les scénarios synthétiques de validation. Les cinq volumes d'origine et l'unique récipient persistent dans le GLB.
+- film-bridge-v13.test.mjs ajoute huit tests : présence des cinq nœuds, rattachement au poignet, continuité, positions aux différents moments de la prise et du dépôt, avatar synthétique masculin, rétrocompatibilité v0.12, refus de médias réels, fréquence invalide et injection d'un maillon artificiellement déplacé.
+- film-studio-v13.html / film-ui-v13.mjs conservent le parcours texte → créer → visualiser → exporter et le gros plan. Le statut annonce explicitement cinq volumes et l'écart de continuité estimé. Partage natif ou téléchargement manuel v0.13, toujours sans envoi automatique.
+
+### Validation et qualité visuelle
+- **GitHub Actions 43834587407**, commit d5e74769e74c59c3ea698af9283203f319536217 : **90/90 tests Node**, Chromium WebGL2, WebKit Linux normal et repli Canvas 2D, paquet HTTPS isolé : **4/4 jobs verts**.
+- Un premier run navigateur a détecté une chaîne de statut JavaScript mal fermée : l'interface ne s'initialisait pas. Elle a été corrigée et un contrôle de syntaxe Node de film-ui-v13.mjs a été ajouté **en amont** des tests navigateur. Les reruns suivants sont verts.
+- Chromium a téléchargé et relu le GLB, vérifié cinq nœuds de raccord et archivé une vue frontale et **une vue latérale** de la main pendant l'animation. WebKit a validé les parcours WebGL2 et Canvas 2D avec les gestes tactiles simulés, l'export local et aucun événement d'erreur de page.
+- L'inspection réelle de la capture de profil montre que la jonction a été ajoutée et les volumes se chevauchent. Elle montre aussi que l'effet demeure **visible comme une succession de sphéroïdes stylisés**, sans peau anatomiquement continue. La v0.13 n'est pas une main de qualité cinématographique.
+- Le paquet film-studio-v13-iphone-https-package contient des fichiers statiques sans vidéo privée. Il est disponible en artefact GitHub, **non déployé publiquement**.
+
+### Limites
+- L'indicateur de jonction est fondé sur une projection entre ellipsoïdes et des échantillons de surface, pas sur un maillage unique soudé, une simulation biomécanique ou une résolution exacte des collisions triangle-triangle.
+- Aucun photoréalisme, aucune vraie force de préhension, aucune voix, aucun MP4 ou film final, aucun test physique sur iPhone. Ne pas confondre les vérifications WebKit Linux avec une validation Safari iOS.
+- Aucun contenu privé issu des 157 vidéos n'a été utilisé ni publié. La PR #69 reste en brouillon, non fusionnée ; retoucheproai.com demeure inchangé.
