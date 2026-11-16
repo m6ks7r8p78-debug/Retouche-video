@@ -135,7 +135,7 @@ function buildSyntheticFilmSceneV15(request,generator){
  if(out.status!=='apercu_partiel_glb_anime')return out;
  const morphAudit=auditMorphWrist(out.glb,out.timeline);
  return {...out,schema:'retoucheproai.film-motion-preview.v0.15',morphAudit,
-  warnings:[...out.warnings,
+  warnings:[...out.warnings.filter(w=>!w.includes('animé rigidement')),
    'Manchette 3D déformable sur deux zones par cibles morph glTF, sans squelette cutané multi-os, sans forces ni collisions exactes.']};
 }
 export {createWristMorphTargets,morphWeightAt,addMorphWrist,auditMorphWrist,buildSyntheticFilmSceneV15};
