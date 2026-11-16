@@ -228,3 +228,27 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - Aucune preuve de collision, de prise ferme, de frottement, de force, de contact lèvres/objet, de stabilité du liquide ni de posture humaine réaliste.
 - WebKit Linux n'est pas un test sur iPhone physique ; aucun export iOS vers Fichiers certifié. Aucun film MP4, aucune voix, aucun photoréalisme ni traitement des 157 vidéos privées.
 - La PR #69 reste en brouillon ; aucun déploiement sur retoucheproai.com et aucune fusion.
+
+
+## Film Studio v0.11 — anse ajourée, doigts guidés vers une boucle (16 novembre 2026)
+
+### Implémentation contrôlée
+- film-grip-v11.mjs : remplace l'ancienne anse pleine par une boucle ajourée en **12 petits éléments ellipsoïdaux**, articulés au **même unique récipient GLB**. Aucune deuxième tasse n'est créée.
+- À partir de la pose **réellement encodée dans un GLB intermédiaire**, calcule les trajectoires des pivots de cinq doigts dans le repère local du poignet, au moyen de l'inverse de sa matrice 3D. Les bouts des doigts suivent des positions distinctes autour de l'anse pendant la prise ; le pouce est placé sur l'autre côté et les pivots reviennent à leur position initiale après le dépôt. La paume a été légèrement réduite afin de limiter son volume apparent autour de la tasse.
+- Les constructeurs v0.9 et v0.10 disposent d'une option facultative de décorateur de rig ; **leur sortie par défaut ne change pas**. Le moteur v0.11 ajoute ses corrections uniquement à sa propre scène.
+- La fonction auditHandleGrip vérifie directement sur le **GLB final exporté** la présence de l'anse ajourée, la distance radiale approximative entre le centre de chaque bout de doigt et les segments du pourtour, le taux de proximité, le dépassement instantané et un premier indice d'enfoncement du **centre** des doigts dans le corps de tasse.
+- **Seuils du pilote :** distance moyenne maximale par doigt ≤45 mm, distance instantanée maximale ≤100 mm, au moins 70 % des observations à moins de 35 mm de l'anse ; enfoncement du centre d'un doigt dans le volume central de la tasse ≤12 mm. Il s'agit uniquement de filtres contre les défauts grossiers, pas d'une validation physique de préhension.
+- film-grip-v11.test.mjs : 7 tests sur l'unicité de l'anse, les cinq trajectoires, l'absence de saut de racine, les scénarios masculin/féminin stylisés, le refus de médias réels, la compatibilité rétroactive v0.10 et l'injection volontaire d'une téléportation dans un canal GLB.
+- film-ui-v11.mjs et film-studio-v11.html : parcours local simple et gros plan conservés, affichage explicite du nombre de segments et de la proximité géométrique. film-share-v11.mjs conserve le téléchargement normal et le partage local facultatif.
+
+### Preuves GitHub et revue d'image
+- **GitHub Actions 43794230819** (révision f3459582b5afc61d3a057f361baaa88ce0791bcc) : **74/74 tests Node**, Chromium WebGL2, WebKit Linux normal + Canvas 2D de secours et paquet HTTPS isolé réussis — **4/4 étapes vertes**.
+- Les premiers tests ont repéré qu'un pic anormal était encore toléré par la métrique moyenne ; le contrôle de distance **instantanée** a été ajouté. L'injection anormale est ensuite détectée et les 74 tests réussissent.
+- Chromium : 14 945 pixels de premier plan, vérification du GLB téléchargé (5 doigts, 12 segments d'anse), gros plan et suivi temporel. WebKit : WebGL2 14 720 pixels, secours 2D 133 403 pixels, aucun événement de type pageerror détecté par la suite de tests.
+- La capture réelle du banc Chromium montre la tasse claire, la boucle composée de segments et les doigts stylisés autour du côté de l'anse. La boucle n'est plus un volume plein ; le rendu reste rudimentaire, sans garanties de non-intersection de toutes les surfaces.
+- Paquet statique pour futur essai iPhone : artefact **film-studio-v11-iphone-https-package** (14 jours de conservation CI), **non déployé**. Captures synthétiques dans film-studio-v11-chromium-synthetic et film-studio-v11-webkit-synthetic.
+
+### Limites explicites
+- Mesurer le **centre** des bouts de doigts contre des ellipsoïdes n'est pas tester le vrai contact entre les triangles des maillages. Des pénétrations visibles des volumes complets sont encore possibles.
+- Aucun calcul de pression, friction, force, poids, équilibre du corps, collisions certifiées, bouche ou lèvres réalistes ; aucun film MP4 ni dialogue audio et aucune ressemblance photoréaliste.
+- Aucun test physique sur iPhone, aucune des 157 vidéos privées utilisée, aucun déploiement ou fusion de la PR #69, aucun changement à retoucheproai.com.
