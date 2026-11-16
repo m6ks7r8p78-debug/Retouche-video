@@ -1,4 +1,4 @@
-name: Film Studio - doigts articulés et assise stylisée v0.9
+name: Film Studio - gros plan et audit doigt–tasse v0.10
 on:
   push:
     branches:
@@ -53,6 +53,14 @@ on:
       - 'studio-3d/film-studio-v09.html'
       - 'studio-3d/film-browser-webkit-v09.test.mjs'
       - 'studio-3d/film-browser-v09.test.mjs'
+      - 'studio-3d/film-inspection-v10.mjs'
+      - 'studio-3d/film-inspection-v10.test.mjs'
+      - 'studio-3d/film-scene-v10.mjs'
+      - 'studio-3d/film-ui-v10.mjs'
+      - 'studio-3d/film-share-v10.mjs'
+      - 'studio-3d/film-studio-v10.html'
+      - 'studio-3d/film-browser-v10.test.mjs'
+      - 'studio-3d/film-browser-webkit-v10.test.mjs'
       - '.github/workflows/ci-film-studio-v01.yml'
 jobs:
   scenario-contract:
@@ -66,7 +74,7 @@ jobs:
         with:
           node-version: '22'
       - name: Verifier le contrat de scenario sans medias prives
-        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs studio-3d/film-viewer-v03.test.mjs studio-3d/film-ui-v03.test.mjs studio-3d/film-contact-v03.test.mjs studio-3d/film-webgl-v04.test.mjs studio-3d/film-diagnostic-v06.test.mjs studio-3d/film-share-v07.test.mjs studio-3d/film-motion-v08.test.mjs studio-3d/film-fingers-v09.test.mjs
+        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs studio-3d/film-viewer-v03.test.mjs studio-3d/film-ui-v03.test.mjs studio-3d/film-contact-v03.test.mjs studio-3d/film-webgl-v04.test.mjs studio-3d/film-diagnostic-v06.test.mjs studio-3d/film-share-v07.test.mjs studio-3d/film-motion-v08.test.mjs studio-3d/film-fingers-v09.test.mjs studio-3d/film-inspection-v10.test.mjs
 
   navigateur-webgl2:
     needs: scenario-contract
@@ -84,13 +92,13 @@ jobs:
       - name: Installer Chromium et ses dépendances système
         run: npx playwright install --with-deps chromium
       - name: Vérifier la page complète, les pixels WebGL2, les gestes et le refus
-        run: node studio-3d/film-browser-v09.test.mjs
+        run: node studio-3d/film-browser-v10.test.mjs
       - name: Conserver la capture synthétique pour revue
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: film-studio-v09-chromium-synthetic
-          path: test-results/film-studio-v09-chromium.png
+          name: film-studio-v10-chromium-synthetic
+          path: test-results/film-studio-v10-chromium*.png
           if-no-files-found: ignore
           retention-days: 7
 
@@ -110,13 +118,13 @@ jobs:
       - name: Installer WebKit et ses dépendances système
         run: npx playwright install --with-deps webkit
       - name: Tester Safari WebKit simulé, mode tactile, repli et export local
-        run: node studio-3d/film-browser-webkit-v09.test.mjs
+        run: node studio-3d/film-browser-webkit-v10.test.mjs
       - name: Archiver captures entièrement synthétiques WebKit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: film-studio-v09-webkit-synthetic
-          path: test-results/film-studio-v09-webkit-*.png
+          name: film-studio-v10-webkit-synthetic
+          path: test-results/film-studio-v10-webkit-*.png
           if-no-files-found: ignore
           retention-days: 7
 
@@ -130,16 +138,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Préparer un paquet statique sans médias ni données privées
         run: |
-          mkdir -p dist/film-studio-iphone-v09
-          cp studio-3d/film-studio-v09.html dist/film-studio-iphone-v09/index.html
+          mkdir -p dist/film-studio-iphone-v10
+          cp studio-3d/film-studio-v10.html dist/film-studio-iphone-v10/index.html
           for name in \
             generateur.js \
-            film-ui-v09.mjs film-fingers-v09.mjs film-motion-v08.mjs film-share-v09.mjs film-diagnostic-v06.mjs \
+            film-ui-v10.mjs film-scene-v10.mjs film-inspection-v10.mjs film-fingers-v09.mjs film-motion-v08.mjs film-share-v10.mjs film-diagnostic-v06.mjs \
             film-contact-v03.mjs film-sequence-v02.mjs \
             film-project-v01.mjs film-viewer-v03.mjs film-webgl-v04.mjs; do
-            cp "studio-3d/$name" "dist/film-studio-iphone-v09/$name"
+            cp "studio-3d/$name" "dist/film-studio-iphone-v10/$name"
           done
-          cat > dist/film-studio-iphone-v09/_headers <<'HEADERS'
+          cat > dist/film-studio-iphone-v10/_headers <<'HEADERS'
           /*
             Cache-Control: no-store
             Referrer-Policy: no-referrer
@@ -147,12 +155,12 @@ jobs:
             Permissions-Policy: camera=(), microphone=(), geolocation=()
             Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'
           HEADERS
-          test "$(find dist/film-studio-iphone-v09 -maxdepth 1 -type f | wc -l)" -eq 13
-          test -z "$(find dist/film-studio-iphone-v09 -type f \( -name '*.mp4' -o -name '*.jpg' -o -name '*.png' \))"
+          test "$(find dist/film-studio-iphone-v10 -maxdepth 1 -type f | wc -l)" -eq 15
+          test -z "$(find dist/film-studio-iphone-v10 -type f \( -name '*.mp4' -o -name '*.jpg' -o -name '*.png' \))"
       - name: Préparer le téléchargement du paquet de laboratoire iPhone
         uses: actions/upload-artifact@v4
         with:
-          name: film-studio-v09-iphone-https-package
-          path: dist/film-studio-iphone-v09/
+          name: film-studio-v10-iphone-https-package
+          path: dist/film-studio-iphone-v10/
           retention-days: 14
           if-no-files-found: error
