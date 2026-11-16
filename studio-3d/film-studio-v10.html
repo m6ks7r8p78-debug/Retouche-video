@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>RetoucheProAI — Film Studio expérimental v0.10</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0e18;--panel:#171c2a;--border:#354055;--accent:#e0c5ff;--text:#f3f5fa;--muted:#b7c0d0}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 85% -5%,#3e2a51 0,transparent 44%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
+main{max-width:930px;margin:0 auto;padding:18px 16px 55px}header{display:flex;justify-content:space-between;align-items:center;gap:9px;font-size:14px;font-weight:750;padding:6px 0 32px}header small{font-size:10px;color:#c5e9d7;border:1px solid #3d7159;border-radius:100px;padding:7px 9px}
+h1{font-size:clamp(33px,5.8vw,56px);line-height:1.06;letter-spacing:-.055em;margin:14px 0}h1 em{font-style:normal;color:var(--accent)}
+.lead{max-width:780px;font-size:14px;line-height:1.7;color:var(--muted);margin:0 0 23px}
+.grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:14px;align-items:start}
+.panel{background:linear-gradient(145deg,#1b2232,#121722);border:1px solid var(--border);border-radius:19px;overflow:hidden}
+.panelpad{padding:18px}h2{font-size:15px;margin:0 0 10px}
+.stage{width:100%;height:370px;display:block;background:#111725;touch-action:none}
+.preview-bottom{padding:12px 16px 16px;border-top:1px solid var(--border)}
+.controls{display:flex;gap:10px;align-items:center;justify-content:space-between}
+button{min-height:44px;padding:11px 15px;border-radius:12px;border:1px solid #51566c;background:#252b3d;color:var(--text);font-size:13px;font-weight:690;cursor:pointer}
+button.primary{background:#e0c7ff;border:1px solid #f0dfff;color:#1d1730;width:100%;margin-top:12px}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:2px solid #dfc8ff;outline-offset:3px}
+textarea{width:100%;min-height:145px;padding:13px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;resize:vertical;background:#0b101b;color:var(--text);border:1px solid #40506a;border-radius:12px}
+label{font-size:13px;font-weight:660;display:block;margin-bottom:9px}
+#seek{display:block;width:100%;accent-color:#d9c4ff;margin-top:10px;touch-action:pan-y}
+#clock{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+#status{font-size:12px;line-height:1.65;min-height:35px;color:#bcd6ef}
+#status.error{color:#ffbcb1}#download{display:inline-block;text-decoration:none;color:#1e2a23;background:#d4f0dd;padding:12px 15px;border-radius:12px;font-size:12px;font-weight:700;margin-top:12px}
+#download[hidden],[hidden]{display:none!important}.note{font-size:11px;line-height:1.6;color:var(--muted)}
+#steps{display:flex;flex-wrap:wrap;gap:7px;margin:0;padding:0;list-style:none}#steps li{padding:8px 10px;font-size:11px;background:#27374b;border:1px solid #49627b;border-radius:9px}
+#limits{font-size:11px;line-height:1.6;color:var(--muted);padding-left:18px}
+footer{font-size:11px;line-height:1.7;color:#a8adbd;margin:20px 0}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.stage{height:350px}header{padding-bottom:17px}}
+@media(max-width:420px){.stage{height:290px}.panelpad{padding:15px}}
+#saveDiagnostic{display:inline-block;text-decoration:none;color:#1e2a23;background:#d4f0dd;padding:12px 15px;border-radius:12px;font-size:12px;font-weight:700;margin-top:12px}#saveDiagnostic[hidden]{display:none!important}#diagnosticStatus{min-height:34px}.file-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:11px}.file-actions a{margin-top:0!important}.file-actions button{background:#283846;border-color:#587486}.file-actions button[hidden]{display:none!important}#shareStatus{min-height:16px}.inspection-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:11px 0 6px}.inspection-actions button{background:#304050;border-color:#7d8b9c}.inspection-actions p{flex:1;min-width:180px;margin:0}.inspection-actions button[aria-pressed=true]{background:#d9c8f4;color:#201b30}
+</style>
+</head>
+<body><main>
+<header><div>✦ RetoucheProAI / Film Studio</div><small>LABO LOCAL · V0.10</small></header>
+<h1>Imaginez une scène.<br><em>Voyez-la prendre vie.</em></h1>
+<p class="lead">Une scène animée 3D stylisée, créée à partir d’une description. Rendu des vrais maillages GLB en WebGL2 lorsque disponible, mouvements chronologiques et export GLB optionnel. Le récipient s’incline pendant la boisson, et cinq doigts stylisés s’ouvrent et se ferment autour de lui. Le bouton « Voir la main de près » permet de suivre le geste. Les distances à la surface sont estimées géométriquement ; ce n’est pas une simulation physique. Aucune vidéo MP4 ni film photoréaliste à ce stade.</p>
+<div class="grid">
+<section class="panel" aria-label="Aperçu de la scène">
+<canvas class="stage" id="view" role="img" aria-label="Prévisualisation 3D stylisée du modèle GLB, faire glisser pour orienter la caméra"></canvas>
+<div class="preview-bottom">
+<div class="controls"><button id="play" type="button" disabled aria-label="Lancer ou arrêter l'animation">▶ Lire</button><span id="clock">0,0 / 0,0 s</span></div>
+<div class="inspection-actions"><button id="focusHand" type="button" disabled aria-pressed="false">Voir la main de près</button>
+<p id="focusInfo" class="note" role="status" aria-live="polite">Créez une scène pour inspecter la main.</p></div>
+<input type="range" id="seek" min="0" max="1000" value="0" step="1" disabled aria-label="Position dans le scénario">
+<p id="backend" class="note" role="status">Détection des capacités du moteur 3D…</p><p class="note">Touchez et glissez pour faire pivoter la scène. Le moteur WebGL2 dessine les triangles du GLB, avec profondeur et lumière simple. Si Safari refuse WebGL2 ou ses shaders, le secours Canvas 2D est annoncé. Retour depuis un onglet en cache et interruption GPU gérés.</p>
+</div>
+</section>
+<section class="panel"><div class="panelpad">
+<label for="prompt">Décrivez votre personnage et ses actions</label>
+<textarea id="prompt" maxlength="4000">Une femme brune s'assoit dans le salon, boit un café, pose sa tasse, puis parle.</textarea>
+<button id="create" type="button" class="primary">Créer mon animation 3D</button>
+<p id="status" role="status" aria-live="polite">Prêt à créer une scène synthétique locale.</p>
+<div class="file-actions"><a id="download" href="#" download="retoucheproai-film-studio-v10.glb" hidden>Télécharger le GLB animé</a>
+<button id="shareGlb" type="button" hidden>Partager vers Fichiers…</button></div>
+<p id="shareStatus" class="note" role="status" aria-live="polite"></p>
+<p class="note">Une seule personne adulte inventée. Aucun fichier réel n’est importé. Aucun média ni description n’est envoyé à un serveur par le code du laboratoire.</p>
+</div></section>
+</div>
+<section class="panel" style="margin-top:14px"><div class="panelpad">
+<h2>Ordre des gestes</h2><ol id="steps" aria-label="Chronologie du scénario"></ol>
+<ul id="limits" aria-label="Limitations et alertes"></ul>
+</div></section>
+<section class="panel" style="margin-top:14px" aria-label="Diagnostic iPhone">
+<div class="panelpad">
+<h2>Vérifier la fluidité sur mon appareil</h2>
+<p class="note">Une fois la scène créée, mesurez 90 images de son animation dans ce navigateur. Le diagnostic ne transmet ni votre description, ni photo, ni vidéo, ni identité. Le partage natif ouvre la feuille iOS uniquement après un appui ; vous choisissez vous-même la destination. Aucun fichier n’est partagé automatiquement. Les FPS sont indicatifs ; la mémoire, la batterie et la température ne sont pas mesurées.</p>
+<button type="button" id="runDiagnostic" disabled>Tester la fluidité de la scène</button>
+<p id="diagnosticStatus" role="status" aria-live="polite" class="note">Aucun diagnostic lancé. Les résultats restent sur cet appareil.</p>
+<div class="file-actions"><a id="saveDiagnostic" hidden download="retoucheproai-diagnostic-v10.json">Télécharger le diagnostic JSON</a>
+<button id="shareDiagnostic" type="button" hidden>Partager le diagnostic…</button></div>
+<p class="note">Pour une validation sur iPhone physique : ouvrir le prototype dans Safari via HTTPS, générer la scène, tester portrait/paysage, lecture, retour de l'arrière-plan, export dans Fichiers, puis exécuter le diagnostic. Un test WebKit sur Linux ne vaut pas certification iOS.</p>
+</div>
+</section>
+<footer>Prototype expérimental distinct du site public. Doigts animés et distance radiale à une surface sphéroïdale estimée, mais aucune collision ou force de préhension démontrée ; posture assise et contact lèvres encore simplifiés, bouche animée sans voix. La prévisualisation ne constitue pas une preuve de rendu cinématographique. Aucune publication ou entraînement sur des personnes réelles.</footer>
+</main><script type="module" src="./film-ui-v10.mjs"></script></body>
+</html>
