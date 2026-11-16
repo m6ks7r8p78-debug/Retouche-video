@@ -31,7 +31,7 @@ function appendPalmBridge(args,generator){
   const left=PATH[i],right=PATH[i+1],dir=minus(right,left);
   const node={name:'film_liaison_poignet_paume_'+i,
    translation:scaled(plus(left,right),.5),rotation:alignUp(dir),
-   scale:[RADII[i],norm(dir)*.68,RADII[i]],mesh:0,
+   scale:[RADII[i],norm(dir)*.88,RADII[i]],mesh:0,
    extras:{materialIndex:palm.extras?.materialIndex??0}};
   const index=nodes.push(node)-1;
   (nodes[wrist].children??=[]).push(index);
