@@ -78,6 +78,87 @@ manifest.push({path:motionFixture,bytes:motionBytes.length,
  sha256:crypto.createHash("sha256").update(motionBytes).digest("hex"),
  origin:"ffmpeg-synthetic-only"});
 
+// Autotest matériel HEVC 1/1/6 sur Safari : huit aplats complètement
+// synthétiques. Les références sont les pixels RGB effectivement décodés
+// par FFmpeg, PAS les valeurs théoriques avant compression.
+const patchW=384,patchH=216,patchFrames=15,patches=[
+ {id:"black",rgb:[18,16,20]},{id:"shadow",rgb:[49,46,51]},
+ {id:"light-skin",rgb:[210,166,142]},{id:"white",rgb:[250,250,247]},
+ {id:"blue-shadow",rgb:[31,36,48]},{id:"skin-shadow",rgb:[91,67,61]},
+ {id:"red",rgb:[221,64,45]},{id:"highlight",rgb:[242,231,218]}
+];
+const patchRaw=path.join(out,".nova-test-601-patches-rgb.tmp");
+const patchVideo="experiences/nova-test-601-patches.mov";
+const patchFile=path.join(out,patchVideo);
+const rgb=new Uint8Array(patchW*patchH*3*patchFrames);
+for(let fr=0;fr<patchFrames;fr++)for(let y=0;y<patchH;y++)for(let x=0;x<patchW;x++){
+ const p=patches[Math.floor(y/(patchH/2))*4+Math.floor(x/(patchW/4))].rgb;
+ const k=((fr*patchH+y)*patchW+x)*3;
+ rgb[k]=p[0];rgb[k+1]=p[1];rgb[k+2]=p[2];
+}
+await fs.writeFile(patchRaw,rgb);
+try{
+ await execFileAsync("ffmpeg",[
+  "-hide_banner","-loglevel","error","-nostdin",
+  "-f","rawvideo","-pix_fmt","rgb24","-s",patchW+"x"+patchH,
+  "-r","15","-i",patchRaw,
+  "-f","lavfi","-i","sine=frequency=660:sample_rate=48000:duration=1",
+  "-map","0:v:0","-map","1:a:0",
+  "-vf","scale=in_range=full:out_range=limited:out_color_matrix=bt601,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=smpte170m",
+  "-frames:v",String(patchFrames),"-c:v","libx265","-preset","ultrafast",
+  "-threads","1",
+  "-x265-params","pools=none:frame-threads=1:log-level=error:bframes=0:keyint=15:colorprim=bt709:transfer=bt709:colormatrix=smpte170m:range=limited",
+  "-tag:v","hvc1","-pix_fmt","yuv420p",
+  "-color_primaries","bt709","-color_trc","bt709","-colorspace","smpte170m",
+  "-c:a","aac","-b:a","16k","-ac","1",
+  "-movflags","+write_colr","-f","mov","-y",patchFile
+ ],{timeout:60000});
+}finally{await fs.rm(patchRaw,{force:true})}
+const {stdout:patchProbe}=await execFileAsync("ffprobe",[
+ "-v","error","-show_entries","stream=codec_name,codec_tag_string,width,height,color_primaries,color_transfer,color_space,nb_frames",
+ "-of","json",patchFile
+],{timeout:10000});
+const patchStreams=JSON.parse(patchProbe).streams||[];
+if(!patchStreams.some(s=>s.codec_name==="hevc"&&s.codec_tag_string==="hvc1"&&
+ s.width===patchW&&s.height===patchH&&s.color_primaries==="bt709"&&
+ s.color_transfer==="bt709"&&s.color_space==="smpte170m"&&
+ Number(s.nb_frames)===patchFrames)||!patchStreams.some(s=>s.codec_name==="aac"))
+ throw Error("Mire HEVC synthétique non conforme P/T/M=1/1/6 + AAC");
+const patchBytes=await fs.readFile(patchFile);
+if(patchBytes.length<1500||patchBytes.length>220000)
+ throw Error("Mire HEVC 1/1/6 synthétique hors budget");
+const {stdout:patchRgb}=await execFileAsync("ffmpeg",[
+ "-hide_banner","-loglevel","error","-nostdin","-i",patchFile,
+ "-map","0:v:0","-frames:v","1","-vf","format=rgb24",
+ "-f","rawvideo","pipe:1"
+],{encoding:"buffer",maxBuffer:patchW*patchH*3+8192,timeout:30000});
+if(patchRgb.length!==patchW*patchH*3)
+ throw Error("Référence RGB synthétique incomplète");
+const patchReference=patches.map((p,i)=>{
+ const col=i%4,row=Math.floor(i/4);
+ const xx=Math.floor((col+.5)*patchW/4),yy=Math.floor((row+.5)*patchH/2);
+ const sums=[0,0,0];let count=0;
+ for(let y=yy-7;y<=yy+7;y++)for(let x=xx-7;x<=xx+7;x++){
+  const k=(y*patchW+x)*3;for(let c=0;c<3;c++)sums[c]+=patchRgb[k+c];
+  count++;
+ }
+ return {id:p.id,rgb:sums.map(v=>Number((v/count).toFixed(3)))};
+});
+const patchReferencePath="experiences/nova-test-601-reference.json";
+const patchReferenceData=JSON.stringify({
+ schema:"retoucheproai.nova.synthetic-hevc-601-patches.v1",
+ origin:"ffmpeg-synthetic-only",input:"hevc-hvc1-mov",
+ primaries:1,transfer:1,matrix:6,width:patchW,height:patchH,
+ frames:patchFrames,patches:patchReference
+},null,2)+"\n";
+await fs.writeFile(path.join(out,patchReferencePath),patchReferenceData);
+for(const [rel,bytes] of [[patchVideo,patchBytes],
+ [patchReferencePath,Buffer.from(patchReferenceData)]]){
+ manifest.push({path:rel,bytes:bytes.length,
+  sha256:crypto.createHash("sha256").update(bytes).digest("hex"),
+  origin:"ffmpeg-synthetic-only"});
+}
+
 const html=await fs.readFile(path.join(out,"experiences/nova.html"),"utf8");
 const scripts=[...html.matchAll(/<script\s+src="([^"]+)"/g)].map(x=>x[1]);
 // Politique de sécurité d'un site statique isolé : hachage exact du seul
