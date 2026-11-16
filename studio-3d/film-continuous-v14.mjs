@@ -2,7 +2,6 @@
  * Animation rigide attachée au poignet, pas de déformation cutanée ou de
  * skinning biomécanique. Audit des triangles et des poses GLB finales.
  */
-import generatorDefault from './generateur.js';
 import {buildSyntheticFilmSceneV12,refinedPalm,ellipsoid,signedRadialGap} from './film-volume-v12.mjs';
 import {PATH} from './film-bridge-v13.mjs';
 import {readSyntheticGLB,sampleSyntheticPose} from './film-viewer-v03.mjs';
@@ -179,7 +178,7 @@ function auditContinuousWrist(glb,timeline,{sampleHz=12}={}){
  if(maxDriftM>.0001)throw Error('Maillage continu ne suit plus le poignet.');
  return report;
 }
-function buildSyntheticFilmSceneV14(request,generator=generatorDefault){
+function buildSyntheticFilmSceneV14(request,generator){
  const out=buildSyntheticFilmSceneV12(request,generator,{
   decorateModel:args=>addContinuousWrist(args,generator)
  });
