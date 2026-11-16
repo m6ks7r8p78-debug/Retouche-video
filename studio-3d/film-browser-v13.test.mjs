@@ -85,6 +85,22 @@ try{
  assert.equal(initial.equals(closeup),false,'Le mode inspection doit cadrer réellement la main.');
  await mkdir('test-results',{recursive:true});
  await writeFile('test-results/film-studio-v13-chromium-hand-closeup.png',closeup);
+ const focusedBounds=await page.locator('#view').boundingBox();
+ const centerX=focusedBounds.x+focusedBounds.width*.5;
+ const centerY=focusedBounds.y+focusedBounds.height*.5;
+ await page.mouse.move(centerX,centerY);
+ await page.mouse.down();
+ await page.mouse.move(centerX+130,centerY,{steps:8});
+ await page.mouse.up();
+ const wristProfile=await page.locator('#view').screenshot();
+ assert.equal(wristProfile.equals(closeup),false,'Le cadrage latéral doit dévoiler une autre vue du raccord.');
+ await writeFile('test-results/film-studio-v13-chromium-wrist-profile.png',wristProfile);
+ // Restituer l'orientation avant la vérification temporelle existante.
+ await page.mouse.move(centerX+130,centerY);
+ await page.mouse.down();
+ await page.mouse.move(centerX,centerY,{steps:8});
+ await page.mouse.up();
+
  await page.locator('#seek').evaluate(input=>{
   input.value='640';input.dispatchEvent(new Event('input',{bubbles:true}));
  });
