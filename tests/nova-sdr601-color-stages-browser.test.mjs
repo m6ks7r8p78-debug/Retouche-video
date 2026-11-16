@@ -13,16 +13,18 @@ import {promisify} from "node:util";
 import {fileURLToPath} from "node:url";
 import {chromium} from "playwright";
 const exec=promisify(execFile),root=path.resolve(fileURLToPath(new URL("../",import.meta.url)));
-const W=384,H=216,FPS=15;
+const W=512,H=256,FPS=15;
+// Deux tuiles de 256px : à gauche, des ombres éligibles à la restauration ;
+ // à droite, teintes peau et reflets déjà lumineux à ne PAS modifier.
 const palette=[
  {name:"noir",rgb:[18,16,20]},
  {name:"ombre",rgb:[49,46,51]},
- {name:"gris",rgb:[103,103,103]},
- {name:"peau-ombre",rgb:[136,94,80]},
  {name:"peau-claire",rgb:[210,166,142]},
+ {name:"blanc",rgb:[250,250,247]},
+ {name:"bleu-sombre",rgb:[31,36,48]},
+ {name:"peau-ombre",rgb:[91,67,61]},
  {name:"rouge",rgb:[221,64,45]},
- {name:"reflet",rgb:[242,231,218]},
- {name:"blanc",rgb:[250,250,247]}
+ {name:"reflet",rgb:[242,231,218]}
 ];
 const mean=(data,index)=>{
  const col=index%4,row=Math.floor(index/4),x=Math.floor((col+.5)*W/4),
@@ -183,6 +185,23 @@ test("NOVA 1/1/6 : tracer chaque étape sur huit tons et couleurs sans images ut
    }
    assert.ok(["source-matrix-audited","native-display-only-not-source-certified"]
     .includes(r.meta.colorFidelity));
+  }
+  // Cette fois la première tuile est réellement assez sombre pour
+  // déclencher la restauration ; la seconde est laissée intacte.
+  const untouched=numbers.find(x=>x.mode==="untouched");
+  const mosaic=numbers.find(x=>x.mode==="mosaic");
+  assert.ok(mosaic.meta.modifiedFrames>0,
+   "Expected actual local shadow improvement in dark synthetic tile");
+  assert.ok(mosaic.canvasToMosaic>0,
+   "The benchmark must measure a REAL change, not two no-op exports");
+  // La hausse de code sombre doit rester locale et la référence vidéo
+  // témoin sans retouche ne doit pas être contaminée par NOVA_ZONES.
+  assert.ok(mosaic.byPatch[0].restored[0]>mosaic.byPatch[0].canvas[0]);
+  assert.equal(untouched.canvasToMosaic,0);
+  for(const i of [2,3,6,7]){
+   const p=mosaic.byPatch[i];
+   assert.deepEqual(p.restored,p.canvas,
+    "Already-bright patch must stay intact before video encoding: "+p.patch);
   }
   // Ne pas inventer de seuil de fidélité avec une matrice 601 -> 709 :
   // les valeurs publiées concernent UNIQUEMENT les patchs synthétiques.
