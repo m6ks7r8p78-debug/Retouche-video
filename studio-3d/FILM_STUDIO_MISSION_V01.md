@@ -326,3 +326,27 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - La fermeture topologique d'un tube ne démontre ni une peau déformable sur plusieurs articulations, ni une absence exhaustive de collision avec tous les autres maillages. Le contrôle de tasse repose sur des sommets et centroïdes et une distance radiale approximative.
 - Aucun lip-sync, son, film MP4, photoréalisme, force de préhension, moteur physique ou test physique Safari iPhone. Les 157 médias privés ne sont ni intégrés ni publiés.
 - La PR #69 reste en brouillon, non fusionnée ; aucun déploiement vers retoucheproai.com.
+
+
+## Film Studio v0.15 — flexion animée à deux zones de la manchette (16 novembre 2026)
+
+### Livrables codés
+- L'encodeur GLB generateur.js a désormais une prise en charge **bornée** de deux cibles de morphing glTF (POSITION) sur les maillages personnalisés, avec un canal d'animation glTF « weights » encodé au format SCALAR par image-clé. Les modèles antérieurs sans cibles morph restent inchangés.
+- film-viewer-v03.mjs valide ces canaux et échantillonne correctement les deux poids de déformation dans la pose animée. film-webgl-v04.mjs lit les deltas des cibles glTF, mélange les positions des sommets en mémoire puis actualise le tampon de sommets en WebGL2. Ce n'est pas du skinning par squelette multi-os.
+- film-morph-v15.mjs utilise la **même surface fermée unique** de la v0.14 : deux zones longitudinales distinctes reçoivent des variations de sommets, avec des déformations nulles aux extrémités pour conserver les jonctions de la manchette. Les poids évoluent progressivement au moment de prendre, boire et reposer la tasse.
+- L'audit auditMorphWrist inspecte les **vraies données GLB exportées**, contrôle le nombre de cibles morph et le canal weights, les sommets modifiés, l'absence d'un saut important dans les poids, les données de surface finies et la pénétration radiale approximative de la manchette déformée dans le corps de tasse. Le contrôle utilise **30 échantillons temporels/seconde**, pour mieux mesurer les transitions rapides sans élargir les seuils.
+- film-morph-v15.test.mjs ajoute **neuf tests** (zones indépendantes, extrémités conservées, animation SCALAR, sommets modifiés, contrôle de contact approximatif, avatar masculin, non-régression v0.14, refus d'une référence personnelle et données corrompues). Le total de la suite Node passe à **109 tests**.
+- film-studio-v15.html / film-ui-v15.mjs / film-share-v15.mjs gardent une seule action principale et le gros plan de la main. Les sorties sont un GLB animé et un diagnostic local facultatif. Le paquet statique indépendant de **20 fichiers** est préparé pour les tests HTTPS iPhone, pas déployé.
+
+### Vérifications
+- GitHub Actions **43845037220** (révision c6d299cc5e8ef73da60d156825bf0ec253c20f97) : **109/109 tests Node réussis**, Chromium WebGL2, WebKit Linux en rendu WebGL2 et avec repli Canvas 2D, et paquet iPhone isolé — **4/4 jobs verts**.
+- Une première exécution a signalé une détection trop sévère de saut de poids liée à un échantillonnage de seulement 15 Hz. Le contrôle est passé à 30 Hz **sans augmenter** le seuil de continuité et la suite est devenue verte.
+- Le test Chromium lit le **vrai GLB téléchargé**, vérifie deux cibles morph et une piste de poids. Chromium affiche 14 947 pixels de premier plan. WebKit affiche 14 741 pixels dans le rendu WebGL2, 134 156 dans le secours Canvas 2D, et aucune erreur JavaScript dans les scénarios automatisés.
+- Les captures de face et de profil de la v0.15 ont été inspectées : personnage, tasse, main et raccord visibles. La nouvelle flexion est **discrète à l'œil**, même si les positions des sommets changent réellement ; aucune preuve de mouvement anatomique naturel.
+- Les médias de ces tests sont **entièrement synthétiques**, sans les 157 vidéos personnelles.
+
+### Limites à préserver
+- Les morph targets modifient les sommets de façon paramétrique. Elles ne sont **pas** un skinning humain à plusieurs os, ne simulent pas un contact physique, une force de prise, le frottement, le poids de la tasse ou des collisions exactes entre triangles.
+- Le secours Canvas 2D affiche une **projection approximative** du maillage ; il ne rend pas visuellement chaque modification de sommet morph comme le moteur WebGL2.
+- Le rendu des normales du maillage est encore simplifié pendant la déformation : le relief et l'éclairage doivent être améliorés avant toute prétention de rendu naturel.
+- Aucun photoréalisme, aucune voix ou lip-sync, aucun film MP4, aucun test physique Safari iPhone et aucun déploiement de retoucheproai.com. La PR #69 reste en brouillon.
