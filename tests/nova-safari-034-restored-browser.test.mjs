@@ -57,7 +57,7 @@ test("NOVA 0.36 : vrai H264/AAC SMPTE170M/BT601 + fallback Safari 0.34, 15 image
    if(!["GET","HEAD"].includes(r.method()))upload.push(r.url());
   });
   await page.goto(base+"/experiences/nova.html");
-  assert.match(await page.locator("#novaHdFrameAuditBuild").textContent(),/NOVA HD 0\.36/);
+  assert.match(await page.locator("#novaHdFrameAuditBuild").textContent(),/NOVA HD 0\.37/);
   assert.equal(await page.locator("#pilotVideo").isVisible(),false,
    "export control intentionally appears only after video import");
 
