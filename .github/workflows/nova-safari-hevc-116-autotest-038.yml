@@ -1,0 +1,94 @@
+name: NOVA Safari HEVC 1-1-6 synthetic color autotest iPhone 0.38
+on:
+  push:
+    branches:
+      - chatgpt-nova-safari-hevc-116-patch-autotest-v1
+  pull_request:
+    branches:
+      - chatgpt-nova-sdr601-stage-color-trace-v1
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-safari-hevc-116-autotest-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Synthetic FFmpeg dependency
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Syntaxe et tests couleur sans médias privés
+        run: |
+          node --check tests/nova-sdr601-color-stages-browser.test.mjs
+          node --check tests/nova-hevc-601-safari-browser.test.mjs
+          node --check experiences/nova-hevc-601-patches.js
+          node --check experiences/nova-hevc-601-patches-ui.js
+          node --check outils/build-nova-iphone-preview.mjs
+          node --check experiences/nova-native-hd.js
+          node --check experiences/nova-hd-color.js
+          node --check experiences/nova-zones.js
+          node --test tests/nova-natural-highlights.test.mjs tests/nova-hd-color.test.mjs tests/nova-native-hd.test.mjs tests/nova-iphone-preview.test.mjs tests/nova-hevc-601-patches.test.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Playwright Chromium
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: No-op and zones 1/1/6 real MP4 comparison with per-stage RGB readings
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test --test-concurrency=1 tests/nova-hevc-601-safari-browser.test.mjs tests/nova-sdr601-color-stages-browser.test.mjs tests/nova-hd-color-ramp-browser.test.mjs tests/nova-safari-034-restored-browser.test.mjs
+  manual-zip:
+    needs:
+      - unit
+      - browser
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Synthetic FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Private-free laboratory static ZIP
+        run: |
+          node outils/build-nova-iphone-preview.mjs
+          test -f dist/nova-iphone-preview/experiences/nova-test-601-patches.mov
+          test -f dist/nova-iphone-preview/experiences/nova-test-601-reference.json
+          test -f dist/nova-iphone-preview/experiences/nova-hevc-601-patches.js
+          test -f dist/nova-iphone-preview/experiences/nova-hevc-601-patches-ui.js
+          grep -q 'Tester la couleur HEVC 1/1/6 sur cet iPhone' dist/nova-iphone-preview/experiences/nova.html
+          node -e 'const r=require("./dist/nova-iphone-preview/asset-manifest.json");const media=r.files.filter(x=>[".mov",".mp4",".png",".jpg",".jpeg"].some(ext=>x.path.toLowerCase().endsWith(ext)));if(r.publication!=="none"||r.privateMediaIncluded!==false||r.version!=="0.38"||media.length!==3||!media.every(x=>x.origin==="ffmpeg-synthetic-only"))process.exit(1)'
+          cd dist/nova-iphone-preview
+          zip -q -X -r ../../NOVA_iPhone_Safari_HEVC_116_Couleurs_038.zip .
+          cd ../..
+          unzip -t NOVA_iPhone_Safari_HEVC_116_Couleurs_038.zip > /dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-Safari-HEVC-116-autotest-038-manuel
+          path: NOVA_iPhone_Safari_HEVC_116_Couleurs_038.zip
+          retention-days: 7
+          if-no-files-found: error

@@ -14,7 +14,7 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   await run(process.execPath,[path.join(root,"outils/build-nova-iphone-preview.mjs"),dir],{timeout:30000});
   const m=JSON.parse(await fs.readFile(path.join(dir,"asset-manifest.json"),"utf8"));
   assert.equal(m.publication,"none");
-  assert.equal(m.version,"0.33");
+  assert.equal(m.version,"0.38");
   assert.equal(m.privateMediaIncluded,false);
   assert.ok(m.files.length>=20);
   const names=m.files.map(x=>x.path);
@@ -28,8 +28,8 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.ok(names.includes("experiences/vendor/hevc/wasm/hevc-decode.wasm"));
   assert.ok(names.includes("experiences/vendor/hevc/LICENSE.txt"));
   assert.deepEqual(names.filter(x=>/\.(mov|mp4|png|jpg|jpeg)$/i.test(x)),
-   ["experiences/nova-smallmotion-synthetic.mp4","experiences/nova-test-synthetic.mov"],
-   "seules les deux mires générées par FFmpeg sont acceptées");
+   ["experiences/nova-smallmotion-synthetic.mp4","experiences/nova-test-601-patches.mov","experiences/nova-test-synthetic.mov"],
+   "seules les trois mires générées par FFmpeg sont acceptées");
   const fixture=m.files.find(x=>x.path==="experiences/nova-test-synthetic.mov");
   assert.equal(fixture.origin,"ffmpeg-synthetic-only");
   assert.ok(fixture.bytes<100000);
@@ -49,6 +49,23 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   const ms=JSON.parse(motionProbe).streams||[];
   assert.ok(ms.some(x=>x.codec_name==="h264"&&x.width===160&&x.height===120&&
     x.pix_fmt==="yuv420p"));
+  const patch=m.files.find(x=>x.path==="experiences/nova-test-601-patches.mov");
+  assert.equal(patch.origin,"ffmpeg-synthetic-only");
+  assert.ok(patch.bytes<220000);
+  const {stdout:patchProbe}=await run("ffprobe",["-v","error",
+   "-show_entries","stream=codec_name,codec_tag_string,width,height,color_primaries,color_transfer,color_space,nb_frames",
+   "-of","json",path.join(dir,patch.path)],{timeout:10000});
+  const ps=JSON.parse(patchProbe).streams||[];
+  assert.ok(ps.some(v=>v.codec_name==="hevc"&&v.codec_tag_string==="hvc1"&&
+   v.width===384&&v.height===216&&v.color_primaries==="bt709"&&
+   v.color_transfer==="bt709"&&v.color_space==="smpte170m"&&Number(v.nb_frames)===15));
+  assert.ok(ps.some(v=>v.codec_name==="aac"));
+  const ref=JSON.parse(await fs.readFile(path.join(dir,
+   "experiences/nova-test-601-reference.json"),"utf8"));
+  assert.equal(ref.origin,"ffmpeg-synthetic-only");
+  assert.deepEqual([ref.primaries,ref.transfer,ref.matrix],[1,1,6]);
+  assert.equal(ref.patches.length,8);
+  assert.ok(ref.patches.every(p=>p.rgb.length===3&&p.rgb.every(Number.isFinite)));
   assert.equal(m.deployment,"manual-only-distinct-host");
   assert.equal(m.csp,"sha256-inline-allowlist");
   const headers=await fs.readFile(path.join(dir,"_headers"),"utf8");
@@ -80,6 +97,9 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   assert.match(html,/nova-smallmotion-bridge.js/);
   assert.ok(html.includes('src="./vendor/smallmotion/smallmotion-local.js"'));
   assert.match(html,/nova-iphone-report.js/);
+  assert.match(html,/nova-hevc-601-patches.js/);
+  assert.match(html,/nova-hevc-601-patches-ui.js/);
+  assert.ok(html.includes("Tester la couleur HEVC 1/1/6 sur cet iPhone"));
   assert.doesNotMatch(html,/<script src="https?:\/\//);
  }finally{await fs.rm(dir,{recursive:true,force:true})}
 });

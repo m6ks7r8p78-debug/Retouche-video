@@ -202,6 +202,16 @@ Conservez le son par défaut ; « sans son » reste un choix explicite.</p>
 <a id="iphoneBenchJson" hidden>Enregistrer le rapport JSON local</a>
 <a id="iphoneBenchMp4" hidden>Enregistrer le MP4 de validation</a>
 </details>
+<details class="sourceAdvanced" id="nova601ColorPanel">
+<summary>Couleurs HEVC Safari 1/1/6 — autotest sans vidéo personnelle</summary>
+<p>Une mire HEVC/AAC synthétique contenant huit couleurs connues est décodée
+localement. Nous mesurons les écarts de couleurs entre la référence FFmpeg et
+le Canvas de Safari, sans exporter de nouvelle vidéo et sans utiliser tes fichiers.
+L'autotest est volontaire ; tu décides si tu enregistres le rapport JSON.</p>
+<button type="button" class="secondary" id="nova601Run">Tester la couleur HEVC 1/1/6 sur cet iPhone</button>
+<div id="nova601Status" role="status" aria-live="polite">Prêt : aucune mesure n'a démarré. Le diagnostic ne quitte pas cet appareil.</div>
+<a id="nova601Json" hidden>Enregistrer le diagnostic couleurs Safari (JSON)</a>
+</details>
 <p id="modeReport" style="margin-top:12px">L'export vidéo et les moteurs neuronaux restent dans l'application principale ou le laboratoire de recherche.</p></section>
 </aside>
 </div>
@@ -433,6 +443,8 @@ async function sampleVideo(){
 <script src="nova-smallmotion-bridge.js"></script>
 <script src="nova-smallmotion-ui.js"></script>
 <script src="nova-hd-color.js"></script>
+<script src="nova-hevc-601-patches.js"></script>
+<script src="nova-hevc-601-patches-ui.js"></script>
 <script src="nova-native-hd.js"></script>
 <script src="nova-native-hd-ui.js"></script>
 <script src="nova-real-preflight.js"></script>
