@@ -47,6 +47,7 @@ function readSyntheticGLB(bytes){
     throw Error('Ce visualiseur n’accepte que les GLB synthétiques de notre laboratoire.');
  if(doc.nodes.some(n=>!vector(n.translation||[0,0,0],3)||
      !vector(n.scale||[1,1,1],3)||!vector(n.rotation||ID,4)||
+     (n.weights!==undefined&&(!vector(n.weights,2)||n.weights.some(x=>x<0||x>1)))||
      (n.children&&(!Array.isArray(n.children)||n.children.length>250))||
      (n.mesh!==undefined&&(!Number.isInteger(n.mesh)||n.mesh<0||n.mesh>=doc.meshes.length))))
     throw Error('Nœuds glTF invalides.');
@@ -75,12 +76,20 @@ function readSyntheticGLB(bytes){
       const sample=animation.samplers[channel.sampler];
       const node=channel.target?.node,path=channel.target?.path;
       if(!sample||!Number.isInteger(node)||node<0||node>=doc.nodes.length||
-         !['scale','rotation','translation'].includes(path)||sample.interpolation!=='LINEAR')
+         !['scale','rotation','translation','weights'].includes(path)||sample.interpolation!=='LINEAR')
         throw Error('Canal GLB non pris en charge.');
-      const times=readAccessor(sample.input).map(v=>v[0]),values=readAccessor(sample.output);
+      const times=readAccessor(sample.input).map(v=>v[0]);
+      const raw=readAccessor(sample.output);
+      const targets=path==='weights'?doc.meshes[doc.nodes[node].mesh]?.primitives?.[0]?.targets?.length:0;
+      if(path==='weights'&&(!Number.isInteger(targets)||targets<1||targets>2||
+         doc.accessors[sample.output].type!=='SCALAR'||raw.length!==times.length*targets))
+        throw Error('Cibles et poids morph incompatibles.');
+      const values=path==='weights'?times.map((_,i)=>
+         raw.slice(i*targets,(i+1)*targets).map(v=>v[0])):raw;
       if(times.length!==values.length||!times.length||times[0]<0||times.at(-1)>TMAX||
          times.some((v,i)=>!finite(v)||(i>0&&v<=times[i-1]))||
-         values.some(v=>v.length!==(path==='rotation'?4:3)))
+         values.some(v=>v.length!==(path==='rotation'?4:path==='weights'?targets:3)||
+           (path==='weights'&&v.some(x=>x<0||x>1))))
         throw Error('Temps ou valeurs des clés incohérents.');
       tracks.push({node,path,times,values});
    }
@@ -94,7 +103,8 @@ function sampleSyntheticPose(scene,time=0,clipName='film_scene_v02'){
  if(!clip)throw Error('Aucune animation dans ce GLB.');
  const t=clamp(Number.isFinite(time)?time:0,0,clip.duration);
  const local=doc.nodes.map(n=>({translation:(n.translation||[0,0,0]).slice(),
-  scale:(n.scale||[1,1,1]).slice(),rotation:(n.rotation||ID).slice()}));
+  scale:(n.scale||[1,1,1]).slice(),rotation:(n.rotation||ID).slice(),
+  weights:(n.weights||doc.meshes[n.mesh]?.weights||[]).slice()}));
  for(const track of clip.tracks){
    const {times,values,path,node}=track;
    let i=0;while(i<times.length-2&&times[i+1]<t)i++;
@@ -131,7 +141,8 @@ function sampleSyntheticPose(scene,time=0,clipName='film_scene_v02'){
      scale:[Math.hypot(matrix[0],matrix[1],matrix[2]),
        Math.hypot(matrix[4],matrix[5],matrix[6]),
        Math.hypot(matrix[8],matrix[9],matrix[10])],
-     rotation:qnorm(qmul(parent?.rotation||ID,n.rotation))
+     rotation:qnorm(qmul(parent?.rotation||ID,n.rotation)),
+     weights:n.weights.slice()
    };
    world[id]=transform;
    for(const child of doc.nodes[id].children||[])visit(child,transform,depth+1);
