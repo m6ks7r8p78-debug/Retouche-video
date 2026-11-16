@@ -201,7 +201,7 @@ create.addEventListener('click',()=>{
    if(previewAvailable)update();
    updateDiagnosticButton();
    status.textContent='GLB animé créé localement : '+output.animatedActions.length+
-     ' gestes, '+fmt(output.duration)+' s. Jonction poignet–paume : '+output.bridgeAudit.segments+' volumes, écart maximal estimé '+Math.round(output.bridgeAudit.maxProjectedSeamGapM*1000)+' mm. Paume réalignée ; chevauchement volumique paume–tasse estimé +
+     ' gestes, '+fmt(output.duration)+' s. Jonction poignet–paume : '+output.bridgeAudit.segments+' volumes, écart maximal estimé '+Math.round(output.bridgeAudit.maxProjectedSeamGapM*1000)+' mm. Paume réalignée ; chevauchement volumique paume–tasse estimé '+
      Math.round(output.volumeAudit.maxSampledPalmCupPenetrationM*1000)+' mm. Anse ajourée de '+output.handleAudit.handleSegmentCount+' segments. Proximité moyenne maximale doigt–anse '+
      Math.round(output.handleAudit.maxMeanFingertipHandleGapM*1000)+' mm (centres des doigts, sans preuve de collision). Gros plan main disponible. Distance radiale minimale doigt–surface de tasse '+
      Math.round(output.surfaceAudit.minRadialSurfaceGapM*1000)+' mm (estimation, pas un contact vérifié). Cinq doigts articulés ; écart assise '+
