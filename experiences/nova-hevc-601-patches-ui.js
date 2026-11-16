@@ -5,6 +5,8 @@
 "use strict";
 const $=x=>document.getElementById(x);
 const run=$("nova601Run"),status=$("nova601Status"),link=$("nova601Json");
+const panel=$("nova601ColorPanel");
+if(typeof location!=="undefined"&&location.hash==="#nova601ColorPanel"&&panel)panel.open=true;
 if(!run||!status||!link)return;
 let controller=null,url=null;
 function clear(){
