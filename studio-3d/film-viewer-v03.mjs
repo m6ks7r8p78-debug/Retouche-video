@@ -155,9 +155,9 @@ function projectedObjects(scene,pose,{width=480,height=360,yaw=.28,pitch=.10,
   const n=doc.nodes[i],w=pose.world[i];
   if(!w||n.mesh===undefined)continue;
   const [x,y,z]=w.translation;
-  const rx=x-focal[0],ry=y-focal[1],rz=z-focal[2];
-  const cx=cy*rx+sy*rz,cz=-sy*rx+cy*rz;
-  const yy=cp*ry-sp*cz,zz=sp*ry+cp*cz;
+  const dx=x-focal[0],dy=y-focal[1],dz=z-focal[2];
+  const cx=cy*dx+sy*dz,cz=-sy*dx+cy*dz;
+  const yy=cp*dy-sp*cz,zz=sp*dy+cp*cz;
   const zoom=1.05/(1.0+Math.max(-.8,zz)/5);
   const size=Math.min(width,height)*.57*zoom*magnification;
   const rx=Math.max(.05,Math.abs(w.scale[0])*size),ry=Math.max(.05,Math.abs(w.scale[1])*size);
