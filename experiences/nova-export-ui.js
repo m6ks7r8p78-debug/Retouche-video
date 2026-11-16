@@ -126,7 +126,7 @@ start.addEventListener("click",async()=>{
     hd.sourceFps+" i/s d'origine ; "+(hd.audioMode==="aac-copy"?
      "AAC original conservé sans réencodage": "AAC-LC réencodé localement (contrôler la synchronisation)")+". "+
     hd.modifiedFrames+" images avec corrections locales de lumière. "+
-    (hd.colorWarning?(" ATTENTION COULEURS : "+hd.colorWarning):" Couleurs vérifiées par NOVA.")+
+    (hd.colorWarning?(" ATTENTION COULEURS : "+hd.colorWarning):" Profil BT.709 du MP4 contrôlé ; fidélité à la source à vérifier.")+
     " Vérifiez image et son. Pas de reconstruction neuronale.");
    return;
   }
