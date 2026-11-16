@@ -35,8 +35,8 @@ test('aucune discontinuité du raccord ni pénétration grossière dans la tasse
  assert.ok(a.poses>=20);
  assert.ok(a.maxProjectedSeamGapM<=.003);
  assert.ok(a.maxSampledCupPenetrationM<=.004);
- assert.ok(a.minSampledForearmBridgeOverlapM>=.002);
- assert.ok(a.minSampledBridgePalmOverlapM>=.002);
+ assert.ok(a.minSampledForearmBridgeOverlapM>=.03);
+ assert.ok(a.minSampledBridgePalmOverlapM>=.03);
  assert.equal(out.volumeAudit.maxSampledPalmCupPenetrationM,0);
  assert.ok(out.handleAudit.nearHandleFraction>=.95);
 });
