@@ -203,8 +203,18 @@ test("NOVA 1/1/6 : tracer chaque étape sur huit tons et couleurs sans images ut
    assert.deepEqual(p.restored,p.canvas,
     "Already-bright patch must stay intact before video encoding: "+p.patch);
   }
-  // Ne pas inventer de seuil de fidélité avec une matrice 601 -> 709 :
-  // les valeurs publiées concernent UNIQUEMENT les patchs synthétiques.
+  // Seuil de NON-RÉGRESSION sur nos huit patches synthétiques :
+  // le gamma ajouté par erreur en HD entraînait jusqu'à 15/255 sur
+  // des ombres. Quatre unités moyennes laissent de la marge au codec,
+  // sans prétendre mesurer la fidélité iPhone/WebKit d'une vraie source.
+  assert.ok(untouched.sourceToCanvas<=4,
+   "Regression synthetic 1/1/6 decoder->Canvas: "+untouched.sourceToCanvas);
+  assert.ok(untouched.stageToFinal<=4,
+   "Regression synthetic Canvas->MP4: "+untouched.stageToFinal);
+  assert.ok(untouched.sourceToFinal<=4,
+   "Regression synthetic 1/1/6 source->MP4: "+untouched.sourceToFinal);
+  // Ne pas inventer de seuil de fidélité Safari réel avec une matrice
+  // 601 -> 709 : ces mesures concernent UNIQUEMENT les patches FFmpeg.
   console.log("NOVA_601_STAGE_TRACE "+JSON.stringify(numbers));
   assert.deepEqual(pageErrors,[]);assert.deepEqual(external,[]);
   assert.deepEqual(uploads,[]);
