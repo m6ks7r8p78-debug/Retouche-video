@@ -248,7 +248,34 @@ function encodeGLB(model){
  function accessor(a,ctype,type,target){const view=write(new Uint8Array(a.buffer,a.byteOffset,a.byteLength),target);const count=a.length/({SCALAR:1,VEC3:3,VEC4:4}[type]);const obj={bufferView:view,componentType:ctype,count,type};if(type==='VEC3'){const mins=[Infinity,Infinity,Infinity],maxs=[-Infinity,-Infinity,-Infinity];for(let i=0;i<a.length;i+=3)for(let j=0;j<3;j++){mins[j]=Math.min(mins[j],a[i+j]);maxs[j]=Math.max(maxs[j],a[i+j]);}obj.min=mins;obj.max=maxs;}if(type==='SCALAR'&&count>0){obj.min=[Math.min(...a)];obj.max=[Math.max(...a)];}accessors.push(obj);return accessors.length-1;}
  const ap=accessor(new Float32Array(g.pos),5126,'VEC3',34962),an=accessor(new Float32Array(g.norm),5126,'VEC3',34962),ai=accessor(new Uint16Array(g.ind),5123,'SCALAR',34963);
  const meshes=model.materials.map((m,i)=>({name:'matiere_'+m.name,primitives:[{attributes:{POSITION:ap,NORMAL:an},indices:ai,material:i}]}));
- const nodes=model.nodes.map(n=>{let c={name:n.name,translation:n.translation.slice()};if(n.scale)c.scale=n.scale.slice();if(n.children)c.children=n.children.slice();if(n.mesh!==undefined)c.mesh=n.extras?.materialIndex??0;return c;});
+ // Maillages personnalisés entièrement locaux (laboratoire Film Studio).
+ // Le nombre de surfaces et la longueur des tampons sont bornés pour iPhone.
+ const custom=model.customMeshes||[];
+ if(!Array.isArray(custom)||custom.length>8)throw Error('Trop de maillages personnalisés.');
+ for(let i=0;i<custom.length;i++){
+  const mesh=custom[i],positions=mesh?.positions,normals=mesh?.normals,indices=mesh?.indices;
+  if(!Array.isArray(positions)||!Array.isArray(normals)||!Array.isArray(indices)||
+     positions.length<9||positions.length>12288||positions.length%3!==0||
+     normals.length!==positions.length||indices.length<3||indices.length>24000||
+     indices.length%3!==0||positions.some(x=>!Number.isFinite(x))||
+     normals.some(x=>!Number.isFinite(x))||
+     indices.some(x=>!Number.isInteger(x)||x<0||x>=positions.length/3)||
+     !Number.isInteger(mesh.materialIndex)||mesh.materialIndex<0||
+     mesh.materialIndex>=model.materials.length)
+    throw Error('Maillage personnalisé GLB invalide.');
+  const pp=accessor(new Float32Array(positions),5126,'VEC3',34962),
+    nn=accessor(new Float32Array(normals),5126,'VEC3',34962),
+    ii=accessor(new Uint16Array(indices),5123,'SCALAR',34963);
+  meshes.push({name:mesh.name||'maillage_synthetique_'+i,
+   primitives:[{attributes:{POSITION:pp,NORMAL:nn},indices:ii,material:mesh.materialIndex,mode:4}]});
+ }
+ const nodes=model.nodes.map(n=>{let c={name:n.name,translation:n.translation.slice()};if(n.scale)c.scale=n.scale.slice();if(n.children)c.children=n.children.slice();if(n.mesh!==undefined){
+  if(n.customMeshIndex!==undefined){
+   if(!Number.isInteger(n.customMeshIndex)||n.customMeshIndex<0||
+      n.customMeshIndex>=custom.length)throw Error('Référence de maillage personnalisé invalide.');
+   c.mesh=model.materials.length+n.customMeshIndex;
+  }else c.mesh=n.extras?.materialIndex??0;
+ }return c;});
  const animations=[];
  for(const clip of model.animations){const samplers=[],channels=[];
   for(const motion of clip.channels){let ti=accessor(new Float32Array(motion.times),5126,'SCALAR');let path=motion.path||'rotation';let values=motion.values||motion.rotation;let data=accessor(new Float32Array(values.flat()),5126,path==='rotation'?'VEC4':'VEC3');let si=samplers.length;samplers.push({input:ti,output:data,interpolation:'LINEAR'});channels.push({sampler:si,target:{node:motion.node,path}});}
