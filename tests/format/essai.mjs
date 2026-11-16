@@ -5,7 +5,7 @@ import { spawn } from "child_process"; import fs from "fs"; import path from "pa
 const HERE = path.dirname(fileURLToPath(import.meta.url)), TESTS = path.join(HERE, "..");
 export async function navigateur(port = 8791, moteur = "chromium") {
   const pw = await import(process.env.PW || "playwright"), srv = spawn(process.execPath, [path.join(TESTS, "serveur.mjs")], { env: { ...process.env, PORT: port }, stdio: "ignore" }); await new Promise(r => setTimeout(r, 600));
-  const b = await pw[moteur].launch(moteur === "chromium" ? { args: ["--enable-unsafe-webgpu", "--use-angle=swiftshader", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] } : {});
+  const b = await pw[moteur].launch(moteur === "chromium" ? { ...(process.env.CHROME ? { executablePath: process.env.CHROME } : {}), args: ["--enable-unsafe-webgpu", "--use-angle=swiftshader", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] } : {});
   const p = await (await b.newContext({ viewport: { width: 430, height: 932 } })).newPage(), errs = []; p.on("pageerror", e => errs.push(e.message)); p.on("dialog", d => /diagnostic/i.test(d.message()) ? d.dismiss() : d.accept());
   const MG = path.join(TESTS, "medias", "migan.onnx"); if (fs.existsSync(MG)) { const body = fs.readFileSync(MG); await p.route(/huggingface\.co\/.*migan_pipeline_v2\.onnx/, r => r.fulfill({ status: 200, body, headers: { "content-type": "application/octet-stream", "access-control-allow-origin": "*" } })) }
   await p.goto("http://localhost:" + port + "/index.html"); await p.waitForFunction(() => window.MODELS && window.VISAGE && window.chargerModule);

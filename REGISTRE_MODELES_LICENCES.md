@@ -3,6 +3,7 @@ Empreintes calculées sur les fichiers de l’archive. Licences : celles des fic
 
 | Fichier | Rôle | Licence déclarée | SHA-256 |
 |---|---|---|---|
+| Stable Diffusion XL Inpainting 0.1 (v8.4, téléchargé par le calcul Kaggle, jamais par le téléphone) : dépôt Hugging Face `diffusers/stable-diffusion-xl-1.0-inpainting-0.1` (variante fp16) + décodeur `madebyollin/sdxl-vae-fp16-fix` | Zéro perte : décor complet des côtés ajoutés | CreativeML Open RAIL++-M (usage commercial permis, avec les restrictions d'usage de la licence ; la fiche du modèle le présente comme destiné à la recherche) — vérifié sur la fiche du modèle le 16/11/2026 ; décodeur : MIT | non épinglée (dernière version du dépôt) |
 | SeedVR2 3B (v8.1, téléchargé par le calcul Kaggle, jamais par le téléphone) : `seedvr2_ema_3b_fp16.safetensors` + `ema_vae_fp16.safetensors`, dépôt Hugging Face `numz/SeedVR2_comfyUI` ; code `numz/ComfyUI-SeedVR2_VideoUpscaler` @ `4490bd1` | restauration vidéo « Cinéma » (essai) | Apache-2.0 (code et poids SeedVR2, ByteDance Seed ; CLI numz Apache-2.0) — vérifié à la source le 15/11/2026 | `2fd0e03a3dad24e07086750360727ca437de4ecd456f769856e960ae93e2b304` (DiT) · `20678548f420d98d26f11442d3528f8b8c94e57ee046ef93dbb7633da8612ca1` (VAE) — contrôlées par le registre du code au téléchargement |
 | `sr.bin` | super-résolution | Real-ESRGAN (BSD-3-Clause) | `96811c8c90fcc4c373706cb528508d63cdb8780a00a37a7da37c8894c72b8e46` |
 | `modeles/edgetam_encodeur.onnx` | sélection au toucher | EdgeTAM (Apache-2.0) | `ed068218eba96760fe02d04ce899c449660ac813a088d80ed7f42c8bb01e7cec` |

@@ -24,6 +24,14 @@
 - FAIT : non-régression (aucun échec nouveau par rapport à main v7.6 ; détail fiche F32).
 - FAIT : v8.0 publiée sur `main` le 14 nov. 2026 (point de restauration : branche `sauvegarde-v7.7`).
 
+## v8.4 « Zéro perte » (16 nov. 2026)
+- Mode `zero` (par défaut) : FMD.MODES.zero (z = 0 seulement), FMD.tailleZero (échelle 1), FMM.placementZero (position entière),
+  rendu sans fondu sur l'original (miroir du bord côté ajouté), FMQ.identiques / bilanZero (contrôle à l'export).
+- Décor complet : `serveur-ia/extension_kaggle.py` (SDXL Inpainting 0.1 + raccord couleur + Real-ESRGAN), `KG.etendre` (kaggle.js),
+  `etendreServeur` (format.js). Résultat renvoyé DANS info.json (le relais ne laisse passer que info.json et ia.mp4).
+- Tests : `node --test tests/format.test.mjs`, `python3 tests/extension_kaggle_test.py`, `node tests/format_zero.test.mjs`.
+- Reste : premier calcul réel sur Kaggle (qualité SDXL, durée), essai iPhone (encodeur 3414×1920, quantification fixe).
+
 ## Ensuite (par ordre d'intérêt mesuré)
 1. Intégrer LaMa (Apache-2.0) pour les côtés : mesuré nettement meilleur que MI-GAN (voir REGISTRE_MODELES_LICENCES.md).
 2. Vertical → horizontal « vrai » : génération lourde sur le serveur Kaggle gratuit.

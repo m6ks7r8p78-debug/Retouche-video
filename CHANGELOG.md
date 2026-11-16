@@ -1,5 +1,24 @@
 # Journal des versions
 
+## v8.4 (16 nov. 2026) — « Zéro perte » : changer de format sans perdre un seul pixel
+Demande du propriétaire : passer une vidéo verticale en horizontale (et l'inverse) sans AUCUNE perte — ni partie coupée, ni zoom, ni réduction.
+- **Nouveau mode « Zéro perte »** (par défaut dans Changer de format) : le recadrage et le zoom sont interdits ; la vidéo est posée
+  **à l'échelle 1, à une position entière** (copie pixel pour pixel) dans une sortie bâtie autour d'elle : 1080×1920 → **3414×1920**,
+  720×1280 → 2276×1280 (jamais réduite ; au-delà de 4096 px de côté, limite des encodeurs, la réduction est calculée et SIGNALÉE).
+- **Aucun pixel filmé n'est recouvert ni fondu** : le raccord se fait du côté ajouté seulement (bord de l'image reflété en miroir sur
+  quelques pixels, en fondu vers le décor).
+- **Contrôle à l'export** : toutes les ~12 images, l'image d'origine est relue DANS le rendu et comparée pixel par pixel à l'image seule ;
+  le bilan affiche le résultat (essai : 10 images, 2,3 millions de pixels, **0 différence**). Débit de fichier le plus haut
+  (et quantification fixe fine quand l'appareil la propose) pour réduire au minimum la perte due à la compression.
+- **Décor complet sur le serveur gratuit (Kaggle)** : avec un jeton Kaggle, les côtés ajoutés ne finissent plus en flou. Seuls les décors
+  de scène partent (images fixes : vrais pixels retrouvés grâce au mouvement de la caméra + trous), jamais la vidéo ; chaque trou est rempli
+  par **Stable Diffusion XL Inpainting 0.1** (Open RAIL++-M, usage commercial permis) fenêtre par fenêtre, couleurs recalées sur le réel,
+  puis agrandi par le Real-ESRGAN de l'app pour avoir la netteté du centre (`serveur-ia/extension_kaggle.py`, `KG.etendre`). Le décor est
+  calculé une fois par scène et suit la caméra (pas de scintillement). Visage apparu dans la zone inventée → retiré. Refus ou échec →
+  reconstruction du téléphone (portée MI-GAN) puis prolongement flou, l'image filmée restant entière.
+- Tests : `tests/format.test.mjs` 20/20 (4 nouveaux), `tests/extension_kaggle_test.py` 3/3, `tests/format_zero.test.mjs` 2/2 (Chromium,
+  vraie app, serveur Kaggle simulé). **Jamais exécuté sur une vraie carte Kaggle ni sur iPhone.**
+
 ## v8.3 (15 nov. 2026) — Fidélité d'abord : la vidéo n'est plus dénaturée, l'IA n'est utilisée que si elle aide vraiment
 Constat (capture du propriétaire, vidéo 640×360) : peau rougie, blancs brûlés, contours durs. Mesures :
 - **Réglage automatique** : trois décalages systématiques hérités de la v3.6 dénaturaient TOUTES les vidéos : saturation +17 %,

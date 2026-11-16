@@ -96,7 +96,14 @@ var FMQ = (() => {
     return { controles: C, ok: C.every(c => c.ok) };
   }
 
-  const api = { SEUILS, luminance, mesurer, centile, fluidite, bilan, psnr, fichier };
+  /* v8.4 Zéro perte : compare, pixel par pixel, l'image d'origine telle qu'elle est dans le rendu (a) et telle qu'elle est seule (b),
+     sur la même zone (RGBA de même taille). Renvoie { n, differents, ecartMax } : 0 différent = aucune perte dans l'image rendue. */
+  function identiques(a, b) { const n = Math.min(a.length, b.length) >> 2; let d = 0, m = 0;
+    for (let i = 0; i < n; i++) { const j = i * 4, e = Math.max(Math.abs(a[j] - b[j]), Math.abs(a[j + 1] - b[j + 1]), Math.abs(a[j + 2] - b[j + 2])); if (e) { d++; if (e > m) m = e } }
+    return { n, differents: d, ecartMax: m } }
+  /* bilan des contrôles Zéro perte d'un export : liste de identiques() */
+  function bilanZero(L) { let n = 0, d = 0, m = 0; for (const r of L) { n += r.n; d += r.differents; m = Math.max(m, r.ecartMax) } return { images: L.length, pixels: n, differents: d, ecartMax: m, ok: L.length > 0 && d === 0 } }
+  const api = { SEUILS, luminance, mesurer, centile, fluidite, bilan, psnr, fichier, identiques, bilanZero };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   return api;
 })();

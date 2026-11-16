@@ -26,7 +26,7 @@ await test("Le module n'est pas chargé au démarrage ; le bouton du studio l'ou
 
 let s1;
 await test("4:3 → 16:9, plan fixe, mode Auto : toute l'image gardée, côtés reconstruits, contrôles mesurés et passés", async () => {
-  await p.click('#fmt_fmts [data-f="16:9"]'); await p.click("#fmt_go"); await pret(); s1 = await etat(); const cv = await p.evaluate(() => { const c = document.querySelector("#fmt_cv"); return c.width / c.height }), fiche = await p.textContent("#fmt_fiche");
+  await p.click('#fmt_fmts [data-f="16:9"]'); await p.click('#fmt_modes [data-m="auto"]'); await p.click("#fmt_go"); await pret(); s1 = await etat(); const cv = await p.evaluate(() => { const c = document.querySelector("#fmt_cv"); return c.width / c.height }), fiche = await p.textContent("#fmt_fiche");
   return { ok: s1.pret && s1.plans[0].methode === "extension" && s1.plans[0].z === 0 && s1.qc[0].ok && Math.abs(cv - 16 / 9) < .01 && s1.parts[0].invente > .4 && /Raccord avec l’image/.test(fiche) && /inventé par le modèle/.test(fiche), info: JSON.stringify(s1.plans[0]) + " " + JSON.stringify(s1.parts[0]) + " zone " + JSON.stringify(s1.zone) } });
 
 let f1;

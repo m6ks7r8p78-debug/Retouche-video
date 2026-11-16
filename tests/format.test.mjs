@@ -159,3 +159,32 @@ test("FMQ.bilan : la correction proposée correspond au défaut mesuré ; contr�
   assert.ok(FMQ.fichier({ w: 1920, h: 1080, duree: 10, cadence: 30, son: true }, { w: 1920, h: 1080, duree: 10.03, son: true }).ok); assert.ok(!FMQ.fichier({ w: 1920, h: 1080, duree: 10, cadence: 30, son: true }, { w: 1920, h: 1080, duree: 8, son: true }).ok); assert.ok(!FMQ.fichier({ w: 1920, h: 1080, duree: 10, cadence: 30, son: true }, { w: 1280, h: 720, duree: 10, son: true }).ok);
   const a = new Uint8ClampedArray(64).fill(100), c = new Uint8ClampedArray(64).fill(102); assert.ok(Math.abs(FMQ.psnr(a, c, 4, { x0: 0, y0: 0, x1: 4, y1: 4 }) - 42.11) < .1);
 });
+
+/* ---------- v8.4 Zéro perte ---------- */
+test("Zéro perte : jamais de recadrage ni de zoom, même quand le recadrage coûterait moins", () => {
+  for (const [As, At] of [[9 / 16, 16 / 9], [16 / 9, 9 / 16], [4 / 3, 16 / 9], [1, 21 / 9]]) {
+    const sujet = piste(90, j => [.35, .2, .3, .6]), r = FMD.deciderScene(scene({ pistes: [sujet], classe: "complexe" }), As, At, { mode: "zero", generateur: "kaggle", methode: "recadrage" });
+    assert.equal(r.z, 0); assert.equal(r.vis, 1); assert.ok(r.zero); assert.notEqual(r.methode, "recadrage"); assert.notEqual(r.methode, "hybride");
+    assert.ok(r.candidats.every(c => c.z === 0)); assert.ok(/Zéro perte/.test(r.raisons.join(" ")));
+  }
+  assert.ok(FMD.deciderScene(scene(), 16 / 9, 16 / 9, { mode: "zero" }).zero, "même format : zéro perte aussi");
+});
+test("Zéro perte : taille de sortie à l'échelle 1 (jamais réduite), sinon réduction signalée", () => {
+  let t = FMD.tailleZero(1080, 1920, 16 / 9, 4096); assert.deepEqual([t.W, t.H, t.k, t.zero], [3414, 1920, 1, true]);
+  t = FMD.tailleZero(720, 1280, 16 / 9, 4096); assert.deepEqual([t.W, t.H, t.zero], [2276, 1280, true]);
+  t = FMD.tailleZero(1920, 1080, 9 / 16, 4096); assert.deepEqual([t.W, t.H, t.zero], [1920, 3414, true]);
+  t = FMD.tailleZero(641, 361, 16 / 9, 4096); assert.ok(t.W >= 641 && t.H >= 361 && t.W % 2 === 0 && t.H % 2 === 0 && t.zero);
+  t = FMD.tailleZero(2160, 3840, 16 / 9, 4096); assert.equal(t.zero, false); assert.ok(t.k < 1 && t.W <= 4096 && /maximum/.test(t.raison));
+  const plans = [FMD.deciderScene(scene(), 9 / 16, 16 / 9, { mode: "zero", generateur: "migan" })], d = FMD.tailleSortie(1080, 1920, 16 / 9, plans, "auto", 4096); assert.deepEqual([d.W, d.H, d.zero], [3414, 1920, true]);
+});
+test("Zéro perte : l'image d'origine est posée à l'échelle 1, à une position entière", () => {
+  const plan = FMD.deciderScene(scene(), 9 / 16, 16 / 9, { mode: "zero", generateur: "migan" });
+  let c = FMM.cadre(plan, 0, 1080, 1920, 3414, 1920); assert.deepEqual([c.k, c.ox, c.oy, c.lw, c.lh, c.exact], [1, 1167, 0, 1080, 1920, true]);
+  c = FMM.cadre(plan, 0, 641, 361, 642, 362); assert.equal(c.k, 1); assert.ok(Number.isInteger(c.ox) && Number.isInteger(c.oy) && c.exact);
+  c = FMM.cadre(plan, 0, 1080, 1920, 1138, 640); assert.ok(c.k < 1 && !c.exact);   /* aperçu réduit : pas de contrôle au pixel */
+});
+test("FMQ.identiques / bilanZero : un seul pixel touché est vu", () => {
+  const a = new Uint8ClampedArray(64 * 4).fill(120), b = a.slice(); assert.deepEqual(FMQ.identiques(a, b), { n: 64, differents: 0, ecartMax: 0 });
+  b[4 * 9 + 1] = 121; const r = FMQ.identiques(a, b); assert.equal(r.differents, 1); assert.equal(r.ecartMax, 1);
+  assert.equal(FMQ.bilanZero([FMQ.identiques(a, a), r]).ok, false); assert.equal(FMQ.bilanZero([FMQ.identiques(a, a)]).ok, true); assert.equal(FMQ.bilanZero([]).ok, false);
+});

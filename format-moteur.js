@@ -22,10 +22,17 @@ var FMM = (() => {
 
   /* où poser l'image n° j de la scène dans la sortie W×H : o = k·p + (ox, oy) */
   function cadre(plan, j, sw, sh, W, H) {
+    if (plan.zero) return placementZero(sw, sh, W, H);
     if (plan.methode === "identique") return { k: W / sw, ox: 0, oy: 0, lw: W, lh: H };
     const pos = plan.pos ? plan.pos[Math.min(j, plan.pos.length - 1)] : 0;
     if (plan.axeExt === "x") { const k = H / (plan.vis * sh); return { k, ox: (W - sw * k) / 2, oy: -pos * sh * k, lw: sw * k, lh: sh * k } }
     const k = W / (plan.vis * sw); return { k, ox: -pos * sw * k, oy: (H - sh * k) / 2, lw: sw * k, lh: sh * k };
+  }
+  /* v8.4 Zéro perte : l'image d'origine est posée à l'échelle 1 avec un décalage ENTIER (copie pixel pour pixel, aucun rééchantillonnage)
+     dès que la sortie la contient ; sinon (sortie plus petite ou plus grande, choisie à la main) à l'échelle qui la fait tenir, entière. */
+  function placementZero(sw, sh, W, H) {
+    const k0 = Math.min(W / sw, H / sh), un = W >= sw && H >= sh && Math.min(W - sw, H - sh) < 2, k = un ? 1 : k0;
+    return { k, ox: Math.floor((W - sw * k) / 2 + 1e-9), oy: Math.floor((H - sh * k) / 2 + 1e-9), lw: sw * k, lh: sh * k, exact: un };
   }
   /* part de la sortie qui n'est pas couverte par l'image (à compléter) */
   function manque(plan) { return plan.methode === "identique" || plan.z === 1 ? 0 : 1 - plan.couv }
@@ -210,7 +217,7 @@ var FMM = (() => {
     if (R[0].length < 24) return null; return R.map(v => { v.sort((a, b) => a - b); return borne(v[v.length >> 1], .6, 1.6) });
   }
 
-  const api = { mul, inv, app, ech, versCanvas, matSource, cadre, manque, mosaique, reelDisponible, plaqueCreer, versPlaque, versSortie, plaqueReference, plaqueAccumuler, plaqueFinir, besoin, distance, reduire, genPreparer, preRemplir, genEntree, genPoser, genFinir, plumeReel, gain, borne };
+  const api = { mul, inv, app, ech, versCanvas, matSource, cadre, placementZero, manque, mosaique, reelDisponible, plaqueCreer, versPlaque, versSortie, plaqueReference, plaqueAccumuler, plaqueFinir, besoin, distance, reduire, genPreparer, preRemplir, genEntree, genPoser, genFinir, plumeReel, gain, borne };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   return api;
 })();

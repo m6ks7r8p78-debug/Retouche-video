@@ -12,11 +12,14 @@ var FMD = (() => {
   const borne = (x, a, b) => x < a ? a : x > b ? b : x;
   /* portée de confiance d'un générateur : profondeur d'extension (en part du petit côté visible) au-delà de laquelle son résultat se dégrade
      (mesuré : tests/format/banc_generateurs.py — MI-GAN déraille au-delà de ~0,2 ; LaMa reste cohérent jusqu'à ~0,4) */
-  const PORTEE = { migan: .2, lama: .4, aucun: 0 };
+  const PORTEE = { migan: .2, lama: .4, kaggle: 9, aucun: 0 };   /* kaggle : génération complète sur serveur (SDXL, serveur-ia/extension_kaggle.py) — aucune limite de profondeur */
   const MODES = {
     auto:     { sujets: 3, image: 1, invente: 1, risque: 1, portee: 1, generatif: true },
     fidelite: { sujets: 4, image: 2.6, invente: .55, risque: 1, portee: 1, generatif: false },
     max:      { sujets: 3, image: 1.25, invente: .8, risque: .6, portee: 1.5, generatif: true },
+    /* v8.4 « Zéro perte » : toute l'image filmée est gardée, pixel pour pixel — ni recadrage, ni zoom, ni réduction ; seul ce qui manque
+       autour est ajouté (décor retrouvé, décor reconstruit, sinon prolongement flou) */
+    zero:     { sujets: 3, image: 1, invente: 1, risque: .8, portee: 1.5, generatif: true, zero: true },
   };
   const FORMATS = { "16:9": [16, 9], "9:16": [9, 16], "1:1": [1, 1], "4:3": [4, 3], "3:4": [3, 4], "4:5": [4, 5], "21:9": [21, 9], "3:2": [3, 2], "2:3": [2, 3] };
   /* « laisser l'IA choisir » : le format d'écran le plus courant pour l'orientation opposée ou plus moderne */
@@ -78,7 +81,7 @@ var FMD = (() => {
      R (réglages) : { mode, fidelite 0…1 (0,5 = neutre), liberte 0…1, intensite 0…1, suivi, fond: auto | ambiance | genere | noir, generateur: migan | lama | aucun, methode (choix manuel) } */
   function deciderScene(scene, As, At, R) {
     const G = geometrie(As, At), mode = MODES[R.mode] || MODES.auto, raisons = [];
-    if (G.identique) return { methode: "identique", z: 0, fond: "aucun", vis: 1, couv: 1, axeExt: G.axeExt, axeRec: G.axeRec, pos: new Float32Array(scene.n).fill(0), portee: 0, raisons: ["La vidéo est déjà à ce format."], candidats: [], cout: 0 };
+    if (G.identique) return { methode: "identique", z: 0, zero: !!mode.zero, fond: "aucun", vis: 1, couv: 1, axeExt: G.axeExt, axeRec: G.axeRec, pos: new Float32Array(scene.n).fill(0), portee: 0, raisons: ["La vidéo est déjà à ce format."], candidats: [], cout: 0 };
     const pF = 1 + 2 * ((R.fidelite == null ? .5 : R.fidelite) - .5), pL = 1 + 1.2 * ((R.liberte == null ? .5 : R.liberte) - .5), pI = (R.intensite == null ? .5 : R.intensite) * 2;
     const cotes = G.axeExt === "x" ? ["g", "d"] : ["h", "b"], moy = o => o ? (o[cotes[0]] + o[cotes[1]]) / 2 : 0, pire = o => o ? Math.max(o[cotes[0]], o[cotes[1]]) : 0;
     const relief = moy(scene.bord && scene.bord.relief), activite = moy(scene.bord && scene.bord.activite), touche = pire(scene.touche), reel = moy(scene.reel);
@@ -92,12 +95,12 @@ var FMD = (() => {
     /* un liseré flou ne gêne guère ; une sortie aux deux tiers floue est un mauvais résultat : coût croissant avec la part floue x de la sortie */
     const flou = x => x * (.45 + .55 * x);
     const cands = [];
-    for (let k = 0; k <= 8; k++) {
+    for (let k = 0; k <= (mode.zero ? 0 : 8); k++) {
       const z = k / 8, vis = G.vis(z), couv = G.couv(z), tr = trajectoire(scene.pistes, scene.n, G.axeRec, vis, scene.cadence, R.suivi, R.lissage); let moyPos = 0; for (const p of tr.pos) moyPos += p; moyPos /= scene.n || 1;
       const cImage = (detailsPerdus(scene.carteRelief, scene.gw, scene.gh, G.axeRec, moyPos, vis) * .6 + (1 - vis) * .4) * (1 - .6 * conf), cAgr = .12 * (Math.pow(G.r, -z) - 1) / (1 / G.r - 1);
       const invente = 1 - couv, prof = invente / 2 * Aperp / Math.max(1e-6, G.axeExt === "x" ? 1 : 1);   /* profondeur d'un côté, en part du petit côté visible */
       const base = mode.sujets * tr.perte + mode.image * pF * cImage + cAgr;
-      const fonds = z === 1 ? ["aucun"] : R.fond === "noir" ? ["noir"] : R.fond === "ambiance" ? ["ambiance"] : [...(genOK && R.fond !== "reel" ? ["genere"] : []), ...(reelOK ? ["reel"] : []), "ambiance"];
+      const fonds = z === 1 && !mode.zero ? ["aucun"] : R.fond === "noir" ? ["noir"] : R.fond === "ambiance" ? ["ambiance"] : [...(genOK && R.fond !== "reel" ? ["genere"] : []), ...(reelOK ? ["reel"] : []), "ambiance"];
       for (const fond of fonds) {
         let cFond = 0, part = 0;
         if (fond === "genere") { /* le réel retrouvé par le mouvement de caméra ne coûte rien ; au-delà de la portée du générateur, fondu vers l'ambiance */
@@ -109,7 +112,8 @@ var FMD = (() => {
     }
     let choix = cands.reduce((m, c) => c.cout < m.cout - 1e-9 ? c : m, cands[0]);
     /* choix manuel de la méthode pour cette scène */
-    if (R.methode && R.methode !== "auto") { const f = { recadrage: c => c.z === 1, extension: c => c.z === 0 && c.fond === "genere", decor: c => c.z === 0 && c.fond === "reel", ambiance: c => c.z === 0 && c.fond === "ambiance", bandes: c => c.z === 0, hybride: c => c.z > 0 && c.z < 1 }[R.methode];
+    if (R.methode && R.methode !== "auto" && mode.zero && (R.methode === "recadrage" || R.methode === "hybride")) raisons.push("Mode Zéro perte : le recadrage et le zoom sont interdits (ils retireraient une partie de l’image) → toute l’image est gardée.");
+    else if (R.methode && R.methode !== "auto") { const f = { recadrage: c => c.z === 1, extension: c => c.z === 0 && c.fond === "genere", decor: c => c.z === 0 && c.fond === "reel", ambiance: c => c.z === 0 && c.fond === "ambiance", bandes: c => c.z === 0, hybride: c => c.z > 0 && c.z < 1 }[R.methode];
       const L = f ? cands.filter(f) : []; if (L.length) { choix = L.reduce((m, c) => c.cout < m.cout ? c : m, L[0]); raisons.push("Méthode choisie à la main.") } else if (R.methode === "extension") raisons.push("Extension générée impossible ici (" + (scene.classe === "complexe" ? "caméra trop mobile" : !gen ? "aucun modèle de reconstruction" : "mode Fidélité") + ") : meilleure autre méthode gardée.") }
     const fond = R.methode === "bandes" ? "noir" : choix.fond, methode = choix.z === 1 ? "recadrage" : fond === "noir" ? "bandes" : choix.z === 0 ? (fond === "genere" ? "extension" : fond === "reel" ? "decor" : "ambiance") : "hybride";
     /* raisons lisibles, avec les mesures */
@@ -120,7 +124,8 @@ var FMD = (() => {
       else if (fond === "reel") raisons.push("Décor retrouvé dans les autres images grâce au mouvement de la caméra (" + pc(reel) + " de ce qui manque) : ce sont de vrais pixels, rien n’est inventé. Le reste est un prolongement flou.");
       else if (fond === "ambiance") raisons.push(scene.classe === "complexe" ? "Caméra très mobile : un fond généré ne tiendrait pas d’une image à l’autre → prolongement flou de l’image." : !mode.generatif ? "Mode Fidélité : rien n’est inventé → prolongement flou de l’image." : !gen ? "Pas de modèle de reconstruction disponible → prolongement flou de l’image." : "Bord trop risqué pour une reconstruction nette (risque " + risque.toFixed(2) + ") → prolongement flou de l’image.") }
     if (choix.coupes) raisons.push("Attention : un visage est en partie hors cadre sur " + choix.coupes + " image(s).");
-    return { methode, z: choix.z, fond, vis: choix.vis, couv: choix.couv, axeExt: G.axeExt, axeRec: G.axeRec, pos: choix.tr.pos, bouge: choix.tr.bouge, portee, part: choix.part, risque, generateur: fond === "genere" ? gen : null, plaque: fond === "genere" || fond === "reel",
+    if (mode.zero) raisons.unshift("Zéro perte : 100 % de l’image filmée est gardé, au pixel près (ni recadrage, ni zoom, ni réduction).");
+    return { methode, z: choix.z, zero: !!mode.zero, fond, vis: choix.vis, couv: choix.couv, axeExt: G.axeExt, axeRec: G.axeRec, pos: choix.tr.pos, bouge: choix.tr.bouge, portee, part: choix.part, risque, generateur: fond === "genere" ? gen : null, plaque: fond === "genere" || fond === "reel",
       mesures: { sujets_perdus: choix.sujets, image_perdue: 1 - choix.vis, details_perdus: choix.image, part_inventee: choix.invente, relief_bord: relief, activite_bord: activite, sujet_coupe: touche, reel }, raisons, cout: choix.cout,
       candidats: cands.map(c => ({ z: c.z, fond: c.fond, cout: +c.cout.toFixed(4), sujets: +c.sujets.toFixed(3), image: +c.image.toFixed(3), invente: +c.invente.toFixed(3) })) };
   }
@@ -129,6 +134,7 @@ var FMD = (() => {
      choix : "auto" ou petit côté voulu (720, 1080, 1440, 2160). k moyen = pixels de sortie par pixel de source. */
   function tailleSortie(sw, sh, At, plans, choix, plafond) {
     const pair = x => Math.max(2, Math.round(x / 2) * 2); let petit;
+    if (plans.length && plans.every(p => p.zero) && (!choix || choix === "auto")) return tailleZero(sw, sh, At, plafond);
     if (choix && choix !== "auto") petit = +choix;
     else { /* pour chaque scène, la sortie qui garde chaque pixel visible de la source : on prend la plus grande demande, bornée */
       let besoin = 0; for (const p of plans) { const visW = p.axeRec === "x" ? sw * p.vis : sw, visH = p.axeRec === "y" ? sh * p.vis : sh, W = p.axeExt === "x" ? visW / p.couv : visW, H = p.axeExt === "y" ? visH / p.couv : visH; besoin = Math.max(besoin, Math.min(W, H)) }
@@ -137,6 +143,19 @@ var FMD = (() => {
     return { W: pair(W), H: pair(H) };
   }
 
+  /* Zéro perte : la sortie est bâtie autour de l'image d'origine à l'échelle 1 (un pixel filmé = un pixel du fichier, rien n'est réduit
+     ni rééchantillonné). Le côté conservé est arrondi au pair SUPÉRIEUR (jamais en dessous de la source) ; l'autre côté suit le format voulu.
+     Si l'appareil ne peut pas fabriquer une image aussi grande (plafond = plus grand côté accepté), la réduction est calculée et SIGNALÉE (perte). */
+  function tailleZero(sw, sh, At, plafond) {
+    const pairSup = x => Math.max(2, Math.ceil(x / 2 - 1e-9) * 2), As = sw / sh; let W, H;
+    if (Math.abs(At / As - 1) < .015) { W = pairSup(sw); H = pairSup(sh) }
+    else if (At > As) { H = pairSup(sh); W = Math.max(pairSup(sw), pairSup(H * At)) }
+    else { W = pairSup(sw); H = Math.max(pairSup(sh), pairSup(W / At)) }
+    const lim = plafond || 8192, m = Math.max(W, H);
+    if (m <= lim) return { W, H, k: 1, zero: true };
+    const f = lim / m, Wr = Math.max(2, Math.floor(W * f / 2) * 2), Hr = Math.max(2, Math.floor(H * f / 2) * 2);
+    return { W: Wr, H: Hr, k: Math.min(Wr / W, Hr / H), zero: false, raison: "l’appareil ne peut pas fabriquer une image de " + W + "×" + H + " (maximum " + lim + " px de côté)" };
+  }
   /* décision complète : une par scène. analyse : { source {w, h}, cadence, scenes[] } ; cible : { rw, rh } ; reglages globaux + par scène (reglages.scenes[i]) */
   function decider(analyse, cible, reglages) {
     const As = analyse.source.w / analyse.source.h, At = cible.rw / cible.rh, R = reglages || {};
@@ -144,7 +163,7 @@ var FMD = (() => {
     return { As, At, plans, taille: tailleSortie(analyse.source.w, analyse.source.h, At, plans, R.resolution, R.plafond) };
   }
 
-  const api = { PORTEE, MODES, FORMATS, formatAuto, geometrie, trajectoire, lisser, detailsPerdus, deciderScene, tailleSortie, decider };
+  const api = { PORTEE, MODES, FORMATS, formatAuto, geometrie, trajectoire, lisser, detailsPerdus, deciderScene, tailleSortie, tailleZero, decider };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   return api;
 })();

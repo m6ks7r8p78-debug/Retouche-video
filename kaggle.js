@@ -141,7 +141,48 @@ var KG = (() => {
       abort = null;
     }
   }
+  /* v8.4 « Zéro perte » (Changer de format) : reconstruction COMPLÈTE des décors de scène (serveur-ia/extension_kaggle.py).
+     N'envoie que les décors de scène (images fixes : vrais pixels + trous), jamais la vidéo. o = { travaux: [{ id, w, h, fenetres, echelle,
+     plaque: Blob PNG, trou: Blob PNG }], graine } ; renvoie info.json du calcul ({ ok, travaux: [{ id, x, y, w, h, W, H, jpeg, alpha }] }). */
+  async function etendre(o, ev) {
+    if (!jeton()) throw new Error("aucun jeton Kaggle enregistré (⚙️ Paramètres)");
+    abort = new AbortController();
+    const u = await moi(), slug = "retouche-ia-" + Date.now().toString(36), ref = u + "/" + slug, ds = slug + "-donnees", t0 = Date.now(); dernier = slug;
+    let fin = false;
+    try {
+      ev("envoi", 0, "Préparation de l’envoi des décors…");
+      const params = new Blob([JSON.stringify({ version: 1, graine: o.graine || 7, travaux: o.travaux.map(t => ({ id: t.id, w: t.w, h: t.h, fenetres: t.fenetres, echelle: t.echelle || 1 })) })], { type: "application/json" });
+      const code = await (await texte("serveur-ia/extension_kaggle.py")).text(), py = await (await texte("serveur-ia/ia_serveur.py")).blob(), sr = await (await texte("sr.bin")).blob();
+      const envois = [[params, "params.json"], [py, "ia_serveur.py"], [sr, "sr.bin"]];
+      for (const t of o.travaux) envois.push([t.plaque, "plaque_" + t.id + ".png"], [t.trou, "trou_" + t.id + ".png"]);
+      const files = [], attendus = {}, tot = envois.reduce((a, [b]) => a + b.size, 0); let base = 0;
+      for (const [b, n] of envois) { const tk = await depot(b, n, f => ev("envoi", (base + f * b.size) / tot, "Envoi des décors vers ton espace privé Kaggle… " + Math.round((base + f * b.size) / tot * 100) + " %")); base += b.size; files.push({ token: tk }); attendus[n] = b.size }
+      const cd = await api("datasets.DatasetApiService", "CreateDataset", { ownerSlug: u, slug: ds, title: ds.replace(/-/g, " "), licenseName: "other", isPrivate: true, files });
+      if (cd.error) throw new Error("Kaggle : " + cd.error);
+      for (let i = 0; ; i++) { let s = {};
+        try { s = await api("datasets.DatasetApiService", "GetDatasetStatus", { ownerSlug: u, datasetSlug: ds }) } catch (e) { if (!(e.status === 403 || e.status === 404) || i > 24) throw e }
+        if (/ready/i.test(s.status || "")) break; if (/error|fail/i.test(s.status || "")) throw new Error("jeu de données refusé par Kaggle");
+        if (i > 120) throw new Error("Kaggle ne prépare pas le jeu de données"); ev("prepa", 0, "Kaggle prépare les décors…"); await attendre(5000) }
+      const lf = await api("datasets.DatasetApiService", "ListDatasetFiles", { ownerSlug: u, datasetSlug: ds, pageSize: 200 }), recus = Object.fromEntries((lf.datasetFiles || []).map(f => [f.name, +f.totalBytes]));
+      for (const n in attendus) if (recus[n] !== attendus[n]) throw new Error("envoi incomplet : " + n);
+      const sk = await api("kernels.KernelsApiService", "SaveKernel", { slug: ref, newTitle: slug.replace(/-/g, " "), text: code, language: "python", kernelType: "script",
+        isPrivate: true, enableGpu: true, enableInternet: true, datasetDataSources: [u + "/" + ds], kernelDataSources: [], competitionDataSources: [], categoryIds: [] });
+      if (sk.error) throw new Error("Kaggle : " + sk.error);
+      const t1 = Date.now();
+      for (;;) { await attendre(15000);
+        const s = await api("kernels.KernelsApiService", "GetKernelSessionStatus", { userName: u, kernelSlug: slug }), st = String(s.status || ""), min = Math.round((Date.now() - t1) / 60000);
+        if (/COMPLETE/i.test(st)) break; if (/ERROR|CANCEL/i.test(st)) throw new Error("le calcul a échoué sur Kaggle" + (s.failureMessage ? " : " + s.failureMessage : ""));
+        ev("calcul", 0, (/QUEUED/i.test(st) ? "En attente d’une carte graphique Kaggle…" : "Reconstruction du décor complet sur les cartes graphiques Kaggle…") + " (" + min + " min)") }
+      ev("recup", 0, "Récupération des décors…");
+      const info = await recup(u, slug, "info.json"); if (!info) throw new Error("résultat absent"); fin = !!info.ok;
+      return Object.assign(info, { minutes: +((Date.now() - t0) / 60000).toFixed(1) });
+    } finally {
+      const m = await menage(u, slug);
+      try { DIAG.send && DIAG.send("ia_extension", { ok: fin, menage: m.join(", "), minutes: +((Date.now() - t0) / 60000).toFixed(1) }) } catch (e) {}
+      abort = null;
+    }
+  }
   function annuler() { if (abort) abort.abort() }
   function regle(t) { try { if (t) localStorage.setItem(JK, String(t).trim()); else localStorage.removeItem(JK) } catch (e) {} user = null }
-  return { traiter, annuler, regle, actif: () => !!jeton(), moi, _api: api, get dernier() { return dernier } };
+  return { traiter, etendre, annuler, regle, actif: () => !!jeton(), moi, _api: api, get dernier() { return dernier } };
 })();
