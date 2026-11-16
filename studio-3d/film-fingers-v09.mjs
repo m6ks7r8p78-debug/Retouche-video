@@ -168,8 +168,8 @@ function auditFingerAndSeat(glb,timeline,{sampleHz=60}={}){
  return audit;
 }
 
-function buildSyntheticFilmSceneV09(request,generator){
- const result=buildSyntheticFilmSceneV03(request,generator,{decorateModel:decorateFingerRig});
+function buildSyntheticFilmSceneV09(request,generator,{decorateModel=decorateFingerRig}={}){
+ const result=buildSyntheticFilmSceneV03(request,generator,{decorateModel});
  if(result.status!=='apercu_partiel_glb_anime')return result;
  const motionAudit=auditCupMovement(result.glb,result.timeline);
  const handSeatAudit=auditFingerAndSeat(result.glb,result.timeline);
