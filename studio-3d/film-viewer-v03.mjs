@@ -154,17 +154,28 @@ function projectedObjects(scene,pose,{width=480,height=360,yaw=.28,pitch=.10,
  for(let i=0;i<doc.nodes.length;i++){
   const n=doc.nodes[i],w=pose.world[i];
   if(!w||n.mesh===undefined)continue;
-  const [x,y,z]=w.translation;
+  // Pour un maillage triangulé propre au laboratoire, calculer les bornes
+  // locales (accessor min/max) plutôt que simuler une énorme sphère unité.
+  const p=doc.meshes[n.mesh]?.primitives?.[0];
+  const posAccessor=doc.accessors?.[p?.attributes?.POSITION];
+  const custom=n.name==='film_manchon_continu_poignet_paume' &&
+    Array.isArray(posAccessor?.min)&&Array.isArray(posAccessor?.max);
+  const middle=custom?posAccessor.min.map((m,j)=>(m+posAccessor.max[j])/2):[0,0,0];
+  const radius=custom?posAccessor.min.map((m,j)=>(posAccessor.max[j]-m)/2):[1,1,1];
+  const transform=w.matrix||[];
+  const center=custom?[0,1,2].map(j=>w.translation[j]+
+    transform[j]*middle[0]+transform[4+j]*middle[1]+transform[8+j]*middle[2]):w.translation;
+  const [x,y,z]=center;
   const dx=x-focal[0],dy=y-focal[1],dz=z-focal[2];
   const cx=cy*dx+sy*dz,cz=-sy*dx+cy*dz;
   const yy=cp*dy-sp*cz,zz=sp*dy+cp*cz;
   const zoom=1.05/(1.0+Math.max(-.8,zz)/5);
   const size=Math.min(width,height)*.57*zoom*magnification;
-  const rx=Math.max(.05,Math.abs(w.scale[0])*size),ry=Math.max(.05,Math.abs(w.scale[1])*size);
+  const rx=Math.max(.05,Math.abs(w.scale[0])*radius[0]*size),ry=Math.max(.05,Math.abs(w.scale[1])*radius[1]*size);
   if(rx<.4&&ry<.4)continue;
   // projection volontairement approchée des sphères paramétriques du GLB.
   objects.push({x:width/2+cx*size,y:height*.54-yy*size,rx,ry,depth:zz,
-    color:colors[n.mesh]||'#bdc5d0',name:n.name});
+    color:colors[p?.material]||'#bdc5d0',name:n.name});
  }
  return objects.sort((a,b)=>b.depth-a.depth);
 }
