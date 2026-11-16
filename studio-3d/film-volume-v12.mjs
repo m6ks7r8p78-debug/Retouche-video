@@ -155,9 +155,9 @@ function refinedPalm(args,generator){
  palm.translation=[.15,-.063,-.04];
  palm.scale=[.048,.088,.045];
 }
-function buildSyntheticFilmSceneV12(request,generator){
+function buildSyntheticFilmSceneV12(request,generator,{decorateModel}={}){
  const out=buildSyntheticFilmSceneV11(request,generator,{
-  decorateModel:args=>refinedPalm(args,generator)
+  decorateModel:decorateModel??(args=>refinedPalm(args,generator))
  });
  if(out.status!=='apercu_partiel_glb_anime')return out;
  const volumeAudit=auditFingerVolumes(out.glb,out.timeline);
