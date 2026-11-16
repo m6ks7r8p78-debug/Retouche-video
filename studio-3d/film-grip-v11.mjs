@@ -124,6 +124,7 @@ function auditHandleGrip(glb,timeline,{sampleHz=30}={}){
  const readings=fingers.map(f=>({name:f.name,minGapM:round(f.min),
   meanGapM:round(f.total/f.n),maxGapM:round(f.max)}));
  const meanWorst=Math.max(...readings.map(f=>f.meanGapM));
+ const peakWorst=Math.max(...readings.map(f=>f.maxGapM));
  const fraction=near/(count*fingers.length);
  const report={
   schema:'retoucheproai.film-handle-grip-audit.v0.11',synthetic:true,
@@ -133,9 +134,11 @@ function auditHandleGrip(glb,timeline,{sampleHz=30}={}){
   handleSegmentCount:RING_SEGMENTS,handleLoopCount:1,sampleHz,
   poseSamples:count,nearHandleFraction:round(fraction),
   maxMeanFingertipHandleGapM:round(meanWorst),
+  maxInstantFingertipHandleGapM:round(peakWorst),
   deepestFingertipCenterInsideCupM:round(deep),fingers:readings
  };
- if(meanWorst>.045||fraction<.7)throw Error('Doigts trop éloignés de l’anse.');
+ if(meanWorst>.045||peakWorst>.10||fraction<.7)
+  throw Error('Doigts trop éloignés de l’anse.');
  if(deep>.012)throw Error('Centre de doigt enfoncé dans le corps de la tasse.');
  return report;
 }
