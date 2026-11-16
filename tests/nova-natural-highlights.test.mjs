@@ -28,7 +28,7 @@ const brightCount=data=>{
  return n;
 };
 test("NOVA naturel: relève réellement les zones sombres, sans effacer les détails",()=>{
- const img=sample(),res=ZONES.restituer(img,{size:128,arbitre});
+ const img=sample(),res=ZONES.restituer(img,{size:128,arbitre:arbiter});
  assert.equal(res.bilan.intervention,true);
  const before=pixel(img.data,1,1),after=pixel(res.data,1,1);
  assert.ok(after[0]>before[0],`ombres non levées: ${before} -> ${after}`);
@@ -38,7 +38,7 @@ test("NOVA naturel: relève réellement les zones sombres, sans effacer les dét
  assert.deepEqual(pixel(img.data,1,1),[35,32,30,255]);
 });
 test("NOVA naturel: protège les zones claires et les reflets contre une nouvelle surexposition",()=>{
- const img=sample(),res=ZONES.restituer(img,{size:128,arbitre});
+ const img=sample(),res=ZONES.restituer(img,{size:128,arbitre:arbiter});
  for(const [x,y] of [[17,17],[33,17]])
   assert.deepEqual(pixel(res.data,x,y),pixel(img.data,x,y),
    `Éclat déjà lumineux à préserver en ${x},${y}`);
@@ -50,7 +50,7 @@ test("NOVA naturel: protège les zones claires et les reflets contre une nouvell
 test("NOVA naturel: une image claire sans zone sombre éligible est bit-identique",()=>{
  const img=sample();for(let i=0;i<img.data.length;i+=4)
   img.data.set([218,204,193,255],i);
- const r=ZONES.restituer(img,{size:128,arbitre});
+ const r=ZONES.restituer(img,{size:128,arbitre:arbiter});
  assert.equal(r.bilan.intervention,false);
  assert.deepEqual(r.data,img.data);
 });
