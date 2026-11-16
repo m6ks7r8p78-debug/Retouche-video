@@ -1,11 +1,11 @@
 {
-  // Serveur gratuit de RetoucheProAI (Cloudflare Workers) : récupère les vidéos à partir d'un lien, vérifie les abonnements (v6),
-  // reçoit le diagnostic anonyme (v7, base D1 « retouche-diag »)
+  // Serveur RetoucheProAI : import par lien et vérification des abonnements.
   "name": "retouche-serveur",
   "main": "worker.js",
   "compatibility_date": "2026-10-01",
   "observability": { "enabled": true },
   "keep_vars": true,
-  // base créée le 5 nov. 2026 (wrangler d1 create retouche-diag --location weur)
-  "d1_databases": [{ "binding": "DIAG", "database_name": "retouche-diag", "database_id": "0a3bb17b-d047-46b9-a188-82dc7e66fbfe" }]
+  // Aucune base D1 dans le compte de déploiement : diagnostics indisponibles (503).
+  // Réactiver DIAG uniquement avec l'identifiant vérifié d'une base de ce compte.
+  "d1_databases": []
 }
