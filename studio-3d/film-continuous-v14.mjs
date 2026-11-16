@@ -178,9 +178,9 @@ function auditContinuousWrist(glb,timeline,{sampleHz=12}={}){
  if(maxDriftM>.0001)throw Error('Maillage continu ne suit plus le poignet.');
  return report;
 }
-function buildSyntheticFilmSceneV14(request,generator){
+function buildSyntheticFilmSceneV14(request,generator,{decorateModel}={}){
  const out=buildSyntheticFilmSceneV12(request,generator,{
-  decorateModel:args=>addContinuousWrist(args,generator)
+  decorateModel:decorateModel??(args=>addContinuousWrist(args,generator))
  });
  if(out.status!=='apercu_partiel_glb_anime')return out;
  const continuousAudit=auditContinuousWrist(out.glb,out.timeline);
