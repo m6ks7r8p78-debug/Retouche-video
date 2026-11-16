@@ -2,8 +2,8 @@ import {buildSyntheticFilmSceneV09} from './film-fingers-v09.mjs';
 import {inspectGripSurface} from './film-inspection-v10.mjs';
 
 /** Recalcule l'audit depuis le GLB final réellement exporté, sans images privées. */
-function buildSyntheticFilmSceneV10(request,generator){
- const output=buildSyntheticFilmSceneV09(request,generator);
+function buildSyntheticFilmSceneV10(request,generator,{decorateModel}={}){
+ const output=buildSyntheticFilmSceneV09(request,generator,{decorateModel});
  if(output.status!=='apercu_partiel_glb_anime')return output;
  const surfaceAudit=inspectGripSurface(output.glb,output.timeline);
  const warnings=[
