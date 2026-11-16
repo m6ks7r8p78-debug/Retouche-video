@@ -21,12 +21,16 @@ function compileActionPlanV16(request){
   throw Error('Ce pilote accepte une à cinq répétitions maximum.');
  const intents=project.scenes.flatMap(x=>x.steps.map(s=>s.intent));
  const smoke=intents.includes('fumer');
+ const explicitSmoking=/\b(?:fume|fumer|fumant|fumante|refume|refumer)\b/.test(src)||
+  (counts.length>0&&/\b(?:cigarette|taffe|taffes|bouffee|bouffees|inhalation|inhalations|puff|puffs)\b/.test(src));
+ const negated=/\b(?:ne\s+fume\s+pas|sans\s+fumer|non\s+fumeur|non\s+fumeuse)\b/.test(src);
  const other=[...new Set(intents.filter(x=>x!=='fumer'))];
  const denied=project.references.length?'Médias de référence privés non traités dans ce laboratoire.':
   project.scenes.length!==1?'Une seule scène exécutable à ce stade.':
   project.characters.length!==1||project.characters[0].role==='a_preciser'?
   'Personnage adulte féminin ou masculin explicite requis.':
-  !smoke?'Pas d’action de cigarette identifiée.':
+  !smoke||!explicitSmoking||negated?
+  'Une cigarette visible n’autorise pas à inventer une action de fumer.':
   other.length?'Action mixte refusée tant que la synchronisation multi-gestes n’est pas programmée : '+other.join(', '):null;
  const count=counts[0]??1;
  const episodes=Array.from({length:count},(_,i)=>({
