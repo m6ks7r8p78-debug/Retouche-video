@@ -40,7 +40,18 @@ function inspectSyntheticMesh(glb, scene=readSyntheticGLB(glb)){
   const color=doc.materials?.[p.material]?.pbrMetallicRoughness?.baseColorFactor;
   if(!Array.isArray(color)||color.length!==4||color.some(x=>!Number.isFinite(x)||x<0||x>1))
     throw Error('Matériau glTF invalide.');
-  return {positions,normals,indices,color};
+  const morphTargets=p.targets||[];
+  if(!Array.isArray(morphTargets)||morphTargets.length>2)
+    throw Error('Trop de cibles morph dans la géométrie.');
+  const morph=morphTargets.map(target=>{
+    if(Object.keys(target).length!==1||!Number.isInteger(target.POSITION))
+      throw Error('Cible morph non prise en charge.');
+    const delta=accessor(target.POSITION,'VEC3',5126,5000);
+    if(delta.length!==positions.length||delta.some(x=>Math.abs(x)>.1))
+      throw Error('Deltas morph non conformes.');
+    return delta;
+  });
+  return {positions,normals,indices,color,morph};
  });
  const drawNodes=doc.nodes.filter(n=>n.mesh!==undefined).length;
  if(!drawNodes)throw Error('Aucune surface 3D à afficher.');
@@ -115,7 +126,7 @@ function createWebGLFilmRenderer(gl){
    resources=result.geometries.map(g=>{
     const vao=gl.createVertexArray();gl.bindVertexArray(vao);
     const pos=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pos);
-    gl.bufferData(gl.ARRAY_BUFFER,g.positions,gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER,g.positions,g.morph.length?gl.DYNAMIC_DRAW:gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
     const norm=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,norm);
     gl.bufferData(gl.ARRAY_BUFFER,g.normals,gl.STATIC_DRAW);
@@ -123,7 +134,9 @@ function createWebGLFilmRenderer(gl){
     const index=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,index);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,g.indices,gl.STATIC_DRAW);
     gl.bindVertexArray(null);
-    return {vao,pos,norm,index,count:g.indices.length,color:new Float32Array(g.color)};
+    return {vao,pos,norm,index,count:g.indices.length,color:new Float32Array(g.color),
+      morph:g.morph,basePositions:g.positions,
+      morphed:g.morph.length?new Float32Array(g.positions.length):null};
    });
   }catch(error){clear();throw error;}
   current=scene;return result;
@@ -157,6 +170,19 @@ function createWebGLFilmRenderer(gl){
     if(mesh===undefined||!world)continue;
     const g=resources[mesh];
     if(!g)throw Error('Surface GLB non préparée.');
+    if(g.morph.length){
+      const weights=pose.world[i]?.weights;
+      if(!Array.isArray(weights)||weights.length!==g.morph.length||
+         weights.some(v=>!Number.isFinite(v)||v<0||v>1))
+        throw Error('Poids de déformation de la manchette non conformes.');
+      for(let p=0;p<g.morphed.length;p++){
+        let value=g.basePositions[p];
+        for(let k=0;k<weights.length;k++)value+=weights[k]*g.morph[k][p];
+        g.morphed[p]=value;
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER,g.pos);
+      gl.bufferSubData(gl.ARRAY_BUFFER,0,g.morphed);
+    }
     gl.uniformMatrix4fv(um,false,new Float32Array(world));
     gl.uniformMatrix4fv(uv,false,mat4Multiply(vp,world));
     gl.uniform4fv(uc,g.color);
