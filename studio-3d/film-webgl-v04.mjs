@@ -134,8 +134,19 @@ function createWebGLFilmRenderer(gl){
     throw Error('Dimension de rendu invalide.');
   const yaw=Number.isFinite(camera.yaw)?camera.yaw:.3,
     pitch=Number.isFinite(camera.pitch)?camera.pitch:.1;
-  const eye=[Math.sin(yaw)*3.8,2+Math.sin(pitch)*1.4,Math.cos(yaw)*3.8];
-  const vp=mat4Multiply(perspective(Math.PI/3,width/height),lookAt(eye));
+  // Inspection localisée : la cible peut suivre la tasse animée.
+  // Sans cible explicite, conserver à l'identique la caméra historique.
+  const target=Array.isArray(camera.target)&&camera.target.length===3&&
+    camera.target.every(Number.isFinite)?camera.target:null;
+  const distance=Number.isFinite(camera.distance)?
+    Math.max(.55,Math.min(6,camera.distance)):3.8;
+  const eye=target?[
+    target[0]+Math.sin(yaw)*distance,
+    target[1]+distance*.27+Math.sin(pitch)*distance*.37,
+    target[2]+Math.cos(yaw)*distance
+  ]:[Math.sin(yaw)*3.8,2+Math.sin(pitch)*1.4,Math.cos(yaw)*3.8];
+  const vp=mat4Multiply(perspective(Math.PI/3,width/height),
+    lookAt(eye,target||[0,1,.1]));
   gl.viewport(0,0,width,height);
   gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.BLEND);
   gl.clearColor(.058,.077,.125,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
