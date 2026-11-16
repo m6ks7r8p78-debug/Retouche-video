@@ -139,8 +139,12 @@ function sampleSyntheticPose(scene,time=0,clipName='film_scene_v02'){
  for(const id of doc.scenes[0].nodes||[])visit(id,null,0);
  return {world,time:t,duration:clip.duration,name:clip.name};
 }
-function projectedObjects(scene,pose,{width=480,height=360,yaw=.28,pitch=.10}={}){
+function projectedObjects(scene,pose,{width=480,height=360,yaw=.28,pitch=.10,
+ target=null,distance=3.8}={}){
  const {doc}=scene;
+ const focus=Array.isArray(target)&&target.length===3&&target.every(Number.isFinite);
+ const focal=focus?target:[0,1,0];
+ const magnification=focus?3.8/Math.max(.55,Math.min(6,distance)):1;
  const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
  const objects=[];
  const colors=doc.materials.map(m=>{
@@ -151,10 +155,11 @@ function projectedObjects(scene,pose,{width=480,height=360,yaw=.28,pitch=.10}={}
   const n=doc.nodes[i],w=pose.world[i];
   if(!w||n.mesh===undefined)continue;
   const [x,y,z]=w.translation;
-  const cx=cy*x+sy*z,cz=-sy*x+cy*z;
-  const yy=cp*(y-1)-sp*cz,zz=sp*(y-1)+cp*cz;
+  const rx=x-focal[0],ry=y-focal[1],rz=z-focal[2];
+  const cx=cy*rx+sy*rz,cz=-sy*rx+cy*rz;
+  const yy=cp*ry-sp*cz,zz=sp*ry+cp*cz;
   const zoom=1.05/(1.0+Math.max(-.8,zz)/5);
-  const size=Math.min(width,height)*.57*zoom;
+  const size=Math.min(width,height)*.57*zoom*magnification;
   const rx=Math.max(.05,Math.abs(w.scale[0])*size),ry=Math.max(.05,Math.abs(w.scale[1])*size);
   if(rx<.4&&ry<.4)continue;
   // projection volontairement approchée des sphères paramétriques du GLB.
