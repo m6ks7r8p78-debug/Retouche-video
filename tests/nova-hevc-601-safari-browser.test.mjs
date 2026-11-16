@@ -54,11 +54,11 @@ test("NOVA Safari HEVC 1/1/6 : clic volontaire, huit patches et diagnostic priv√
      !r.url().startsWith("data:"))external.push(r.url());
    if(!["GET","HEAD"].includes(r.method()))uploads.push(r.url());
   });
-  await page.goto(origin+"/experiences/nova.html");
+  await page.goto(origin+"/experiences/nova.html#nova601ColorPanel");
+  assert.equal(await page.locator("#nova601ColorPanel").getAttribute("open"),"");
   assert.equal(await page.locator("#nova601Json").getAttribute("href"),null);
   assert.equal(requests.some(v=>v.includes("nova-test-601-patches.mov")),false,
    "synthetic fixture must not be downloaded without a user click");
-  await page.locator("#nova601ColorPanel summary").click();
   await page.locator("#nova601Run").click();
   await page.waitForFunction(()=>!!document.querySelector("#nova601Json")?.getAttribute("href"),
    null,{timeout:90000});
@@ -66,6 +66,7 @@ test("NOVA Safari HEVC 1/1/6 : clic volontaire, huit patches et diagnostic priv√
    const url=document.querySelector("#nova601Json").href;
    return JSON.parse(await (await fetch(url)).text());
   });
+  console.log("NOVA_HEVC_601_TEST_STATUS "+JSON.stringify({status:report.status,mean:report.meanAbsRgb255??null}));
   assert.equal(report.schema,"retoucheproai.nova.safari-hevc-601-patches.v1");
   assert.equal(report.origin,"ffmpeg-synthetic-only");
   assert.equal(report.privacy.personalMediaIncluded,false);
