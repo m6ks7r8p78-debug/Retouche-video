@@ -5,6 +5,7 @@
 import {createLongFilmProject,nextFilmChunk,filmProjectFingerprint} from './film-long-project-v21.mjs';
 import {buildSyntheticFilmSceneV20} from './film-cigarette-cylinder-v20.mjs';
 import {readSyntheticGLB,sampleSyntheticPose} from './film-viewer-v03.mjs';
+const yieldToInterface=()=>new Promise(resolve=>setTimeout(resolve,0));
 const CHECKPOINT='retoucheproai.film-chunk-checkpoint.v0.21';
 const abortIfNeeded=signal=>{
  if(signal?.aborted){const error=new Error('Traitement interrompu.');error.name='AbortError';throw error;}
@@ -43,6 +44,8 @@ async function processNextFilmChunk({project,checkpoint,generator,sink,signal}){
  try{
   opened=true;await sink.beginChunk({transactionId,chunk,scene,glb:output.glb,fps:project.fps});
   for(let frame=chunk.startFrame;frame<chunk.endFrame;frame++){
+   // Les promesses déjà résolues ne laissent pas passer les clics d'annulation.
+   if((frame-chunk.startFrame)%12===0)await yieldToInterface();
    abortIfNeeded(signal);
    const localFrame=frame-authored.startFrame;
    await sink.writeFrame({frame,localFrame,timeSeconds:frame/project.fps,
@@ -59,4 +62,27 @@ async function processNextFilmChunk({project,checkpoint,generator,sink,signal}){
   processedFrames:chunk.frameCount,synthetic:true,renderedFilm:false,
   warnings:output.warnings.slice()};
 }
-export {createFilmCheckpoint,processNextFilmChunk};
+/** Enchaîne les blocs sans accumuler leurs poses. Le stockage de reprise doit
+ * confirmer chaque checkpoint avant le bloc suivant. Après une erreur de stockage,
+ * le consommateur doit dédupliquer la transaction déjà validée lors de la reprise.
+ */
+async function runFilmProject({project,checkpoint,generator,sink,signal,saveCheckpoint,onProgress}){
+ if(typeof saveCheckpoint!=='function')throw Error('Sauvegarde de reprise requise.');
+ if(onProgress!==undefined&&typeof onProgress!=='function')throw Error('Suivi de progression invalide.');
+ project=createLongFilmProject(project);
+ let current=checkpoint??await createFilmCheckpoint(project),processedFrames=0,completedChunks=0;
+ while(true){
+  const result=await processNextFilmChunk({project,checkpoint:current,generator,sink,signal});
+  if(result.processedFrames){
+   // Même si une annulation arrive après commit, conserver ce bloc déjà validé.
+   await saveCheckpoint(result.checkpoint);
+   current=result.checkpoint;processedFrames+=result.processedFrames;completedChunks++;
+   if(onProgress)await onProgress(Object.freeze({checkpoint:current,completedFrames:current.nextFrame,
+    totalFrames:project.totalFrames,processedFrames,completedChunks,renderedFilm:false}));
+  }
+  if(result.done)return {done:true,checkpoint:current,processedFrames,completedChunks,
+   synthetic:true,renderedFilm:false};
+  await yieldToInterface();
+ }
+}
+export {createFilmCheckpoint,processNextFilmChunk,runFilmProject};

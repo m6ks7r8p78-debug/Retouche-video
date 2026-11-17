@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import generator from './generateur.js';
 import {createLongFilmProject,serializeLongFilmProject,parseLongFilmProject,
  locateFilmFrame,nextFilmChunk,filmProjectFingerprint} from './film-long-project-v21.mjs';
-import {createFilmCheckpoint,processNextFilmChunk} from './film-long-runtime-v21.mjs';
+import {createFilmCheckpoint,processNextFilmChunk,runFilmProject} from './film-long-runtime-v21.mjs';
 const prompt='Une femme adulte fume une taffe de cigarette.';
 const make=(seconds=60)=>createLongFilmProject({title:'Banc synthétique',targetDurationSeconds:seconds,
  fps:24,chunkFrames:48,scenes:Array.from({length:seconds/5},(_,i)=>({id:'s'+i,prompt,frameCount:120}))});
@@ -100,4 +100,44 @@ test('plan détaillé : aucune perte du préambule ou des scènes et répartitio
  assert.match(p.scenes[1].prompt,/Bonjour/);
  assert.equal(p.scenes.reduce((sum,s)=>sum+s.frameCount,0),43200);
  assert.throws(()=>planLongFilmOutline({description:'   '}),/Décrivez/);
+});
+
+test('enchaînement automatique : sauvegarde et progression après chaque validation, reprise exacte',async()=>{
+ const project=make(10),consumer=sink(),saved=[],progress=[];
+ const first=await processNextFilmChunk({project,checkpoint:await createFilmCheckpoint(project),generator,sink:consumer});
+ const result=await runFilmProject({project,checkpoint:first.checkpoint,generator,sink:consumer,
+  async saveCheckpoint(checkpoint){
+   assert.equal(consumer.frames.at(-1),checkpoint.nextFrame-1);
+   saved.push(JSON.parse(JSON.stringify(checkpoint)));
+  },onProgress(state){assert.equal(state.checkpoint.nextFrame,saved.at(-1).nextFrame);progress.push(state);}});
+ assert.deepEqual(consumer.frames,Array.from({length:240},(_,i)=>i));
+ assert.deepEqual(saved.map(c=>c.nextFrame),[96,120,168,216,240]);
+ assert.equal(result.processedFrames,192);assert.equal(result.completedChunks,5);
+ assert.equal(progress.at(-1).completedFrames,240);assert.equal(result.renderedFilm,false);
+ const end=await runFilmProject({project,checkpoint:result.checkpoint,generator,sink:consumer,
+  saveCheckpoint(){assert.fail('Aucun bloc supplémentaire à sauvegarder');}});
+ assert.equal(end.processedFrames,0);assert.equal(consumer.begins,6);
+});
+test('sauvegarde échouée : ne pas commencer le bloc suivant ou annoncer une progression',async()=>{
+ const project=make(5),consumer=sink();
+ await assert.rejects(runFilmProject({project,generator,sink:consumer,
+  saveCheckpoint(){throw Error('Quota dépassé');},onProgress(){assert.fail('Progression non sauvegardée');}}),/Quota/);
+ assert.equal(consumer.begins,1);assert.equal(consumer.commits.length,1);
+ assert.equal(consumer.frames.length,48);
+});
+test('annulation entre blocs : checkpoint validé conservé et reprise au bon endroit',async()=>{
+ const project=make(5),consumer=sink(),controller=new AbortController();let saved;
+ await assert.rejects(runFilmProject({project,generator,sink:consumer,signal:controller.signal,
+  saveCheckpoint(checkpoint){saved=checkpoint;controller.abort();}}),{name:'AbortError'});
+ assert.equal(saved.nextFrame,48);assert.equal(consumer.begins,1);
+ await runFilmProject({project,checkpoint:saved,generator,sink:consumer,saveCheckpoint(){}});
+ assert.deepEqual(consumer.frames,Array.from({length:120},(_,i)=>i));
+});
+test('un événement navigateur peut interrompre un consommateur synchrone dans un bloc',async()=>{
+ const project=make(5),controller=new AbortController();let frames=0,aborts=0;
+ const consumer={beginChunk(){},writeFrame(){frames++;if(frames===1)setTimeout(()=>controller.abort(),0);},
+  commitChunk(){assert.fail('Bloc interrompu');},abortChunk(){aborts++;}};
+ await assert.rejects(processNextFilmChunk({project,checkpoint:await createFilmCheckpoint(project),
+  generator,sink:consumer,signal:controller.signal}),{name:'AbortError'});
+ assert.ok(frames>0&&frames<48);assert.equal(aborts,1);
 });

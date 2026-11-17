@@ -31,6 +31,11 @@ export async function checkLongFilm(page){
  await page.waitForFunction(()=>document.querySelector('#longStatus').textContent.includes('Projet enregistré dans ce navigateur'));
  const [reexport]=await Promise.all([page.waitForEvent('download'),page.locator('#saveLongFilm').click()]);
  assert.deepEqual(JSON.parse(await readFile(await reexport.path(),'utf8')),detailed);
+ // Le bouton principal ne doit pas écraser un projet structuré déjà importé.
+ await page.locator('#prepareLongFilm').click();
+ await page.waitForFunction(()=>document.querySelector('#longStatus').textContent.includes('Projet enregistré dans ce navigateur'));
+ const [preparedAgain]=await Promise.all([page.waitForEvent('download'),page.locator('#saveLongFilm').click()]);
+ assert.deepEqual(JSON.parse(await readFile(await preparedAgain.path(),'utf8')),detailed);
  const previousLink=await page.locator('#saveLongFilm').getAttribute('href');
  await page.locator('#importLongFilm').setInputFiles({name:'invalide.json',mimeType:'application/json',buffer:Buffer.from('{"schema":"inconnu"}')});
  await page.waitForFunction(()=>document.querySelector('#longStatus').textContent.startsWith('Import refusé'));
@@ -58,7 +63,7 @@ export async function checkLongFilm(page){
  // Ce petit bloc synthétique ne prétend pas produire une vidéo d'une heure.
  const result=await page.evaluate(async()=>{
   const {createLongFilmProject}=await import('./film-long-project-v21.mjs');
-  const {createFilmCheckpoint,processNextFilmChunk}=await import('./film-long-runtime-v21.mjs');
+  const {createFilmCheckpoint,processNextFilmChunk,runFilmProject}=await import('./film-long-runtime-v21.mjs');
   const {createWebGLFilmRenderer}=await import('./film-webgl-v04.mjs');
   const {paintSyntheticScene}=await import('./film-viewer-v03.mjs');
   const project=createLongFilmProject({targetDurationSeconds:1800,chunkFrames:24,
@@ -67,23 +72,25 @@ export async function checkLongFilm(page){
   const backend=document.querySelector('#view').dataset.renderer;
   const gl=backend==='webgl2'?canvas.getContext('webgl2',{preserveDrawingBuffer:true}):null;
   const renderer=gl?createWebGLFilmRenderer(gl):null,ctx=gl?null:canvas.getContext('2d');
-  let scene,frames=0,commits=0,aborts=0;
+  let scene,frames=0,commits=0,aborts=0,savedFrame=0;
   try{
    const initial=await createFilmCheckpoint(project);
-   const output=await processNextFilmChunk({project,checkpoint:initial,generator:globalThis.Retouche3DGenerator,
-    sink:{beginChunk(data){scene=data.scene;if(renderer)renderer.prepare(scene,data.glb);},
+   const consumer={beginChunk(data){scene=data.scene;if(renderer)renderer.prepare(scene,data.glb);},
      writeFrame({frame,pose}){if(frame!==frames)throw Error('Image non séquentielle');frames++;
       if(renderer)renderer.render(scene,pose,320,240,{});else paintSyntheticScene(ctx,scene,pose,320,240,{});},
-     commitChunk(){commits++;},abortChunk(){aborts++;}}});
+     commitChunk(){commits++;},abortChunk(){aborts++;}};
+   const first=await processNextFilmChunk({project,checkpoint:initial,generator:globalThis.Retouche3DGenerator,sink:consumer});
+   const output=await runFilmProject({project,checkpoint:first.checkpoint,generator:globalThis.Retouche3DGenerator,
+    sink:consumer,saveCheckpoint(checkpoint){savedFrame=checkpoint.nextFrame;}});
    let pixels;if(gl){pixels=new Uint8Array(320*240*4);gl.readPixels(0,0,320,240,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
     if(gl.getError()!==gl.NO_ERROR)throw Error('Erreur WebGL du bloc');
    }else pixels=ctx.getImageData(0,0,320,240).data;
    let foreground=0;for(let i=0;i<pixels.length;i+=4)
     if(Math.abs(pixels[i]-15)+Math.abs(pixels[i+1]-20)+Math.abs(pixels[i+2]-32)>48)foreground++;
-   return {frames,commits,aborts,foreground,nextFrame:output.checkpoint.nextFrame,renderedFilm:output.renderedFilm};
+   return {frames,commits,aborts,foreground,savedFrame,nextFrame:output.checkpoint.nextFrame,renderedFilm:output.renderedFilm};
   }finally{renderer?.dispose();}
  });
- assert.equal(result.frames,24);assert.equal(result.nextFrame,24);
- assert.equal(result.commits,1);assert.equal(result.aborts,0);
+ assert.equal(result.frames,120);assert.equal(result.nextFrame,120);assert.equal(result.savedFrame,120);
+ assert.equal(result.commits,5);assert.equal(result.aborts,0);
  assert.ok(result.foreground>100);assert.equal(result.renderedFilm,false);
 }

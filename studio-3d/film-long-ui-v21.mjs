@@ -5,7 +5,7 @@ const find=id=>document.querySelector(id);
 const button=find('#prepareLongFilm'),status=find('#longStatus'),save=find('#saveLongFilm'),
  description=find('#longDescription'),duration=find('#longDuration'),restore=find('#restoreLongFilm'),
  forget=find('#forgetLongFilm'),importFile=find('#importLongFilm');
-let url=null,revision=0;
+let url=null,revision=0,prepared=null;
 // Les écritures et la suppression restent ordonnées même pendant plusieurs clics.
 let storageQueue=Promise.resolve();
 const enqueue=fn=>{const task=storageQueue.then(fn);storageQueue=task.catch(()=>{});return task;};
@@ -13,6 +13,7 @@ function clear(){if(url)URL.revokeObjectURL(url);url=null;save.hidden=true;save.
 function show(project,message){
  const nextUrl=URL.createObjectURL(new Blob([serializeLongFilmProject(project)],{type:'application/json'}));
  clear();url=nextUrl;save.href=url;save.hidden=false;
+ prepared={project,description:description.value,duration:duration.value};
  status.textContent=message+' : '+project.scenes.length+' scène(s), '+project.targetDurationSeconds/60+
   ' minutes prévues. Aucune vidéo générée.';
 }
@@ -27,8 +28,10 @@ async function persist(project,token){
 button.addEventListener('click',()=>{
  const token=++revision;clear();
  try{
-  const project=planLongFilmOutline({description:description.value,targetDurationSeconds:Number(duration.value)});
-  show(project,'Projet préparé, durées réparties provisoirement');void persist(project,token);
+  // Un clic répété conserve le catalogue, les dialogues et les durées importées.
+  const retained=prepared&&prepared.description===description.value&&prepared.duration===duration.value;
+  const project=retained?prepared.project:planLongFilmOutline({description:description.value,targetDurationSeconds:Number(duration.value)});
+  show(project,retained?'Projet préparé, détails et durées conservés':'Projet préparé, durées réparties provisoirement');void persist(project,token);
  }catch(error){status.textContent='Projet non préparé : '+(error?.message||'erreur inconnue');}
 });
 for(const element of [description,duration])element.addEventListener('input',()=>{
