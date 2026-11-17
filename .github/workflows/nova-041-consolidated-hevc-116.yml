@@ -1,13 +1,13 @@
-name: NOVA 0.41 consolidated + Safari HEVC 1-1-6 (manual lab only)
+name: NOVA 0.41 Safari JSON visible buttons + share fallback (manual only)
 on:
   push:
     branches:
-      - chatgpt-nova-041-consolidated-hevc-116-v1
+      - chatgpt-nova-041-safari-json-buttons-fix-v1
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
-  group: nova-041-consolidated-${{ github.ref }}
+  group: nova-041-safari-json-buttons-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   unit:
@@ -36,7 +36,7 @@ jobs:
             "experiences/nova-detail.js":"6f35d293cadb3751aec1205f0cc04f69f433c835",
             "experiences/nova-hd-qa.js":"ab6e5b2758bd5e5deebbaf3cc15db93a7d0c8a86",
             "experiences/nova-zones.js":"c5b30374f33287da0ffc2c8229619d4bcd0ea6e8",
-            "experiences/nova.html":"abf3fe1c3fd44e163a1f384faf5a2bd63057bf33"
+            "experiences/nova.html":"10729b7c24a4c8ca56c6f30fcac88fb870e4a392"
           }
           for file,sha in expected.items():
             got=subprocess.check_output(["git","hash-object",file],text=True).strip()
@@ -104,17 +104,17 @@ jobs:
           assert all(x["origin"]=="ffmpeg-synthetic-only" for x in media)
           html=(root/"experiences/nova.html").read_text()
           for expected in ["nova-hevc-601-patches.js","nova-detail.js",
-                           "nova-hd-qa.js","nova601ColorPanel"]:
+                           "nova-hd-qa.js","nova601ColorPanel","nova601Share","nova601Copy","nova601Show","nova601ReportText"]:
             assert expected in html
           print("NOVA_041_MANIFEST_FILES",len(manifest["files"]),"media-synthetic",len(media))
           PY
           cd dist/nova-iphone-preview
-          zip -q -X -r ../../NOVA_041_GitHub_HEVC_116_consolide.zip .
+          zip -q -X -r ../../NOVA_041_iPhone_boutons_JSON_GitHub.zip .
           cd ../..
-          unzip -t NOVA_041_GitHub_HEVC_116_consolide.zip >/dev/null
+          unzip -t NOVA_041_iPhone_boutons_JSON_GitHub.zip >/dev/null
       - uses: actions/upload-artifact@v4
         with:
-          name: NOVA-041-GitHub-HEVC-116-HTTPS-manuel
-          path: NOVA_041_GitHub_HEVC_116_consolide.zip
+          name: NOVA-041-boutons-JSON-iPhone-HTTPS-manuel
+          path: NOVA_041_iPhone_boutons_JSON_GitHub.zip
           retention-days: 7
           if-no-files-found: error
