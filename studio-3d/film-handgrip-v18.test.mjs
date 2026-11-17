@@ -38,6 +38,8 @@ test('index et majeur sont opposés près de la tige pendant chacune des trois i
  assert.ok(a.maximumAxialCenterOffsetM<.100);
  assert.equal(a.exactMeshContactVerified,false);
  assert.equal(a.physicalGripForceVerified,false);
+ assert.equal(a.maxSampledPalmCigarettePenetrationM,0);
+ assert.equal(a.palmCigaretteExactTriangleCollisionVerified,false);
  assert.equal(out.lipAudit.exactSurfaceContactVerified,false);
 });
 test('les phalanges suivent le poignet à différents instants du mouvement',()=>{
@@ -110,6 +112,18 @@ test('une pince incohérente dans le GLB exporté est détectée',()=>{
  bytes.set(new TextEncoder().encode(raw.replace(find,replace)),20);
  assert.throws(()=>auditCigaretteFingerGrip(bytes,out.timeline),/hors tolérance radiale/);
 });
+test('le retour à l’ancienne paume englobante est détecté sur le GLB final',()=>{
+ const out=buildSyntheticFilmSceneV18(female,generator),bytes=out.glb.slice();
+ const dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),
+  size=dv.getUint32(12,true),raw=new TextDecoder().decode(bytes.subarray(20,20+size));
+ const good='"name":"main_droite","translation":[-0.035,-0.055,-0.01]';
+ const broken='"name":"main_droite","translation":[0.0035,-0.055,0.053]';
+ assert.equal(good.length,broken.length);
+ assert.ok(raw.includes(good));
+ bytes.set(new TextEncoder().encode(raw.replace(good,broken)),20);
+ assert.throws(()=>auditCigaretteFingerGrip(bytes,out.timeline),/paume traverse/);
+});
+
 test('la séquence de pince reste bornée et refuse les échantillons invalides',()=>{
  const out=buildSyntheticFilmSceneV18(female,generator);
  const episode=out.timeline;
