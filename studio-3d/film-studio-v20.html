@@ -67,6 +67,16 @@ footer{font-size:11px;line-height:1.7;color:#a8adbd;margin:20px 0}
 <h2>Ordre des gestes</h2><ol id="steps" aria-label="Chronologie du scénario"></ol>
 <ul id="limits" aria-label="Limitations et alertes"></ul>
 </div></section>
+<details class="panel" style="margin-top:14px"><summary style="padding:16px;cursor:pointer">Préparer un film de 30 à 60 minutes</summary>
+<div class="panelpad">
+<p class="note">Préparez et sauvegardez votre scénario détaillé. Séparez les scènes avec « Scène 1 : », « Scène 2 : », etc. Personnages, gestes, lieux et dialogues restent conservés dans votre texte. La durée est répartie provisoirement entre les scènes ; aucune vidéo longue n’est générée par ce bouton.</p>
+<label for="longDuration">Durée visée</label><select id="longDuration"><option value="1800">30 minutes</option><option value="3600" selected>1 heure</option></select>
+<label for="longDescription" style="margin-top:12px">Votre film, avec tous les détails à conserver</label>
+<textarea id="longDescription" maxlength="200000" placeholder="Scène 1 : Décrivez le lieu, les personnages, les actions et les dialogues…"></textarea>
+<button id="prepareLongFilm" type="button" class="primary">Préparer mon projet de film</button>
+<p id="longStatus" class="note" role="status" aria-live="polite">Préparation du scénario uniquement. Voix, cohérence des personnages et export vidéo long restent à développer.</p>
+<a id="saveLongFilm" hidden download="retoucheproai-projet-film.json">Enregistrer mon projet détaillé</a>
+</div></details>
 <section class="panel" style="margin-top:14px" aria-label="Diagnostic iPhone">
 <div class="panelpad">
 <h2>Vérifier la fluidité sur mon appareil</h2>
@@ -79,5 +89,5 @@ footer{font-size:11px;line-height:1.7;color:#a8adbd;margin:20px 0}
 </div>
 </section>
 <footer>Prototype expérimental distinct du site public. Doigts animés et distance radiale à une surface sphéroïdale estimée, mais aucune collision ou force de préhension démontrée ; posture assise et contact lèvres encore simplifiés, bouche animée sans voix. La prévisualisation ne constitue pas une preuve de rendu cinématographique. Aucune publication ou entraînement sur des personnes réelles.</footer>
-</main><script type="module" src="./film-ui-v20.mjs"></script></body>
+</main><script type="module" src="./film-ui-v20.mjs"></script><script type="module" src="./film-long-ui-v21.mjs"></script></body>
 </html>

@@ -1,3 +1,4 @@
+import {checkLongFilm} from './film-long-browser-check-v21.mjs';
 /** Film Studio v0.20 — test Chromium réel (images synthétiques uniquement).
  * Aucune dépendance externe dans l'application testée, un serveur local éphémère.
  */
@@ -219,6 +220,7 @@ try{
  assert.equal(await page.locator('#download').isVisible(),false);
  assert.equal(await page.locator('#download').getAttribute('href'),null);
  assert.match(await page.locator('#status').innerText(),/aucune animation 3D/);
+ await checkLongFilm(page);
  assert.deepEqual(errors,[],'Erreurs JavaScript du navigateur');
  console.log(JSON.stringify({result:'PASS',backend:'webgl2',foregroundPixels:metrics.foreground,
   pixelSize:[metrics.width,metrics.height],checks:['three-puff-smoke','one-cigarette-export','mesh','five-fingers-export','hand-closeup','camera-tracking','timeline','rotation','download','refusal','no-page-error']}));

@@ -1,3 +1,4 @@
+import {checkLongFilm} from './film-long-browser-check-v21.mjs';
 /** Film Studio v0.20 — véritable test WebKit (moteur Safari), sur Linux.
  * Deux parcours : WebKit standard + repli forcé si échec des shaders WebGL2.
  * L'app est strictement locale et ne reçoit aucune photo, voix ou vidéo privée.
@@ -228,6 +229,7 @@ async function run(page,label,origin){
  assert.equal(await page.locator('#focusHand').isEnabled(),false);
 
  assert.match(await page.locator('#status').innerText(),/aucune animation 3D/);
+ await checkLongFilm(page);
  assert.deepEqual(errors,[],'Erreurs JS WebKit');
  assert.deepEqual(external,[],'Ressources ou requêtes externes inattendues');
  report.push({label,backend,foreground:pixels.foreground,pixelSize:[pixels.width,pixels.height],
