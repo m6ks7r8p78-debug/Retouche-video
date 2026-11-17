@@ -405,3 +405,23 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - Les fichiers HTML/UI et les tests Chromium/WebKit sont versionnés ; le paquet iPhone reste totalement statique et isolé des médias privés.
 - **Limites :** ce maillage est triangulé et stylisé, pas une main reconstruite, ni un squelette humain avec skinning, ni une préhension physique. Les positions et largeurs ne s'adaptent pas encore à une gamme arbitraire d'objets.
 - Développement uniquement sur la PR #69 en brouillon. Aucun changement de retoucheproai.com ni de publication des 157 vidéos privées.
+
+
+## Film Studio v0.20 — tige cylindrique et filtre distinct (17 novembre 2026)
+
+- film-cigarette-cylinder-v20.mjs remplace le corps de cigarette en **sphère allongée** par un maillage **cylindrique fermé**, avec côtés triangulés, bouchons et normales. Un filtre synthétique à matériau brun clair est ajouté comme élément séparé, fixé au même poignet que la tige.
+- Les dix phalanges effilées v0.19, la cinématique inverse v0.17 et les trois cycles de cigarette v0.16 sont conservés. Un même objet-cigare/cigarette n'est pas dupliqué à chaque inhalation.
+- L'audit du GLB vérifie les maillages fermés, les matériaux, la hiérarchie du poignet, les axes tige/filtre transformés en 3D et la présence d'un seul exemplaire de chaque objet. L'alignement est mesuré dans l'axe local de la tige, et non en projetant à tort sur le plan mondial.
+- film-cigarette-cylinder-v20.test.mjs teste des bouchons manquants, des indices de triangles corrompus, le filtre déplacé artificiellement, les deux mains, le moteur tasse et le refus des références privées.
+- Le nouveau laboratoire v0.20 reste une animation **stylisée**. Le filtre plus réaliste géométriquement ne signifie pas combustion, physique du tabac ou fumée volumétrique crédible.
+- Les tests ne prennent jamais pour preuve de contact une simple proximité entre centres d'ellipsoïdes. L'audit historique de paume–cigarette est une approximation prudente et reste identifié comme tel.
+- Aucune image ou vidéo personnelle utilisée, aucun déploiement, aucune fusion de la PR #69. Le paquet HTTPS demeure un artefact de test, sans validation Safari sur iPhone physique.
+
+### Suite de travail priorisée (au-delà des micro-versions)
+1. Construire un **contrat d'interaction générique** qui lie objets, mains, surfaces et intentions sans géométrie codée en dur pour chaque objet.
+2. Passer aux mains/corps **riggés avec skinning multi-os**, articulations et contraintes spatiales, et aux modèles de personnages de meilleure qualité sous licences explicites.
+3. Ajouter des **collisions vérifiées au niveau des véritables maillages** et une résolution de préhension limitée, sans promettre un solveur humain complet avant sa validation.
+4. Améliorer matériaux PBR, normales déformées, lumière, visage/lèvres, objets et fumée temporellement cohérente ; surveiller l'usage mémoire et les limitations Safari.
+5. Intégrer à terme un export vidéo réel au produit avec une chaîne iPhone/WebCodecs ou un fallback choisi et testé, et des preuves de qualité **visuelle** en plus des tests unitaires.
+
+Ce programme de travail est une liste de fonctionnalités non encore implémentées, pas un bilan d'exécution. Toute validation ultérieure doit être mesurée à partir des artefacts réels et non de la seule présence de métadonnées.
