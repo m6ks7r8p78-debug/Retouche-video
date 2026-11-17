@@ -218,11 +218,10 @@ Conservez le son par défaut ; « sans son » reste un choix explicite.</p>
 <a id="iphoneBenchMp4" hidden>Enregistrer le MP4 de validation</a>
 </details>
 <details class="sourceAdvanced" id="nova601ColorPanel">
-<summary>Couleurs HEVC Safari 1/1/6 — autotest sans vidéo personnelle</summary>
-<p>Cette mire HEVC synthétique mesure huit couleurs connues dans le Canvas de Safari,
-sans importer ni exporter tes vidéos. Tu peux enregistrer un rapport JSON local
+<summary>Couleurs HEVC Safari — comparaison 1/1/6 et 1/1/1</summary>
+<p>Ces deux mires synthétiques mesurent huit couleurs connues à la lecture, puis après export H.264 et relecture. Tes vidéos personnelles ne sont pas utilisées. Tu peux enregistrer un rapport JSON local
 volontairement. Il ne certifie pas la fidélité des couleurs de tes médias privés.</p>
-<button type="button" class="secondary" id="nova601Run">Tester la couleur HEVC 1/1/6 sur cet iPhone</button>
+<button type="button" class="secondary" id="nova601Run">Tester les couleurs : lecture et export</button>
 <div id="nova601Status" role="status" aria-live="polite">Prêt : aucune mesure n'a commencé.</div>
 <div class="nova601Actions" role="group" aria-label="Récupérer le rapport HEVC synthétique">
 <button type="button" id="nova601Share" hidden>Partager le rapport / Enregistrer dans Fichiers</button>
@@ -463,11 +462,12 @@ async function sampleVideo(){
 <script src="nova-smallmotion-bridge.js"></script>
 <script src="nova-smallmotion-ui.js"></script>
 <script src="nova-hd-color.js"></script>
-<script src="nova-hevc-601-patches.js"></script>
-<script src="nova-hevc-601-patches-ui.js"></script>
+<script src="nova-hevc-pair.js"></script>
+<script src="nova-hevc-pair-ui.js"></script>
 <script src="nova-hd-qa.js"></script>
 <script src="nova-detail.js"></script>
 <script src="nova-native-hd.js"></script>
+<script src="nova-export-color-test.js"></script>
 <script src="nova-native-hd-ui.js"></script>
 <script src="nova-real-preflight.js"></script>
 <script src="nova-real-preflight-ui.js"></script>

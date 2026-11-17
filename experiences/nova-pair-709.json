@@ -1,0 +1,78 @@
+{
+  "schema": "retoucheproai.nova.synthetic-hevc-pair-patches.v1",
+  "origin": "ffmpeg-synthetic-only",
+  "input": "hevc-hvc1-mov",
+  "primaries": 1,
+  "transfer": 1,
+  "matrix": 1,
+  "width": 384,
+  "height": 216,
+  "frames": 15,
+  "patches": [
+    {
+      "id": "black",
+      "rgb": [
+        16.0,
+        15.0,
+        18.0
+      ]
+    },
+    {
+      "id": "shadow",
+      "rgb": [
+        47.0,
+        44.0,
+        50.0
+      ]
+    },
+    {
+      "id": "light-skin",
+      "rgb": [
+        209.0,
+        163.0,
+        140.0
+      ]
+    },
+    {
+      "id": "white",
+      "rgb": [
+        249.0,
+        249.0,
+        242.0
+      ]
+    },
+    {
+      "id": "blue-shadow",
+      "rgb": [
+        28.0,
+        33.0,
+        46.0
+      ]
+    },
+    {
+      "id": "skin-shadow",
+      "rgb": [
+        90.0,
+        66.0,
+        60.0
+      ]
+    },
+    {
+      "id": "red",
+      "rgb": [
+        217.0,
+        62.0,
+        43.0
+      ]
+    },
+    {
+      "id": "highlight",
+      "rgb": [
+        239.0,
+        229.0,
+        214.0
+      ]
+    }
+  ],
+  "referenceMethod": "FFmpeg decoded RGB24; explicit source matrix and limited range; center 15x15 samples"
+}
