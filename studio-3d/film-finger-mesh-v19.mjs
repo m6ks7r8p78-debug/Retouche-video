@@ -98,9 +98,15 @@ function auditTaperedFingerMeshes(glb){
  };
  return report;
 }
-function buildSyntheticFilmSceneV19(request,generator){
+function buildSyntheticFilmSceneV19(request,generator,{decorateModel}={}){
  const out=buildSyntheticFilmSceneV18(request,generator,{
-  decorateModel:args=>decorateTaperedFingerMeshes(args)
+  decorateModel:args=>{
+   decorateTaperedFingerMeshes(args);
+   if(decorateModel!==undefined){
+    if(typeof decorateModel!=='function')throw TypeError('Décorateur d’objets non valide.');
+    decorateModel(args);
+   }
+  }
  });
  if(out.schema!=='retoucheproai.film-motion-preview.v0.18'||
    out.status!=='apercu_partiel_glb_anime')return out;
