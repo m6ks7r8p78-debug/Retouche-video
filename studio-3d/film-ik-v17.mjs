@@ -186,10 +186,16 @@ function auditCigaretteLipApproach(glb,timeline,{sampleHz=30}={}){
  return report;
 }
 
-function buildSyntheticFilmSceneV17(request,generator){
+function buildSyntheticFilmSceneV17(request,generator,{decorateModel}={}){
  const details=[];
  const result=buildSyntheticFilmSceneV16(request,generator,{
-  decorateModel:args=>details.push(...retargetCigaretteToLips(args))
+  decorateModel:args=>{
+   details.push(...retargetCigaretteToLips(args));
+   if(decorateModel!==undefined){
+    if(typeof decorateModel!=='function')throw TypeError('Décorateur de préhension non valide.');
+    decorateModel(args);
+   }
+  }
  });
  if(result.schema!=='retoucheproai.film-motion-preview.v0.16'||
     result.status!=='apercu_partiel_glb_anime')return result;
