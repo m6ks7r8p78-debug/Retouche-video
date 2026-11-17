@@ -15,6 +15,19 @@ et propose un fichier JSON local. Le texte original, y compris son préambule,
 est conservé. Aucune vidéo n'est annoncée ni créée par cette action. Modifier le
 texte invalide immédiatement le lien de téléchargement précédent.
 
+La dernière version préparée ou importée est maintenant enregistrée dans
+IndexedDB, sur l'origine de ce navigateur. « Reprendre le projet enregistré » la
+recharge après une fermeture/rechargement. L'import JSON valide le schéma et les
+limites avant remplacement ; un fichier invalide conserve le projet précédent.
+Le fichier réexporté conserve personnages, dialogues, notes et durées personnalisées.
+Les modifications de texte non préparées ne sont pas enregistrées automatiquement.
+
+Le bouton d'effacement supprime seulement la copie IndexedDB. Le texte affiché et
+le fichier téléchargeable restent disponibles. Un refus ou quota du stockage laisse
+la sauvegarde JSON accessible. Le navigateur peut supprimer IndexedDB ; ce n'est
+ni une sauvegarde cloud ni une garantie contre la perte de données. Les checkpoints
+de rendu ne sont pas encore persistés par cette interface.
+
 Le contrat de projet conserve un catalogue de personnages, des identifiants de
 scènes, les descriptions, détails et dialogues. Les bornes sont calculées en
 nombres entiers d'images : une heure à 24 images/s représente 86 400 images.

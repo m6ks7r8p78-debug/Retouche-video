@@ -35,6 +35,7 @@ footer{font-size:11px;line-height:1.7;color:#a8adbd;margin:20px 0}
 @media(max-width:720px){.grid{grid-template-columns:1fr}.stage{height:350px}header{padding-bottom:17px}}
 @media(max-width:420px){.stage{height:290px}.panelpad{padding:15px}}
 #saveDiagnostic{display:inline-block;text-decoration:none;color:#1e2a23;background:#d4f0dd;padding:12px 15px;border-radius:12px;font-size:12px;font-weight:700;margin-top:12px}#saveDiagnostic[hidden]{display:none!important}#diagnosticStatus{min-height:34px}.file-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:11px}.file-actions a{margin-top:0!important}.file-actions button{background:#283846;border-color:#587486}.file-actions button[hidden]{display:none!important}#shareStatus{min-height:16px}.inspection-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:11px 0 6px}.inspection-actions button{background:#304050;border-color:#7d8b9c}.inspection-actions p{flex:1;min-width:180px;margin:0}.inspection-actions button[aria-pressed=true]{background:#d9c8f4;color:#201b30}
+#longDuration,#importLongFilm{font-size:16px;min-height:44px;max-width:100%}#longDescription{font-size:16px}#saveLongFilm{display:inline-block;min-height:44px;padding:12px;color:#d4f0dd}#longDuration{margin-bottom:8px}
 </style>
 </head>
 <body><main>
@@ -75,6 +76,10 @@ footer{font-size:11px;line-height:1.7;color:#a8adbd;margin:20px 0}
 <textarea id="longDescription" maxlength="200000" placeholder="Scène 1 : Décrivez le lieu, les personnages, les actions et les dialogues…"></textarea>
 <button id="prepareLongFilm" type="button" class="primary">Préparer mon projet de film</button>
 <p id="longStatus" class="note" role="status" aria-live="polite">Préparation du scénario uniquement. Voix, cohérence des personnages et export vidéo long restent à développer.</p>
+<div class="file-actions"><button id="restoreLongFilm" type="button" disabled>Reprendre le projet enregistré</button>
+<button id="forgetLongFilm" type="button" disabled>Effacer la copie du navigateur</button></div>
+<label for="importLongFilm" style="margin-top:12px">Ouvrir une sauvegarde JSON</label><input id="importLongFilm" type="file" accept=".json,application/json">
+<p class="note">Seul le dernier projet préparé est conservé dans ce navigateur. Le navigateur peut supprimer son stockage : gardez une copie JSON. Importer un projet remplace cette copie locale. Modifier et préparer à nouveau le texte répartit de nouveau les durées ; conservez la sauvegarde d’origine pour ses réglages structurés.</p>
 <a id="saveLongFilm" hidden download="retoucheproai-projet-film.json">Enregistrer mon projet détaillé</a>
 </div></details>
 <section class="panel" style="margin-top:14px" aria-label="Diagnostic iPhone">
