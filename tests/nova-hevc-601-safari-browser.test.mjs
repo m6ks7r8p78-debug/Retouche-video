@@ -62,6 +62,28 @@ test("NOVA Safari HEVC 1/1/6 : clic volontaire, huit patches et diagnostic privÃ
   await page.locator("#nova601Run").click();
   await page.waitForFunction(()=>!!document.querySelector("#nova601Json")?.getAttribute("href"),
    null,{timeout:90000});
+  // Sur iPhone, l'ancien "lien" Ã©tait uniquement du texte noir.
+  // Le rapport DOIT maintenant montrer de VRAIS boutons de taille tactile.
+  for(const id of ["#nova601Share","#nova601Copy","#nova601Show"]){
+   const button=page.locator(id);
+   assert.equal(await button.isVisible(),true,id+" must be visible after test");
+   const metrics=await button.evaluate(el=>({
+    tag:el.tagName,display:getComputedStyle(el).display,
+    height:el.getBoundingClientRect().height,
+    background:getComputedStyle(el).backgroundColor
+   }));
+   assert.equal(metrics.tag,"BUTTON");
+   assert.ok(metrics.height>=48,id+": minimum 48px tactile");
+   assert.notEqual(metrics.display,"none");
+   assert.notEqual(metrics.background,"rgba(0, 0, 0, 0)");
+  }
+  assert.equal(await page.locator("#nova601Json").isVisible(),false,
+   "No naked black anchor pretending to be a save button");
+  await page.locator("#nova601Show").click();
+  assert.equal(await page.locator("#nova601ReportText").isVisible(),true);
+  const shown=await page.locator("#nova601ReportText").inputValue();
+  assert.match(shown,/"origin": "ffmpeg-synthetic-only"/);
+  assert.match(shown,/"privacy":/);
   const report=await page.evaluate(async()=>{
    const url=document.querySelector("#nova601Json").href;
    return JSON.parse(await (await fetch(url)).text());
