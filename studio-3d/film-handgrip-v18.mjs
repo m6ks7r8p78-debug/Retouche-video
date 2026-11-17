@@ -18,7 +18,7 @@ const clamp=v=>Math.max(0,Math.min(1,v));
 const smooth=v=>{const t=clamp(v);return t*t*(3-2*t);};
 const quatZ=a=>[0,0,Math.sin(a/2),Math.cos(a/2)];
 const dot=(a,b)=>a.reduce((s,x,i)=>s+x*b[i],0);
-const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2]];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
 function localPoint(m,world){
  if(!Array.isArray(m)||m.length!==16||!Array.isArray(world)||world.length!==3)
   throw Error('Matrice de poignet invalide.');
@@ -26,7 +26,7 @@ function localPoint(m,world){
  const a=[m[0],m[1],m[2]],b=[m[4],m[5],m[6]],c=[m[8],m[9],m[10]];
  const determinant=dot(a,cross(b,c));
  if(!Number.isFinite(determinant)||Math.abs(determinant)<1e-10)
-  throw Error('Poignet dégénéré : déterminant='+determinant+', axes='+JSON.stringify([a,b,c])+', m='+JSON.stringify(m));
+  throw Error('Poignet dégénéré.');
  return [dot(d,cross(b,c)),dot(a,cross(d,c)),dot(a,cross(b,d))].map(x=>x/determinant);
 }
 
