@@ -92,7 +92,7 @@ async function filmProjectFingerprint(project){
  const digest=await globalThis.crypto.subtle.digest('SHA-256',bytes);
  return [...new Uint8Array(digest)].map(v=>v.toString(16).padStart(2,'0')).join('');
 }
-function planLongFilmOutline({description,targetDurationSeconds=3600,title='Mon film'}){
+function planLongFilmOutline({description,targetDurationSeconds=300,title='Mon film'}){
  text(description,'Scénario détaillé',200000);
  if(!description.trim())throw Error('Décrivez votre film avant de préparer le projet.');
  const headings=[...description.matchAll(/^\s*sc[eè]ne\s+\d+\s*[:：]/gmi)];
