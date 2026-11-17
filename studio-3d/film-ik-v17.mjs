@@ -143,10 +143,10 @@ function auditCigaretteLipApproach(glb,timeline,{sampleHz=30}={}){
   if(i<0||names.lastIndexOf(name)!==i)throw Error('Point de contact absent : '+name);
   return i;
  };
- const filter=id('film_cigarette_filtre_contact'),lips=id('film_bouche_cible'),
-  wrist=names.includes('poignet_droite')?id('poignet_droite'):id('poignet_gauche');
- const actualParent=scene.doc.nodes.findIndex(x=>x.children?.includes(filter));
- if(actualParent!==wrist)throw Error('Le point filtre n’est pas rattaché au poignet.');
+ const filter=id('film_cigarette_filtre_contact'),lips=id('film_bouche_cible');
+ const wrist=scene.doc.nodes.findIndex(x=>x.children?.includes(filter));
+ if(wrist<0||!['poignet_droite','poignet_gauche'].includes(names[wrist]))
+  throw Error('Le point filtre n’est pas rattaché à un poignet valide.');
  let peakApproachM=0,peakSpeedMps=0,checked=0;
  const measurements=[];
  for(const episode of timeline){
