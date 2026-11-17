@@ -384,3 +384,24 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - La cigarette est approchée géométriquement des lèvres : aucune collision des surfaces ni pression n'est certifiée. Les doigts ne sont pas encore adaptés pour tenir une cigarette de manière anatomique. La fumée est une primitive synthétique animée, pas un fluide physique.
 - Ni personnage photoréaliste, ni vêtement/surface de peau physique, ni mouvement appris à partir de vidéos, ni export MP4 intégré, ni validation Safari sur iPhone réel.
 - PR #69 en brouillon, non fusionnée ; retoucheproai.com et les 157 vidéos privées restent inchangés.
+
+
+## Film Studio v0.18 — doigts animés autour de la cigarette (17 novembre 2026)
+
+- film-handgrip-v18.mjs ajoute cinq doigts à deux volumes de phalanges chacun, deux pivots par doigt et dix pistes glTF de rotation. Ils sont rattachés au **poignet réel qui porte la cigarette**, y compris quand le personnage fume avec la main gauche.
+- L'index et le majeur sont opposés autour de la tige de cigarette, avec un serrage **visuel** légèrement plus important pendant chaque inhalation. Le mouvement hérite de l'IK épaule–coude v0.17 ; il n'y a pas de simulation de force/pression, frottement, collision précise ou tissus.
+- La grosse sphère initiale de la paume englobait une partie de la cigarette. Le volume est désormais plus petit et décalé, sans déplacer le poignet ni la cigarette. Un audit d'échantillonnage de surfaces sphéroïdales rejette une intersection excessive de la paume avec la tige. L'injection de l'ancienne mauvaise géométrie dans le GLB est un test négatif.
+- L'audit lit le GLB final, contrôle que les cinq doigts restent attachés au poignet, la présence des dix pistes, la proximité radiale et l'opposition index–majeur au moment des inhalations, la profondeur axiale et la géométrie de paume.
+- Le constructeur v0.17 conserve son comportement ancien ; seule la v0.18 applique ce rig additionnel.
+- Preuve : GitHub Actions 43993577190, **139/139 tests Node réussis**, Chromium WebGL2, WebKit Linux WebGL2 + Canvas 2D, paquet statique iPhone isolé : **4/4 jobs verts**. Ces tests ne constituent **pas** une validation sur iPhone réel.
+- Limites : articulations et prises géométriques simplifiées ; aucun rendu humain réaliste ni preuve de contact physique ; aucune source personnelle utilisée.
+
+## Film Studio v0.19 — maillage de phalanges effilées réutilisé (17 novembre 2026)
+
+- film-finger-mesh-v19.mjs construit une **unique topologie fermée effilée** (anneaux et triangles), réutilisée comme un mesh glTF pour les dix volumes de phalanges des cinq doigts. Le profil variable réduit l'aspect de grosses sphères uniformes sans générer dix maillages redondants.
+- Le glTF partage la même géométrie mais conserve **dix nœuds indépendants**, attachés aux pivots déjà animés. Le solveur spatial de lèvres et les contrôles de proximité sont maintenus.
+- Un audit du GLB exporté vérifie les arêtes orientées fermées, les normales, l'absence de triangles dégénérés, le matériau de peau synthétique, dix références au même maillage et la limitation du nombre de sommets/triangles.
+- film-finger-mesh-v19.test.mjs contrôle le mesh, sa corruption volontaire, le comportement gauche/droite, le maintien des gestes et des scènes de tasse, et le refus des médias privés.
+- Les fichiers HTML/UI et les tests Chromium/WebKit sont versionnés ; le paquet iPhone reste totalement statique et isolé des médias privés.
+- **Limites :** ce maillage est triangulé et stylisé, pas une main reconstruite, ni un squelette humain avec skinning, ni une préhension physique. Les positions et largeurs ne s'adaptent pas encore à une gamme arbitraire d'objets.
+- Développement uniquement sur la PR #69 en brouillon. Aucun changement de retoucheproai.com ni de publication des 157 vidéos privées.
