@@ -184,9 +184,15 @@ function auditCigaretteFingerGrip(glb,timeline,{sampleHz=24}={}){
   throw Error('La paume traverse le volume de la cigarette.');
  return report;
 }
-function buildSyntheticFilmSceneV18(request,generator){
+function buildSyntheticFilmSceneV18(request,generator,{decorateModel}={}){
  const out=buildSyntheticFilmSceneV17(request,generator,{
-  decorateModel:args=>decorateCigaretteFingers(args)
+  decorateModel:args=>{
+   decorateCigaretteFingers(args);
+   if(decorateModel!==undefined){
+    if(typeof decorateModel!=='function')throw TypeError('Décorateur de géométrie des doigts invalide.');
+    decorateModel(args);
+   }
+  }
  });
  if(out.schema!=='retoucheproai.film-motion-preview.v0.17'||
     out.status!=='apercu_partiel_glb_anime')return out;
