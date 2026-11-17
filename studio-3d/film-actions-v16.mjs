@@ -64,8 +64,10 @@ function auditRepeatedSmoking(glb,timeline){
   return id;
  };
  const cigarette=one('cigarette_tige'),tip=one('cigarette_braise'),
-  mouth=one('bouche_pivot'),wrist=one('poignet_droite'),
-  smoke=one('fumee_volute_1');
+  mouth=one('bouche_pivot'),smoke=one('fumee_volute_1');
+ const wrist=scene.doc.nodes.findIndex(n=>n.children?.includes(cigarette));
+ if(wrist<0||!['poignet_droite','poignet_gauche'].includes(names[wrist]))
+  throw Error('La cigarette doit être rattachée à un poignet valide.');
  if(!Array.isArray(timeline)||timeline.length<1||timeline.length>5)
   throw Error('Cycle de cigarette absent.');
  const findings=[];
