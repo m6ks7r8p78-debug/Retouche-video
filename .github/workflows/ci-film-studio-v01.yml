@@ -1,4 +1,4 @@
-name: Film Studio - moteur de gestes répétés v0.16
+name: Film Studio - IK main bouche géométrique v0.17
 on:
   push:
     branches:
@@ -107,6 +107,13 @@ on:
       - 'studio-3d/film-browser-webkit-v16.test.mjs'
       - 'studio-3d/film-ik-v17.mjs'
       - 'studio-3d/film-ik-v17.test.mjs'
+      - 'studio-3d/film-ui-v17.mjs'
+      - 'studio-3d/film-share-v17.mjs'
+      - 'studio-3d/film-studio-v17.html'
+      - 'studio-3d/film-browser-v17.test.mjs'
+      - 'studio-3d/film-browser-webkit-v17.test.mjs'
+      - 'studio-3d/film-ik-v17.mjs'
+      - 'studio-3d/film-ik-v17.test.mjs'
       - '.github/workflows/ci-film-studio-v01.yml'
 jobs:
   scenario-contract:
@@ -119,8 +126,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Vérifier la syntaxe du code de l’interface v0.16
-        run: node --check studio-3d/film-ui-v16.mjs && node --check studio-3d/film-actions-v16.mjs && node --check studio-3d/film-action-plan-v16.mjs
+      - name: Vérifier la syntaxe du code de l’interface v0.17
+        run: node --check studio-3d/film-ui-v17.mjs && node --check studio-3d/film-ik-v17.mjs && node --check studio-3d/film-actions-v16.mjs
       - name: Verifier le contrat de scenario sans medias prives
         run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs studio-3d/film-viewer-v03.test.mjs studio-3d/film-ui-v03.test.mjs studio-3d/film-contact-v03.test.mjs studio-3d/film-webgl-v04.test.mjs studio-3d/film-diagnostic-v06.test.mjs studio-3d/film-share-v07.test.mjs studio-3d/film-motion-v08.test.mjs studio-3d/film-fingers-v09.test.mjs studio-3d/film-inspection-v10.test.mjs studio-3d/film-grip-v11.test.mjs studio-3d/film-volume-v12.test.mjs studio-3d/film-bridge-v13.test.mjs studio-3d/film-continuous-v14.test.mjs studio-3d/film-morph-v15.test.mjs studio-3d/film-actions-v16.test.mjs studio-3d/film-ik-v17.test.mjs
 
@@ -140,13 +147,13 @@ jobs:
       - name: Installer Chromium et ses dépendances système
         run: npx playwright install --with-deps chromium
       - name: Vérifier la page complète, les pixels WebGL2, les gestes et le refus
-        run: node studio-3d/film-browser-v16.test.mjs
+        run: node studio-3d/film-browser-v17.test.mjs
       - name: Conserver la capture synthétique pour revue
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: film-studio-v16-chromium-synthetic
-          path: test-results/film-studio-v16-chromium*.png
+          name: film-studio-v17-chromium-synthetic
+          path: test-results/film-studio-v17-chromium*.png
           if-no-files-found: ignore
           retention-days: 7
 
@@ -166,13 +173,13 @@ jobs:
       - name: Installer WebKit et ses dépendances système
         run: npx playwright install --with-deps webkit
       - name: Tester Safari WebKit simulé, mode tactile, repli et export local
-        run: node studio-3d/film-browser-webkit-v16.test.mjs
+        run: node studio-3d/film-browser-webkit-v17.test.mjs
       - name: Archiver captures entièrement synthétiques WebKit
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: film-studio-v16-webkit-synthetic
-          path: test-results/film-studio-v16-webkit-*.png
+          name: film-studio-v17-webkit-synthetic
+          path: test-results/film-studio-v17-webkit-*.png
           if-no-files-found: ignore
           retention-days: 7
 
@@ -186,16 +193,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Préparer un paquet statique sans médias ni données privées
         run: |
-          mkdir -p dist/film-studio-iphone-v16
-          cp studio-3d/film-studio-v16.html dist/film-studio-iphone-v16/index.html
+          mkdir -p dist/film-studio-iphone-v17
+          cp studio-3d/film-studio-v17.html dist/film-studio-iphone-v17/index.html
           for name in \
             generateur.js \
-            film-ui-v16.mjs film-action-plan-v16.mjs film-actions-v16.mjs film-morph-v15.mjs film-continuous-v14.mjs film-bridge-v13.mjs film-volume-v12.mjs film-grip-v11.mjs film-scene-v10.mjs film-inspection-v10.mjs film-fingers-v09.mjs film-motion-v08.mjs film-share-v16.mjs film-diagnostic-v06.mjs \
+            film-ui-v17.mjs film-ik-v17.mjs film-action-plan-v16.mjs film-actions-v16.mjs film-morph-v15.mjs film-continuous-v14.mjs film-bridge-v13.mjs film-volume-v12.mjs film-grip-v11.mjs film-scene-v10.mjs film-inspection-v10.mjs film-fingers-v09.mjs film-motion-v08.mjs film-share-v17.mjs film-diagnostic-v06.mjs \
             film-contact-v03.mjs film-sequence-v02.mjs \
             film-project-v01.mjs film-viewer-v03.mjs film-webgl-v04.mjs; do
-            cp "studio-3d/$name" "dist/film-studio-iphone-v16/$name"
+            cp "studio-3d/$name" "dist/film-studio-iphone-v17/$name"
           done
-          cat > dist/film-studio-iphone-v16/_headers <<'HEADERS'
+          cat > dist/film-studio-iphone-v17/_headers <<'HEADERS'
           /*
             Cache-Control: no-store
             Referrer-Policy: no-referrer
@@ -203,12 +210,12 @@ jobs:
             Permissions-Policy: camera=(), microphone=(), geolocation=()
             Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'
           HEADERS
-          test "$(find dist/film-studio-iphone-v16 -maxdepth 1 -type f | wc -l)" -eq 22
-          test -z "$(find dist/film-studio-iphone-v16 -type f \( -name '*.mp4' -o -name '*.jpg' -o -name '*.png' \))"
+          test "$(find dist/film-studio-iphone-v17 -maxdepth 1 -type f | wc -l)" -eq 23
+          test -z "$(find dist/film-studio-iphone-v17 -type f \( -name '*.mp4' -o -name '*.jpg' -o -name '*.png' \))"
       - name: Préparer le téléchargement du paquet de laboratoire iPhone
         uses: actions/upload-artifact@v4
         with:
-          name: film-studio-v16-iphone-https-package
-          path: dist/film-studio-iphone-v16/
+          name: film-studio-v17-iphone-https-package
+          path: dist/film-studio-iphone-v17/
           retention-days: 14
           if-no-files-found: error
