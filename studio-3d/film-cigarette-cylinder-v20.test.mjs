@@ -122,3 +122,15 @@ test('les intervalles non finis ou excessifs sont refusés avant échantillonnag
  for(const end of [NaN,Infinity,0,-1,100000])
   assert.throws(()=>auditCigaretteCylinder(new Uint8Array(),[{start:0,end}]),/Chronologie/);
 });
+
+test('tous les nombres annoncés de gestes (1 à 5), pour les deux mains et personnages',()=>{
+ for(const person of ['Une femme adulte','Un homme adulte'])
+  for(const hand of ['droite','gauche'])for(let n=1;n<=5;n++){
+   const prompt=`${person} fume ${n} taffes de cigarette de la main ${hand}.`;
+   const out=buildSyntheticFilmSceneV20(prompt,generator);
+   assert.equal(out.actionAudit.episodesVerified,n,prompt);
+   assert.equal(out.gripAudit.fingerCount,5,prompt);
+   assert.ok(out.cylinderAudit.minOutwardAlignment>=.95,prompt);
+   assert.ok(out.lipAudit.peakApproachGapM<=.022,prompt);
+  }
+});

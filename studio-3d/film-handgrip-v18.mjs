@@ -62,7 +62,10 @@ function decorateCigaretteFingers({model,timeline}){
  palm.scale=[.048,.077,.037];
  const sh=nodes.findIndex(n=>n.name==='epaule_'+side);
  const timeSource=model.animations[0].channels.find(ch=>ch.node===sh&&ch.path==='rotation');
- if(!timeSource||!Array.isArray(timeSource.times)||timeSource.times.length<10)
+ // Un seul geste valide comporte moins de dix clés. Vérifier la chronologie
+ // elle-même, sans imposer implicitement au moins deux répétitions.
+ if(!timeSource||!Array.isArray(timeSource.times)||timeSource.times.length<2||
+  timeSource.times.some((t,i)=>!Number.isFinite(t)||t<0||(i>0&&t<=timeSource.times[i-1])))
   throw Error('Clés temporelles de prise de cigarette manquantes.');
  const times=timeSource.times.slice(),channels=model.animations[0].channels;
  const push=(name,parent,translation,scale,material=0)=>{

@@ -206,6 +206,14 @@ try{
  });
  const cigaretteExhale=await page.locator('#view').screenshot();
  assert.equal(cigaretteInhale.equals(cigaretteExhale),false,'Les poses de cigarette doivent bouger.');
+ // Régression : un geste unique était refusé par le seuil de clés de la main.
+ await page.locator('#prompt').fill('Un homme adulte fume une taffe de cigarette de la main gauche.');
+ await page.getByRole('button',{name:'Créer mon animation 3D'}).click();
+ assert.match(await page.locator('#status').innerText(),/1 geste distinct/);
+ assert.equal(await page.locator('#view').getAttribute('data-view-mode'),'scene');
+ assert.equal(await page.locator('#download').isVisible(),true);
+ await page.locator('#focusHand').click();
+ assert.equal(await page.locator('#view').getAttribute('data-view-mode'),'main');
  await page.locator('#prompt').fill('Une femme boit puis parle.');
  await page.getByRole('button',{name:'Créer mon animation 3D'}).click();
  assert.equal(await page.locator('#download').isVisible(),false);

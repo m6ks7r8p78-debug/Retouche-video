@@ -207,7 +207,7 @@ create.addEventListener('click',()=>{
    if(output.actionAudit){
      const a=output.actionAudit;
      status.textContent='GLB stylisé créé localement : '+a.episodesVerified+
-       ' gestes distincts avec une cigarette unique. Cinq doigts animés avec phalanges effilées. Cigarette à corps cylindrique fermé et filtre visible (sans combustion réelle), index et majeur opposés autour de la tige (sans force physique). Cible filtre–lèvres suivie avec écart maximal mesuré '+(output.lipAudit?Math.round(output.lipAudit.peakApproachGapM*1000)+' mm':'non disponible')+'. Cycles main–bouche et fumée sphéroïdale animés, sans contact physique lèvres certifié, sans fluides physiques et sans MP4 natif. '+
+       (a.episodesVerified===1?' geste distinct':' gestes distincts')+' avec une cigarette unique. Cinq doigts animés avec phalanges effilées. Cigarette à corps cylindrique fermé et filtre visible (sans combustion réelle), index et majeur opposés autour de la tige (sans force physique). Cible filtre–lèvres suivie avec écart maximal mesuré '+(output.lipAudit?Math.round(output.lipAudit.peakApproachGapM*1000)+' mm':'non disponible')+'. Cycles main–bouche et fumée sphéroïdale animés, sans contact physique lèvres certifié, sans fluides physiques et sans MP4 natif. '+
        (gpu?'Rendu WebGL2.':ctx?'Secours Canvas 2D.':'Aperçu indisponible.');
    }else{
    status.textContent='GLB animé créé localement : '+output.animatedActions.length+
