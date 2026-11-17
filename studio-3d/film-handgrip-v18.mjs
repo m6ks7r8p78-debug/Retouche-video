@@ -26,7 +26,7 @@ function localPoint(m,world){
  const a=[m[0],m[1],m[2]],b=[m[4],m[5],m[6]],c=[m[8],m[9],m[10]];
  const determinant=dot(a,cross(b,c));
  if(!Number.isFinite(determinant)||Math.abs(determinant)<1e-10)
-  throw Error('Poignet dégénéré.');
+  throw Error('Poignet dégénéré : déterminant='+determinant+', axes='+JSON.stringify([a,b,c])+', m='+JSON.stringify(m));
  return [dot(d,cross(b,c)),dot(a,cross(d,c)),dot(a,cross(b,d))].map(x=>x/determinant);
 }
 
