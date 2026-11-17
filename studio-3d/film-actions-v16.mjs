@@ -101,7 +101,7 @@ function auditRepeatedSmoking(glb,timeline){
  };
 }
 
-function buildSyntheticFilmSceneV16(request,generator){
+function buildSyntheticFilmSceneV16(request,generator,{decorateModel}={}){
  const plan=compileActionPlanV16(request);
  const wantsSmoke=plan.project.scenes.some(s=>s.steps.some(st=>st.intent==='fumer'));
  if(!wantsSmoke)return buildSyntheticFilmSceneV15(request,generator);
@@ -119,6 +119,10 @@ function buildSyntheticFilmSceneV16(request,generator){
  config.smoke=true;config.tobacco='cigarette';config.actions=['pose'];
  const model=generator.build(config);
  const {timeline,duration}=compileRepeatedClip(model,plan);
+ if(decorateModel!==undefined){
+  if(typeof decorateModel!=='function')throw TypeError('Décorateur de gestes incompatible.');
+  decorateModel({model,plan,timeline,duration,generator});
+ }
  const glb=generator.encodeGLB(model).bytes;
  const actionAudit=auditRepeatedSmoking(glb,timeline);
  return {
