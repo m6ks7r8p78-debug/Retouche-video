@@ -76,3 +76,29 @@ test('rendu WebGL simulé: vrais buffers géométriques, profondeur et dessins d
  assert.ok(calls.depth>=2);
  renderer.dispose();
 });
+
+test('échec GPU partiel : toutes les allocations libérées, puis préparation réutilisable',()=>{
+ const {output,scene}=prepared();
+ for(const failure of ['vao',2,5,'upload']){
+  const buffers=new Set(),vaos=new Set();let id=0,attempts=0,enabled=true,uploads=0;
+  const gl={
+   VERTEX_SHADER:1,FRAGMENT_SHADER:2,COMPILE_STATUS:3,LINK_STATUS:4,
+   createShader:()=>++id,shaderSource(){},compileShader(){},getShaderParameter:()=>true,deleteShader(){},
+   createProgram:()=>++id,attachShader(){},linkProgram(){},getProgramParameter:()=>true,
+   getUniformLocation(){},deleteProgram(){},
+   createVertexArray(){if(enabled&&failure==='vao')return null;const v=++id;vaos.add(v);return v;},
+   createBuffer(){if(++attempts===failure&&enabled)return null;const b=++id;buffers.add(b);return b;},
+   deleteBuffer(b){if(b!==null)assert.equal(buffers.delete(b),true);},
+   deleteVertexArray(v){if(v!==null)assert.equal(vaos.delete(v),true);},
+   bindVertexArray(){},bindBuffer(){},enableVertexAttribArray(){},vertexAttribPointer(){},
+   bufferData(){if(++uploads===5&&enabled&&failure==='upload')throw Error('Échec upload GPU');}
+  };
+  const renderer=createWebGLFilmRenderer(gl);
+  assert.throws(()=>renderer.prepare(scene,output.glb),/Mémoire graphique|upload GPU/);
+  assert.equal(buffers.size,0);assert.equal(vaos.size,0);
+  assert.throws(()=>renderer.render(scene,sampleSyntheticPose(scene,0),320,240),/non préparé/);
+  enabled=false;renderer.prepare(scene,output.glb);
+  assert.ok(buffers.size>0&&vaos.size>0);
+  renderer.dispose();assert.equal(buffers.size,0);assert.equal(vaos.size,0);
+ }
+});

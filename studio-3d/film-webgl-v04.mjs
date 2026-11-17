@@ -123,21 +123,32 @@ function createWebGLFilmRenderer(gl){
  function prepare(scene,glb){
   const result=inspectSyntheticMesh(glb,scene);clear();
   try{
-   resources=result.geometries.map(g=>{
-    const vao=gl.createVertexArray();gl.bindVertexArray(vao);
-    const pos=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pos);
+   for(const g of result.geometries){
+    // Enregistrer chaque allocation immédiatement : une erreur ultérieure doit
+    // libérer aussi la géométrie en cours, pas seulement les précédentes.
+    const resource={vao:null,pos:null,norm:null,index:null};resources.push(resource);
+    const vao=resource.vao=gl.createVertexArray();
+    if(!vao)throw Error('Mémoire graphique indisponible (géométrie).');
+    gl.bindVertexArray(vao);
+    const pos=resource.pos=gl.createBuffer();
+    if(!pos)throw Error('Mémoire graphique indisponible (positions).');
+    gl.bindBuffer(gl.ARRAY_BUFFER,pos);
     gl.bufferData(gl.ARRAY_BUFFER,g.positions,g.morph.length?gl.DYNAMIC_DRAW:gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
-    const norm=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,norm);
+    const norm=resource.norm=gl.createBuffer();
+    if(!norm)throw Error('Mémoire graphique indisponible (normales).');
+    gl.bindBuffer(gl.ARRAY_BUFFER,norm);
     gl.bufferData(gl.ARRAY_BUFFER,g.normals,gl.STATIC_DRAW);
     gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.FLOAT,false,0,0);
-    const index=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,index);
+    const index=resource.index=gl.createBuffer();
+    if(!index)throw Error('Mémoire graphique indisponible (indices).');
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,index);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,g.indices,gl.STATIC_DRAW);
     gl.bindVertexArray(null);
-    return {vao,pos,norm,index,count:g.indices.length,color:new Float32Array(g.color),
+    Object.assign(resource,{count:g.indices.length,color:new Float32Array(g.color),
       morph:g.morph,basePositions:g.positions,
-      morphed:g.morph.length?new Float32Array(g.positions.length):null};
-   });
+      morphed:g.morph.length?new Float32Array(g.positions.length):null});
+   }
   }catch(error){clear();throw error;}
   current=scene;return result;
  }
