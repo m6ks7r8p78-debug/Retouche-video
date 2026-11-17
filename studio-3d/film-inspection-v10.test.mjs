@@ -71,3 +71,31 @@ test('les mauvaises références et les échantillonnages excessifs sont refusé
  assert.equal(blocked.surfaceAudit,undefined);
  assert.equal(blocked.glb,null);
 });
+
+// Le même cadrage doit fonctionner avec les objets de la scène courante.
+import {buildSyntheticFilmSceneV20} from './film-cigarette-cylinder-v20.mjs';
+for(const hand of ['droite','gauche'])test('inspection cigarette : suivi du GLB, main '+hand,()=>{
+ const out=buildSyntheticFilmSceneV20('Une femme adulte fume trois taffes de cigarette de la main '+hand+'.',generator);
+ const scene=readSyntheticGLB(out.glb),t=gripInspectionTime(out.timeline);
+ assert.ok(t>out.timeline[0].start&&t<out.timeline[0].end);
+ const rod=scene.doc.nodes.findIndex(n=>n.name==='cigarette_tige');
+ const pose=sampleSyntheticPose(scene,t);
+ const detail=cameraForGrip(scene,pose,{yaw:.7,pitch:.12});
+ assert.equal(detail.yaw,.7);
+ assert.equal(detail.pitch,.12);
+ assert.deepEqual(detail.target,pose.world[rod].translation.map((v,i)=>v+(i===1?.015:0)));
+ const full=projectedObjects(scene,pose,{width:390,height:290}).find(x=>x.name==='cigarette_tige');
+ const zoom=projectedObjects(scene,pose,{width:390,height:290,...detail}).find(x=>x.name==='cigarette_tige');
+ assert.ok(zoom.rx>full.rx*3);
+ const rest=cameraForGrip(scene,sampleSyntheticPose(scene,out.timeline[0].end));
+ assert.ok(Math.hypot(...detail.target.map((v,i)=>v-rest.target[i]))>.05);
+ for(const ep of out.timeline){
+  const next=sampleSyntheticPose(scene,ep.start+(ep.end-ep.start)*.48);
+  assert.deepEqual(cameraForGrip(scene,next).target,next.world[rod].translation.map((v,i)=>v+(i===1?.015:0)));
+ }
+});
+test('inspection : refus des objets absents et des cibles non finies',()=>{
+ assert.throws(()=>cameraForGrip({doc:{nodes:[]}},{world:[]}),/introuvable/);
+ assert.throws(()=>cameraForGrip({doc:{nodes:[{name:'cigarette_tige'}]}},
+  {world:[{translation:[NaN,0,0]}]}),/non valide/);
+});

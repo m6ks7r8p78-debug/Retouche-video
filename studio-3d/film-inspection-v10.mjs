@@ -32,14 +32,16 @@ function radialEllipsoidGap(point,world){
 }
 
 function gripInspectionTime(timeline){
- const drink=timeline.find(t=>t.intent==='boire');
+ const drink=timeline.find(t=>t.intent==='boire'||t.intent==='fumer');
  if(!drink||!finite(drink.start)||!finite(drink.end)||drink.end<=drink.start)
   throw Error('Geste de prise absent du scénario.');
- return Math.min(drink.end-.05,drink.start+1.08);
+ return drink.intent==='fumer'?drink.start+(drink.end-drink.start)*.48:
+  Math.min(drink.end-.05,drink.start+1.08);
 }
 function cameraForGrip(scene,pose,angles={}){
- const index=scene.doc.nodes.findIndex(n=>n.name==='tasse_corps_table');
- if(index<0||!pose.world[index])throw Error('Corps de tasse introuvable.');
+ const cup=scene.doc.nodes.findIndex(n=>n.name==='tasse_corps_table');
+ const index=cup>=0?cup:scene.doc.nodes.findIndex(n=>n.name==='cigarette_tige');
+ if(index<0||!pose.world[index])throw Error('Objet de prise introuvable.');
  const pos=pose.world[index].translation;
  if(pos.some(n=>!finite(n)))throw Error('Cible de caméra non valide.');
  return {

@@ -106,7 +106,9 @@ focusHand.addEventListener('click',()=>{
    viewMode='main';time=gripInspectionTime(sceneTimeline);
    focusHand.textContent='Revenir à la scène entière';
    focusHand.setAttribute('aria-pressed','true');
-   focusInfo.textContent='Gros plan mobile : la caméra suit le récipient. Faites glisser pour tourner, utilisez la chronologie pour examiner la prise et le dépôt. Ce n’est pas une simulation de contact.';
+   focusInfo.textContent=sceneTimeline.some(t=>t.intent==='fumer')?
+    'Gros plan mobile : la caméra suit la cigarette et la main. Faites glisser pour tourner, utilisez la chronologie pour examiner chaque approche des lèvres. Ce n’est pas une simulation de contact.':
+    'Gros plan mobile : la caméra suit le récipient. Faites glisser pour tourner, utilisez la chronologie pour examiner la prise et le dépôt. Ce n’est pas une simulation de contact.';
  }else{
    viewMode='scene';
    focusHand.textContent='Voir la main de près';
@@ -196,8 +198,8 @@ create.addEventListener('click',()=>{
    url=URL.createObjectURL(new Blob([output.glb],{type:'model/gltf-binary'}));
    download.href=url;download.hidden=false;
    scene=parsed;lastGlb=output.glb;sceneTimeline=output.timeline;
-   focusHand.disabled=!previewAvailable||Boolean(output.actionAudit);
-   if(output.actionAudit)focusInfo.textContent='Gros plan de tasse non disponible pour la scène de cigarette.';
+   focusHand.disabled=!previewAvailable;
+   if(output.actionAudit)focusInfo.textContent='Gros plan disponible pour inspecter les doigts, le filtre et chaque approche des lèvres.';
    updateShareGlb();
    play.disabled=!previewAvailable;seek.disabled=!previewAvailable;
    if(previewAvailable)update();

@@ -150,7 +150,24 @@ try{
  assert.match(smokeStatus,/cigarette unique/);
  assert.match(smokeStatus,/Cible filtre–lèvres suivie avec écart maximal mesuré/);
  assert.match(smokeStatus,/Cigarette à corps cylindrique fermé et filtre visible/);
- assert.equal(await page.locator('#focusHand').isEnabled(),false);
+ assert.equal(await page.locator('#focusHand').isEnabled(),true);
+ const smokeWide=await page.locator('#view').screenshot();
+ await page.locator('#focusHand').click();
+ assert.equal(await page.locator('#view').getAttribute('data-view-mode'),'main');
+ assert.equal(await page.locator('#focusHand').getAttribute('aria-pressed'),'true');
+ assert.match(await page.locator('#focusInfo').innerText(),/caméra suit la cigarette et la main/);
+ const smokeClose=await page.locator('#view').screenshot();
+ assert.equal(smokeWide.equals(smokeClose),false,'Le gros plan doit montrer la cigarette.');
+ await mkdir('test-results',{recursive:true});
+ await writeFile('test-results/film-studio-v20-chromium-cigarette-closeup.png',smokeClose);
+ await page.locator('#seek').evaluate(e=>{
+  e.value='280';e.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ const smokeFollow=await page.locator('#view').screenshot();
+ assert.equal(smokeClose.equals(smokeFollow),false,'Le gros plan doit suivre la cigarette animée.');
+ await page.locator('#focusHand').click();
+ assert.equal(await page.locator('#view').getAttribute('data-view-mode'),'scene');
+ assert.equal(await page.locator('#focusHand').getAttribute('aria-pressed'),'false');
  assert.equal(await page.locator('#download').isVisible(),true);
  const [smokeDownload]=await Promise.all([
    page.waitForEvent('download'),page.locator('#download').click()
