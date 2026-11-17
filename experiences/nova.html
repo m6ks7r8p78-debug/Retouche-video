@@ -99,6 +99,15 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 #novaHdOriginal{background:#f0f1f3}
 #novaHdColorJson{background:#f0f1f3}
 #novaHdPanel [hidden]{display:none!important}
+
+/* NOVA diagnostic 1/1/6 : vrais contrôles tactiles, pas un lien texte nu. */
+#nova601ColorPanel .nova601Actions{display:grid;gap:9px;margin:14px 0}
+#nova601ColorPanel .nova601Actions button{display:block;width:100%;min-height:52px;border:1px solid #c7dcd0;border-radius:14px;padding:13px 14px;background:#edf7f0;color:#193a29;font-size:14px;font-weight:750;line-height:1.35;text-align:center;cursor:pointer;touch-action:manipulation}
+#nova601ColorPanel .nova601Actions #nova601Share{background:#145b42;color:#fff;border-color:#145b42}
+#nova601ColorPanel .nova601Actions #nova601Copy{background:#e5efff;color:#124caa;border-color:#b4cbf5}
+#nova601ColorPanel [hidden]{display:none!important}
+#nova601ColorPanel #nova601ReportText{display:block;width:100%;min-height:190px;padding:12px;border:1px solid #b9c9bc;border-radius:12px;background:#fff;color:#1b2420;font:12px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre;overflow:auto;-webkit-user-select:text;user-select:text}
+#nova601ColorPanel #nova601Status{margin-top:10px;line-height:1.5;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -209,13 +218,18 @@ Conservez le son par défaut ; « sans son » reste un choix explicite.</p>
 <a id="iphoneBenchMp4" hidden>Enregistrer le MP4 de validation</a>
 </details>
 <details class="sourceAdvanced" id="nova601ColorPanel">
-<summary>Couleurs HEVC Safari 1/1/6 — autotest sans vidéo personnelle</summary>
-<p>Cette mire HEVC synthétique mesure huit couleurs connues dans le Canvas de Safari,
-sans importer ni exporter tes vidéos. Tu peux enregistrer un rapport JSON local
+<summary>Couleurs HEVC Safari — comparaison 1/1/6 et 1/1/1</summary>
+<p>Ces deux mires synthétiques mesurent huit couleurs connues à la lecture, puis après export H.264 et relecture. Tes vidéos personnelles ne sont pas utilisées. Tu peux enregistrer un rapport JSON local
 volontairement. Il ne certifie pas la fidélité des couleurs de tes médias privés.</p>
-<button type="button" class="secondary" id="nova601Run">Tester la couleur HEVC 1/1/6 sur cet iPhone</button>
+<button type="button" class="secondary" id="nova601Run">Tester les couleurs : lecture et export</button>
 <div id="nova601Status" role="status" aria-live="polite">Prêt : aucune mesure n'a commencé.</div>
-<a id="nova601Json" hidden>Enregistrer le diagnostic couleurs Safari (JSON)</a>
+<div class="nova601Actions" role="group" aria-label="Récupérer le rapport HEVC synthétique">
+<button type="button" id="nova601Share" hidden>Partager le rapport / Enregistrer dans Fichiers</button>
+<button type="button" id="nova601Copy" hidden>Copier le rapport JSON</button>
+<button type="button" id="nova601Show" hidden>Afficher le rapport pour le copier</button>
+</div>
+<textarea id="nova601ReportText" readonly hidden spellcheck="false" aria-label="Texte du rapport couleurs HEVC JSON"></textarea>
+<a id="nova601Json" hidden aria-hidden="true" tabindex="-1">Téléchargement de secours JSON</a>
 </details>
 <p id="modeReport" style="margin-top:12px">L'export vidéo et les moteurs neuronaux restent dans l'application principale ou le laboratoire de recherche.</p></section>
 </aside>
@@ -448,11 +462,12 @@ async function sampleVideo(){
 <script src="nova-smallmotion-bridge.js"></script>
 <script src="nova-smallmotion-ui.js"></script>
 <script src="nova-hd-color.js"></script>
-<script src="nova-hevc-601-patches.js"></script>
-<script src="nova-hevc-601-patches-ui.js"></script>
+<script src="nova-hevc-pair.js"></script>
+<script src="nova-hevc-pair-ui.js"></script>
 <script src="nova-hd-qa.js"></script>
 <script src="nova-detail.js"></script>
 <script src="nova-native-hd.js"></script>
+<script src="nova-export-color-test.js"></script>
 <script src="nova-native-hd-ui.js"></script>
 <script src="nova-real-preflight.js"></script>
 <script src="nova-real-preflight-ui.js"></script>
