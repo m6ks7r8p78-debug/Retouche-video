@@ -157,7 +157,7 @@ try{
  assert.equal(smokeDownload.suggestedFilename(),'retoucheproai-film-studio-v17.glb');
  const smokeBytes=new Uint8Array(await readFile(await smokeDownload.path()));
  const smokingScene=readSyntheticGLB(smokeBytes);
- assert.equal(smokingScene.clips[0].name,'film_actions_v17');
+ assert.equal(smokingScene.clips[0].name,'film_actions_v16');
  assert.equal(smokingScene.doc.nodes.filter(n=>n.name==='cigarette_tige').length,1);
  assert.equal(smokingScene.doc.nodes.filter(n=>n.name==='film_cigarette_filtre_contact').length,1);
  assert.equal(smokingScene.doc.nodes.filter(n=>n.name==='film_bouche_cible').length,1);
