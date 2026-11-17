@@ -1,0 +1,120 @@
+name: NOVA 0.41 consolidated + Safari HEVC 1-1-6 (manual lab only)
+on:
+  push:
+    branches:
+      - chatgpt-nova-041-consolidated-hevc-116-v1
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nova-041-consolidated-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg available
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Exact NOVA 0.41 core blobs unchanged from verified iPhone archive
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          expected={
+            "experiences/nova-aac-copy.js":"54e4916b07198ad48c714a693cacec51e186e14e",
+            "experiences/nova-export-ui.js":"4ad946e896cc3aea2bb3fa25801cb796cf61196a",
+            "experiences/nova-hd-color.js":"9231df5c9efa6f570723ad4f644944e2d8df0e4a",
+            "experiences/nova-native-hd.js":"98accd32bc583d40ab7d918d32dd38b7b2a67e3a",
+            "experiences/nova-native-hd-ui.js":"d6a4daa538a691ba37bffd40a0bbb56036397331",
+            "experiences/nova-detail.js":"6f35d293cadb3751aec1205f0cc04f69f433c835",
+            "experiences/nova-hd-qa.js":"ab6e5b2758bd5e5deebbaf3cc15db93a7d0c8a86",
+            "experiences/nova-zones.js":"c5b30374f33287da0ffc2c8229619d4bcd0ea6e8",
+            "experiences/nova.html":"abf3fe1c3fd44e163a1f384faf5a2bd63057bf33"
+          }
+          for file,sha in expected.items():
+            got=subprocess.check_output(["git","hash-object",file],text=True).strip()
+            assert got==sha,(file,sha,got)
+          print("NOVA_041_EXACT_BLOBS",len(expected),"ok")
+          PY
+      - name: Validation locale 0.41 + FFmpeg synthetic fixture and HEVC metadata privacy
+        run: |
+          node --check outils/build-nova-iphone-preview.mjs
+          node --check experiences/nova-hevc-601-patches.js
+          node --check experiences/nova-hevc-601-patches-ui.js
+          node --test validation/*.test.cjs tests/nova-hevc-601-patches.test.mjs tests/nova-iphone-preview.test.mjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Playwright Chromium
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: App 0.41 synthetic color ramp + optional HEVC Safari diagnostic interface (never private media)
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test --test-concurrency=1 tests/nova-hevc-601-safari-browser.test.mjs tests/nova-hd-color-ramp-browser.test.mjs
+  manual-zip:
+    needs: [unit,browser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FFmpeg
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Build and check manual-only 0.41 HTTPS lab package
+        run: |
+          node outils/build-nova-iphone-preview.mjs
+          python3 - <<'PY'
+          import json,hashlib,pathlib
+          root=pathlib.Path("dist/nova-iphone-preview")
+          manifest=json.loads((root/"asset-manifest.json").read_text())
+          assert manifest["version"]=="0.41"
+          assert manifest["publication"]=="none"
+          assert manifest["privateMediaIncluded"] is False
+          media=[]
+          for asset in manifest["files"]:
+            data=(root/asset["path"]).read_bytes()
+            assert len(data)==asset["bytes"]
+            assert hashlib.sha256(data).hexdigest()==asset["sha256"],asset["path"]
+            if pathlib.Path(asset["path"]).suffix.lower() in (".mov",".mp4",".jpg",".png",".jpeg"):
+              media.append(asset)
+          assert len(media)==3
+          assert all(x["origin"]=="ffmpeg-synthetic-only" for x in media)
+          html=(root/"experiences/nova.html").read_text()
+          for expected in ["nova-hevc-601-patches.js","nova-detail.js",
+                           "nova-hd-qa.js","nova601ColorPanel"]:
+            assert expected in html
+          print("NOVA_041_MANIFEST_FILES",len(manifest["files"]),"media-synthetic",len(media))
+          PY
+          cd dist/nova-iphone-preview
+          zip -q -X -r ../../NOVA_041_GitHub_HEVC_116_consolide.zip .
+          cd ../..
+          unzip -t NOVA_041_GitHub_HEVC_116_consolide.zip >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NOVA-041-GitHub-HEVC-116-HTTPS-manuel
+          path: NOVA_041_GitHub_HEVC_116_consolide.zip
+          retention-days: 7
+          if-no-files-found: error
