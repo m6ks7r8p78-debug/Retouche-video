@@ -105,6 +105,8 @@ on:
       - 'studio-3d/film-studio-v16.html'
       - 'studio-3d/film-browser-v16.test.mjs'
       - 'studio-3d/film-browser-webkit-v16.test.mjs'
+      - 'studio-3d/film-ik-v17.mjs'
+      - 'studio-3d/film-ik-v17.test.mjs'
       - '.github/workflows/ci-film-studio-v01.yml'
 jobs:
   scenario-contract:
@@ -120,7 +122,7 @@ jobs:
       - name: Vérifier la syntaxe du code de l’interface v0.16
         run: node --check studio-3d/film-ui-v16.mjs && node --check studio-3d/film-actions-v16.mjs && node --check studio-3d/film-action-plan-v16.mjs
       - name: Verifier le contrat de scenario sans medias prives
-        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs studio-3d/film-viewer-v03.test.mjs studio-3d/film-ui-v03.test.mjs studio-3d/film-contact-v03.test.mjs studio-3d/film-webgl-v04.test.mjs studio-3d/film-diagnostic-v06.test.mjs studio-3d/film-share-v07.test.mjs studio-3d/film-motion-v08.test.mjs studio-3d/film-fingers-v09.test.mjs studio-3d/film-inspection-v10.test.mjs studio-3d/film-grip-v11.test.mjs studio-3d/film-volume-v12.test.mjs studio-3d/film-bridge-v13.test.mjs studio-3d/film-continuous-v14.test.mjs studio-3d/film-morph-v15.test.mjs studio-3d/film-actions-v16.test.mjs
+        run: node --test studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs studio-3d/film-viewer-v03.test.mjs studio-3d/film-ui-v03.test.mjs studio-3d/film-contact-v03.test.mjs studio-3d/film-webgl-v04.test.mjs studio-3d/film-diagnostic-v06.test.mjs studio-3d/film-share-v07.test.mjs studio-3d/film-motion-v08.test.mjs studio-3d/film-fingers-v09.test.mjs studio-3d/film-inspection-v10.test.mjs studio-3d/film-grip-v11.test.mjs studio-3d/film-volume-v12.test.mjs studio-3d/film-bridge-v13.test.mjs studio-3d/film-continuous-v14.test.mjs studio-3d/film-morph-v15.test.mjs studio-3d/film-actions-v16.test.mjs studio-3d/film-ik-v17.test.mjs
 
   navigateur-webgl2:
     needs: scenario-contract
