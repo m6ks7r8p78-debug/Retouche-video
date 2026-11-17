@@ -1,0 +1,251 @@
+name: Film Studio - cigarette cylindrique et filtre v0.20
+on:
+  push:
+    branches:
+      - chatgpt-film-studio-contract-v01-20261115
+  pull_request:
+    paths:
+      - 'studio-3d/film-long-project-v21.mjs'
+      - 'studio-3d/film-long-project-v21.test.mjs'
+      - 'studio-3d/film-long-runtime-v21.mjs'
+      - 'studio-3d/film-long-ui-v21.mjs'
+      - 'studio-3d/film-long-storage-v21.mjs'
+      - 'studio-3d/film-long-browser-check-v21.mjs'
+      - 'studio-3d/film-motion-capture-v01.mjs'
+      - 'studio-3d/film-pose-reference-v22.html'
+      - 'studio-3d/film-pose-reference-v22.mjs'
+      - 'studio-3d/film-project-v01.mjs'
+      - 'studio-3d/film-project-v01.test.mjs'
+      - 'studio-3d/film-preview-v01.mjs'
+      - 'studio-3d/film-preview-v01.test.mjs'
+      - 'studio-3d/film-sequence-v02.mjs'
+      - 'studio-3d/film-sequence-v02.test.mjs'
+      - 'studio-3d/film-ui-v02.mjs'
+      - 'studio-3d/film-ui-v02.test.mjs'
+      - 'studio-3d/film-studio-v02.html'
+      - 'studio-3d/film-contact-v03.mjs'
+      - 'studio-3d/film-contact-v03.test.mjs'
+      - 'studio-3d/film-viewer-v03.mjs'
+      - 'studio-3d/film-viewer-v03.test.mjs'
+      - 'studio-3d/film-ui-v03.mjs'
+      - 'studio-3d/film-ui-v03.test.mjs'
+      - 'studio-3d/film-studio-v03.html'
+      - 'studio-3d/generateur.js'
+      - 'studio-3d/film-webgl-v04.mjs'
+      - 'studio-3d/film-webgl-v04.test.mjs'
+      - 'studio-3d/film-ui-v04.mjs'
+      - 'studio-3d/film-studio-v04.html'
+      - 'studio-3d/film-browser-v04.test.mjs'
+      - 'studio-3d/film-ui-v05.mjs'
+      - 'studio-3d/film-studio-v05.html'
+      - 'studio-3d/film-browser-webkit-v05.test.mjs'
+      - 'studio-3d/film-diagnostic-v06.mjs'
+      - 'studio-3d/film-diagnostic-v06.test.mjs'
+      - 'studio-3d/film-ui-v06.mjs'
+      - 'studio-3d/film-studio-v06.html'
+      - 'studio-3d/film-browser-webkit-v06.test.mjs'
+      - 'studio-3d/film-share-v07.mjs'
+      - 'studio-3d/film-share-v07.test.mjs'
+      - 'studio-3d/film-ui-v07.mjs'
+      - 'studio-3d/film-studio-v07.html'
+      - 'studio-3d/film-browser-webkit-v07.test.mjs'
+      - 'studio-3d/film-share-v08.mjs'
+      - 'studio-3d/film-motion-v08.mjs'
+      - 'studio-3d/film-motion-v08.test.mjs'
+      - 'studio-3d/film-ui-v08.mjs'
+      - 'studio-3d/film-studio-v08.html'
+      - 'studio-3d/film-browser-webkit-v08.test.mjs'
+      - 'studio-3d/film-fingers-v09.mjs'
+      - 'studio-3d/film-fingers-v09.test.mjs'
+      - 'studio-3d/film-share-v09.mjs'
+      - 'studio-3d/film-ui-v09.mjs'
+      - 'studio-3d/film-studio-v09.html'
+      - 'studio-3d/film-browser-webkit-v09.test.mjs'
+      - 'studio-3d/film-browser-v09.test.mjs'
+      - 'studio-3d/film-inspection-v10.mjs'
+      - 'studio-3d/film-inspection-v10.test.mjs'
+      - 'studio-3d/film-scene-v10.mjs'
+      - 'studio-3d/film-ui-v10.mjs'
+      - 'studio-3d/film-share-v10.mjs'
+      - 'studio-3d/film-studio-v10.html'
+      - 'studio-3d/film-browser-v10.test.mjs'
+      - 'studio-3d/film-browser-webkit-v10.test.mjs'
+      - 'studio-3d/film-grip-v11.mjs'
+      - 'studio-3d/film-grip-v11.test.mjs'
+      - 'studio-3d/film-ui-v11.mjs'
+      - 'studio-3d/film-share-v11.mjs'
+      - 'studio-3d/film-studio-v11.html'
+      - 'studio-3d/film-browser-v11.test.mjs'
+      - 'studio-3d/film-browser-webkit-v11.test.mjs'
+      - 'studio-3d/film-volume-v12.mjs'
+      - 'studio-3d/film-volume-v12.test.mjs'
+      - 'studio-3d/film-ui-v12.mjs'
+      - 'studio-3d/film-share-v12.mjs'
+      - 'studio-3d/film-studio-v12.html'
+      - 'studio-3d/film-browser-v12.test.mjs'
+      - 'studio-3d/film-browser-webkit-v12.test.mjs'
+      - 'studio-3d/film-bridge-v13.mjs'
+      - 'studio-3d/film-bridge-v13.test.mjs'
+      - 'studio-3d/film-ui-v13.mjs'
+      - 'studio-3d/film-share-v13.mjs'
+      - 'studio-3d/film-studio-v13.html'
+      - 'studio-3d/film-browser-v13.test.mjs'
+      - 'studio-3d/film-browser-webkit-v13.test.mjs'
+      - 'studio-3d/film-continuous-v14.mjs'
+      - 'studio-3d/film-continuous-v14.test.mjs'
+      - 'studio-3d/film-ui-v14.mjs'
+      - 'studio-3d/film-share-v14.mjs'
+      - 'studio-3d/film-studio-v14.html'
+      - 'studio-3d/film-browser-v14.test.mjs'
+      - 'studio-3d/film-browser-webkit-v14.test.mjs'
+      - 'studio-3d/film-morph-v15.mjs'
+      - 'studio-3d/film-morph-v15.test.mjs'
+      - 'studio-3d/film-ui-v15.mjs'
+      - 'studio-3d/film-share-v15.mjs'
+      - 'studio-3d/film-studio-v15.html'
+      - 'studio-3d/film-browser-v15.test.mjs'
+      - 'studio-3d/film-browser-webkit-v15.test.mjs'
+      - 'studio-3d/film-record-v15.test.mjs'
+      - 'studio-3d/film-action-plan-v16.mjs'
+      - 'studio-3d/film-actions-v16.mjs'
+      - 'studio-3d/film-actions-v16.test.mjs'
+      - 'studio-3d/film-ui-v16.mjs'
+      - 'studio-3d/film-share-v16.mjs'
+      - 'studio-3d/film-studio-v16.html'
+      - 'studio-3d/film-browser-v16.test.mjs'
+      - 'studio-3d/film-browser-webkit-v16.test.mjs'
+      - 'studio-3d/film-ik-v17.mjs'
+      - 'studio-3d/film-ik-v17.test.mjs'
+      - 'studio-3d/film-handgrip-v18.mjs'
+      - 'studio-3d/film-handgrip-v18.test.mjs'
+      - 'studio-3d/film-ui-v18.mjs'
+      - 'studio-3d/film-share-v18.mjs'
+      - 'studio-3d/film-studio-v18.html'
+      - 'studio-3d/film-browser-v18.test.mjs'
+      - 'studio-3d/film-browser-webkit-v18.test.mjs'
+      - 'studio-3d/film-finger-mesh-v19.mjs'
+      - 'studio-3d/film-finger-mesh-v19.test.mjs'
+      - 'studio-3d/film-ui-v19.mjs'
+      - 'studio-3d/film-share-v19.mjs'
+      - 'studio-3d/film-studio-v19.html'
+      - 'studio-3d/film-browser-v19.test.mjs'
+      - 'studio-3d/film-browser-webkit-v19.test.mjs'
+      - 'studio-3d/film-cigarette-cylinder-v20.mjs'
+      - 'studio-3d/film-cigarette-cylinder-v20.test.mjs'
+      - 'studio-3d/film-ui-v20.mjs'
+      - 'studio-3d/film-share-v20.mjs'
+      - 'studio-3d/film-studio-v20.html'
+      - 'studio-3d/film-browser-v20.test.mjs'
+      - 'studio-3d/film-browser-webkit-v20.test.mjs'
+      - 'studio-3d/film-ui-v17.mjs'
+      - 'studio-3d/film-share-v17.mjs'
+      - 'studio-3d/film-studio-v17.html'
+      - 'studio-3d/film-browser-v17.test.mjs'
+      - 'studio-3d/film-browser-webkit-v17.test.mjs'
+      - 'studio-3d/film-ik-v17.mjs'
+      - 'studio-3d/film-ik-v17.test.mjs'
+      - '.github/workflows/ci-film-studio-v01.yml'
+jobs:
+  scenario-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe du code de l’interface v0.20
+        run: node --check studio-3d/film-ui-v20.mjs && node --check studio-3d/film-cigarette-cylinder-v20.mjs && node --check studio-3d/film-finger-mesh-v19.mjs && node --check studio-3d/film-pose-reference-v22.mjs
+      - name: Verifier le contrat de scenario sans medias prives
+        run: node --test studio-3d/film-long-project-v21.test.mjs studio-3d/film-project-v01.test.mjs studio-3d/film-preview-v01.test.mjs studio-3d/film-sequence-v02.test.mjs studio-3d/film-ui-v02.test.mjs studio-3d/film-viewer-v03.test.mjs studio-3d/film-ui-v03.test.mjs studio-3d/film-contact-v03.test.mjs studio-3d/film-webgl-v04.test.mjs studio-3d/film-diagnostic-v06.test.mjs studio-3d/film-share-v07.test.mjs studio-3d/film-motion-v08.test.mjs studio-3d/film-fingers-v09.test.mjs studio-3d/film-inspection-v10.test.mjs studio-3d/film-grip-v11.test.mjs studio-3d/film-volume-v12.test.mjs studio-3d/film-bridge-v13.test.mjs studio-3d/film-continuous-v14.test.mjs studio-3d/film-morph-v15.test.mjs studio-3d/film-actions-v16.test.mjs studio-3d/film-ik-v17.test.mjs studio-3d/film-handgrip-v18.test.mjs studio-3d/film-finger-mesh-v19.test.mjs studio-3d/film-cigarette-cylinder-v20.test.mjs
+
+  navigateur-webgl2:
+    needs: scenario-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer le banc Playwright sur le runner temporaire
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Installer Chromium et ses dépendances système
+        run: npx playwright install --with-deps chromium
+      - name: Vérifier la page complète, les pixels WebGL2, les gestes et le refus
+        run: node studio-3d/film-browser-v20.test.mjs
+      - name: Conserver la capture synthétique pour revue
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: film-studio-v20-chromium-synthetic
+          path: test-results/film-studio-v20-chromium*.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+  navigateur-webkit:
+    needs: scenario-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Playwright sur runner temporaire
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Installer WebKit et ses dépendances système
+        run: npx playwright install --with-deps webkit
+      - name: Tester Safari WebKit simulé, mode tactile, repli et export local
+        run: node studio-3d/film-browser-webkit-v20.test.mjs
+      - name: Archiver captures entièrement synthétiques WebKit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: film-studio-v20-webkit-synthetic
+          path: test-results/film-studio-v20-webkit-*.png
+          if-no-files-found: ignore
+          retention-days: 7
+
+  paquet-iphone-isole:
+    needs: [scenario-contract, navigateur-webkit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Préparer un paquet statique sans médias ni données privées
+        run: |
+          mkdir -p dist/film-studio-iphone-v20
+          cp studio-3d/film-studio-v20.html dist/film-studio-iphone-v20/index.html
+          for name in \
+            generateur.js film-long-project-v21.mjs film-long-runtime-v21.mjs film-long-ui-v21.mjs film-long-storage-v21.mjs film-motion-capture-v01.mjs film-pose-reference-v22.html film-pose-reference-v22.mjs \
+            film-ui-v20.mjs film-cigarette-cylinder-v20.mjs film-finger-mesh-v19.mjs film-handgrip-v18.mjs film-ik-v17.mjs film-action-plan-v16.mjs film-actions-v16.mjs film-morph-v15.mjs film-continuous-v14.mjs film-bridge-v13.mjs film-volume-v12.mjs film-grip-v11.mjs film-scene-v10.mjs film-inspection-v10.mjs film-fingers-v09.mjs film-motion-v08.mjs film-share-v20.mjs film-diagnostic-v06.mjs \
+            film-contact-v03.mjs film-sequence-v02.mjs \
+            film-project-v01.mjs film-viewer-v03.mjs film-webgl-v04.mjs; do
+            cp "studio-3d/$name" "dist/film-studio-iphone-v20/$name"
+          done
+          cat > dist/film-studio-iphone-v20/_headers <<'HEADERS'
+          /*
+            Cache-Control: no-store
+            Referrer-Policy: no-referrer
+            X-Content-Type-Options: nosniff
+            Permissions-Policy: camera=(), microphone=(), geolocation=()
+            Content-Security-Policy: default-src 'none'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'unsafe-inline'; img-src 'self' data: blob:; media-src blob:; connect-src https://cdn.jsdelivr.net https://storage.googleapis.com; worker-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'
+          HEADERS
+          test "$(find dist/film-studio-iphone-v20 -maxdepth 1 -type f | wc -l)" -eq 33
+          test -z "$(find dist/film-studio-iphone-v20 -type f \( -name '*.mp4' -o -name '*.jpg' -o -name '*.png' \))"
+      - name: Préparer le téléchargement du paquet de laboratoire iPhone
+        uses: actions/upload-artifact@v4
+        with:
+          name: film-studio-v20-iphone-https-package
+          path: dist/film-studio-iphone-v20/
+          retention-days: 14
+          if-no-files-found: error
