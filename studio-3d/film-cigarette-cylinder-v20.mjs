@@ -102,7 +102,12 @@ function auditCigaretteCylinder(glb,timeline){
    const t=ep.start+(ep.end-ep.start)*fraction;
    const pose=sampleSyntheticPose(scene,t,'film_actions_v16');
    const p=pose.world[rod].translation,q=pose.world[filter].translation;
-   const drift=Math.hypot(...[0,2].map(i=>p[i]-q[i]));
+   const delta=q.map((x,i)=>x-p[i]),matrix=pose.world[rod].matrix;
+   const axis=[matrix[4],matrix[5],matrix[6]],length=Math.hypot(...axis);
+   if(!Number.isFinite(length)||length<.0001)throw Error('Axe de cigarette dégénéré.');
+   const direction=axis.map(x=>x/length);
+   const along=delta.reduce((total,x,i)=>total+x*direction[i],0);
+   const drift=Math.hypot(...delta.map((x,i)=>x-along*direction[i]));
    maxCoaxialDrift=Math.max(maxCoaxialDrift,drift);
    // Les deux centres sont solidaires d'un seul poignet. Une translation
    // au-delà de la longueur de la tige serait une faute du rig.
