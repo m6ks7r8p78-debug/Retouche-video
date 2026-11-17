@@ -367,3 +367,20 @@ La scène reste synthétique, stylisée et mono-personnage : aucun MP4, aucune v
 - Cette version ne produit **pas** un film réaliste d'une femme qui fume. La cigarette et les fumées sont des primitives 3D très simplifiées et l'animation des bras provient de règles déterministes.
 - Il manque un IK de bout de cigarette aux lèvres, des phalanges adaptées à l'objet, une dynamique de fumée cohérente, la respiration anatomique, la gestion de transitions multi-gestes, le skinning humain, les vêtements et décors réalistes, la lumière PBR et l'export MP4 directement sur iPhone.
 - Le test WebKit Linux n'est pas une certification sur Safari physique iPhone. Aucun traitement des 157 vidéos personnelles, aucune fusion de PR ni déploiement retoucheproai.com.
+
+
+## Film Studio v0.17 — cible 3D lèvres / filtre de cigarette (17 novembre 2026)
+
+### Travail codé
+- film-ik-v17.mjs ajoute une cinématique inverse analytique ciblée, au lieu de réutiliser seulement les valeurs d'angles du clip initial. L'épaule change d'orientation en 3D (lacet et flexion), le coude reste une charnière et le poignet garde son angle local. Les longueurs du bras restent inchangées. Le solveur choisit la branche du coude la plus proche de la pose source et refuse les cibles hors portée.
+- Deux points auxiliaires sans maillage sont ajoutés : un au **filtre** de la cigarette, distinct de la braise, et un devant les lèvres. Ils sont liés aux hiérarchies du poignet et de la bouche et suivent réellement l'animation dans le GLB.
+- Chaque inhalation possède deux poses recalculées d'épaule et de coude ; les interpolations du GLB conduisent de la pose neutre à la position ciblée puis au retour. Le calcul prend en charge les bras droit et gauche.
+- L'audit relit le GLB final, échantillonne trois instants par inhalation, vérifie une distance géométrique maximale de **22 mm** entre les deux points, et refuse une vitesse du poignet supérieure à 5 m/s à 30 Hz. Ce n'est pas une preuve de contact physique, de force ni de friction.
+- film-actions-v16.mjs accepte un décorateur de rig facultatif avant encodage sans modifier la sortie v0.16 standard. L'audit historique de la cigarette a été corrigé pour identifier le poignet réellement porteur de l'objet, à droite ou à gauche.
+- film-ik-v17.test.mjs couvre la portée de l'articulation, les quaternions, trois cycles, la distance filtre–lèvres, les deux bras, un GLB volontairement corrompu, le retour de la main, la régression du moteur tasse et le refus de références privées.
+- film-ui-v17.mjs, film-studio-v17.html et film-share-v17.mjs conservent le parcours iPhone en un bouton. Les tests navigateur inspectent le GLB réellement téléchargé et le paquet HTTPS isolé contient 23 fichiers sans média personnel.
+
+### Limites
+- La cigarette est approchée géométriquement des lèvres : aucune collision des surfaces ni pression n'est certifiée. Les doigts ne sont pas encore adaptés pour tenir une cigarette de manière anatomique. La fumée est une primitive synthétique animée, pas un fluide physique.
+- Ni personnage photoréaliste, ni vêtement/surface de peau physique, ni mouvement appris à partir de vidéos, ni export MP4 intégré, ni validation Safari sur iPhone réel.
+- PR #69 en brouillon, non fusionnée ; retoucheproai.com et les 157 vidéos privées restent inchangés.
