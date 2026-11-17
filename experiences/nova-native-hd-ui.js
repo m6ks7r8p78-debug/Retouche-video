@@ -6,20 +6,21 @@
 "use strict";
 const $=id=>document.getElementById(id);
 const run=$("novaHdRun"),save=$("novaHdSave"),keep=$("novaHdOriginal"),
- reportLink=$("novaHdColorJson"),status=$("novaHdStatus"),panel=$("novaHdPanel");
+ reportLink=$("novaHdColorJson"),qualityLink=$("novaHdQualityJson"),
+ status=$("novaHdStatus"),panel=$("novaHdPanel");
 if(!run||!save||!keep||!status||!panel)return;
 const label="Essayer le traitement HD sans réduire la vidéo";
-let selected=null,controller=null,outputURL=null,originalURL=null,generation=0,reportURL=null;
-let firstFrameEvidence=null;
+let selected=null,controller=null,outputURL=null,originalURL=null,generation=0,reportURL=null,qaURL=null;
 function revoke(){
  if(outputURL){URL.revokeObjectURL(outputURL);outputURL=null}
  if(originalURL){URL.revokeObjectURL(originalURL);originalURL=null}
  if(reportURL){URL.revokeObjectURL(reportURL);reportURL=null}
- for(const el of [save,keep,reportLink]){if(el){el.hidden=true;el.removeAttribute("href")}}
+ if(qaURL){URL.revokeObjectURL(qaURL);qaURL=null}
+ for(const el of [save,keep,reportLink,qualityLink]){if(el){el.hidden=true;el.removeAttribute("href")}}
 }
 function reset(){
  generation++;controller?.abort();controller=null;
- revoke();selected=null;firstFrameEvidence=null;run.disabled=true;run.textContent=label;
+ revoke();selected=null;run.disabled=true;run.textContent=label;
  status.textContent="Choisis une vidéo pour essayer le moteur HD natif. Aucun traitement ne démarre automatiquement.";
 }
 window.addEventListener("nova:source-selected",e=>{
@@ -44,17 +45,15 @@ run.addEventListener("click",async()=>{
  save.hidden=true;save.removeAttribute("href");
  if(reportURL){URL.revokeObjectURL(reportURL);reportURL=null}
  if(reportLink){reportLink.hidden=true;reportLink.removeAttribute("href")}
- firstFrameEvidence=null;
+ if(qaURL){URL.revokeObjectURL(qaURL);qaURL=null}
+ if(qualityLink){qualityLink.hidden=true;qualityLink.removeAttribute("href")}
  const my=generation,ctrl=new AbortController(),src=selected;
  controller=ctrl;run.textContent="Annuler l'essai HD";
  status.textContent="Décodage HEVC natif, restauration classique douce et export en cours…";
  try{
-  const out=await NOVA_NATIVE_HD.exporter({file:src,moteur:NOVA_ZONES,
+  const out=await NOVA_NATIVE_HD.exporter({detailEnabled:!!document.getElementById("novaDetailEnabled")?.checked,file:src,moteur:NOVA_ZONES,
    arbitre:NOVA_DECISION,signal:ctrl.signal,onProgress:p=>{
     if(my!==generation||ctrl.signal.aborted)return;
-    if(p.stage==="native-first-frame-color"&&
-       p.evidence?.schema==="retoucheproai.nova.hd-frame-evidence.v1")
-      firstFrameEvidence=p.evidence;
     if(p.stage==="source")status.textContent="Source : "+p.width+" × "+p.height+
       ", "+p.frames+" images, environ "+p.fps+" i/s. Aucun rééchantillonnage de cadence.";
     if(p.stage==="video")status.textContent="Traitement local HD : "+
@@ -66,6 +65,14 @@ run.addEventListener("click",async()=>{
   outputURL=URL.createObjectURL(out.blob);
   save.href=outputURL;save.download=(src.name||"video").replace(/\.[^.]+$/,"")+
    "_NOVA_HD_experimental.mp4";save.hidden=false;
+  save.download="NOVA_041_"+out.qualityReport.files.output.sha256.slice(0,12)+".mp4";
+  if(qualityLink&&out.qualityReport){
+   qualityLink.download="NOVA_041_"+out.qualityReport.files.output.sha256.slice(0,12)+"_bilan.json";
+   qaURL=URL.createObjectURL(new Blob([
+    JSON.stringify(out.qualityReport,null,2)+"\n"
+   ],{type:"application/json"}));
+   qualityLink.href=qaURL;qualityLink.hidden=false;
+  }
   status.textContent="MP4 HD exporté : "+out.originalWidth+" × "+
    out.originalHeight+", "+out.outputFrames+" images / "+
    out.sourceFrames+" source, cadence d'origine ~"+out.sourceFps+
@@ -74,8 +81,11 @@ run.addEventListener("click",async()=>{
    ". "+out.modifiedFrames+
    " images avec correction locale de lumière. "+
    (out.colorWarning?("ATTENTION COULEURS : "+out.colorWarning):
-    "Couleurs source et décodage contrôlés : "+
-    (out.decodedColorEvidence||out.sourceColorEvidence)+".")+
+    "Profil BT.709 du MP4 vérifié, fidélité à l'original non certifiée.")+
+   (out.qualityReport?(" Fin AAC brute / fin vidéo : "+
+    out.qualityReport.audio.lastAudioPacketMinusVideoDurationMs+
+    " ms (non assimilable à la synchro perceptuelle). "+
+    "Bilan JSON local disponible."):"")+
    " Vérifie visuellement la fidélité et écoute le son ; aucune restauration neuronale.";
  }catch(e){
   if(my===generation&&!ctrl.signal.aborted&&reportLink){
@@ -85,11 +95,7 @@ run.addEventListener("click",async()=>{
     const info=await NOVA_DEMUX.analyser(src);
     if(info&&my===generation){
      const report=NOVA_HD_COLOR.report(info);
-     // Seul le résultat borné de NOVA_HD_COLOR.frameEvidence est inclus,
-     // jamais les octets, horodatages, noms, dimensions exactes ni exceptions.
-     const json=JSON.stringify({...report,
-      firstDecodedFrame:firstFrameEvidence?.schema===
-       "retoucheproai.nova.hd-frame-evidence.v1"?firstFrameEvidence:null},null,2)+"\n";
+     const json=JSON.stringify(report,null,2)+"\n";
      reportURL=URL.createObjectURL(new Blob([json],{type:"application/json"}));
      reportLink.href=reportURL;
      reportLink.download="NOVA_diagnostic_couleur_local.json";

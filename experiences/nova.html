@@ -79,7 +79,7 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 .storyboard{padding:14px;border-radius:20px}#frames{display:flex;overflow-x:auto;padding:3px;scroll-snap-type:x mandatory}
 .frame{flex:0 0 138px;scroll-snap-align:start}.footer{flex-direction:column}.tag{font-size:9px;padding:6px 7px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
-.pilot{display:grid;gap:10px;margin-top:12px;padding-top:14px;border-top:1px solid var(--line)}.pilot[hidden]{display:none}.pilot strong{font-size:13px}.pilot label{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.45}.pilot label input{width:20px;height:20px;flex:none;accent-color:#43815b}.pilot a{display:block;padding:12px 14px;text-align:center;background:#e6f7eb;border-radius:14px;font-size:13px;font-weight:750}.pilot a[hidden]{display:none!important}#novaOutputProofRun[hidden],#novaOutputProofSave[hidden]{display:none!important}#exportStatus{font-size:12px;color:#46644f}
+.pilot{display:grid;gap:10px;margin-top:12px;padding-top:14px;border-top:1px solid var(--line)}.pilot[hidden]{display:none}.pilot strong{font-size:13px}.pilot label{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.45}.pilot label input{width:20px;height:20px;flex:none;accent-color:#43815b}.pilot a{display:block;padding:12px 14px;text-align:center;background:#e6f7eb;border-radius:14px;font-size:13px;font-weight:750}.pilot a[hidden]{display:none!important}#exportStatus{font-size:12px;color:#46644f}
 .sourceAdvanced{font-size:12px}.sourceAdvanced summary{cursor:pointer;font-weight:700;color:#355b43;padding:4px 0}.sourceAdvanced p{color:var(--muted);line-height:1.5}
 #iphoneBenchPanel{padding-top:5px;border-top:1px solid var(--line)}
 #iphoneBenchRun{margin:8px 0}
@@ -136,8 +136,12 @@ h1{font-size:clamp(29px,4vw,54px);letter-spacing:-.065em;line-height:1.02;margin
 <section class="card"><small>02 / Le contrôle</small><h2>Preuves, pas promesses.</h2><div id="metrics"><div class="metric"><span>Source</span><strong>—</strong></div><div class="metric"><span>Décision</span><strong>En attente</strong></div></div>
 <button class="secondary" id="save" disabled>Exporter l'aperçu PNG</button>
 <p id="novaHdBuild" style="font-size:.8rem;color:#526b5c;margin:12px 0 4px">
-Moteur NOVA HD 0.33 — Compatibilité Safari (formats de trame et rendu SDR).
+Moteur NOVA HD 0.41 — Bilan lié au fichier MP4 par empreinte SHA-256. Couleurs à comparer à l’original.
 Le bouton d'export apparaît après l'import d'une vidéo.</p>
+<details class="sourceAdvanced"><summary>Netteté douce · expérimental</summary>
+<label><input type="checkbox" id="novaDetailEnabled"> Accentuer légèrement les détails visibles pendant l’export HD</label>
+<p>Effet discret, désactivé par défaut. Ne reconstruit pas de détails et n’augmente pas la résolution. Comparez le résultat à l’original ; surveillez grain et scintillement.</p>
+</details>
 <section class="pilot" id="pilotVideo" hidden>
 <strong>Export MP4 local — NOVA adaptatif (expérimental)</strong>
 <p>Pour les vidéos HD compatibles, NOVA essaie le moteur natif pour conserver la résolution, la cadence et le son d'origine. Le parcours historique 640 pixels / 15 images par seconde reste réservé aux petites sources. Durée pilote : 12 secondes maximum. Vérifiez toujours l'image et le son du fichier final.</p>
@@ -151,6 +155,8 @@ Le bouton d'export apparaît après l'import d'une vidéo.</p>
 <button type="button" class="secondary" id="novaOutputProofRun" hidden>Vérifier le MP4 avant partage (empreinte et résolution)</button>
 <a id="novaOutputProofSave" hidden>Enregistrer la preuve locale du MP4 (JSON)</a>
 <p id="novaOutputProofStatus" role="status" aria-live="polite"></p>
+<a id="novaHdQualityReport" hidden download="NOVA_041_bilan_qualite_local.json">Enregistrer le bilan qualité du MP4 (JSON local)</a>
+<a id="novaHdFrameReport" hidden download="NOVA_034_diagnostic_trame_Safari.json">Enregistrer le diagnostic couleur Safari (JSON, sans vidéo)</a>
 <div id="exportStatus" role="status" aria-live="polite">Aucun export lancé.</div>
 <details class="sourceAdvanced" id="hevcDiagnosticsPanel" hidden>
 <summary>Diagnostic technique HEVC de cet export</summary>
@@ -175,10 +181,10 @@ traitement classique doux de la lumière par zones, puis MP4 H.264.
 Il conserve la taille et les PTS de toutes les images et copie l'AAC original
 uniquement si cela est techniquement vérifiable. Ce n'est pas une restauration
 neuronale, et le résultat doit être contrôlé visuellement et à l'écoute.</p>
-<p id="novaHdFrameAuditBuild">NOVA HD 0.37 expérimental — compatibilité Safari conservée, ombres restaurées et protection des zones claires. Rendu SDR 1/1/6 provisoire : comparer impérativement avec l’original.</p>
 <button type="button" class="secondary" id="novaHdRun" disabled>Essayer le traitement HD sans réduire la vidéo</button>
 <div id="novaHdStatus" role="status" aria-live="polite">Choisis une vidéo pour essayer le moteur HD natif.</div>
 <a id="novaHdSave" hidden>Enregistrer le MP4 HD obtenu</a>
+<a id="novaHdQualityJson" hidden download="NOVA_041_bilan_qualite_local.json">Enregistrer le bilan qualité du MP4 HD (JSON local)</a>
 <a id="novaHdOriginal" hidden>Enregistrer l'original intact (sans retouche)</a>
 <a id="novaHdColorJson" hidden>Enregistrer le diagnostic couleur local (JSON)</a>
 </details>
@@ -204,12 +210,11 @@ Conservez le son par défaut ; « sans son » reste un choix explicite.</p>
 </details>
 <details class="sourceAdvanced" id="nova601ColorPanel">
 <summary>Couleurs HEVC Safari 1/1/6 — autotest sans vidéo personnelle</summary>
-<p>Une mire HEVC/AAC synthétique contenant huit couleurs connues est décodée
-localement. Nous mesurons les écarts de couleurs entre la référence FFmpeg et
-le Canvas de Safari, sans exporter de nouvelle vidéo et sans utiliser tes fichiers.
-L'autotest est volontaire ; tu décides si tu enregistres le rapport JSON.</p>
+<p>Cette mire HEVC synthétique mesure huit couleurs connues dans le Canvas de Safari,
+sans importer ni exporter tes vidéos. Tu peux enregistrer un rapport JSON local
+volontairement. Il ne certifie pas la fidélité des couleurs de tes médias privés.</p>
 <button type="button" class="secondary" id="nova601Run">Tester la couleur HEVC 1/1/6 sur cet iPhone</button>
-<div id="nova601Status" role="status" aria-live="polite">Prêt : aucune mesure n'a démarré. Le diagnostic ne quitte pas cet appareil.</div>
+<div id="nova601Status" role="status" aria-live="polite">Prêt : aucune mesure n'a commencé.</div>
 <a id="nova601Json" hidden>Enregistrer le diagnostic couleurs Safari (JSON)</a>
 </details>
 <p id="modeReport" style="margin-top:12px">L'export vidéo et les moteurs neuronaux restent dans l'application principale ou le laboratoire de recherche.</p></section>
@@ -445,6 +450,8 @@ async function sampleVideo(){
 <script src="nova-hd-color.js"></script>
 <script src="nova-hevc-601-patches.js"></script>
 <script src="nova-hevc-601-patches-ui.js"></script>
+<script src="nova-hd-qa.js"></script>
+<script src="nova-detail.js"></script>
 <script src="nova-native-hd.js"></script>
 <script src="nova-native-hd-ui.js"></script>
 <script src="nova-real-preflight.js"></script>

@@ -86,11 +86,11 @@ async function configDecoder(info,VideoDecoderClass=globalThis.VideoDecoder){
  }
  fail("décodage natif HEVC/H264 non disponible pour ce fichier");
 }
-function plannedMemory(plan,size){
- // Estimation prudente du chemin streaming à six surfaces au plus,
+function plannedMemory(plan,size,detailEnabled=false){
+ // Estimation du tampon borné et de trois surfaces de travail,
  // différente des allocations réelles du décodeur matériel.
  const rgba=plan.width*plan.height*4;
- const mb=(size*2+rgba*6+32*MiB)/MiB;
+ const mb=(size*2+rgba*(bufferLimit(plan)+3)+(detailEnabled?plan.width*plan.height*8:0)+32*MiB)/MiB;
  if(mb>170)fail("budget mémoire de protection iPhone dépassé");
  return Math.round(mb*10)/10;
 }
@@ -124,9 +124,7 @@ function rgba709(data,w,h,timestamp,duration){
   timestamp,duration,colorSpace:{primaries:"bt709",transfer:"bt709",
    matrix:"bt709",fullRange:false}});
 }
-async function frameToOutput(frame,info,canvas,moteur,arbitre,duration,evidence,inspect){
- if(inspect&&globalThis.NOVA_HD_COLOR?.frameEvidence)
-  inspect(globalThis.NOVA_HD_COLOR.frameEvidence(frame,evidence));
+async function frameToOutput(frame,info,canvas,moteur,arbitre,duration,evidence,detailEnabled){
  const prepared=await globalThis.NOVA_HD_COLOR.imagePourRendu(frame,evidence);
  try{
   const colorProof=prepared.proof;
@@ -140,15 +138,21 @@ async function frameToOutput(frame,info,canvas,moteur,arbitre,duration,evidence,
   ctx.drawImage(prepared.frame,0,0,info.W,info.H);
   ctx.setTransform(1,0,0,1,0,0);
   const img=ctx.getImageData(0,0,w,h);
+  // Deux petits relevés échantillonnés sur UNE trame, pas de copie des
+  // pixels dans le bilan JSON. Ne modifie pas le traitement qui fonctionne.
+  const lightBefore=globalThis.NOVA_HD_QA.avant(img.data);
   const restored=moteur.restituer(img,{size:256,arbitre});
   if(!restored?.data||restored.data.length!==img.data.length||
      !restored?.bilan)fail("restauration classique invalide");
-  return {out:rgba709(restored.data,w,h,frame.timestamp,duration),
-   modified:!!restored.bilan.intervention,colorProof};
+  const detail=detailEnabled?globalThis.NOVA_DETAIL.appliquer({data:restored.data,width:w,height:h},{enabled:true}):
+   {data:restored.data,report:{changedPixels:0,maxChannelDelta:0}};
+  const luminosity=globalThis.NOVA_HD_QA.apres(detail.data,lightBefore);
+  return {out:rgba709(detail.data,w,h,frame.timestamp,duration),
+   modified:!!restored.bilan.intervention||detail.report.changedPixels>0,colorProof,luminosity,detail:detail.report};
  }finally{if(prepared.owned)prepared.frame.close()}
 }
 async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
- probe,demux,checkAudio,clock=()=>performance.now()}={}){
+ detailEnabled=false,probe,demux,checkAudio,clock=()=>performance.now()}={}){
  if(!file||typeof file.slice!=="function"||!safe(file.size))fail("fichier vidéo local requis");
  if(!moteur?.restituer||!arbitre?.arbitrer)fail("moteur de restauration classique indisponible");
  if(signal?.aborted)fail("annulé");
@@ -158,7 +162,8 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  if(!info)fail("métadonnées vidéo illisibles");
  const p=analyse(info,file.size);
  if(signal?.aborted)fail("annulé");
- const est=plannedMemory(p,file.size);
+ if(detailEnabled&&!globalThis.NOVA_DETAIL?.appliquer)fail("module netteté absent");
+ const est=plannedMemory(p,file.size,detailEnabled);
  onProgress({stage:"source",width:p.width,height:p.height,frames:p.sourceFrames,
    fps:p.sourceFps,estimatedMiB:est});
  const Decoder=globalThis.VideoDecoder,Encoder=globalThis.VideoEncoder,
@@ -213,8 +218,13 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
  const decoded=new Map(),bufferMax=bufferLimit(p);
  const feedThreshold=Math.max(6,bufferMax-2);
  let encoder,decoder,failed=null,sent=0,encoded=0,encodedBytes=0,modified=0,closed=false;
- let peakDecoded=0,receivedFrames=0;
- let confirmedColor=null,colorsNotSourceVerified=0,sourceRangeNotVerified=0;
+ let confirmedColor=null,colorsNotSourceVerified=0;
+ const colorMethods=Object.create(null);
+ const detailAudit={enabled:!!detailEnabled,method:"bounded-luma-unsharp-v1",frames:0,
+  changedPixels:0,maxChannelDelta:0,resolutionIncreased:false,reconstructedDetails:false,
+  perceptualGainCertified:false,temporalConsistencyCertified:false};
+ const lightAudit={frames:0,samples:0,totalAbsDelta:0,
+  totalSignedDelta:0,strongFrames:0};
  const started=clock();
  const check=()=>{if(signal?.aborted)fail("annulé");if(failed)throw failed};
  try{
@@ -232,11 +242,8 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    if(rank===undefined||decoded.has(rank)){
     fr.close();failed=new Error("PTS décodé absent ou en double");return;
    }
-   if(decoded.size>=bufferMax){
-    fr.close();failed=new Error("réordonnancement HD hors budget mémoire");return;
-   }
+   if(decoded.size>=bufferMax){fr.close();failed=new Error("tampon décodeur HD saturé");return}
    decoded.set(rank,fr);
-   receivedFrames++;peakDecoded=Math.max(peakDecoded,decoded.size);
   },error:e=>{failed=e}});
   decoder.configure(decCfg);
   const frames=p.ptsUs;
@@ -248,11 +255,8 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
   let fed=0,next=0,stalled=clock();
   while(next<p.sourceFrames){
    check();
-   // Fournir jusqu\'à 16 échantillons avant la PREMIÈRE image, puis
-   // conserver la fenêtre prudente de huit échantillons du pipeline.
    const lookahead=next===0?Math.min(p.sourceFrames,FIRST_FRAME_LOOKAHEAD):8;
-   while(fed<p.sourceFrames&&decoded.size<feedThreshold&&
-     decoder.decodeQueueSize<4&&fed<next+lookahead){
+   while(fed<p.sourceFrames&&decoded.size<feedThreshold&&decoder.decodeQueueSize<4&&fed<next+lookahead){
     const offset=info.so[fed],len=info.sz[fed];
     if(!safe(offset)||!safe(len)||len<1||offset+len>file.size)
      fail("échantillon source tronqué");
@@ -266,12 +270,18 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
    if(frame){
     decoded.delete(next);
     try{
-     const result=await frameToOutput(frame,info,canvas,moteur,arbitre,durations[next],
-      p.colorEvidence,next===0?d=>onProgress({stage:"native-first-frame-color",evidence:d}):null);
+     const result=await frameToOutput(frame,info,canvas,moteur,arbitre,durations[next],p.colorEvidence,detailEnabled);
      confirmedColor=result.colorProof.method;
+     if(detailEnabled){detailAudit.frames++;detailAudit.changedPixels+=result.detail.changedPixels;
+      detailAudit.maxChannelDelta=Math.max(detailAudit.maxChannelDelta,result.detail.maxChannelDelta);}
+     colorMethods[confirmedColor]=(colorMethods[confirmedColor]||0)+1;
      if(result.colorProof.sourceMismatch)colorsNotSourceVerified++;
-    if(result.colorProof.sourceRangeVerified===false)sourceRangeNotVerified++;
      modified+=Number(result.modified);
+     lightAudit.frames++;
+     lightAudit.samples+=result.luminosity.samples;
+     lightAudit.totalAbsDelta+=result.luminosity.meanAbsDelta;
+     lightAudit.totalSignedDelta+=result.luminosity.meanSignedDelta;
+     lightAudit.strongFrames+=Number(result.luminosity.meanAbsDelta>.08);
      try{encoder.encode(result.out,{keyFrame:next===0||next%90===0})}
      finally{result.out.close()}
      next++;sent++;
@@ -324,27 +334,47 @@ async function exporter({file,moteur,arbitre,signal,onProgress=()=>{},
   catch{fail("piste audio AAC du MP4 final non vérifiable")}
   if(!outputAudio?.packets?.length)
    fail("piste audio AAC absente du MP4 final");
+  // Bilan sur les VRAIES métadonnées du MP4 relu et les paquets AAC
+  // effectivement remuxés. Aucun média ni nom de fichier dans l'objet.
+  if(!globalThis.NOVA_HD_QA?.bilan)fail("analyseur QA local absent");
+  const qualityReport=await globalThis.NOVA_HD_QA.lier(globalThis.NOVA_HD_QA.bilan({
+   source:info,output:checkOut,outputAudio,sourceFps:p.sourceFps,
+   modifiedFrames:modified,colorMismatchFrames:colorsNotSourceVerified,
+   luminosity:lightAudit,detailProcessing:detailAudit,
+   audioProcessing:{mode:audio.mode,sampleRate:audio.sampleRate,channels:audio.channels,
+    containerChannels:audio.containerChannels??null,
+    legacyStereoEntryForMono:audio.legacyStereoEntryForMono??false,
+    editMediaTime:audio.editMediaTime??null,rollDistance:audio.rollDistance??null,
+    synchronizationPerceptuallyCertified:false},
+   colorPipeline:{sourceMatrix:p.colorEvidence.sourceMatrix,
+    sourcePrimaries:p.colorEvidence.sourcePrimaries,
+    sourceTransferCode:p.colorEvidence.sourceTransferCode,
+    sourceFullRange:p.colorEvidence.sourceFullRange,
+    renderMethods:{...colorMethods},
+    outputConversion:"Canvas-RGB-codes-to-I420-BT709-limited",
+    finalDecodedPixelsCompared:false}
+  }),file,blob);
+  check();
+  if(!qualityReport.video.dimensionsPreserved||
+     !qualityReport.video.frameCountPreserved)
+   fail("bilan QA : dimensions ou nombre d'images altérés");
   onProgress({stage:"complete",progress:1});
   return Object.freeze({blob,mode:"native-hd-classical",
    originalWidth:p.width,originalHeight:p.height,
    sourceFrames:p.sourceFrames,outputFrames:checkOut.ns,
    durationSeconds:p.durationSeconds,sourceFps:p.sourceFps,
-   modifiedFrames:modified,audioMode:audio.mode,
+   modifiedFrames:modified,qualityReport,audioMode:audio.mode,
    audioQualification:audio.qualification,outputBytes:blob.size,
    sourceColorEvidence:p.colorEvidence.kind,decodedColorEvidence:confirmedColor,
-   decodedFramesReceived:receivedFrames,decoderBufferPeak:peakDecoded,
-   decoderBufferLimit:bufferMax,
    colorFidelity:colorsNotSourceVerified?
     "native-display-only-not-source-certified":"source-matrix-audited",
    colorMismatchFrames:colorsNotSourceVerified,
-   sourceRangeUnverifiedFrames:sourceRangeNotVerified,
    colorWarning:colorsNotSourceVerified?
     "Safari annonce BT.709 pour des trames dont la source dit BT.601. "+
     "Le MP4 reproduit le rendu natif décodé sans certifier l'identité "+
-    "colorimétrique de la source : comparer l'export à l'original. "+
-    (sourceRangeNotVerified?"Plage source absente : luminosité non certifiée.":""):null,
+    "colorimétrique de la source : comparer l'export à l'original.":null,
    elapsedMs:Math.round(clock()-started),
-   disclaimer:"Traitement classique doux, pas de reconstruction neuronale, visuel et audio à vérifier sur iPhone"});
+   disclaimer:"Traitement classique doux : profil de sortie BT.709 audité mais fidélité à l'original non certifiée ; image et synchronisation à comparer."});
  }finally{
   closed=true;for(const frame of decoded.values())try{frame.close()}catch{}
   decoded.clear();

@@ -14,7 +14,7 @@ test("NOVA 0.24 : aperçu HTTPS empaquetable sans réseau ni média privé",asyn
   await run(process.execPath,[path.join(root,"outils/build-nova-iphone-preview.mjs"),dir],{timeout:30000});
   const m=JSON.parse(await fs.readFile(path.join(dir,"asset-manifest.json"),"utf8"));
   assert.equal(m.publication,"none");
-  assert.equal(m.version,"0.38");
+  assert.equal(m.version,"0.41");
   assert.equal(m.privateMediaIncluded,false);
   assert.ok(m.files.length>=20);
   const names=m.files.map(x=>x.path);
