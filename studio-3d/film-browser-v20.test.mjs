@@ -167,7 +167,7 @@ try{
  assert.equal(smokingScene.doc.nodes.filter(n=>n.name==='film_cigarette_filtre_contact').length,1);
  assert.equal(smokingScene.doc.nodes.filter(n=>n.name==='film_bouche_cible').length,1);
  assert.equal(smokingScene.doc.nodes.filter(n=>/^film_pince_.*_bout$/.test(n.name)).length,5);
- const fingerMesh=smokingScene.doc.meshes.findIndex(m=>m.name==='film_phalange_effilee_v20');
+ const fingerMesh=smokingScene.doc.meshes.findIndex(m=>m.name==='film_phalange_effilee_v19');
  assert.ok(fingerMesh>=0);
  assert.equal(smokingScene.doc.nodes.filter(n=>/^film_pince_.*_(proximal|bout)$/.test(n.name)).length,10);
  assert.equal(smokingScene.doc.nodes.filter(n=>/^film_pince_.*_(proximal|bout)$/.test(n.name)&&n.mesh===fingerMesh).length,10);
