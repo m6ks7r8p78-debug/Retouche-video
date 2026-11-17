@@ -1,0 +1,35 @@
+name: NOVA paired colors and real export replay
+on:
+  push:
+    branches: [chatgpt-nova-pair-export-integration-20261117]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install FFmpeg if absent
+        run: |
+          if ! command -v ffmpeg >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ffmpeg
+          fi
+      - name: Check fixtures, reports and interruption handling
+        run: |
+          node validation/nova-pair-integration.cjs
+          node validation/nova-roundtrip-integration.cjs
+          node validation/nova-report-ui-integration.cjs
+          node --test validation/*.test.cjs
+      - name: Install browser driver
+        run: npm install --no-save --no-package-lock --no-audit --no-fund --ignore-scripts playwright@1.55.0
+      - name: Real Chromium H264 export and replay with AAC
+        run: |
+          export CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -x "$CHROME"
+          node --test tests/nova-export-replay-browser.test.mjs

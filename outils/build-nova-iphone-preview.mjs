@@ -15,6 +15,8 @@ const experience=path.join(root,"experiences");
 const names=(await fs.readdir(experience)).filter(n=>n==="nova.html"||
  n.startsWith("nova-")&&n.endsWith(".js"));
 const paths=["mp4-muxer.js",...names.map(n=>"experiences/"+n)];
+const pairAssets=["nova-pair-601.mov","nova-pair-709.mov","nova-pair-601.json","nova-pair-709.json","nova-roundtrip-601.mov","nova-roundtrip-709.mov"];
+paths.push(...pairAssets.map(n=>"experiences/"+n));
 async function walk(dir){
  for(const e of await fs.readdir(path.join(root,dir),{withFileTypes:true})){
   const rel=path.posix.join(dir,e.name);
@@ -29,12 +31,12 @@ await fs.rm(out,{recursive:true,force:true});
 await fs.mkdir(out,{recursive:true});
 const manifest=[];
 for(const rel of paths){
- if(!/^(mp4-muxer\.js|experiences\/nova[\w.-]*\.(?:js|html)|experiences\/vendor\/(?:hevc|smallmotion)\/[\w./-]+)$/.test(rel))
+ if(!/^(mp4-muxer\.js|experiences\/nova[\w.-]*\.(?:js|html|mov|json)|experiences\/vendor\/(?:hevc|smallmotion)\/[\w./-]+)$/.test(rel))
   throw Error("fichier non autorisé : "+rel);
  const from=path.join(root,rel),to=path.join(out,rel),bytes=await fs.readFile(from);
  await fs.mkdir(path.dirname(to),{recursive:true});
  await fs.writeFile(to,bytes);
- manifest.push({path:rel,bytes:bytes.length,sha256:crypto.createHash("sha256").update(bytes).digest("hex")});
+ manifest.push({path:rel,bytes:bytes.length,sha256:crypto.createHash("sha256").update(bytes).digest("hex"),...(pairAssets.some(n=>rel==="experiences/"+n)?{origin:"ffmpeg-synthetic-only"}:{})});
 }
 // Média purement synthétique, produit à la construction par FFmpeg local.
  // Aucune vidéo de l'utilisateur, aucun téléchargement ni génération sur serveur.
@@ -220,3 +222,4 @@ const record={kind:"NOVA iPhone HTTPS preview, NOT DEPLOYED",version:"0.41",
 await fs.writeFile(path.join(out,"asset-manifest.json"),JSON.stringify(record,null,2)+"\n");
 console.log(JSON.stringify({version:record.version,files:manifest.length,
  bytes:manifest.reduce((n,f)=>n+f.bytes,0),out},null,2));
+
