@@ -11,6 +11,7 @@ on:
       - 'studio-3d/film-long-ui-v21.mjs'
       - 'studio-3d/film-long-storage-v21.mjs'
       - 'studio-3d/film-long-browser-check-v21.mjs'
+      - 'studio-3d/film-motion-capture-v01.mjs'
       - 'studio-3d/film-project-v01.mjs'
       - 'studio-3d/film-project-v01.test.mjs'
       - 'studio-3d/film-preview-v01.mjs'
@@ -223,7 +224,7 @@ jobs:
           mkdir -p dist/film-studio-iphone-v20
           cp studio-3d/film-studio-v20.html dist/film-studio-iphone-v20/index.html
           for name in \
-            generateur.js film-long-project-v21.mjs film-long-runtime-v21.mjs film-long-ui-v21.mjs film-long-storage-v21.mjs \
+            generateur.js film-long-project-v21.mjs film-long-runtime-v21.mjs film-long-ui-v21.mjs film-long-storage-v21.mjs film-motion-capture-v01.mjs \
             film-ui-v20.mjs film-cigarette-cylinder-v20.mjs film-finger-mesh-v19.mjs film-handgrip-v18.mjs film-ik-v17.mjs film-action-plan-v16.mjs film-actions-v16.mjs film-morph-v15.mjs film-continuous-v14.mjs film-bridge-v13.mjs film-volume-v12.mjs film-grip-v11.mjs film-scene-v10.mjs film-inspection-v10.mjs film-fingers-v09.mjs film-motion-v08.mjs film-share-v20.mjs film-diagnostic-v06.mjs \
             film-contact-v03.mjs film-sequence-v02.mjs \
             film-project-v01.mjs film-viewer-v03.mjs film-webgl-v04.mjs; do
@@ -237,7 +238,7 @@ jobs:
             Permissions-Policy: camera=(), microphone=(), geolocation=()
             Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'
           HEADERS
-          test "$(find dist/film-studio-iphone-v20 -maxdepth 1 -type f | wc -l)" -eq 30
+          test "$(find dist/film-studio-iphone-v20 -maxdepth 1 -type f | wc -l)" -eq 31
           test -z "$(find dist/film-studio-iphone-v20 -type f \( -name '*.mp4' -o -name '*.jpg' -o -name '*.png' \))"
       - name: Préparer le téléchargement du paquet de laboratoire iPhone
         uses: actions/upload-artifact@v4
