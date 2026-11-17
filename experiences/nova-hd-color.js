@@ -217,8 +217,8 @@ function renduNatifOpaque(frame,evidence){
   sourceTransfer:evidence.sourceTransfer,
   matrixConversion:false,rangeConversion:false,
   frameFullyTagged:true,sourceMismatch:true,
+  sourceRetaggingApplied:false,
   colorFidelity:"uncertified-against-source",
-  sourceRangeVerified:typeof evidence?.sourceFullRange==="boolean",
   warning:"Le fichier annonce BT.601 et le décodeur annonce BT.709. " +
    "Les paramètres de primaires ou de plage peuvent aussi être incomplets " +
    "ou différents. Le rendu natif Safari n'est PAS une correction de " +
@@ -226,12 +226,9 @@ function renduNatifOpaque(frame,evidence){
   processing:"VideoFrame natif -> Canvas sRGB -> I420 BT709 limité"
  })};
 }
-// Certains décodeurs Chrome retournent une trame YUV de matrice "bt709"
-// alors que le MOV et le SPS spécifient BT.601. Ne PAS ignorer cette
-// contradiction : recoller une preuve couleur sur les échantillons YUV bruts,
-// en ne manipulant pas la vidéo privée en dehors du navigateur.
-// Ce parcours expérimental est interdit aux images opaques/RGB/HDR, et
-// dispose d'un bilan distinct pour un contrôle perceptuel ultérieur.
+// Un désaccord avec les métadonnées source ne prouve pas une erreur du
+// décodeur. Ne pas ré-étiqueter ses plans YUV. Le rendu natif SDR est permis
+// uniquement dans le cas borné ci-dessus, avec fidélité non certifiée.
 async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFrame){
  markFrame(frame,evidence);
  try{
@@ -276,96 +273,12 @@ async function imagePourRendu(frame,evidence,VideoFrameClass=globalThis.VideoFra
    }
    return renduNatifOpaque(frame,evidence);
   };
-  if(frame.format==null)return fallback();
-  if(!["I420","NV12"].includes(frame.format)||
-     !VideoFrameClass||typeof frame.allocationSize!=="function"||
-     typeof frame.copyTo!=="function")return fallback();
-  const originalRect=frame.codedRect;
-  if(!originalRect)return fallback();
-  const options={rect:originalRect};
-  let size,layout,data;
-  try{
-   size=frame.allocationSize(options);
-   if(!Number.isSafeInteger(size)||size<1||size>12*1048576)
-    err("plan YUV hors budget");
-   data=new Uint8Array(size);
-   layout=await frame.copyTo(data,options);
-  }catch(copyError){
-   // Safari peut refuser la lecture YUV pour une image matérielle sans
-   // que cette image soit invalide pour Canvas. On bascule seulement pour
-   // les erreurs indiquant une opération non prise en charge; les autres
-   // restent visibles (fichier corrompu, mémoire, etc.).
-   if(["NotSupportedError","TypeError"].includes(copyError?.name))
-    return fallback();
-   throw copyError;
-  }
-  const transfer=evidence.sourceTransferCode===6?"smpte170m":
-   evidence.sourceTransferCode===13?"iec61966-2-1":
-    evidence.sourceTransferCode===1?"bt709":p.transfer;
-  let corrected;
-  try{
-   corrected=new VideoFrameClass(data,{format:frame.format,
-    codedWidth:frame.codedWidth,codedHeight:frame.codedHeight,
-    visibleRect:frame.visibleRect,
-    displayWidth:frame.displayWidth,displayHeight:frame.displayHeight,
-    layout,timestamp:frame.timestamp,...(frame.duration!=null?{duration:frame.duration}:{}),
-    colorSpace:{primaries:evidence.expectedPrimaries||p.primaries,
-      transfer,matrix:expected,
-      fullRange:evidence.sourceFullRange??p.fullRange}
-   });
-   const v=verifyFrame(corrected,evidence);
-   markFrame(frame,evidence,"source-matrix-restored");
-   return {frame:corrected,owned:true,proof:Object.freeze({...v,
-    method:"raw-yuv-source-matrix-correction",colorFidelity:"source-matrix-confirmed",
-    decoderReportedMatrix:p.matrix,
-    sourceMatrix:expected,
-    limitation:"Correction de métadonnées YUV sur trame 8 bits brute ; vérifier la fidélité visuelle avec l'original."})};
-  }catch(error){
-   try{corrected?.close()}catch{}
-   // L'étiquetage/reconstruction YUV8 peut être interdit alors que la
-   // VideoFrame native est affichable. Ne pas camoufler un échec couleur,
-   // seulement un format/constructeur matériel refusé.
-   if(["NotSupportedError","TypeError"].includes(error?.name))
-    return fallback();
-   throw error;
-  }
+  // Les pixels copiés représentent la sortie du décodeur, pas forcément
+  // le YUV original du bitstream. Renommer sa matrice/plage sans conversion
+  // numérique peut réinterpréter des pixels déjà convertis par le matériel.
+  // Conserver la VideoFrame native ; le désaccord reste explicitement non certifié.
+  return fallback();
  }
-}
-function frameEvidence(frame,evidence){
- const p=frame?.colorSpace||{};
- const allowedFormat=["I420","NV12","I422","I444","RGBA","RGBX","BGRA",
-  "BGRX","I420P10","I420P12","P010","I420A"];
- const fmt=frame?.format==null?"opaque":allowedFormat.includes(frame.format)?
-  frame.format:"other";
- const primary=["bt709","bt470bg","smpte170m","bt2020","smpte432",
-  "iec61966-2-1"].includes(p.primaries)?p.primaries:"unknown";
- const transfer=["bt709","smpte170m","iec61966-2-1","pq","hlg"].includes(p.transfer)?
-  p.transfer:"unknown";
- const matrix=["bt709","bt470bg","smpte170m","bt2020-ncl","rgb"].includes(p.matrix)?
-  p.matrix:"unknown";
- const sourceRange=typeof evidence?.sourceFullRange==="boolean"?
-  evidence.sourceFullRange?"full":"limited":"not-declared";
- const decodedRange=typeof p.fullRange==="boolean"?
-  p.fullRange?"full":"limited":"not-declared";
- const expected=["bt709","bt470bg","smpte170m","bt2020-ncl"].includes(
-  evidence?.expectedMatrix)?evidence.expectedMatrix:"unknown";
- const source601=expected==="bt470bg"||expected==="smpte170m";
- const safeSdr=VIDEO_PRIMARIES.has(p.primaries)&&VIDEO_XFER.has(p.transfer)&&
-  matrix==="bt709"&&typeof p.fullRange==="boolean";
- const rangeConflict=sourceRange!=="not-declared"&&
-  decodedRange!=="not-declared"&&sourceRange!==decodedRange;
- return Object.freeze({schema:"retoucheproai.nova.hd-frame-evidence.v1",
-  format:fmt,primaries:primary,transfer,matrix,
-  sourceMatrix:expected,sourceRange,decodedRange,
-  sourceIs601:source601,decodedSdrFullySpecified:safeSdr,
-  declaredRangeConflict:rangeConflict,
-  hasCodedRect:!!frame?.codedRect,
-  hasCopyTo:typeof frame?.copyTo==="function",
-  hasAllocationSize:typeof frame?.allocationSize==="function",
-  eligibleForUncertifiedSafariDisplay:source601&&safeSdr&&!rangeConflict&&
-   (fmt==="opaque"||["I420","NV12","I422","I444","RGBA",
-    "RGBX","BGRA","BGRX"].includes(fmt))
- });
 }
 function report(info){
  const c=recognized(info?.color)?info.color:null;
@@ -388,6 +301,6 @@ function report(info){
   explanation:"Informations techniques locales seulement. L'absence de colr ne prouve ni SDR ni HDR. Aucun média transmis."
  });
 }
-return Object.freeze({metadata,verifyFrame,imagePourRendu,report,diagnostic,resetDiagnostic,frameEvidence});
+return Object.freeze({metadata,verifyFrame,imagePourRendu,report,diagnostic,resetDiagnostic});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_HD_COLOR;

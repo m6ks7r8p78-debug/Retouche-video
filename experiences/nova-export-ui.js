@@ -7,10 +7,10 @@ const $=id=>document.getElementById(id);
 const panel=$("pilotVideo"),start=$("exportVideo"),silent=$("allowSilent"),
   download=$("downloadVideo"),status=$("exportStatus"),fileInput=$("file"),drop=$("drop"),approx=$("allowApproximate"),
   hevcPanel=$("hevcDiagnosticsPanel"),hevcText=$("hevcDiagnosticsText"),
-  proofRun=$("novaOutputProofRun"),proofSave=$("novaOutputProofSave"),
-  proofStatus=$("novaOutputProofStatus");
+  colorReport=$("novaHdFrameReport"),qualityReport=$("novaHdQualityReport");
+const proofRun=$("novaOutputProofRun"),proofSave=$("novaOutputProofSave"),proofStatus=$("novaOutputProofStatus");
 if(!panel||!start||!silent||!download||!status||!fileInput)return;
-let file=null,controller=null,blobUrl=null,generation=0;
+let file=null,controller=null,blobUrl=null,generation=0,colorReportUrl=null,qualityReportUrl=null;
 let proofBlob=null,proofClaim=null,proofUrl=null;
 function clearProof(){
  if(proofUrl){URL.revokeObjectURL(proofUrl);proofUrl=null}
@@ -55,13 +55,21 @@ proofRun?.addEventListener("click",async()=>{
   if(gen===generation&&proofBlob===current)proofRun.disabled=false;
  }
 });
+function clearQualityReport(){
+ if(qualityReportUrl){URL.revokeObjectURL(qualityReportUrl);qualityReportUrl=null}
+ if(qualityReport){qualityReport.hidden=true;qualityReport.removeAttribute("href")}
+}
+function clearColorReport(){
+ if(colorReportUrl){URL.revokeObjectURL(colorReportUrl);colorReportUrl=null}
+ if(colorReport){colorReport.hidden=true;colorReport.removeAttribute("href")}
+}
 function msg(s){status.textContent=s}
 function clear(){
  generation++;
- clearProof();
  if(controller){controller.abort();controller=null}
  if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null}
  download.hidden=true;download.removeAttribute("href");
+ clearProof();clearColorReport();clearQualityReport();globalThis.NOVA_HD_COLOR?.resetDiagnostic?.();
  if(hevcPanel)hevcPanel.hidden=true;
  if(hevcText)hevcText.textContent="";
  start.disabled=true;start.textContent="Exporter un MP4 restauré";panel.hidden=true;silent.checked=false;if(approx)approx.checked=false;
@@ -87,8 +95,8 @@ start.addEventListener("click",async()=>{
  if(!file)return;
  const ctl=new AbortController(),thisGen=generation;
  controller=ctl;start.textContent="Annuler l'export";
+ clearProof();clearColorReport();clearQualityReport();globalThis.NOVA_HD_COLOR?.resetDiagnostic?.();
  download.hidden=true;
- clearProof();
  msg("Vérification des codecs et du son…");
  try{
   // Director NOVA : une vidéo Full HD ou avec beaucoup d'images ne doit
@@ -101,7 +109,7 @@ start.addEventListener("click",async()=>{
    (parsed.W*parsed.H>640*360||parsed.ns>90);
   if(useNativeHD){
    msg("NOVA sélectionne le traitement HD natif pour conserver la résolution et les images d'origine…");
-   const hd=await NOVA_NATIVE_HD.exporter({
+   const hd=await NOVA_NATIVE_HD.exporter({detailEnabled:!!document.getElementById("novaDetailEnabled")?.checked,
     file,moteur:NOVA_ZONES,arbitre:NOVA_DECISION,signal:ctl.signal,
     onProgress:step=>{
      if(ctl.signal.aborted||generation!==thisGen)return;
@@ -119,15 +127,30 @@ start.addEventListener("click",async()=>{
    download.href=blobUrl;
    download.download=(file.name||"video").replace(/\.[^.]+$/,"")+
     "_NOVA_HD_experimental.mp4";
+   download.download="NOVA_041_"+hd.qualityReport.files.output.sha256.slice(0,12)+".mp4";
    download.hidden=false;
    prepareProof(hd.blob,hd);
+   if(qualityReport&&hd.qualityReport){
+    qualityReportUrl=URL.createObjectURL(new Blob([
+     JSON.stringify(hd.qualityReport,null,2)+"\n"
+    ],{type:"application/json"}));
+    qualityReport.href=qualityReportUrl;
+    qualityReport.download="NOVA_041_"+hd.qualityReport.files.output.sha256.slice(0,12)+"_bilan.json";
+    qualityReport.hidden=false;
+   }
    msg("MP4 HD disponible : "+hd.originalWidth+" × "+hd.originalHeight+
     ", "+hd.outputFrames+" / "+hd.sourceFrames+" images, "+
     hd.sourceFps+" i/s d'origine ; "+(hd.audioMode==="aac-copy"?
      "AAC original conservé sans réencodage": "AAC-LC réencodé localement (contrôler la synchronisation)")+". "+
     hd.modifiedFrames+" images avec corrections locales de lumière. "+
-    (hd.colorWarning?(" ATTENTION COULEURS : "+hd.colorWarning):" Profil BT.709 du MP4 contrôlé ; fidélité à la source à vérifier.")+
-    " Vérifiez image et son. Pas de reconstruction neuronale.");
+    (hd.colorWarning?(" ATTENTION COULEURS : "+hd.colorWarning):
+     " Profil couleur BT.709 du MP4 contrôlé ; fidélité à la source à comparer.")+
+    (hd.qualityReport?(" Fin AAC brute / fin vidéo : "+
+     (hd.qualityReport.audio.lastAudioPacketMinusVideoDurationMs>0?"+":"")+
+     hd.qualityReport.audio.lastAudioPacketMinusVideoDurationMs+
+     " ms (pas une preuve de synchronisation perceptuelle). "+
+     "Bilan qualité local disponible ci-dessus."):"")+
+    " Résolution conservée, sans agrandissement. Gain visuel non mesuré. Vérifiez image et son. Pas de reconstruction neuronale.");
    return;
   }
   const result=await NOVA_EXPORT.exporter({
@@ -187,7 +210,22 @@ start.addEventListener("click",async()=>{
     ", "+(result.sourceMode==="hevc-wasm"?"HEVC WASM local à PTS source":result.sourceMode==="pts"?"PTS natifs":"recherche approximative") +
     ", "+(result.blob.size/1048576).toFixed(1)+" Mo. Métadonnées contrôlées : "+result.validation.width+" × "+result.validation.height+", "+result.validation.duration.toFixed(2)+" s."+ (result.trace?" Cadence : "+result.trace.repetitions+" répétitions et "+result.trace.sautsDeSource+" images source sautées lors de la conversion.":"")+" Vérifiez l’image et le son.");
  }catch(err){
-  if(generation===thisGen)msg(ctl.signal.aborted?"Export annulé. Aucun fichier créé.":"Export refusé : "+(err?.message||"erreur inconnue"));
+  if(generation===thisGen){
+   const diag=!ctl.signal.aborted?globalThis.NOVA_HD_COLOR?.diagnostic?.():null;
+   if(diag&&colorReport){
+    // Rapport techniques/énums uniquement. Aucune image, aucun son, nom,
+    // coordonnées, identifiant ou échantillon source.
+    colorReportUrl=URL.createObjectURL(new Blob([
+     JSON.stringify(diag,null,2)+"\n"
+    ],{type:"application/json"}));
+    colorReport.href=colorReportUrl;
+    colorReport.download="NOVA_034_diagnostic_trame_Safari.json";
+    colorReport.hidden=false;
+   }
+   msg(ctl.signal.aborted?"Export annulé. Aucun fichier créé.":
+    "Export refusé : "+(err?.message||"erreur inconnue")+
+     (diag?" Télécharge le diagnostic couleur Safari ci-dessus pour identifier la condition exacte.":""));
+  }
  }finally{
   if(controller===ctl){
    controller=null;start.disabled=false;start.textContent="Exporter un MP4 restauré";

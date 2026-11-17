@@ -93,12 +93,20 @@ function lireASC(asc){
  if(!sampleRate||sampleRate>192000)fail("fréquence ASC inconnue");
  return Object.freeze({aot,sampleRate,channels,index});
 }
-function ascFromEsds(b,esds,sampleRate,channels){
- const asc=dsiFromEsds(b,esds),cfg=lireASC(asc);
+function resolveAudioConfig(asc,sampleRate,entryChannels){
+ const cfg=lireASC(asc);
  if(cfg.aot!==2)fail("profil AAC non LC (AOT "+cfg.aot+") : transcodage requis");
- if(cfg.sampleRate!==sampleRate||cfg.channels!==channels)
-  fail("fréquence ou canaux ASC différents de la piste MP4");
- return asc;
+ if(cfg.sampleRate!==sampleRate)fail("fréquence ASC différente de la piste MP4");
+ if(![1,2].includes(cfg.channels)||![1,2].includes(entryChannels))
+  fail("canaux AAC hors mono/stéréo explicites");
+ // L'entrée mp4a peut porter la valeur de compatibilité 2 pour un AAC mono.
+ // L'ASC décrit le flux compressé. Tolérance bornée 2->1 uniquement ;
+ // PCE, multicanal, fréquence contradictoire et désaccord inverse refusés.
+ if(cfg.channels!==entryChannels&&!(entryChannels===2&&cfg.channels===1))
+  fail("canaux ASC différents de la piste MP4");
+ return {channels:cfg.channels,containerChannels:entryChannels,
+  channelConfigurationSource:"AudioSpecificConfig",
+  legacyStereoEntryForMono:entryChannels===2&&cfg.channels===1};
 }
 /* ISO-BMFF : préchargement AAC indiqué par sgpd/sbgp de type "roll".
  * Ne transférer que le cas entièrement explicite : un groupe par piste,
@@ -185,8 +193,8 @@ function extract(b,sizeLimit,mdatRanges){
   const entry=stsd.start+8,entrySize=v.getUint32(entry);
   if(entrySize<36||entry+entrySize>stsd.end||four(b,entry+4)!=="mp4a")
    fail("seul l'AAC MP4 simple est pris en charge");
-  const channels=v.getUint16(entry+24),sampleRate=v.getUint32(entry+32)>>>16;
-  if((channels!==1&&channels!==2)||sampleRate!==timescale)
+  const entryChannels=v.getUint16(entry+24),sampleRate=v.getUint32(entry+32)>>>16;
+  if((entryChannels!==1&&entryChannels!==2)||sampleRate!==timescale)
    fail("canaux ou timescale AAC incompatibles");
   // MOV QuickTime peut utiliser la version 1 de l'entrée mp4a :
   // 16 octets supplémentaires puis un conteneur wave avec esds.
@@ -206,7 +214,8 @@ function extract(b,sizeLimit,mdatRanges){
   const direct=select(children,"esds"),indirect=select(nested,"esds");
   if((direct&&indirect)||(!direct&&!indirect))
    fail("configuration esds absente ou ambiguë");
-  const asc=ascFromEsds(b,direct||indirect,sampleRate,channels);
+  const asc=dsiFromEsds(b,direct||indirect);
+  const config=resolveAudioConfig(asc,sampleRate,entryChannels),channels=config.channels;
   const count=v.getUint32(stsz.start+8),fixed=v.getUint32(stsz.start+4);
   if(!count||count>MAX_PACKETS)fail("quantité de paquets AAC excessive");
   const rollDistance=lireRoll(b,tables,count);
@@ -266,7 +275,7 @@ function extract(b,sizeLimit,mdatRanges){
      (editDurationSeconds!=null&&editDurationSeconds>
        mediaDurationSeconds-editMediaTime/timescale+0.005))
    fail("montage AAC sortant de la durée audio encodée");
-  found.push({sampleRate,channels,asc,packets,rollDistance,
+  found.push({sampleRate,channels,...config,asc,packets,rollDistance,
     editMediaTime,editDurationSeconds,movieTimescale,
     leadingEmptyTicks,leadingEmptySeconds,editListVersion});
  }
@@ -314,6 +323,11 @@ async function planifier(file,{durationSeconds,signal}={}){
  if(parsed.editMediaTime>0&&parsed.rollDistance==null)
   fail("priming AAC non représentable sans groupes roll");
  return Object.freeze({...parsed,packets,outputEnd,
+   // Audit du fichier entier, distinct de la sélection pour une future copie.
+   storedPacketCount:parsed.packets.length,
+   storedFirstPacketUs:parsed.packets[0].timestamp,
+   storedLastPacketEndUs:parsed.packets.at(-1).timestamp+parsed.packets.at(-1).duration,
+   selectedPacketCount:packets.length,
    // Ne jamais allonger la portion audible au-delà de l'edit-list originale.
    // Une fin sonore plus courte de <=30ms reste plus fidèle qu'un son inventé.
    outputEditSeconds:parsed.editDurationSeconds==null?durationSeconds-parsed.leadingEmptySeconds:
@@ -342,6 +356,6 @@ async function copier(file,plan,muxer,{signal,onPacket=()=>{},beforePacket=()=>{
  }
  return Object.freeze({count,mode:"aac-copy"});
 }
-return Object.freeze({planifier,copier});
+return Object.freeze({planifier,copier,resolveAudioConfig});
 })();
 if(typeof module!=="undefined"&&module.exports)module.exports=NOVA_AAC_COPY;
