@@ -1,5 +1,22 @@
 # Journal des versions
 
+## v8.5 (18 nov. 2026) — « Fidèle » : vertical → horizontal SANS GÉNÉRATION, rien d'inventé
+Demande du propriétaire : adapter une vidéo verticale en 16:9 en n'utilisant que les images réellement filmées, sans rien perdre,
+sans déformation perceptible, et sans jamais activer en silence un recadrage ou une déformation.
+- **Nouveau mode « Fidèle »** (par défaut dans Changer de format, module `format-fidele.js`) : déformation alignée sur l'axe, calculée
+  par scène. Visages, personnes et animaux copiés pixel pour pixel (étirement = 1) ; seul le fond peu détaillé est étiré, sous le seuil
+  de perception (10 %), en douceur ; le reste en bandes noires (ou flou de la vidéo elle-même, au choix). 100 % de l'image gardée,
+  taille d'origine conservée (1080×1920 → 3414×1920), son, durée et cadence d'origine.
+- **La contradiction est dite, pas cachée** : 9:16 → 16:9 ne peut pas être à la fois complet, non déformé, plein écran et sans ajout.
+  Les autres méthodes (Proportions exactes, Remplissage accru, Remplissage total, Étirement uniforme, Recadrage) sont comparées avec
+  leurs mesures dans la fiche de chaque scène et ne s'appliquent que si on les choisit.
+- **Vérification image par image à l'export** : visages détectés sur chaque image ; colonnes non étirées comparées pixel par pixel à
+  l'original ; stabilité mesurée. Visage manqué sous une zone étirée → protégé et vidéo refaite automatiquement. Carte (turquoise =
+  copié tel quel, rose = étiré).
+- Banc comparatif sur vraies vidéos (`RAPPORT_FIDELE.md`) : seam carving étudié et écarté (géométrie cassée, tremblement, ×2 000 plus lent).
+- Tests : `tests/format_fidele_calcul.test.mjs` 9/9, `tests/format_fidele.test.mjs` 13/13 (Chromium, vraie app), non-régression
+  `tests/format.test.mjs` 20/20, `tests/format_zero.test.mjs` 2/2, `tests/sw.test.mjs` 8/8. **Non testé sur iPhone.**
+
 ## v8.4 (16 nov. 2026) — « Zéro perte » : changer de format sans perdre un seul pixel
 Demande du propriétaire : passer une vidéo verticale en horizontale (et l'inverse) sans AUCUNE perte — ni partie coupée, ni zoom, ni réduction.
 - **Nouveau mode « Zéro perte »** (par défaut dans Changer de format) : le recadrage et le zoom sont interdits ; la vidéo est posée

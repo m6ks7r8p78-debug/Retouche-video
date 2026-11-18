@@ -235,3 +235,10 @@ VISAGE.detecter → similitude 5 points vers le gabarit FFHQ 512 → netteté ×
 composer(S, force) = mélange + carte des zones inventées + recollage par la similitude inverse. Reproduire le modèle :
 `tests/visage_ia/exporter.py` puis `quantifier.py`. Mesures : `tests/visage_ia/banc_visages.py`, `tests/rvis.test.mjs`.
 État de chaque fonction : `REGISTRE_LIVRAISON_PERMANENT.md` (à relire à chaque reprise).
+
+## v8.5 (18 nov. 2026) — Fidèle (F36)
+`format-fidele.js` (FFI, calcul pur) : importance par colonne (profils de l'analyse FFP dans format.js : détails, mouvement ; analyse v2),
+sujets protégés (visage ±35 %, personne ±12 %, animal ±15 % de marge), résolution convexe (bissection + Gauss-Seidel projeté), carte entière
+(s = 1 ⇒ copie exacte). format.js : deciderFidele, rendreFidele (une copie de l'image puis bandes de colonnes), controlerFidele (8 images),
+verifierFidele (export, chaque image), boucle de correction dans creer(). Rapport et banc : RAPPORT_FIDELE.md, tests/fidele/.
+

@@ -32,6 +32,21 @@
 - Tests : `node --test tests/format.test.mjs`, `python3 tests/extension_kaggle_test.py`, `node tests/format_zero.test.mjs`.
 - Reste : premier calcul réel sur Kaggle (qualité SDXL, durée), essai iPhone (encodeur 3414×1920, quantification fixe).
 
+## v8.5 « Fidèle » (18 nov. 2026) — conversion SANS GÉNÉRATION (demande du propriétaire : « ne rien inventer »)
+- Mode `fidele` = mode PAR DÉFAUT de Changer de format. Module de calcul `format-fidele.js` (FFI, testé dans Node).
+- Méthode : déformation alignée sur l'axe (colonnes ou lignes) ; sujets (visages, personnes, animaux + marge) à s = 1 (copie exacte),
+  fond étiré ≤ 10 % (seuil de perception), douceur entre colonnes (rampe ≤ 0,02/colonne près des sujets), UN calcul par scène (aucune ondulation).
+- Variantes affichées avec leurs mesures, jamais activées sans choix : Proportions exactes, Remplissage accru (≤ 35 %), Remplissage total,
+  Étirement uniforme, Recadrage. Côtés : bandes noires (défaut) ou flou de la vidéo elle-même.
+- Contrôles : avant l'export (8 images/scène, visages sous une zone étirée → protégés, nouveau calcul) ; à l'export IMAGE PAR IMAGE
+  (YuNet sur chaque image, copie pixel pour pixel des colonnes non étirées toutes les 12 images, stabilité) ; visage manqué → vidéo refaite.
+- Analyse : profils par colonne/ligne (détails, mouvement) ajoutés ; version d'analyse en cache passée à 2.
+- Tests : `node --test tests/format_fidele_calcul.test.mjs`, `node tests/format_fidele.test.mjs` (vraies vidéos : `tests/fidele/creer_videos.sh`),
+  banc comparatif `python3 tests/fidele/banc_fidele.py` (naturel, fidèle, accru, total, uniforme, recadrage, seam carving ×2).
+- Constat mesuré : en 9:16 → 16:9, « Fidèle » ne gagne que 0 à 2 points de remplissage (32 % au lieu de 31,6 %) — c'est la limite
+  physique sans génération ; quand des sujets passent partout dans la scène, rien n'est étiré (et c'est dit).
+- Reste : essai sur iPhone (vitesse du contrôle visage image par image, encodeur 3414×1920).
+
 ## Ensuite (par ordre d'intérêt mesuré)
 1. Intégrer LaMa (Apache-2.0) pour les côtés : mesuré nettement meilleur que MI-GAN (voir REGISTRE_MODELES_LICENCES.md).
 2. Vertical → horizontal « vrai » : génération lourde sur le serveur Kaggle gratuit.
