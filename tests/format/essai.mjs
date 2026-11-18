@@ -10,6 +10,7 @@ export async function navigateur(port = 8791, moteur = "chromium") {
   const MG = path.join(TESTS, "medias", "migan.onnx"); if (fs.existsSync(MG)) { const body = fs.readFileSync(MG); await p.route(/huggingface\.co\/.*migan_pipeline_v2\.onnx/, r => r.fulfill({ status: 200, body, headers: { "content-type": "application/octet-stream", "access-control-allow-origin": "*" } })) }
   await p.goto("http://localhost:" + port + "/index.html"); await p.waitForFunction(() => window.MODELS && window.VISAGE && window.chargerModule);
   await p.evaluate(() => localStorage.setItem("autorisations", JSON.stringify({ modele: { ok: true } })));
+  await p.evaluate(() => { window.__fmtSansAuto = true });   /* les tests choisissent format et mode avant d'analyser */
   return { p, errs, fermer: async () => { await b.close(); srv.kill() } };
 }
 /* ouvre l'outil avec une vidéo, règle, analyse ; renvoie le diagnostic */

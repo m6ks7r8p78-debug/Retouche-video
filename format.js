@@ -42,9 +42,10 @@ var FMT = (() => {
       } catch (e) { if (e instanceof Annule) throw e }
     }
     /* secours : la balise vidéo du navigateur (tout format qu'il sait lire ; plus lent, cadence supposée de 30 images/s) */
-    const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = vid.src; await new Promise((ok, ko) => { v.onloadeddata = ok; v.onerror = () => ko(new Error("vidéo illisible par ce navigateur")); setTimeout(() => ko(new Error("vidéo illisible (délai dépassé)")), 15000) });
+    if (!vid) throw new Error("ce fichier n’est pas une vidéo lisible par ce navigateur");
+    const v = attacher(document.createElement("video")); v.src = vid.src; await attendreVideo(v, 1, 30000, "vidéo illisible (délai dépassé)"); await amorcer(v);
     const cadence = 30, n = Math.max(1, Math.floor(v.duration * cadence)), tps = Float64Array.from({ length: n }, (_, i) => i / cadence);
-    return { type: "balise", n, w: v.videoWidth, h: v.videoHeight, tps, cadence, duree: v.duration, codec: "",
+    return { type: "balise", v, n, w: v.videoWidth, h: v.videoHeight, tps, cadence, duree: v.duration, codec: "",
       async parcourir(indices, cb) { for (const i of indices) { if (E && E.stop) throw new Annule(); await new Promise(r => { const fin = () => { v.onseeked = null; r() }; v.onseeked = fin; v.currentTime = Math.min(v.duration - .001, tps[i] + .4 / cadence); setTimeout(fin, 3000) }); await cb(v, i) } } };
   }
 
@@ -480,7 +481,9 @@ var FMT = (() => {
     } finally { try { enc.close() } catch (e) {} }
     const blob = mt.blob(), ms = Math.round(performance.now() - t0);
     /* relecture du fichier produit par le navigateur : dimensions, durée */
+    /* relecture : par le lecteur du navigateur ; s'il ne répond pas (lecteur lent sur iPhone), par la lecture du conteneur MP4 lui-même */
     let lu = null; try { lu = await probeInfo(blob) } catch (e) {}
+    if (!lu) try { const i = await demuxVideo(new File([blob], "relu.mp4", { type: "video/mp4" })); if (i && i.ns) { const t = Array.from(i.cts).sort((a, b) => a - b), dt = i.ns > 1 ? (t[i.ns - 1] - t[0]) / (i.ns - 1) : 0; lu = { w: i.dw, h: i.dh, d: (t[i.ns - 1] - t[0] + dt) / i.ts } } } catch (e) {}
     const tech = lu ? FMQ.fichier({ w: W, h: H, duree: L.duree, cadence: cad, son: son ? true : (E.aSon ? false : null) }, { w: lu.w, h: lu.h, duree: lu.d, son: son ? true : false }) : { controles: [{ code: "relecture", nom: "Relecture", ok: false, texte: "le fichier produit n’a pas pu être relu par le navigateur" }], ok: false };
     const qcs = A.scenes.map((sc, s) => mesures[s].length ? FMQ.bilan(mesures[s], E.plans[s], A.cadA) : null);
     const zero = E.zero ? { ...FMQ.bilanZero(zeros), perte: perteExport || (E.zero.zero ? "" : E.zero.raison || "réduction nécessaire") } : null;
@@ -618,18 +621,46 @@ var FMT = (() => {
   function occupe(o) { if (!E) return; E.occupe = o; for (const s of ["#fmt_go", "#fmt_sv", "#fmt_am", "#fmt_choisir"]) $(s).disabled = !!o; $("#fmt_ex").disabled = !!o && o !== "export"; $("#fmt_ex").textContent = o === "export" ? "Arrêter" : "Créer la vidéo"; document.querySelectorAll("#fmt_av input,#fmt_av select,#fmt_fmts button,#fmt_modes button,#fmt_fiche select,#fmt_fiche button").forEach(e => e.disabled = !!o || e.hasAttribute("data-non")) }
 
   async function ouvrir(file) { const d = ui(); d.hidden = false; document.body.classList.add("fmt-ouvert"); if (file) await charger(file) }
-  function liberer() { if (!E) return; E.stop = true; try { E.vid.pause(); E.vid.removeAttribute("src"); E.vid.load() } catch (e) {} if (E.url) URL.revokeObjectURL(E.url); if (E.resUrl) URL.revokeObjectURL(E.resUrl); E = null }
+  function liberer() { if (!E) return; E.stop = true; try { E.vid.pause(); E.vid.removeAttribute("src"); E.vid.load(); if (E.vid.remove) E.vid.remove(); if (E.lecteur && E.lecteur.v) E.lecteur.v.remove() } catch (e) {} if (E.url) URL.revokeObjectURL(E.url); if (E.resUrl) URL.revokeObjectURL(E.resUrl); E = null }
   function fermer() { liberer(); const d = $("#fmt"); if (d) { d.hidden = true; d.remove() } document.body.classList.remove("fmt-ouvert") }
+  /* iPhone (Safari) : une vidéo hors de la page n'est pas décodée tant qu'elle n'est pas lue (« loadeddata » ne vient jamais pour une
+     vidéo de téléphone). On l'attache donc à la page (invisible), on attend seulement ses métadonnées, puis on l'amorce (lecture muette
+     interrompue aussitôt) pour avoir une image à montrer. Les calculs, eux, lisent les images par WebCodecs, sans cette balise. */
+  function attacher(v) { v.muted = true; v.playsInline = true; v.setAttribute("playsinline", ""); v.setAttribute("muted", ""); v.preload = "auto"; v.style.cssText = "position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none;z-index:-1"; document.body.appendChild(v); return v }
+  function attendreVideo(v, etat, ms, msgDelai) { return new Promise((ok, ko) => { if (v.readyState >= etat) return ok(); let fini = false; const fin = f => { if (fini) return; fini = true; clearTimeout(t); for (const n of ev) v.removeEventListener(n, verif); v.removeEventListener("error", err); f() };
+    const verif = () => { if (v.readyState >= etat) fin(ok) }, err = () => fin(() => ko(new Error("ce fichier n’est pas une vidéo lisible par ce navigateur" + (v.error && v.error.code ? " (erreur " + v.error.code + ")" : "")))), ev = ["loadedmetadata", "loadeddata", "canplay", "canplaythrough", "seeked", "timeupdate"];
+    for (const n of ev) v.addEventListener(n, verif); v.addEventListener("error", err); const t = setTimeout(() => fin(() => ko(new Error(msgDelai || "la vidéo met trop de temps à s’ouvrir"))), ms) }) }
+  async function amorcer(v) { if (v.readyState >= 2) return true; try { const p = v.play(); if (p && p.then) await Promise.race([p, attendre(4000)]); v.pause() } catch (e) {} try { if (v.readyState < 2) v.currentTime = Math.min(.05, (v.duration || 1) / 2); await attendreVideo(v, 2, 8000) ; return true } catch (e) { return false } }
+  /* aperçu sans la balise vidéo (format que le lecteur du navigateur refuse, mais que WebCodecs sait lire) : une image fixe à la position voulue */
+  function fauxVideo(L) { const c = toile(L.w, L.h), ev = {}; let t = 0, file = Promise.resolve();
+    const o = { cv: c, paused: true, readyState: 0, seeking: false, duration: L.duree, faux: true, onseeked: null, ontimeupdate: null, onplay: null, onpause: null,
+      get currentTime() { return t }, set currentTime(v) { t = borne(v, 0, L.duree); o.seeking = true; let i = 0; while (i < L.n - 1 && L.tps[i + 1] <= t + 1e-4) i++;
+        file = file.then(() => L.parcourir([i], async f => { c.x.drawImage(f, 0, 0, L.w, L.h) })).catch(() => {}).then(() => { o.readyState = 4; o.seeking = false; (ev.seeked || []).slice().forEach(f => f()); ev.seeked = (ev.seeked || []).filter(f => !f.une); if (o.onseeked) o.onseeked() }) },
+      play() { return Promise.reject(new Error("lecture indisponible")) }, pause() {}, load() {}, removeAttribute() {}, remove() {},
+      addEventListener(n, f, op) { if (op && op.once) f.une = true; (ev[n] = ev[n] || []).push(f) }, removeEventListener(n, f) { ev[n] = (ev[n] || []).filter(g => g !== f) } };
+    return o }
+  const sourceApercu = () => E.vid.faux ? E.vid.cv : E.vid;
   async function charger(file) {
-    liberer(); ui(); const vid = document.createElement("video"); vid.muted = true; vid.playsInline = true; vid.setAttribute("playsinline", ""); vid.preload = "auto"; vid.loop = true;
+    liberer(); ui(); $("#fmt_pp").disabled = false; $("#fmt_pp").removeAttribute("data-non"); const vid = attacher(document.createElement("video")); vid.loop = true;
     E = { file, nom: (file.name || "video").replace(/\.[^.]+$/, ""), url: URL.createObjectURL(file), vid, format: "auto", perso: [5, 4], reglages: REGLAGES(), couches: new Map(), decors: new Map(), opts: [], qc: [], comparer: true, split: .5, generateur: true, scene: 0, journal: [] };
     const moi = E; vid.src = E.url; $("#fmt_vide").hidden = true; $("#fmt_pan").hidden = false; $("#fmt_apres").hidden = true; $("#fmt_res").hidden = true; $("#fmt_carte").hidden = true; presse("#fmt_fmts", "f", "auto"); presse("#fmt_modes", "m", E.reglages.mode); MSG("Ouverture de la vidéo…");
-    try { await new Promise((ok, ko) => { vid.onloadeddata = ok; vid.onerror = () => ko(new Error("ce fichier n’est pas une vidéo lisible par ce navigateur")); setTimeout(() => ko(new Error("la vidéo met trop de temps à s’ouvrir")), 20000) }); if (E !== moi) return;
-      E.lecteur = await ouvrirLecteur(file, vid); if (E !== moi) return; const L = E.lecteur; E.zone = { x: 0, y: 0, w: L.w, h: L.h };
-      const cv = $("#fmt_cv"); cv.hidden = false; cv.width = pair(L.w * Math.min(1, 540 / Math.min(L.w, L.h))); cv.height = pair(L.h * Math.min(1, 540 / Math.min(L.w, L.h))); cv.getContext("2d").drawImage(vid, 0, 0, cv.width, cv.height);
+    try { let errBalise = null; const t0 = performance.now(); try { await attendreVideo(vid, 1, window.VideoDecoder ? 8000 : 45000) } catch (e) { errBalise = e } if (E !== moi) return; E.ouverture = { balise: errBalise ? errBalise.message : "ok", ms: Math.round(performance.now() - t0) };
+      E.lecteur = await ouvrirLecteur(file, errBalise ? null : vid); if (E !== moi) return; const L = E.lecteur; E.zone = { x: 0, y: 0, w: L.w, h: L.h };
+      if (errBalise) { if (L.type !== "webcodecs") throw errBalise; E.vid = fauxVideo(L); E.vid.currentTime = 0; await new Promise(r => E.vid.addEventListener("seeked", r, { once: true }));
+        /* la balise répond finalement (lecteur lent) : on repasse sur la vraie vidéo, avec la lecture */
+        if (/délai/.test(errBalise.message)) attendreVideo(vid, 1, 120000).then(() => amorcer(vid)).then(ok => { if (!ok || E !== moi || E.occupe) return; const f = E.vid; vid.currentTime = f.currentTime; E.vid = vid;
+          vid.ontimeupdate = f.ontimeupdate; vid.onseeked = f.onseeked; vid.onplay = vid.onpause = f.onplay; $("#fmt_pp").disabled = false; $("#fmt_pp").removeAttribute("data-non") }).catch(() => { try { vid.remove() } catch (e) {} });
+        else try { vid.remove() } catch (e) {} }
+      else await amorcer(vid); if (E !== moi) return;
+      const cv = $("#fmt_cv"); cv.hidden = false; cv.width = pair(L.w * Math.min(1, 540 / Math.min(L.w, L.h))); cv.height = pair(L.h * Math.min(1, 540 / Math.min(L.w, L.h)));
+      if (E.vid.readyState >= 2) cv.getContext("2d").drawImage(sourceApercu(), 0, 0, cv.width, cv.height); else await L.parcourir([0], async f => { cv.getContext("2d").drawImage(f, 0, 0, cv.width, cv.height) });
+      const vid2 = E.vid;
       const r = L.w / L.h, nomF = Math.abs(r - 16 / 9) < .03 ? "16:9" : Math.abs(r - 9 / 16) < .02 ? "9:16" : Math.abs(r - 4 / 3) < .03 ? "4:3" : Math.abs(r - 3 / 4) < .03 ? "3:4" : Math.abs(r - 1) < .03 ? "1:1" : r.toFixed(2).replace(".", ",") + ":1";
-      MSG("Vidéo " + L.w + "×" + L.h + " (" + nomF + "), " + L.duree.toFixed(1).replace(".", ",") + " s, " + (Math.round(L.cadence * 100) / 100).toString().replace(".", ",") + " images/s" + (L.type === "balise" ? " — lecture de secours (plus lente)" : "") + ". Choisis le format, puis « Analyser la vidéo ».");
-      vid.ontimeupdate = () => { if (E === moi && E.pret && !vid.seeking) $("#fmt_pos").value = Math.round(vid.currentTime / L.duree * 1000) }; vid.onseeked = () => { if (E === moi) dessiner() }; vid.onplay = vid.onpause = () => { if (E === moi) { $("#fmt_pp").textContent = vid.paused ? "▶" : "❚❚"; if (!vid.paused) boucle() } };
+      MSG("Vidéo " + L.w + "×" + L.h + " (" + nomF + "), " + L.duree.toFixed(1).replace(".", ",") + " s, " + (Math.round(L.cadence * 100) / 100).toString().replace(".", ",") + " images/s" + (L.type === "balise" ? " — lecture de secours (plus lente)" : "") + ". " + (window.__fmtSansAuto ? "Choisis le format, puis « Analyser la vidéo »." : "Analyse automatique…"));
+      vid2.ontimeupdate = () => { if (E === moi && E.pret && !E.vid.seeking) $("#fmt_pos").value = Math.round(E.vid.currentTime / L.duree * 1000) }; vid2.onseeked = () => { if (E === moi) dessiner() }; vid2.onplay = vid2.onpause = () => { if (E === moi) { $("#fmt_pp").textContent = E.vid.paused ? "▶" : "❚❚"; if (!E.vid.paused) boucle() } };
+      if (vid2.faux) { $("#fmt_pp").disabled = true; $("#fmt_pp").setAttribute("data-non", "") }
+      /* v8.7 : l'analyse démarre toute seule (format choisi automatiquement) ; on peut ensuite changer de format ou de méthode */
+      if (!window.__fmtSansAuto) setTimeout(() => { if (E === moi && !E.occupe && !E.pret) lancer() }, 0);
     } catch (e) { if (E === moi) { MSG("Impossible d’ouvrir cette vidéo : " + ((e && e.message) || e) + "."); $("#fmt_vide").hidden = false; $("#fmt_pan").hidden = true; $("#fmt_cv").hidden = true } }
   }
   /* analyse (ou reprise d'une analyse gardée) → décision → décors d'aperçu → contrôles */
@@ -688,9 +719,9 @@ ${q && q.controles.length ? "<p>Contrôles mesurés sur " + q.images + " images 
   /* aperçu : la vidéo d'origine est lue par le navigateur, chaque image est recomposée au vol (définition réduite) */
   function imageCourante() { const L = E.lecteur, t = E.vid.currentTime; let a = 0, b = L.n - 1; while (a < b) { const m = (a + b + 1) >> 1; if (L.tps[m] <= t + 1e-4) a = m; else b = m - 1 } return a }
   function dessiner() {
-    if (!E || !E.pret || !E.rApercu || E.vid.readyState < 2) return; const i = imageCourante(), s = sceneDe(i), R = E.rApercu, cv = $("#fmt_cv"), x = cv.getContext("2d"), Z = E.zone;
-    rendre(R, E.vid, s, posDans(s, i), E.plans[s].plaque ? E.decors.get(s) : null, { carte: E.carte }); x.drawImage(R.cv, 0, 0);
-    if (E.comparer) { const w = Math.round(cv.width * E.split), k = Math.min(cv.width / Z.w, cv.height / Z.h), dw = Z.w * k, dh = Z.h * k; x.save(); x.beginPath(); x.rect(0, 0, w, cv.height); x.clip(); x.fillStyle = "#000"; x.fillRect(0, 0, cv.width, cv.height); x.drawImage(E.vid, Z.x, Z.y, Z.w, Z.h, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh); x.restore();
+    if (!E || !E.pret || !E.rApercu || E.vid.readyState < 2) { if (E && E.pret && !E.vid.faux && !E.amorce) { E.amorce = true; amorcer(E.vid).then(() => { E && (E.amorce = false); dessiner() }) } return } const i = imageCourante(), s = sceneDe(i), R = E.rApercu, cv = $("#fmt_cv"), x = cv.getContext("2d"), Z = E.zone;
+    rendre(R, sourceApercu(), s, posDans(s, i), E.plans[s].plaque ? E.decors.get(s) : null, { carte: E.carte }); x.drawImage(R.cv, 0, 0);
+    if (E.comparer) { const w = Math.round(cv.width * E.split), k = Math.min(cv.width / Z.w, cv.height / Z.h), dw = Z.w * k, dh = Z.h * k; x.save(); x.beginPath(); x.rect(0, 0, w, cv.height); x.clip(); x.fillStyle = "#000"; x.fillRect(0, 0, cv.width, cv.height); x.drawImage(sourceApercu(), Z.x, Z.y, Z.w, Z.h, (cv.width - dw) / 2, (cv.height - dh) / 2, dw, dh); x.restore();
       const r = cv.getBoundingClientRect(), p = $("#fmt_scene").getBoundingClientRect(); $("#fmt_ligne").style.left = (r.left - p.left + r.width * E.split - 1) + "px" }
     if (s !== E.scene && !E.vid.paused) { E.scene = s; scenes(); fiche() }
   }

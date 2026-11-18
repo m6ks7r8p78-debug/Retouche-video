@@ -1,5 +1,18 @@
 # Journal des versions
 
+## v8.7 (18 nov. 2026) — Changer de format : la vidéo envoyée « prend » enfin sur iPhone
+Problème signalé : une vidéo envoyée dans Changer de format ne se chargeait pas.
+- **Cause** : l'outil attendait que le lecteur vidéo du navigateur ait décodé une image, sur une balise vidéo hors de la page. Safari
+  (iPhone) ne décode rien tant qu'une telle vidéo n'est pas lue : l'attente ne finissait jamais (« la vidéo met trop de temps à s'ouvrir »).
+  Reproduit avec WebKit (moteur de Safari) en émulation iPhone sur une vidéo 1080×1920.
+- **Correction** : balise attachée à la page (invisible), attente des seules métadonnées, puis amorçage (lecture muette interrompue) pour
+  l'aperçu. Si le lecteur du navigateur refuse ou tarde (> 8 s) mais que WebCodecs sait lire le fichier, l'outil continue avec un aperçu
+  en image fixe et repasse sur la vraie vidéo dès qu'elle répond. Vidéos de téléphone avec rotation (portrait stocké couché) : redressées.
+- **Analyse automatique** dès l'envoi (format choisi tout seul) : plus besoin d'appuyer sur « Analyser la vidéo ».
+- Relecture du fichier créé : si le lecteur du navigateur ne répond pas, lecture du conteneur MP4 lui-même (plus de faux « fichier non relu »).
+- Tests : nouveau `tests/format_fidele_webkit.test.mjs` 3/3 (WebKit, émulation iPhone 15 Pro Max, envoi depuis l'accueil, analyse
+  automatique, export) ; `tests/format_fidele.test.mjs` 13/13, `tests/format_zero.test.mjs` 2/2, calculs 29/29. **Pas encore essayé sur ton iPhone.**
+
 ## v8.6 (18 nov. 2026) — « Fidèle » : rendu amélioré, plus de grandes bandes noires
 - **Côtés « ambiance »** (par défaut) : au lieu de bandes noires, la vidéo elle-même très floutée (flou gaussien), couleurs assourdies,
   assombrie vers les bords et détachée de l'image par une ombre douce. Aucun décor ni aucune forme : mesuré sur l'export, 0 contour
