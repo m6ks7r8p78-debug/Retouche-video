@@ -100,6 +100,8 @@ var FMT = (() => {
     const gardes = [], reperes = [], interets = [], tGarde = Math.max(.4, L.duree / (AP.gardes * .75)), pasD = Math.max(1, Math.round(cadA * (L.duree > 180 ? .8 : .4)));
     /* détecteurs : visages (YuNet, livré avec l'app) ; personnes, animaux, objets (EfficientDet-Lite0, téléchargé avec accord) */
     let visOK = false, objOK = false; onP("Préparation des détecteurs…", 0);
+    /* v9.3 : le modèle qui dessine les côtés se télécharge et se prépare PENDANT l'analyse (gagne ce temps-là ensuite) */
+    if (E.reglages.mode === "zero" && E.reglages.fond === "genere" && !(window.KG && KG.actif()) && E.lama !== false) E.lamaAvance = lamaPret().catch(() => false);
     try { await VISAGE.charger(); visOK = true } catch (e) {}
     try { await OBJ.charger(); objOK = true } catch (e) {}
     let ps = null, pg = null, dernG = -1e9, depl = 0, a = 0; const idx = []; for (let i = 0; i < L.n; i += pasA) idx.push(i);
@@ -362,7 +364,8 @@ var FMT = (() => {
        ce qu'il sait faire (sa propre portée), rangé sous une autre clé pour ne pas être pris pour la couche du serveur */
     const cleS = s + "|" + plan.cle, kgSans = plan.generateur === "kaggle" && !E.couches.has(cleS), cle = kgSans ? cleS + "|local" : cleS;
     const portee = plan.fond === "genere" ? (kgSans && !(E.reglages.mode === "zero" && E.reglages.fond === "genere") ? plan.portee * FMD.PORTEE.migan / FMD.PORTEE.kaggle : plan.portee) : 0;   /* v9.1 « rien coupé » : le téléphone dessine TOUT le côté (plus de flou) */
-    const G = FMM.genPreparer(fin, bes, geo, plan, W, H, portee, [512, 448, 576, 480][((E.reglages.scenes[s] || {}).graine || 0) % 4]), plume = FMM.plumeReel(G, plan.fond === "genere" ? 6 : 14);
+    const iaLocale = plan.fond === "genere" && !E.couches.get(cle) && E.reglages.mode === "zero" && E.reglages.fond === "genere" && E.lama !== false;
+    const G = FMM.genPreparer(fin, bes, geo, plan, W, H, portee, [512, 448, 576, 480][((E.reglages.scenes[s] || {}).graine || 0) % 4], iaLocale ? 1.4 : 1), plume = FMM.plumeReel(G, plan.fond === "genere" ? 6 : 14);
     /* reconstruction : une seule fois par scène et par réglage ; la même couche sert à l'aperçu et à l'export (ce qu'on voit est ce qu'on obtient) */
     let gen = E.couches.get(cle) || null; const journal = [];
     if (gen && gen.serveur) journal.push("Décor complet reconstruit sur le serveur (" + Math.round(gen.pixels / 1e3) + " k pixels inventés, raccord de couleur et netteté recalés sur le réel).");
@@ -371,7 +374,6 @@ var FMT = (() => {
       const lama = E.reglages.mode === "zero" && E.reglages.fond === "genere" && await lamaPret(onP), moteur = lama ? (r, t, w, h) => LAMA.infer(r, t, w, h) : (r, t, w, h) => ERASE.infer(r, t, w, h);
       if (lama) journal.push("Côtés dessinés sur le téléphone par LaMa (pixels inventés, marqués sur la carte).");
       if (lama || await generateurPret(onP)) { let k = 0; for (const f of G.fenetres) { const e = FMM.genEntree(G, f); k++; if (!e.utiles) continue; onP && onP("Scène " + (s + 1) + " : l’IA dessine les côtés (" + k + "/" + G.fenetres.length + ")…"); await souffler(); FMM.genPoser(G, f, await moteur(e.rgba, e.trou, f.w, f.h)); if (E.stop) throw new Annule() }
-        if (lama) { try { LAMA.liberer() } catch (x) {} }   /* mémoire du modèle rendue aussitôt (iPhone) ; rechargé pour la scène suivante si besoin */
         const g = FMM.genFinir(G), gc = toile(G.w, G.h, true); gc.x.putImageData(new ImageData(g.rgba, G.w, G.h), 0, 0);
         /* garde-fou : un visage apparu dans une zone inventée est retiré (le modèle n'a pas à inventer des gens) */
         const tc = toile(G.w, G.h, true); tc.x.putImageData(new ImageData(new Uint8ClampedArray(G.rgba), G.w, G.h), 0, 0); const visages = await retirerVisages(tc, gc, (cx, cy) => G.invente[cy * G.w + cx]);
@@ -474,6 +476,7 @@ var FMT = (() => {
   async function preparer(onP) {   /* décors d'aperçu + contrôle de toutes les scènes */
     E.rApercu = rendu(E.apercu.W, E.apercu.H); E.qc = []; await etendreServeur(onP); const n = E.analyse.scenes.length;
     for (let s = 0; s < n; s++) { onP("Préparation de la scène " + (s + 1) + " sur " + n + "…", s / n); await controler(s, t => onP(t, s / n)); await souffler() }
+    try { if (window.LAMA) LAMA.liberer() } catch (x) {}   /* décors dessinés : mémoire du modèle rendue avant la création de la vidéo */
   }
 
   /* ================= 6. export ================= */
@@ -630,7 +633,7 @@ var FMT = (() => {
 <p class="f-h">Format voulu</p><div class="f-seg" id="fmt_fmts">${FM.map(f => `<button type="button" data-f="${f[0]}" aria-pressed="${f[0] === "auto"}">${f[1]}<small>${f[2]}</small></button>`).join("")}</div>
 <div class="f-row" id="fmt_perso" hidden><label>Largeur <input type="number" id="fmt_pw" min="1" max="100" value="5" inputmode="numeric"></label><label>Hauteur <input type="number" id="fmt_ph" min="1" max="100" value="4" inputmode="numeric"></label></div>
 <p class="f-h">Façon de faire</p><div class="f-seg" id="fmt_modes"><button type="button" data-m="fidele" aria-pressed="true">Fidèle<small>sans génération, rien d’inventé</small></button><button type="button" data-m="zero" aria-pressed="false">Zéro perte<small>toute l’image, au pixel près</small></button><button type="button" data-m="auto" aria-pressed="false">Auto<small>l’IA décide</small></button><button type="button" data-m="fidelite" aria-pressed="false">Fidélité<small>rien d’inventé</small></button><button type="button" data-m="max" aria-pressed="false">Reconstruction max<small>plus de décor recréé</small></button></div>
-<p class="f-h" id="fmt_ecr_t">Écran</p><div class="f-seg" id="fmt_ecr"><button type="button" data-e="ia" aria-pressed="true">Plein écran, rien coupé<small>l’IA dessine les côtés</small></button><button type="button" data-e="plein" aria-pressed="false">Plein écran, rien inventé<small>coupe le haut et le bas</small></button><button type="button" data-e="entier" aria-pressed="false">Image entière<small>côtés en ambiance</small></button></div>
+<p class="f-h" id="fmt_ecr_t">Écran</p><div class="f-seg" id="fmt_ecr"><button type="button" data-e="ia" aria-pressed="true">Plein écran, rien coupé<small>l’IA dessine les côtés</small></button><button type="button" data-e="plein" aria-pressed="false">Plein écran, rien inventé<small>coupe le haut et le bas</small></button><button type="button" data-e="entier" aria-pressed="false">Image entière<small>côtés en ambiance</small></button><button type="button" data-e="elargir" aria-pressed="false">Élargir la vidéo<small>étire la vraie image (déforme)</small></button></div>
 <div class="f-reg" id="fmt_cad_l" style="padding:0"><label for="fmt_cad">Garder plus d’image <span id="fmt_cad_v"></span></label><input type="range" id="fmt_cad" min="0" max="100" step="5" value="0" aria-label="Part de l’image gardée : à gauche plein écran, à droite plus d’image avec des côtés en ambiance"></div>
 <div class="f-row"><button class="f-go" id="fmt_go">Analyser la vidéo</button></div>
 <div id="fmt_apres" hidden>
@@ -658,7 +661,7 @@ var FMT = (() => {
     $("#fmt_fmts").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; E.format = b.dataset.f; $("#fmt_perso").hidden = E.format !== "perso"; maj("format") };
     $("#fmt_pw").onchange = $("#fmt_ph").onchange = () => { if (!E) return; E.perso = [borne(+$("#fmt_pw").value || 1, 1, 100), borne(+$("#fmt_ph").value || 1, 1, 100)]; maj("format") };
     $("#fmt_modes").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; E.reglages.mode = b.dataset.m; maj("mode") };
-    $("#fmt_ecr").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; ecran(b.dataset.e); try { localStorage.setItem("fmt_ecran", b.dataset.e) } catch (x) {} E.kaggle = undefined; E.kgTente = null; E.ffCadre = {}; maj("reglage") };
+    $("#fmt_ecr").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; ecran(b.dataset.e); try { localStorage.setItem("fmt_ecran2", b.dataset.e) } catch (x) {} E.kaggle = undefined; E.kgTente = null; E.ffCadre = {}; maj("reglage") };
     $("#fmt_cad").oninput = e => { const v = $("#fmt_cad_v"); if (v) v.textContent = +e.target.value ? "(" + e.target.value + " %)" : "(plein écran)" };
     $("#fmt_cad").onchange = e => { if (!E || E.occupe) return; E.reglages.plein = true; E.reglages.cadrage = +e.target.value / 100; E.ffCadre = {}; maj("reglage") };
     $("#fmt_go").onclick = () => lancer(); $("#fmt_ex").onclick = () => E && E.occupe === "export" ? (E.stop = true) : creer(); $("#fmt_sv").onclick = enregistrer; $("#fmt_am").onclick = ameliorer;
@@ -675,8 +678,8 @@ var FMT = (() => {
   const MSG = (t, f) => { const m = $("#fmt_msg"); if (m) m.textContent = t || ""; const b = $("#fmt_bar i"); if (b) b.style.width = f == null ? "0" : Math.round(100 * borne(f, 0, 1)) + "%" };
   /* v9.0 choix d'écran : « ia » = Zéro perte (rien coupé ; les côtés sont dessinés par l'IA sur ton serveur Kaggle gratuit),
      « plein » = Fidèle plein écran (rien inventé, haut et bas coupés), « entier » = Fidèle image entière */
-  function ecran(c) { const R = E.reglages; if (c === "ia") { R.mode = "zero"; R.fond = "genere" } else { R.mode = "fidele"; R.plein = c === "plein"; if (R.plein) R.cadrage = 0 } }
-  const presseEcran = () => { if (!E) return; const R = E.reglages; presse("#fmt_ecr", "e", R.mode === "zero" ? "ia" : R.mode !== "fidele" ? "" : R.plein && !R.cadrage ? "plein" : !R.plein ? "entier" : ""); $("#fmt_cad_l").hidden = R.mode !== "fidele" || !R.plein;
+  function ecran(c) { const R = E.reglages; if (c === "ia") { R.mode = "zero"; R.fond = "genere" } else if (c === "elargir") { R.mode = "fidele"; R.plein = false; R.variante = "elargir" } else { R.mode = "fidele"; R.plein = c === "plein"; if (R.plein) R.cadrage = 0; if (R.variante === "elargir") R.variante = "auto" } }
+  const presseEcran = () => { if (!E) return; const R = E.reglages; presse("#fmt_ecr", "e", R.mode === "zero" ? "ia" : R.mode !== "fidele" ? "" : !R.plein && R.variante === "elargir" ? "elargir" : R.plein && !R.cadrage ? "plein" : !R.plein ? "entier" : ""); $("#fmt_cad_l").hidden = R.mode !== "fidele" || !R.plein;
     $("#fmt_cad").value = R.plein ? Math.round((R.cadrage || 0) * 100) : 100; const v = $("#fmt_cad_v"); if (v) v.textContent = !R.plein ? "(image entière)" : R.cadrage ? "(" + Math.round(R.cadrage * 100) + " %)" : "(plein écran)" };
   const presse = (sel, attr, v) => document.querySelectorAll(sel + " button").forEach(b => b.setAttribute("aria-pressed", b.dataset[attr] === v));
   function occupe(o) { if (!E) return; E.occupe = o; for (const s of ["#fmt_go", "#fmt_sv", "#fmt_am", "#fmt_choisir"]) $(s).disabled = !!o; $("#fmt_ex").disabled = !!o && o !== "export"; $("#fmt_ex").textContent = o === "export" ? "Arrêter" : "Créer la vidéo"; document.querySelectorAll("#fmt_av input,#fmt_av select,#fmt_fmts button,#fmt_modes button,#fmt_ecr button,#fmt_cad,#fmt_fiche select,#fmt_fiche button").forEach(e => e.disabled = !!o || e.hasAttribute("data-non")) }
@@ -704,7 +707,7 @@ var FMT = (() => {
   async function charger(file) {
     liberer(); ui(); $("#fmt_pp").disabled = false; $("#fmt_pp").removeAttribute("data-non"); const vid = attacher(document.createElement("video")); vid.loop = true;
     E = { file, nom: (file.name || "video").replace(/\.[^.]+$/, ""), url: URL.createObjectURL(file), vid, format: "auto", perso: [5, 4], reglages: REGLAGES(), couches: new Map(), decors: new Map(), opts: [], qc: [], comparer: true, split: .5, generateur: true, scene: 0, journal: [] };
-    { let c = "ia"; try { c = localStorage.getItem("fmt_ecran") || "ia" } catch (x) {} ecran(c) }
+    { let c = "ia"; try { c = localStorage.getItem("fmt_ecran2") || "ia" } catch (x) {} ecran(c) }
     const moi = E; vid.src = E.url; $("#fmt_vide").hidden = true; $("#fmt_pan").hidden = false; $("#fmt_apres").hidden = true; $("#fmt_res").hidden = true; $("#fmt_carte").hidden = true; presse("#fmt_fmts", "f", "auto"); presse("#fmt_modes", "m", E.reglages.mode); presseEcran(); MSG("Ouverture de la vidéo…");
     try { let errBalise = null; const t0 = performance.now(); try { await attendreVideo(vid, 1, window.VideoDecoder ? 8000 : 45000) } catch (e) { errBalise = e } if (E !== moi) return; E.ouverture = { balise: errBalise ? errBalise.message : "ok", ms: Math.round(performance.now() - t0) };
       E.lecteur = await ouvrirLecteur(file, errBalise ? null : vid); if (E !== moi) return; const L = E.lecteur; E.zone = { x: 0, y: 0, w: L.w, h: L.h };
@@ -778,6 +781,7 @@ ${q && q.controles.length ? "<p>Contrôles mesurés sur " + q.images + " images 
     occupe("analyse"); E.vid.pause(); E.stop = false; const avant = E.plans.map(p => p.cle), ap = E.apercu.W + "x" + E.apercu.H;
     try { decider(); await etendreServeur(MSG); if (E !== moi) return; const cv = $("#fmt_cv"); cv.width = E.apercu.W; cv.height = E.apercu.H; const tout = ap !== E.apercu.W + "x" + E.apercu.H; if (tout || !E.rApercu) { E.rApercu = rendu(E.apercu.W, E.apercu.H); E.decors.clear() }
       const n = E.plans.length; for (let k = 0; k < n; k++) if (tout || E.plans[k].cle !== avant[k] || k === s) { MSG("Préparation de la scène " + (k + 1) + "…", k / n); await controler(k, t => MSG(t, k / n)); if (E !== moi) return }
+      try { if (window.LAMA) LAMA.liberer() } catch (x) {}
       $("#fmt_res").hidden = true; scenes(); fiche(); resume(); dessiner();
     } catch (e) { if (E === moi) MSG("Impossible d’appliquer ce réglage : " + ((e && e.message) || e) + ".") } finally { if (E === moi) occupe(null) }
   }

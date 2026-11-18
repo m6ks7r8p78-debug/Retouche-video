@@ -1,5 +1,13 @@
 # Journal des versions
 
+## v9.3 (18 nov. 2026) — Plus rapide, et option « Élargir la vidéo »
+- **Vitesse** (« Plein écran, rien coupé ») : 2 fenêtres de dessin par scène au lieu de 4 (×2) ; le modèle se télécharge et se prépare
+  pendant l'analyse ; le site s'isole (en-têtes COOP/COEP ajoutés par le service worker) pour que l'IA calcule sur plusieurs cœurs
+  (mesuré sur 2 cœurs : dessin des côtés 96 s → 36 s ; sur iPhone, plus de cœurs). Isolement : essais Fidèle 18/18, Zéro perte 4/4.
+- **« Élargir la vidéo »** (bouton « Écran ») : la vraie image s'étire jusqu'aux bords, rien coupé ni inventé ; le sujet reste naturel
+  tant que possible. Pour une vidéo verticale, l'étirement est très fort (visages ×2,5 à ×3,5) : proposé, pas activé par défaut.
+- WebGPU essayé pour LaMa : refusé par le moteur (opération « Add » du bloc de Fourier) → calcul WebAssembly gardé.
+
 ## v9.2 (18 nov. 2026) — Plein écran, rien coupé : plus de « cadre » visible autour de la vidéo
 Capture du propriétaire (selfie tenu à la main, 1080×1906 → 3390×1906) : traits sombres verticaux et obliques autour de l'image filmée.
 - Cause : le décor de la scène est assemblé à partir de plusieurs images de la vidéo ; le bord de chaque image (liseré sombre, flou de

@@ -152,7 +152,7 @@ var FMM = (() => {
   /* prépare la reconstruction : plaque réduite (le côté perpendiculaire à l'extension de la SORTIE fait « cote » pixels, la taille de travail
      du modèle), trous autorisés (à compléter ET à moins de « portee » du réel), fenêtres carrées à soumettre au modèle.
      portee : en part du petit côté de la sortie (FMD.PORTEE × réglages). */
-  function genPreparer(fin, bes, P, plan, W, H, portee, cote) {
+  function genPreparer(fin, bes, P, plan, W, H, portee, cote, allonge) {   /* allonge : fenêtre jusqu'à « allonge » × cote le long du côté (LaMa : 1 fenêtre par côté) */
     cote = cote || 512; const perp = plan.axeExt === "x" ? H : W, e = cote / perp, w = Math.max(8, Math.round(fin.w * e)), h = Math.max(8, Math.round(fin.h * e));
     const rgba = reduire(fin.rgba, fin.w, fin.h, w, h), valide = new Uint8Array(w * h), aFaire = new Uint8Array(w * h);
     for (let i = 0; i < w * h; i++) valide[i] = rgba[i * 4 + 3] ? 1 : 0;
@@ -161,7 +161,7 @@ var FMM = (() => {
     for (let i = 0; i < w * h; i++) if (aFaire[i]) { tot++; if (D[i] <= lim) { trou[i] = 1; nb++ } }
     /* fenêtres : boîte des trous de chaque côté du réel, pavée de carrés « cote » collés au trou (le reste du carré = contexte réel) */
     let cx = 0, cy = 0, nv = 0; for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (valide[y * w + x]) { cx += x; cy += y; nv++ } cx = nv ? cx / nv : w / 2; cy = nv ? cy / nv : h / 2;
-    const fen = [], ax = plan.axeExt === "x", L = ax ? w : h, T = ax ? h : w, cw = Math.min(cote, w), chh = Math.min(cote, h);
+    const fen = [], ax = plan.axeExt === "x", L = ax ? w : h, T = ax ? h : w, cw = Math.min(plan.axeExt === "x" ? cote : Math.round(cote * (allonge || 1)), w), chh = Math.min(plan.axeExt === "x" ? Math.round(cote * (allonge || 1)) : cote, h);
     for (const cote2 of [0, 1]) { let a0 = 1e9, a1 = -1, t0 = 1e9, t1 = -1;
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (trou[y * w + x]) { const a = ax ? x : y, t = ax ? y : x, c = ax ? cx : cy; if ((a < c) !== (cote2 === 0)) continue; a0 = Math.min(a0, a); a1 = Math.max(a1, a); t0 = Math.min(t0, t); t1 = Math.max(t1, t) }
       if (a1 < 0) continue; const la = ax ? cw : chh, lt = ax ? chh : cw, da = borne(cote2 === 0 ? a0 : a1 + 1 - la, 0, Math.max(0, L - la));

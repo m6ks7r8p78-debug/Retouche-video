@@ -20,6 +20,8 @@ const cutDone = new Set(), log = [];
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".mjs": "text/javascript", ".wasm": "application/wasm", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".webmanifest": "application/manifest+json", ".bin": "application/octet-stream", ".mp4": "video/mp4", ".onnx": "application/octet-stream", ".css": "text/css", ".woff2": "font/woff2", ".txt": "text/plain; charset=utf-8", ".xml": "application/xml", ".svg": "image/svg+xml" };
 
 http.createServer(async (req, res) => {
+  /* COI=1 : mêmes en-têtes que ceux qu'ajoute le service worker (isolement d'origine → calcul IA sur plusieurs cœurs) */
+  if (process.env.COI) { const wh = res.writeHead.bind(res); res.writeHead = (c, h) => wh(c, { ...(h || {}), "cross-origin-opener-policy": "same-origin", "cross-origin-embedder-policy": "require-corp" }) }
   const u = new URL(req.url, "http://localhost");
   if (u.pathname === "/__test/info") { const v = +u.searchParams.get("v") || 1; res.writeHead(200, { "content-type": "application/json" }); return res.end(JSON.stringify({ size: M[v].length, sha256: SHA[v] })) }
   if (u.pathname === "/__test/log") { res.writeHead(200, { "content-type": "application/json" }); res.end(JSON.stringify(log)); if (u.searchParams.get("clear")) log.length = 0; return }

@@ -25,10 +25,11 @@ var FFI = (() => {
     exact:     { nom: "Proportions exactes", court: "aucun étirement, bandes sur les côtés", fond: 1 },
     accru:     { nom: "Remplissage accru", court: "fond étiré jusqu’à 35 % (visible sur les détails)", fond: SEUILS.visible },
     total:     { nom: "Remplissage total", court: "fond étiré autant qu’il faut (déformation forte)", fond: Infinity },
+    elargir:   { nom: "Élargir la vidéo", court: "la vidéo s’élargit jusqu’aux bords : le sujet reste naturel, les côtés s’étirent" },
     uniforme:  { nom: "Étirement uniforme", court: "toute l’image étirée, visages compris" },
     recadrage: { nom: "Recadrage", court: "remplit l’écran en coupant le haut et le bas" },
   };
-  const ORDRE = ["fidele", "exact", "accru", "total", "uniforme", "recadrage"];
+  const ORDRE = ["elargir", "fidele", "exact", "accru", "total", "uniforme", "recadrage"];
   const PROTEGES = { visage: .35, personne: .12, animal: .15 };   /* classe → marge (part de la largeur de la boîte, de chaque côté) */
   const APPUYES = { vehicule: .9, objet: .5, interet: .35 };      /* classes ménagées sans être figées */
 
@@ -57,13 +58,13 @@ var FFI = (() => {
      (u = 1 sur les colonnes protégées, u = plafond du fond ailleurs). Convexe : bissection sur le multiplicateur λ, et pour chaque λ
      descente par coordonnées projetée (Gauss-Seidel), départ à chaud. Si même au plafond la longueur T n'est pas atteinte : s = u
      (remplissage partiel, le reste en bandes). */
-  function resoudre(imp, prot, c, T, uFond, mu) {
+  function resoudre(imp, prot, c, T, uFond, mu, uProt) {
     const n = imp.length, u = new Float64Array(n), s = new Float64Array(n).fill(1); let L0 = 0, Lmax = 0;
     const cm = c.reduce((a, b) => a + b, 0) / n, cap = isFinite(uFond) ? uFond : 1e3; mu = mu == null ? 2.5 : mu;
     const pente = Math.max(SEUILS.lissage * 50 / n, (Math.min(cap, 4) - 1) / (.08 * n));
     /* rampe : près d'une zone protégée, le plafond monte progressivement (≤ SEUILS.lissage par colonne) : jamais de cassure au bord d'un sujet */
     const dist = new Float64Array(n).fill(1e9); for (let i = 0, d = 1e9; i < n; i++) { d = prot[i] ? 0 : d + 1; dist[i] = d } for (let i = n - 1, d = 1e9; i >= 0; i--) { d = prot[i] ? 0 : d + 1; dist[i] = Math.min(dist[i], d) }
-    for (let i = 0; i < n; i++) { u[i] = prot[i] ? SEUILS.protege : Math.max(1, Math.min(cap, 1 + pente * dist[i])); L0 += c[i]; Lmax += c[i] * u[i] }
+    for (let i = 0; i < n; i++) { u[i] = prot[i] ? (uProt || SEUILS.protege) : Math.max(1, Math.min(cap, 1 + pente * dist[i])); L0 += c[i]; Lmax += c[i] * u[i] }
     if (T <= L0 + 1e-9 || cap <= 1) return { s, longueur: L0, plein: T <= L0 + 1e-9, iterations: 0 };
     if (Lmax <= T + 1e-9) { for (let i = 0; i < n; i++) s[i] = u[i]; return { s, longueur: Lmax, plein: Lmax >= T - 1e-6, iterations: 0 } }
     const gs = lam => { for (let it = 0; it < 400; it++) { let d = 0;
@@ -104,6 +105,10 @@ var FFI = (() => {
     opts = opts || {}; const n = P.n, B = bornes(L, n), c = largeurs(B), I = importance(P), out = {};
     for (const id of ["fidele", "exact", "accru", "total"]) { const V = VARIANTES[id], r = resoudre(I.imp, I.prot, c, T, V.fond, opts.mu);
       out[id] = { id, nom: V.nom, s: Float32Array.from(r.s), B, mesures: mesurer(r.s, c, I.imp, I.prot, T), plein: r.plein } }
+    /* v9.3 « Élargir la vidéo » : remplit TOUJOURS tout l'écran avec la vraie image, rien coupé ni inventé. Les sujets restent
+       naturels tant que c'est possible ; s'ils occupent trop de place, on leur accorde le plus petit étirement qui permet de remplir. */
+    for (const cap of [1, 1.08, 1.15, 1.25, 1.4, 1.6, 2, 2.6, 3.5, 6]) { const r = resoudre(I.imp, I.prot, c, T, Infinity, opts.mu, cap);
+      if (r.plein || cap === 6) { out.elargir = { id: "elargir", nom: VARIANTES.elargir.nom, s: Float32Array.from(r.s), B, mesures: mesurer(r.s, c, I.imp, I.prot, T), plein: r.plein, capSujets: cap }; break } }
     { const f = Math.max(1, T / L), s = new Float32Array(n).fill(f), sProt = Uint8Array.from(I.prot);
       out.uniforme = { id: "uniforme", nom: VARIANTES.uniforme.nom, s, B, mesures: mesurer(s, c, I.imp, sProt, T), plein: true } }
     { const f = Math.max(1, T / L), garde = 1 / f;   /* recadrage : mise à l'échelle uniforme f, on garde 1/f de la dimension perpendiculaire */

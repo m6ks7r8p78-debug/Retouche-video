@@ -3,7 +3,7 @@
 let sess = null;
 self.onmessage = async e => { const m = e.data;
   try {
-    if (m.charger) { importScripts(m.base + "ort.wasm.min.js"); ort.env.wasm.wasmPaths = m.base; ort.env.wasm.numThreads = m.fils || 1;
+    if (m.charger) { importScripts(m.base + "ort.wasm.min.js"); ort.env.wasm.wasmPaths = m.base; ort.env.wasm.numThreads = self.crossOriginIsolated ? (m.fils || 1) : 1;
       sess = await ort.InferenceSession.create(new Uint8Array(m.octets), { executionProviders: ["wasm"], graphOptimizationLevel: "all" }); self.postMessage({ pret: true }) }
     else if (m.infer) { const N = 512, r = await sess.run({ image: new ort.Tensor("float32", m.img, [1, 3, N, N]), mask: new ort.Tensor("float32", m.msk, [1, 1, N, N]) }), o = r[sess.outputNames[0]].data;
       const out = new Float32Array(o); self.postMessage({ sortie: out }, [out.buffer]) }
