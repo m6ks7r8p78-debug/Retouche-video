@@ -54,3 +54,10 @@ physique : dès qu'un sujet passe partout dans la scène (caméra qui balaye, pi
 - Durée, cadence (10, 12, 30 i/s), nombre d'images et son conservés sur toutes les vidéos ; stabilité 0,98–1,00 × l'original.
 - Vitesse (Chromium sans carte graphique) : ~70 ms par image en 768×432, ~160 ms en 3414×1920, contrôle visage compris.
 - **Non testé sur iPhone.**
+
+## v8.9 — recherche de pixels réels supplémentaires
+Mesure (format.js, mosaïque de la scène + mouvement de caméra) de la profondeur de côté couverte par de VRAIS pixels filmés à d'autres
+moments, sur chaque image (≥ 97 % de couverture) : allée 0 / 0, classe (panoramique) 0 / 2,2 %, personnes 0 / 0, rue 0 / 0, scènes 0 / 0,
+visages (balayage) 0 / 0. Sans génération, l'information des côtés n'existe pas dans le fichier : le seul réglage possible est le
+compromis entre la part coupée et la part de l'écran en ambiance (curseur « Garder plus d'image »).
+

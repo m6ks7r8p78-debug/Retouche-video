@@ -82,5 +82,12 @@ await test("Plein écran : cadre volontairement faussé (visages coupés) → tr
   await exporter(p, path.join(OUT, "plein_corrige.mp4")); const f = await p.evaluate(() => { const f = FMT.etat.res.fidele; return { corrige: f.corrige || 0, coupes: f.coupes.length, visages: f.visages } });
   return { ok: f.corrige > 0 && f.coupes === 0, info: JSON.stringify(f) } });
 
+await test("Curseur « Garder plus d'image » : 50 % → moins de perte, côtés en ambiance, visages entiers ; 100 % proche de l'image entière", async () => {
+  await analyser(p, V("personnes_fixe"), "16:9", "fidele", { cadrage: .5 }); const a = await plans(); await exporter(p, path.join(OUT, "cadrage50.mp4")); const f = await p.evaluate(() => FMT.etat.res.fidele.coupes.length);
+  const z = stats(path.join(OUT, "cadrage50.mp4"), "60:ih:0:0"); ffmpegPlanche(path.join(OUT, "cadrage50.mp4"), "cadrage50");
+  await analyser(p, V("personnes_fixe"), "16:9", "fidele", { cadrage: 1 }); const b = await plans();
+  return { ok: a[0].m.conservation > .6 && a[0].m.conservation < .7 && a[0].m.remplissage < .55 && f === 0 && z.moy > 12 && b[0].m.conservation > .999 && Math.abs(b[0].m.remplissage - .322) < .01,
+    info: JSON.stringify({ c50: { garde: +a[0].m.conservation.toFixed(3), remplit: +a[0].m.remplissage.toFixed(3), coupes: f, cote: +z.moy.toFixed(1) }, c100: { garde: +b[0].m.conservation.toFixed(3), remplit: +b[0].m.remplissage.toFixed(3) } }) } });
+
 console.log(N.errs.length ? "Erreurs de page : " + N.errs.join(" | ") : ""); await N.fermer();
 console.log(res.filter(Boolean).length + "/" + res.length + " réussis"); process.exit(res.every(Boolean) && !N.errs.length ? 0 : 1);

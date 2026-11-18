@@ -133,7 +133,7 @@ var FMT = (() => {
   }
 
   /* ================= 2. décision ================= */
-  const REGLAGES = () => ({ mode: "fidele", plein: true, variante: "auto", bords: "ambiance", fidelite: .5, liberte: .5, intensite: .5, suivi: true, fond: "auto", qualite: "haute", resolution: "auto", cadence: "origine", scenes: {} });
+  const REGLAGES = () => ({ mode: "fidele", plein: true, cadrage: 0, variante: "auto", bords: "ambiance", fidelite: .5, liberte: .5, intensite: .5, suivi: true, fond: "auto", qualite: "haute", resolution: "auto", cadence: "origine", scenes: {} });
   function cible() { const Z = E.zone; if (E.format === "auto") return FMD.FORMATS[FMD.formatAuto(Z.w, Z.h)]; if (E.format === "perso") return [Math.max(1, E.perso[0]), Math.max(1, E.perso[1])]; return FMD.FORMATS[E.format] }
   function decider() {
     if (E.reglages.mode === "fidele") return deciderFidele();
@@ -182,7 +182,7 @@ var FMT = (() => {
       let rec = null; if (id === "recadrage") { /* garde 1/f de la dimension perpendiculaire, centrée sur les sujets */ const f = v.f, keep = Lp / f; let c = .5, w = 0;
         for (const b of boites) { const q = (FFI.PROTEGES[b.classe] != null ? 2 : .5) * (b.poids || .5); c = (c * w + (b.pa + b.pb) / 2 * q) / (w + q); w += q }
         rec = { f, debut: Math.round(borne(c * Lp - keep / 2, 0, Lp - keep)), garde: Math.round(keep) } }
-      let cadre = null, mes = v.mesures; if (plein) { rec = null; cadre = cadrer(s, v, ax, Lp, At, T); mes = { ...v.mesures, conservation: cadre.garde, remplissage: 1, plein: true, agrandissement: cadre.k, fixe: cadre.fixe, visible: v.mesures.visible };
+      let cadre = null, mes = v.mesures; if (plein) { rec = null; cadre = cadrer(s, v, ax, Lp, At, T); mes = { ...v.mesures, conservation: cadre.garde, remplissage: cadre.remplit, plein: true, agrandissement: cadre.k, fixe: cadre.fixe, visible: v.mesures.visible };
         raisons.unshift("Plein écran : l’image remplit toute la télé ; " + (ax === "x" ? "le haut et le bas sont coupés" : "les côtés sont coupés") + " (" + Math.round((1 - cadre.garde) * 100) + " % de l’image), le cadre " + (cadre.fixe ? "reste fixe" : "suit les visages et les personnes en douceur") + ". Rien n’est inventé.") }
       return { methode: "fidele", variante: id, auto: auto.id, z: 1, plaque: false, fond: "fidele", axeExt: ax, raisons, mesures: mes, V: V.variantes, boites,
         ff: { ax, B: v.B, s: v.s, L, Lp, Tlen, rec, uniforme: id === "uniforme", cadre }, cle: ["fidele", id, rw, rh, T.W, T.H, R.bords, boites.length, plein ? "plein" + ((E.ffCadre[s] || []).length) : ""].join("|"), opt: E.opts[s] || (E.opts[s] = { plume: 1, lumiere: true }) } });
@@ -196,7 +196,9 @@ var FMT = (() => {
   /* cadre de la scène s : fenêtre perpendiculaire qui suit les sujets (format-fidele.js, FFI.trajectoire) */
   function cadrer(s, v, ax, Lp, At, T) {
     const A = E.analyse, sc = A.scenes[s], n = sc.n; let len = 0; for (let i = 0; i < v.s.length; i++) len += (v.B[i + 1] - v.B[i]) * v.s[i];
-    const AL = ax === "x" ? T.W : T.H, PL = ax === "x" ? T.H : T.W, k = AL / len, win = Math.min(Lp, PL / k), cibles = new Array(n).fill(null), visages = new Array(n).fill(null);
+    /* cadrage : 0 = plein écran (fenêtre la plus petite qui remplit la largeur) … 1 = image entière ; entre les deux, l'image garde plus de
+       hauteur et les côtés restants reçoivent l'ambiance */
+    const AL = ax === "x" ? T.W : T.H, PL = ax === "x" ? T.H : T.W, w0 = Math.min(Lp, PL / (AL / len)), t = borne(+E.reglages.cadrage || 0, 0, 1), win = w0 + (Lp - w0) * t, k = PL / win, cibles = new Array(n).fill(null), visages = new Array(n).fill(null);
     const P = (sc.pistes || []).filter(p => p.classe !== "interet" || !(sc.pistes || []).some(q => q.classe !== "interet"));
     for (const p of P) for (let j = 0; j < n; j++) { if (!p.present[j]) continue; const a = (ax === "x" ? p.y[j] : p.x[j]) * Lp, l = (ax === "x" ? p.h[j] : p.w[j]) * Lp, b = a + l, c = p.classe;
       /* où placer la fenêtre pour ce sujet : visage aux 2/5 du cadre ; corps : la tête (haut de la boîte) avec de l'air au-dessus */
@@ -206,7 +208,7 @@ var FMT = (() => {
     /* sans sujet : centre des détails (profil perpendiculaire de l'analyse) */
     const pr = sc.profil && sc.profil[ax === "x" ? "y" : "x"]; let defaut = (Lp - win) / 2; if (pr) { let t = 0, m = 0; for (let i = 0; i < pr.e.length; i++) { t += pr.e[i] + pr.m[i]; m += (pr.e[i] + pr.m[i]) * (i + .5) / pr.e.length } if (t > 0) defaut = m / t * Lp - win / 2 }
     const y = FFI.trajectoire({ n, Lp, win, cadence: A.cadA, cibles, visages, defaut }); let mn = 1e9, mx = -1e9; for (const v of y) { mn = Math.min(mn, v); mx = Math.max(mx, v) }
-    return { y, win, k, garde: win / Lp, fixe: mx - mn < .5, len };
+    return { y, win, k, garde: win / Lp, fixe: mx - mn < .5, len, remplit: Math.min(1, len * k / AL) };
   }
   /* « ambiance » des côtés : flou gaussien (3 passes de boîte) d'une petite copie de l'image qui couvre toute la sortie, couleurs
      un peu assourdies, lissé dans le temps (aucun scintillement ; remis à zéro à chaque changement de plan), assombri vers les bords
@@ -234,14 +236,14 @@ var FMT = (() => {
     R.sc.x.drawImage(src, Z.x, Z.y, Z.w, Z.h, 0, 0, Z.w, Z.h);   /* une seule lecture de l'image (conversion YUV → RVB faite une fois) */
     if (F.rec) { const r = F.rec; if (ax === "x") x.drawImage(R.sc, 0, r.debut, Z.w, r.garde, 0, 0, W, H); else x.drawImage(R.sc, r.debut, 0, r.garde, Z.h, 0, 0, W, H); return { ox: 0, oy: 0, lw: W, lh: H, k: W / Z.w, exact: false, rec: true } }
     if (F.cadre) { /* plein écran : colonnes à leur place sur toute la largeur, fenêtre perpendiculaire qui suit les sujets */
-      const C = F.cadre, AL = ax === "x" ? W : H, PL = ax === "x" ? H : W, kk = AL / C.len, ck = s + "|" + plan.cle + "|" + W; R.ff = R.ff || new Map(); let G = R.ff.get(ck);
-      if (!G) { const D = FFI.carte(F.B, F.s, kk, 0), runs = []; for (let i = 0; i < F.s.length;) { let q = i + 1; while (q < F.s.length && Math.abs(F.s[q] - F.s[i]) < 1e-6) q++; runs.push([i, q]); i = q } G = { D, runs }; R.ff.set(ck, G) }
+      const C = F.cadre, AL = ax === "x" ? W : H, PL = ax === "x" ? H : W, kk = PL / C.win, ck = s + "|" + plan.cle + "|" + W; R.ff = R.ff || new Map(); let G = R.ff.get(ck);
+      if (!G) { const D = FFI.carte(F.B, F.s, kk, Math.max(0, (AL - C.len * kk) / 2)), runs = []; for (let i = 0; i < F.s.length;) { let q = i + 1; while (q < F.s.length && Math.abs(F.s[q] - F.s[i]) < 1e-6) q++; runs.push([i, q]); i = q } G = { D, runs }; R.ff.set(ck, G) }
       const n = C.y.length, a = borne(Math.floor(j || 0), 0, n - 1), b = Math.min(n - 1, a + 1), f = borne((j || 0) - a, 0, 1), y0 = C.y[a] + (C.y[b] - C.y[a]) * f, win = PL / kk, B = F.B, D = G.D;
-      x.fillStyle = "#000"; x.fillRect(0, 0, W, H);
+      if (D[D.length - 1] - D[0] < AL - 1) { if (E.reglages.bords !== "noir") ambiance(R, s, W, H, { a: D[0], b: D[D.length - 1] }, ax); else { x.fillStyle = "#000"; x.fillRect(0, 0, W, H) } } else { x.fillStyle = "#000"; x.fillRect(0, 0, W, H) }
       for (const [i, q] of G.runs) { const sa = B[i], sl = B[q] - B[i], da = D[i], dl = D[q] - D[i]; if (dl <= 0) continue; if (ax === "x") x.drawImage(R.sc, sa, y0, sl, win, da, 0, dl, H); else x.drawImage(R.sc, y0, sa, win, sl, 0, da, W, dl) }
       if (opt && opt.carte) { const prot = FFI.importance({ n: F.s.length, boites: plan.boites }).prot; for (let i = 0; i < F.s.length; i++) { const st = F.s[i] - 1, al = prot[i] ? .28 : Math.min(.6, st / .35 * .6); if (al < .02) continue;
         x.fillStyle = prot[i] ? "rgba(70,215,200," + al + ")" : "rgba(235,60,150," + al + ")"; if (ax === "x") x.fillRect(D[i], 0, D[i + 1] - D[i], H); else x.fillRect(0, D[i], W, D[i + 1] - D[i]) } }
-      return { ox: 0, oy: 0, lw: W, lh: H, k: kk, exact: false, plein: { y0, win } } }
+      return ax === "x" ? { ox: D[0], oy: 0, lw: D[D.length - 1] - D[0], lh: H, k: kk, exact: false, plein: { y0, win } } : { ox: 0, oy: D[0], lw: W, lh: D[D.length - 1] - D[0], k: kk, exact: false, plein: { y0, win } } }
     R.ff = R.ff || new Map(); const ck = s + "|" + plan.cle + "|" + W; let G = R.ff.get(ck);
     if (!G) { const AL = ax === "x" ? W : H, PL = ax === "x" ? H : W; let len = 0; for (let i = 0; i < F.s.length; i++) len += (F.B[i + 1] - F.B[i]) * F.s[i];
       const o = Math.round((AL - k * len) / 2), op = Math.floor((PL - Math.round(F.Lp * k)) / 2), D = FFI.carte(F.B, F.s, k, o), runs = [];
@@ -620,6 +622,7 @@ var FMT = (() => {
 <div class="f-row" id="fmt_perso" hidden><label>Largeur <input type="number" id="fmt_pw" min="1" max="100" value="5" inputmode="numeric"></label><label>Hauteur <input type="number" id="fmt_ph" min="1" max="100" value="4" inputmode="numeric"></label></div>
 <p class="f-h">Façon de faire</p><div class="f-seg" id="fmt_modes"><button type="button" data-m="fidele" aria-pressed="true">Fidèle<small>sans génération, rien d’inventé</small></button><button type="button" data-m="zero" aria-pressed="false">Zéro perte<small>toute l’image, au pixel près</small></button><button type="button" data-m="auto" aria-pressed="false">Auto<small>l’IA décide</small></button><button type="button" data-m="fidelite" aria-pressed="false">Fidélité<small>rien d’inventé</small></button><button type="button" data-m="max" aria-pressed="false">Reconstruction max<small>plus de décor recréé</small></button></div>
 <p class="f-h" id="fmt_ecr_t">Écran</p><div class="f-seg" id="fmt_ecr"><button type="button" data-e="plein" aria-pressed="true">Plein écran<small>remplit la télé, coupe le haut et le bas</small></button><button type="button" data-e="entier" aria-pressed="false">Image entière<small>tout garder, côtés en ambiance</small></button></div>
+<div class="f-reg" id="fmt_cad_l" style="padding:0"><label for="fmt_cad">Garder plus d’image <span id="fmt_cad_v"></span></label><input type="range" id="fmt_cad" min="0" max="100" step="5" value="0" aria-label="Part de l’image gardée : à gauche plein écran, à droite plus d’image avec des côtés en ambiance"></div>
 <div class="f-row"><button class="f-go" id="fmt_go">Analyser la vidéo</button></div>
 <div id="fmt_apres" hidden>
 <div id="fmt_lect"><button class="f-ib" id="fmt_pp" aria-label="Lecture">▶</button><input type="range" id="fmt_pos" min="0" max="1000" value="0" aria-label="Position dans la vidéo"><button class="f-ib" id="fmt_cmp" aria-pressed="true">Comparer</button></div>
@@ -646,7 +649,9 @@ var FMT = (() => {
     $("#fmt_fmts").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; E.format = b.dataset.f; $("#fmt_perso").hidden = E.format !== "perso"; maj("format") };
     $("#fmt_pw").onchange = $("#fmt_ph").onchange = () => { if (!E) return; E.perso = [borne(+$("#fmt_pw").value || 1, 1, 100), borne(+$("#fmt_ph").value || 1, 1, 100)]; maj("format") };
     $("#fmt_modes").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; E.reglages.mode = b.dataset.m; maj("mode") };
-    $("#fmt_ecr").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; E.reglages.plein = b.dataset.e === "plein"; E.ffCadre = {}; maj("reglage") };
+    $("#fmt_ecr").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; E.reglages.plein = b.dataset.e === "plein"; if (E.reglages.plein) E.reglages.cadrage = 0; E.ffCadre = {}; maj("reglage") };
+    $("#fmt_cad").oninput = e => { const v = $("#fmt_cad_v"); if (v) v.textContent = +e.target.value ? "(" + e.target.value + " %)" : "(plein écran)" };
+    $("#fmt_cad").onchange = e => { if (!E || E.occupe) return; E.reglages.plein = true; E.reglages.cadrage = +e.target.value / 100; E.ffCadre = {}; maj("reglage") };
     $("#fmt_go").onclick = () => lancer(); $("#fmt_ex").onclick = () => E && E.occupe === "export" ? (E.stop = true) : creer(); $("#fmt_sv").onclick = enregistrer; $("#fmt_am").onclick = ameliorer;
     $("#fmt_pp").onclick = () => { if (!E || !E.pret) return; const v = E.vid; if (v.paused) v.play().catch(() => {}); else v.pause() };
     $("#fmt_pos").oninput = e => { if (!E || !E.pret) return; E.vid.pause(); E.vid.currentTime = +e.target.value / 1000 * E.lecteur.duree };
@@ -659,9 +664,10 @@ var FMT = (() => {
     return d;
   }
   const MSG = (t, f) => { const m = $("#fmt_msg"); if (m) m.textContent = t || ""; const b = $("#fmt_bar i"); if (b) b.style.width = f == null ? "0" : Math.round(100 * borne(f, 0, 1)) + "%" };
-  const presseEcran = () => { if (!E) return; presse("#fmt_ecr", "e", E.reglages.plein ? "plein" : "entier"); $("#fmt_ecr").hidden = $("#fmt_ecr_t").hidden = E.reglages.mode !== "fidele" };
+  const presseEcran = () => { if (!E) return; const R = E.reglages; presse("#fmt_ecr", "e", R.plein && !R.cadrage ? "plein" : !R.plein ? "entier" : ""); $("#fmt_ecr").hidden = $("#fmt_ecr_t").hidden = $("#fmt_cad_l").hidden = R.mode !== "fidele";
+    $("#fmt_cad").value = R.plein ? Math.round((R.cadrage || 0) * 100) : 100; const v = $("#fmt_cad_v"); if (v) v.textContent = !R.plein ? "(image entière)" : R.cadrage ? "(" + Math.round(R.cadrage * 100) + " %)" : "(plein écran)" };
   const presse = (sel, attr, v) => document.querySelectorAll(sel + " button").forEach(b => b.setAttribute("aria-pressed", b.dataset[attr] === v));
-  function occupe(o) { if (!E) return; E.occupe = o; for (const s of ["#fmt_go", "#fmt_sv", "#fmt_am", "#fmt_choisir"]) $(s).disabled = !!o; $("#fmt_ex").disabled = !!o && o !== "export"; $("#fmt_ex").textContent = o === "export" ? "Arrêter" : "Créer la vidéo"; document.querySelectorAll("#fmt_av input,#fmt_av select,#fmt_fmts button,#fmt_modes button,#fmt_ecr button,#fmt_fiche select,#fmt_fiche button").forEach(e => e.disabled = !!o || e.hasAttribute("data-non")) }
+  function occupe(o) { if (!E) return; E.occupe = o; for (const s of ["#fmt_go", "#fmt_sv", "#fmt_am", "#fmt_choisir"]) $(s).disabled = !!o; $("#fmt_ex").disabled = !!o && o !== "export"; $("#fmt_ex").textContent = o === "export" ? "Arrêter" : "Créer la vidéo"; document.querySelectorAll("#fmt_av input,#fmt_av select,#fmt_fmts button,#fmt_modes button,#fmt_ecr button,#fmt_cad,#fmt_fiche select,#fmt_fiche button").forEach(e => e.disabled = !!o || e.hasAttribute("data-non")) }
 
   async function ouvrir(file) { const d = ui(); d.hidden = false; document.body.classList.add("fmt-ouvert"); if (file) await charger(file) }
   function liberer() { if (!E) return; E.stop = true; try { E.vid.pause(); E.vid.removeAttribute("src"); E.vid.load(); if (E.vid.remove) E.vid.remove(); if (E.lecteur && E.lecteur.v) E.lecteur.v.remove() } catch (e) {} if (E.url) URL.revokeObjectURL(E.url); if (E.resUrl) URL.revokeObjectURL(E.resUrl); E = null }
@@ -720,7 +726,7 @@ var FMT = (() => {
   }
   function resumeFidele() { const A = E.analyse, n = A.scenes.length, pc = v => (Math.round(v * 1000) / 10).toString().replace(".", ",") + " %", [rw, rh] = cible(), P = E.plans;
     const cons = Math.min(...P.map(p => p.mesures.conservation)), rem = Math.min(...P.map(p => p.mesures.remplissage)), rmax = Math.max(...P.map(p => p.mesures.remplissage)), def = Math.max(...P.map(p => p.mesures.etirementMax)), ko = E.qc.filter(q => q && !q.ok).length;
-    if (E.fidele.plein) return MSG("Plein écran, sans génération → " + rw + ":" + rh + ", " + E.sortie.W + "×" + E.sortie.H + ". L’image remplit toute la télé ; " + (P[0].axeExt === "x" ? "le haut et le bas sont coupés" : "les côtés sont coupés") + " (" + pc(1 - cons) + "), le cadre suit les visages. Rien d’inventé. " + (n > 1 ? n + " scènes. " : "") + (ko ? ko + " scène(s) avec un contrôle non satisfait (voir la fiche)." : "Contrôles passés.") + " Pour garder toute l’image : « Image entière ».");
+    if (E.fidele.plein) return MSG((rmax >= .999 ? "Plein écran" : "Cadrage intermédiaire") + ", sans génération → " + rw + ":" + rh + ", " + E.sortie.W + "×" + E.sortie.H + ". " + (rmax >= .999 ? "L’image remplit toute la télé" : "L’image remplit " + pc(rem) + " de la largeur (côtés en ambiance)") + " ; " + (P[0].axeExt === "x" ? "haut et bas coupés" : "côtés coupés") + " : " + pc(1 - cons) + " de l’image, le cadre suit les visages. Rien d’inventé. " + (n > 1 ? n + " scènes. " : "") + (ko ? ko + " scène(s) avec un contrôle non satisfait (voir la fiche)." : "Contrôles passés.") + " Pour garder toute l’image : « Image entière ».");
     MSG("Fidèle, sans génération → " + rw + ":" + rh + ", " + E.sortie.W + "×" + E.sortie.H + (E.fidele.exact ? " (un pixel filmé = un pixel du fichier)" : "") + ". Image gardée : " + pc(cons) + ", rien d’inventé. Écran rempli : " + (rem === rmax ? pc(rem) : pc(rem) + " à " + pc(rmax)) + (rmax < .999 ? " (le reste en " + (E.reglages.bords === "noir" ? "bandes noires" : "ambiance floue de ta propre image") + ")" : "") + ". Déformation : " + (def <= 1.0005 ? "aucune" : "max " + pc(def - 1)) + ". " + (n > 1 ? n + " scènes. " : "") + (ko ? ko + " scène(s) avec un contrôle non satisfait (voir la fiche)." : "Contrôles passés.") + (rem < .999 && P.every(p => p.variante === "fidele" || p.variante === "exact") ? " Remplir tout l’écran sans rien inventer obligerait à couper ou à déformer : voir « Méthode »." : "")) }
   function resume() { if (E.fidele) return resumeFidele(); const A = E.analyse, n = A.scenes.length, c = {}; E.plans.forEach(p => c[p.methode] = (c[p.methode] || 0) + 1); const [rw, rh] = cible(), ko = E.qc.filter(q => q && !q.ok).length;
     MSG((E.zero ? (E.zero.zero ? "Zéro perte : chaque pixel filmé est gardé (" + E.zone.w + "×" + E.zone.h + " posé tel quel dans " + E.sortie.W + "×" + E.sortie.H + "). " : "Zéro perte non garanti : " + E.zero.raison + ". ") : "") + (n > 1 ? n + " scènes" : "1 scène") + " → " + (E.format === "auto" ? "format choisi : " : "") + rw + ":" + rh + ", sortie " + E.sortie.W + "×" + E.sortie.H + ". " + Object.entries(c).map(([k, v]) => NOMS[k] + (n > 1 ? " × " + v : "")).join(", ") + "." + (A.zone.bandes ? " Bandes noires d’origine retirées." : "") + (ko ? " " + ko + " scène(s) avec un contrôle non satisfait (voir la fiche)." : " Contrôles passés.") + (E.reprise ? "" : " Analyse : " + (A.ms / 1000).toFixed(1).replace(".", ",") + " s.")) }
@@ -789,7 +795,7 @@ ${q && q.controles.length ? "<p>Contrôles mesurés sur " + q.images + " images 
   }
   function fideleTexte(r) { const f = r.fidele, pc = v => (Math.round(v * 1000) / 10).toString().replace(".", ",") + " %", li = (ok, t) => `<li class="${ok ? "ok" : "ko"}">${STUDIO.esc(t)}</li>`, o = [];
     const cons = Math.min(...f.scenes.map(x => x.mesures.conservation)), def = Math.max(...f.scenes.map(x => x.mesures.etirementMax)), rem = f.scenes.map(x => x.mesures.remplissage);
-    if (f.plein) { o.push(li(true, "Plein écran : l’image remplit toute la télé, rien n’est inventé ; " + pc(1 - cons) + " de l’image (" + (E.plans[0].axeExt === "x" ? "haut et bas" : "côtés") + ") hors du cadre, comme demandé."));
+    if (f.plein) { o.push(li(true, (rem.every(v => v >= .999) ? "Plein écran : l’image remplit toute la télé" : "Cadrage intermédiaire : l’image remplit " + rem.map(pc).join(", ") + " de la largeur") + ", rien n’est inventé ; " + pc(1 - cons) + " de l’image (" + (E.plans[0].axeExt === "x" ? "haut et bas" : "côtés") + ") hors du cadre, comme demandé."));
       o.push(li(f.verifVisages && !f.coupes.length, f.verifVisages ? "Cadre vérifié image par image : " + (f.coupes.length ? f.coupes.length + " visage(s) coupé(s)" : "aucun visage coupé") + " (" + f.visages + " visages détectés sur " + f.images + " images)." : "Vérification des visages impossible sur cet appareil.")) }
     else o.push(li(cons >= .9999, cons >= .9999 ? "Image filmée gardée à 100 % : rien n’est coupé, rien n’est inventé." : "Recadrage choisi : " + pc(1 - cons) + " de l’image coupée."));
     o.push(li(f.verifVisages && f.max <= 1.0005, f.verifVisages ? "Vérifié image par image (" + f.images + " images, " + f.visages + " visages détectés) : étirement max sous un visage = " + pc(f.max - 1) + "." : "Vérification des visages impossible sur cet appareil."));

@@ -1,5 +1,16 @@
 # Journal des versions
 
+## v8.9 (18 nov. 2026) — Changer de format : curseur « Garder plus d'image », et ce qu'on a cherché pour réduire la perte
+Demande : le plein écran perd trop d'image ; trouver une solution sans rien inventer.
+- **Piste étudiée et mesurée : le décor réellement filmé à d'autres moments** (quand la caméra bouge, les côtés ont parfois été filmés
+  plus tôt ou plus tard). Mesuré sur les 6 vidéos de test (dont deux panoramiques) : la part de côté disponible en vrais pixels pour
+  CHAQUE image est de 0 à 2 % de la largeur (au début d'un panoramique, le côté qu'on découvrira n'a encore jamais été filmé).
+  Gain trop faible : non retenu pour le plein écran.
+- **Nouveau curseur « Garder plus d'image »** (sous « Écran ») : de 0 % (plein écran, ≈ 68 % coupé en 9:16 → 16:9) à 100 % (image entière).
+  Entre les deux, l'image garde plus de hauteur et les côtés restants reçoivent l'ambiance ; le cadre suit toujours les visages,
+  aucun visage coupé (vérifié image par image). Exemple mesuré à 50 % : 66 % de l'image gardée, image sur 49 % de la largeur.
+- Tests : `tests/format_fidele.test.mjs` 20/20 (RAPIDE : 18/18), `tests/format_fidele_webkit.test.mjs` 3/3.
+
 ## v8.8 (18 nov. 2026) — Changer de format : « Plein écran » par défaut, la vidéo remplit toute la télé
 Demande du propriétaire : plus aucune bande, la vidéo doit prendre tout l'écran de la télé (toujours sans rien inventer).
 - **Plein écran** (par défaut, bouton « Écran ») : l'image couvre toute la sortie 16:9. Pour une vidéo verticale, le haut et le bas sont
