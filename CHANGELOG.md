@@ -1,5 +1,18 @@
 # Journal des versions
 
+## v9.1 (18 nov. 2026) — « Plein écran, rien coupé » marche enfin SANS rien régler : le téléphone dessine tout le côté
+Constat du propriétaire : toujours des bandes (sans jeton Kaggle, seuls les bords proches étaient dessinés, le reste en flou).
+- **LaMa sur le téléphone** (`lama.js`, `lama-worker.js` ; modèle « big-lama » Apache-2.0, 208 Mo, téléchargé une fois avec accord) :
+  dessine TOUT le côté manquant — plus de flou, plus de bande. Calcul dans un fil séparé dont la mémoire est rendue à la fin de chaque
+  scène (évite la saturation sur iPhone). MI-GAN reste en secours. Mesuré auparavant (banc des générateurs) : LaMa nettement plus juste
+  que MI-GAN sur les grandes zones.
+- En mode « rien coupé », le Directeur dessine toujours les côtés (même caméra très mobile) et un contrôle de qualité non satisfait ne
+  remplace plus jamais le décor par du flou (il reste affiché dans la fiche).
+- Vidéo filmée toujours intacte au pixel près (contrôle à l'export : 0 différence). Exemple : 1080×1920 → 3414×1920, côtés dessinés,
+  0 % de flou. Avec un jeton Kaggle, Stable Diffusion XL dessine un décor encore plus détaillé.
+- Tests : `tests/format_zero.test.mjs` 4/4, `tests/format_fidele_webkit.test.mjs` 4/4 (WebKit, émulation iPhone, LaMa compris).
+  Vitesse mesurée hors iPhone : ≈ 23 s par fenêtre 512×512 sur un processeur lent ; **non mesurée sur iPhone**.
+
 ## v9.0 (18 nov. 2026) — « Plein écran, rien coupé » : l'IA dessine les côtés (choix par défaut)
 Demande du propriétaire : « invente-le » — la génération est désormais autorisée pour remplir la télé sans rien couper.
 - **Nouveau choix « Écran »** (mémorisé) : « Plein écran, rien coupé » (défaut) · « Plein écran, rien inventé » (coupe) · « Image entière ».

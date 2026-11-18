@@ -41,5 +41,12 @@ await test("v9.0 parcours par défaut : accueil → « Plein écran, rien coupé
   const e = await exporter(p, path.join(OUT, "defaut_ia.mp4")), z = await zero(); await p.evaluate(() => { window.__fmtSansAuto = true });
   return { ok: a.mode === "zero" && a.presse === "true" && a.serveur && a.parts && a.parts.flou < .05 && z.ok && z.differents === 0 && e.W === 768 && e.H === 432, info: JSON.stringify({ ...a, z }) } });
 
+await test("v9.1 sans jeton Kaggle : le téléphone dessine TOUT le côté (LaMa), plus aucun flou ni bande, 0 pixel d'origine modifié", async () => {
+  const VP = path.join(HERE, "medias", "fidele", "personnes_fixe.mp4"); if (!fs.existsSync(VP) || !fs.existsSync(path.join(HERE, "medias", "lama_fp32.onnx"))) return { ok: false, info: "vidéo ou tests/medias/lama_fp32.onnx absents" };
+  await p.evaluate(() => { FMT.fermer(); localStorage.removeItem("kaggle_jeton") });
+  await analyser(p, VP, "16:9", "zero", { fond: "genere" }); const a = await p.evaluate(() => ({ parts: FMT.etat.decors.get(0) && FMT.etat.decors.get(0).parts, journal: FMT.etat.qc[0].journal, kg: KG.actif() }));
+  const e = await exporter(p, path.join(OUT, "lama.mp4")), z = await zero();
+  return { ok: !a.kg && a.parts && a.parts.flou < .02 && a.parts.invente > .5 && /LaMa/.test(a.journal.join(" ")) && z.ok && z.differents === 0 && e.W === 768, info: JSON.stringify({ parts: a.parts, z }) } });
+
 console.log(N.errs.length ? "Erreurs de page : " + N.errs.join(" | ") : ""); await N.fermer();
 console.log(res.filter(Boolean).length + "/" + res.length + " réussis"); process.exit(res.every(Boolean) && !N.errs.length ? 0 : 1);

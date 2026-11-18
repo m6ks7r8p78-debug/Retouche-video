@@ -141,7 +141,7 @@ var FMT = (() => {
     const A = E.analyse, Z = E.zone, [rw, rh] = cible(), As = Z.w / Z.h, At = rw / rh, R = E.reglages;
     for (const s of A.scenes) s.reel = s.mos && s.classe !== "complexe" ? FMM.reelDisponible(s.mos, s.M, A.aw, A.ah, As, At) : { g: 0, d: 0, h: 0, b: 0 };
     const zero = R.mode === "zero", kg = zero && E.kaggle !== false && !!window.KG && KG.actif();
-    const D = FMD.decider({ source: { w: Z.w, h: Z.h }, cadence: A.cadA, scenes: A.scenes }, { rw, rh }, { ...R, fond: R.fond === "auto" ? undefined : R.fond, generateur: kg ? "kaggle" : E.generateur ? "migan" : "aucun", plafond: zero ? AP.plafondZero : AP.plafond, scenes: R.scenes });
+    const D = FMD.decider({ source: { w: Z.w, h: Z.h }, cadence: A.cadA, scenes: A.scenes }, { rw, rh }, { ...R, forcerGenere: zero && R.fond === "genere", fond: R.fond === "auto" ? undefined : R.fond, generateur: kg ? "kaggle" : E.generateur ? "migan" : "aucun", plafond: zero ? AP.plafondZero : AP.plafond, scenes: R.scenes });
     E.zero = zero ? (D.taille.zero != null ? D.taille : { W: D.taille.W, H: D.taille.H, zero: FMM.placementZero(Z.w, Z.h, D.taille.W, D.taille.H).exact, raison: "résolution choisie à la main" }) : null;
     E.plans = D.plans; E.At = At; E.sortie = D.taille; const ap = AP.apercu / Math.min(D.taille.W, D.taille.H); E.apercu = ap >= 1 ? { W: D.taille.W, H: D.taille.H } : { W: pair(D.taille.W * ap), H: pair(D.taille.H * ap) };
     E.plans.forEach((p, i) => { p.cle = [p.methode, p.z, p.fond, p.portee.toFixed(3), rw, rh, (R.scenes[i] || {}).graine || 0].join("|"); p.opt = E.opts[i] || (E.opts[i] = { plume: 1, lumiere: true }) });
@@ -298,6 +298,7 @@ var FMT = (() => {
     try { await chargerModule("effacer"); if (!ERASE.loaded()) { onP && onP("Chargement du modèle de reconstruction (28 Mo, une seule fois)…"); const v = new Uint8ClampedArray(64 * 64 * 4).fill(255), t = new Uint8Array(64 * 64); t.fill(1, 0, 64 * 8); await ERASE.infer(v, t, 64, 64) } return true }
     catch (e) { E.generateur = false; E.pourquoiSansGen = window.STUDIO && !STUDIO.granted("modele") ? "téléchargement du modèle non autorisé" : "modèle de reconstruction indisponible (" + ((e && e.message) || e) + ")"; return false }
   }
+  async function lamaPret(onP) { if (E.lama === false) return false; try { await chargerModule("lama"); if (!LAMA.loaded()) { onP && onP("Chargement du modèle qui dessine les côtés (208 Mo, une seule fois)…"); await LAMA.charger() } return true } catch (e) { E.lama = false; return false } }
   /* bâtit le décor de la scène s pour une sortie W×H. Renvoie null si la scène n'en a pas besoin. */
   /* garde-fou : un visage apparu dans une zone inventée est retiré (le modèle n'a pas à inventer des gens). src : toile à analyser ;
      couche : toile de la couche inventée (même repère, éventuellement plus grande) ; invente(cx, cy) : le point (repère src) est-il inventé ? */
@@ -360,13 +361,17 @@ var FMT = (() => {
     /* Zéro perte + serveur : la couche complète vient de Kaggle (etendreServeur) ; tant qu'elle manque, le modèle du téléphone remplit
        ce qu'il sait faire (sa propre portée), rangé sous une autre clé pour ne pas être pris pour la couche du serveur */
     const cleS = s + "|" + plan.cle, kgSans = plan.generateur === "kaggle" && !E.couches.has(cleS), cle = kgSans ? cleS + "|local" : cleS;
-    const portee = plan.fond === "genere" ? (kgSans ? plan.portee * FMD.PORTEE.migan / FMD.PORTEE.kaggle : plan.portee) : 0;
+    const portee = plan.fond === "genere" ? (kgSans && !(E.reglages.mode === "zero" && E.reglages.fond === "genere") ? plan.portee * FMD.PORTEE.migan / FMD.PORTEE.kaggle : plan.portee) : 0;   /* v9.1 « rien coupé » : le téléphone dessine TOUT le côté (plus de flou) */
     const G = FMM.genPreparer(fin, bes, geo, plan, W, H, portee, [512, 448, 576, 480][((E.reglages.scenes[s] || {}).graine || 0) % 4]), plume = FMM.plumeReel(G, plan.fond === "genere" ? 6 : 14);
     /* reconstruction : une seule fois par scène et par réglage ; la même couche sert à l'aperçu et à l'export (ce qu'on voit est ce qu'on obtient) */
     let gen = E.couches.get(cle) || null; const journal = [];
     if (gen && gen.serveur) journal.push("Décor complet reconstruit sur le serveur (" + Math.round(gen.pixels / 1e3) + " k pixels inventés, raccord de couleur et netteté recalés sur le réel).");
     if (plan.fond === "genere" && !gen && G.couverts > 0) {
-      if (await generateurPret(onP)) { let k = 0; for (const f of G.fenetres) { const e = FMM.genEntree(G, f); k++; if (!e.utiles) continue; onP && onP("Scène " + (s + 1) + " : reconstruction du décor (" + k + "/" + G.fenetres.length + ")…"); await souffler(); FMM.genPoser(G, f, await ERASE.infer(e.rgba, e.trou, f.w, f.h)); if (E.stop) throw new Annule() }
+      /* v9.1 « rien coupé » sans serveur : LaMa (grandes zones) dessine tout le côté ; MI-GAN en secours */
+      const lama = E.reglages.mode === "zero" && E.reglages.fond === "genere" && await lamaPret(onP), moteur = lama ? (r, t, w, h) => LAMA.infer(r, t, w, h) : (r, t, w, h) => ERASE.infer(r, t, w, h);
+      if (lama) journal.push("Côtés dessinés sur le téléphone par LaMa (pixels inventés, marqués sur la carte).");
+      if (lama || await generateurPret(onP)) { let k = 0; for (const f of G.fenetres) { const e = FMM.genEntree(G, f); k++; if (!e.utiles) continue; onP && onP("Scène " + (s + 1) + " : l’IA dessine les côtés (" + k + "/" + G.fenetres.length + ")…"); await souffler(); FMM.genPoser(G, f, await moteur(e.rgba, e.trou, f.w, f.h)); if (E.stop) throw new Annule() }
+        if (lama) { try { LAMA.liberer() } catch (x) {} }   /* mémoire du modèle rendue aussitôt (iPhone) ; rechargé pour la scène suivante si besoin */
         const g = FMM.genFinir(G), gc = toile(G.w, G.h, true); gc.x.putImageData(new ImageData(g.rgba, G.w, G.h), 0, 0);
         /* garde-fou : un visage apparu dans une zone inventée est retiré (le modèle n'a pas à inventer des gens) */
         const tc = toile(G.w, G.h, true); tc.x.putImageData(new ImageData(new Uint8ClampedArray(G.rgba), G.w, G.h), 0, 0); const visages = await retirerVisages(tc, gc, (cx, cy) => G.invente[cy * G.w + cx]);
@@ -458,7 +463,7 @@ var FMT = (() => {
       const rs = E.reglages.scenes[s] = E.reglages.scenes[s] || {}, ko = B.controles.filter(c => !c.ok).map(c => c.nom + " (" + c.texte + ")").join(" ; ");
       /* v9.0 : quand tu as choisi « Plein écran, rien coupé » (IA sur serveur), le décor dessiné n'est jamais remplacé en silence par du flou :
          on élargit le raccord, et le contrôle non satisfait reste affiché dans la fiche */
-      const iaVoulue = E.reglages.mode === "zero" && plan.fond === "genere" && plan.generateur === "kaggle" && E.couches.has(s + "|" + plan.cle);
+      const iaVoulue = E.reglages.mode === "zero" && E.reglages.fond === "genere" && plan.fond === "genere" && (E.couches.has(s + "|" + plan.cle) || E.couches.has(s + "|" + plan.cle + "|local"));
       if (iaVoulue && (B.action === "ambiance" || B.action === "plume" || B.action === "lumiere")) { if (plan.opt.plume >= 2.5) { journal.push("Contrôle non satisfait — " + ko + " → décor de l’IA gardé (tu as demandé « rien coupé ») ; tu peux relancer la reconstruction ou choisir une autre façon dans « Écran »."); break } plan.opt.plume = 2.5; journal.push("Contrôle non satisfait — " + ko + " → raccord élargi, nouvelle mesure."); continue }
       if (B.action === "ambiance" || (tour === 1 && (B.action === "plume" || B.action === "lumiere"))) { rs.fond = "ambiance"; rs.qc = true; journal.push("Contrôle non satisfait — " + ko + " → retour au prolongement flou, plus fidèle."); decider() }
       else if (B.action === "plume" || B.action === "lumiere") { plan.opt.plume = 2.5; journal.push("Contrôle non satisfait — " + ko + " → raccord élargi, nouvelle mesure.") }
@@ -738,7 +743,7 @@ var FMT = (() => {
     MSG("Fidèle, sans génération → " + rw + ":" + rh + ", " + E.sortie.W + "×" + E.sortie.H + (E.fidele.exact ? " (un pixel filmé = un pixel du fichier)" : "") + ". Image gardée : " + pc(cons) + ", rien d’inventé. Écran rempli : " + (rem === rmax ? pc(rem) : pc(rem) + " à " + pc(rmax)) + (rmax < .999 ? " (le reste en " + (E.reglages.bords === "noir" ? "bandes noires" : "ambiance floue de ta propre image") + ")" : "") + ". Déformation : " + (def <= 1.0005 ? "aucune" : "max " + pc(def - 1)) + ". " + (n > 1 ? n + " scènes. " : "") + (ko ? ko + " scène(s) avec un contrôle non satisfait (voir la fiche)." : "Contrôles passés.") + (rem < .999 && P.every(p => p.variante === "fidele" || p.variante === "exact") ? " Remplir tout l’écran sans rien inventer obligerait à couper ou à déformer : voir « Méthode »." : "")) }
   function resume() { if (E.fidele) return resumeFidele(); const A = E.analyse, n = A.scenes.length, c = {}; E.plans.forEach(p => c[p.methode] = (c[p.methode] || 0) + 1); const [rw, rh] = cible(), ko = E.qc.filter(q => q && !q.ok).length;
     MSG((E.zero ? (E.zero.zero ? "Zéro perte : chaque pixel filmé est gardé (" + E.zone.w + "×" + E.zone.h + " posé tel quel dans " + E.sortie.W + "×" + E.sortie.H + "). " : "Zéro perte non garanti : " + E.zero.raison + ". ") : "") + (n > 1 ? n + " scènes" : "1 scène") + " → " + (E.format === "auto" ? "format choisi : " : "") + rw + ":" + rh + ", sortie " + E.sortie.W + "×" + E.sortie.H + ". " + Object.entries(c).map(([k, v]) => NOMS[k] + (n > 1 ? " × " + v : "")).join(", ") + "." + (A.zone.bandes ? " Bandes noires d’origine retirées." : "") + (ko ? " " + ko + " scène(s) avec un contrôle non satisfait (voir la fiche)." : " Contrôles passés.") + (E.reprise ? "" : " Analyse : " + (A.ms / 1000).toFixed(1).replace(".", ",") + " s."))
-    if (E.zero && !(window.KG && KG.actif())) MSG($("#fmt_msg").textContent + " ⚠️ Pour que l’IA dessine TOUT le côté, colle ton jeton Kaggle dans ⚙️ Paramètres (serveur gratuit) ; sans lui, seuls les bords proches de l’image sont dessinés sur le téléphone, le reste est flou.");
+    if (E.zero && E.reglages.fond === "genere" && !(window.KG && KG.actif())) MSG($("#fmt_msg").textContent + (E.lama === false ? " ⚠️ Le modèle qui dessine les côtés n’a pas pu être chargé : côtés en flou." : " Côtés dessinés sur ton téléphone. Pour un décor encore plus détaillé : jeton Kaggle dans ⚙️ Paramètres (serveur gratuit)."));
     else if (E.zero && E.kaggleNote) MSG($("#fmt_msg").textContent + " " + E.kaggleNote); }
   const tempsScene = s => E.lecteur.tps[Math.min(E.lecteur.n - 1, E.analyse.scenes[s].a0 * E.analyse.pasA)];
   function scenes() { const A = E.analyse, d = $("#fmt_scenes"); $("#fmt_ns").textContent = "(" + A.scenes.length + ")"; d.innerHTML = A.scenes.map((sc, s) => `<button type="button" data-s="${s}" aria-pressed="${s === E.scene}" class="${E.qc[s] && !E.qc[s].ok ? "ko" : ""}">Scène ${s + 1} · ${tempsScene(s).toFixed(1).replace(".", ",")} s<small>${E.plans[s].methode === "fidele" ? FFI.VARIANTES[E.plans[s].variante].nom : NOMS[E.plans[s].methode]}</small></button>`).join("");

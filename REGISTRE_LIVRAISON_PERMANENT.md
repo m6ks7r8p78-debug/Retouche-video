@@ -31,6 +31,7 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 | **Laboratoire** | F15 : EN DÉVELOPPEMENT (+ v7.1 : 74 vrais clips Snapchat privés avec vérité terrain, 359 visages NASA, validation croisée par vidéo) |
 | **Bloquées (dépendance externe)** | F23 serveur de consentement (déploiement + juriste) · F24 collecte pour l'entraînement (juriste) · **F13 en usage commercial** (décision juridique sur la licence des poids) |
 | **Régressions détectées** | aucune introduite par la v6.9. **Échecs déjà présents en v6.8** (trouvés en relançant tout) : `tests/pub.test.mjs` 1 cas (pub indisponible → l’enregistrement ne part pas dans le test), `tests/v3.test.mjs` 3 cas (rendus « équilibre / nuit / jour » de photo sombre) — à expliquer et corriger |
+| **Nouveau v9.1** | **F35 côtés dessinés sur le téléphone (LaMa)** : INTÉGRÉ, testé dans Chromium et WebKit (0 % de flou, 0 pixel filmé modifié) ; non mesuré sur iPhone |
 | **Nouveau v9.0** | **F35 Plein écran, rien coupé (IA)** par défaut : INTÉGRÉ, testé avec serveur simulé ; **jamais exécuté sur une vraie carte Kaggle ni sur iPhone** |
 | **Nouveau v8.8** | **F36 Plein écran (par défaut)** : cadre qui suit les visages, aucun visage coupé (vérifié image par image, correction automatique), sortie télé : INTÉGRÉ, testé dans Chromium et WebKit ; non validé sur iPhone/télé |
 | **Nouveau v8.7** | **F32/F36 ouverture des vidéos sur Safari** (balise attachée + amorçage, repli WebCodecs, analyse automatique) : CORRIGÉ, testé dans WebKit (émulation iPhone) ; non validé sur un vrai iPhone |

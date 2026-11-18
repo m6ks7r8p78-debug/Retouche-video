@@ -19,5 +19,13 @@ async function envoyer(video, attendu) {
 await test("Vidéo ordinaire : envoi depuis l'accueil → analyse automatique → export vérifié", () => envoyer(path.join(MED, "personnes_fixe.mp4"), [1280, 720]));
 await test("Vidéo de téléphone avec rotation (portrait stocké couché) : bien redressée, 720×1280 → plein écran 1920×1080", () => envoyer(ROT, [1920, 1080]));
 await test("Plusieurs scènes", () => envoyer(path.join(MED, "scenes_multiples.mp4"), [1280, 720]));
+await test("« Plein écran, rien coupé » sans serveur (choix par défaut) : le téléphone dessine tout le côté avec LaMa, 0 pixel filmé modifié", async () => {
+  if (!fs.existsSync(path.join(HERE, "medias", "lama_fp32.onnx"))) return { ok: false, info: "tests/medias/lama_fp32.onnx absent" };
+  await p.evaluate(() => { localStorage.removeItem("fmt_ecran"); const e = MODELS.get("lama"); e.url = "tests/medias/lama_fp32.onnx"; if (window.FMT) FMT.fermer() });
+  const [fc] = await Promise.all([p.waitForEvent("filechooser"), p.evaluate(() => document.querySelector("#pickf").click())]); await fc.setFiles(path.join(MED, "personnes_fixe.mp4"));
+  await p.waitForFunction(() => window.FMT && FMT.etat && FMT.etat.pret && !FMT.etat.occupe, null, { timeout: 900000 });
+  const a = await p.evaluate(() => ({ mode: FMT.etat.reglages.mode, parts: FMT.etat.decors.get(0) && FMT.etat.decors.get(0).parts })); await p.evaluate(() => FMT.creer());
+  const z = await p.evaluate(() => FMT.etat.res && FMT.etat.res.zero);
+  return { ok: a.mode === "zero" && a.parts && a.parts.flou < .02 && z && z.ok && z.differents === 0, info: JSON.stringify({ ...a, z }) } });
 console.log(errs.length ? "Erreurs de page : " + errs.join(" | ") : ""); await b.close(); srv.kill();
 console.log(res.filter(Boolean).length + "/" + res.length + " réussis"); process.exit(res.every(Boolean) && !errs.length ? 0 : 1);

@@ -85,11 +85,11 @@ var FMD = (() => {
     const pF = 1 + 2 * ((R.fidelite == null ? .5 : R.fidelite) - .5), pL = 1 + 1.2 * ((R.liberte == null ? .5 : R.liberte) - .5), pI = (R.intensite == null ? .5 : R.intensite) * 2;
     const cotes = G.axeExt === "x" ? ["g", "d"] : ["h", "b"], moy = o => o ? (o[cotes[0]] + o[cotes[1]]) / 2 : 0, pire = o => o ? Math.max(o[cotes[0]], o[cotes[1]]) : 0;
     const relief = moy(scene.bord && scene.bord.relief), activite = moy(scene.bord && scene.bord.activite), touche = pire(scene.touche), reel = moy(scene.reel);
-    const gen = R.generateur && R.generateur !== "aucun" ? R.generateur : null, genOK = !!gen && mode.generatif && R.fond !== "ambiance" && R.fond !== "noir" && scene.classe !== "complexe";
+    const gen = R.generateur && R.generateur !== "aucun" ? R.generateur : null, genOK = !!gen && mode.generatif && R.fond !== "ambiance" && R.fond !== "noir" && (scene.classe !== "complexe" || !!R.forcerGenere);
     /* risque d'une extension générée (0 = sans risque … 1+ = presque sûrement fausse) : bord détaillé, bord animé (l'extension reste figée), sujet coupé par le bord */
     const reelOK = scene.classe !== "complexe" && reel > .03 && R.fond !== "noir" && R.fond !== "ambiance";
     const risque = borne((.18 + 2.2 * relief + 3 * activite + 1.4 * touche) * mode.risque / pL, .05, 1.6);
-    const portee = (PORTEE[gen] || 0) * mode.portee * pI, Aperp = G.axeExt === "x" ? At : 1 / At;   /* profondeur d'extension = part inventée d'un côté × (long côté / petit côté de la sortie) */
+    const portee = R.forcerGenere && gen ? 9 : (PORTEE[gen] || 0) * mode.portee * pI, Aperp = G.axeExt === "x" ? At : 1 / At;   /* profondeur d'extension = part inventée d'un côté × (long côté / petit côté de la sortie) */
     /* on sait où est le sujet (piste nette et durable) → ce qui est hors cadre mais hors sujet compte moins ; simple « zone d'intérêt » : confiance moindre */
     const Pp = (scene.pistes || []), conf = Pp.length ? borne(Pp[0].poids * (Pp[0].classe === "interet" ? .5 : 1.25), 0, 1) : 0;
     /* un liseré flou ne gêne guère ; une sortie aux deux tiers floue est un mauvais résultat : coût croissant avec la part floue x de la sortie */
@@ -100,7 +100,7 @@ var FMD = (() => {
       const cImage = (detailsPerdus(scene.carteRelief, scene.gw, scene.gh, G.axeRec, moyPos, vis) * .6 + (1 - vis) * .4) * (1 - .6 * conf), cAgr = .12 * (Math.pow(G.r, -z) - 1) / (1 / G.r - 1);
       const invente = 1 - couv, prof = invente / 2 * Aperp / Math.max(1e-6, G.axeExt === "x" ? 1 : 1);   /* profondeur d'un côté, en part du petit côté visible */
       const base = mode.sujets * tr.perte + mode.image * pF * cImage + cAgr;
-      const fonds = z === 1 && !mode.zero ? ["aucun"] : R.fond === "noir" ? ["noir"] : R.fond === "ambiance" ? ["ambiance"] : [...(genOK && R.fond !== "reel" ? ["genere"] : []), ...(reelOK ? ["reel"] : []), "ambiance"];
+      const fonds = R.forcerGenere && genOK ? ["genere"] : z === 1 && !mode.zero ? ["aucun"] : R.fond === "noir" ? ["noir"] : R.fond === "ambiance" ? ["ambiance"] : [...(genOK && R.fond !== "reel" ? ["genere"] : []), ...(reelOK ? ["reel"] : []), "ambiance"];
       for (const fond of fonds) {
         let cFond = 0, part = 0;
         if (fond === "genere") { /* le réel retrouvé par le mouvement de caméra ne coûte rien ; au-delà de la portée du générateur, fondu vers l'ambiance */

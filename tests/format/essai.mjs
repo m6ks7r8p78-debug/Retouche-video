@@ -8,9 +8,12 @@ export async function navigateur(port = 8791, moteur = "chromium") {
   const b = await pw[moteur].launch(moteur === "chromium" ? { ...(process.env.CHROME ? { executablePath: process.env.CHROME } : {}), args: ["--enable-unsafe-webgpu", "--use-angle=swiftshader", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] } : {});
   const p = await (await b.newContext({ viewport: { width: 430, height: 932 } })).newPage(), errs = []; p.on("pageerror", e => errs.push(e.message)); p.on("dialog", d => /diagnostic/i.test(d.message()) ? d.dismiss() : d.accept());
   const MG = path.join(TESTS, "medias", "migan.onnx"); if (fs.existsSync(MG)) { const body = fs.readFileSync(MG); await p.route(/huggingface\.co\/.*migan_pipeline_v2\.onnx/, r => r.fulfill({ status: 200, body, headers: { "content-type": "application/octet-stream", "access-control-allow-origin": "*" } })) }
+  /* LaMa (208 Mo) : servi par le serveur local (une réponse de route Playwright de cette taille fait tomber la page) */
+
   await p.goto("http://localhost:" + port + "/index.html"); await p.waitForFunction(() => window.MODELS && window.VISAGE && window.chargerModule);
   await p.evaluate(() => localStorage.setItem("autorisations", JSON.stringify({ modele: { ok: true } })));
-  await p.evaluate(() => { window.__fmtSansAuto = true });   /* les tests choisissent format et mode avant d'analyser */
+  await p.evaluate(() => { window.__fmtSansAuto = true });
+  if (fs.existsSync(path.join(TESTS, "medias", "lama_fp32.onnx"))) await p.evaluate(() => { const e = MODELS.get("lama"); if (e) e.url = "tests/medias/lama_fp32.onnx" });   /* LaMa (208 Mo) servi en local */   /* les tests choisissent format et mode avant d'analyser */
   return { p, errs, fermer: async () => { await b.close(); srv.kill() } };
 }
 /* ouvre l'outil avec une vidéo, règle, analyse ; renvoie le diagnostic */
