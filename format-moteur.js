@@ -107,7 +107,9 @@ var FMM = (() => {
     const w = P.w, h = P.h, Bi = inv(B), S = P.somme, Wt = P.poids, R = P.ref, RV = P.refV, K = 1 / (2 * 22 * 22);
     for (let y = 0; y < h; y++) { let u = (Bi[0] * .5 + Bi[1] * (y + .5) + Bi[2]) / sw, v = (Bi[3] * .5 + Bi[4] * (y + .5) + Bi[5]) / sh; const du = Bi[0] / sw, dv = Bi[3] / sh;
       for (let x = 0; x < w; x++, u += du, v += dv) { const p = y * w + x, i = p * 4; if (rgba[i + 3] < 250) continue;
-        const t = Math.min(u, 1 - u, v, 1 - v); let wt = t <= 0 ? .02 : t < .05 ? .1 + 18 * t : 1;
+        /* v9.2 : le bord de chaque image filmée (liseré sombre, flou de compression, vignetage) n'entre jamais dans le décor : sinon,
+           là où une seule image couvre, il dessine un « cadre » visible (trait sombre, oblique quand la caméra tourne) */
+        const t = Math.min(u, 1 - u, v, 1 - v); if (t < .015) continue; let wt = t < .06 ? .05 + 20 * (t - .015) : 1;
         if (R && RV[p]) { const o = p * 3, d = Math.max(Math.abs(rgba[i] - R[o]), Math.abs(rgba[i + 1] - R[o + 1]), Math.abs(rgba[i + 2] - R[o + 2])); wt *= Math.exp(-d * d * K) + 1e-4 }
         S[p * 3] += wt * rgba[i]; S[p * 3 + 1] += wt * rgba[i + 1]; S[p * 3 + 2] += wt * rgba[i + 2]; Wt[p] += wt } }
     P.vues++; return P;
@@ -115,7 +117,7 @@ var FMM = (() => {
   /* fin : image RGBA (alpha 255 = pixel réellement filmé) */
   function plaqueFinir(P) {
     const n = P.w * P.h, o = new Uint8ClampedArray(n * 4), V = new Uint8Array(n);
-    for (let p = 0; p < n; p++) { const wt = P.poids[p]; if (wt < 1e-6) continue; o[p * 4] = P.somme[p * 3] / wt; o[p * 4 + 1] = P.somme[p * 3 + 1] / wt; o[p * 4 + 2] = P.somme[p * 3 + 2] / wt; o[p * 4 + 3] = 255; V[p] = 1 }
+    for (let p = 0; p < n; p++) { const wt = P.poids[p]; if (wt < .05) continue; o[p * 4] = P.somme[p * 3] / wt; o[p * 4 + 1] = P.somme[p * 3 + 1] / wt; o[p * 4 + 2] = P.somme[p * 3 + 2] / wt; o[p * 4 + 3] = 255; V[p] = 1 }
     P.somme = P.poids = P.ref = P.refV = null; return { rgba: o, valide: V, w: P.w, h: P.h };
   }
 

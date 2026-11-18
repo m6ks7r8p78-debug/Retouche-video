@@ -1,5 +1,13 @@
 # Journal des versions
 
+## v9.2 (18 nov. 2026) — Plein écran, rien coupé : plus de « cadre » visible autour de la vidéo
+Capture du propriétaire (selfie tenu à la main, 1080×1906 → 3390×1906) : traits sombres verticaux et obliques autour de l'image filmée.
+- Cause : le décor de la scène est assemblé à partir de plusieurs images de la vidéo ; le bord de chaque image (liseré sombre, flou de
+  compression) y entrait, et là où une seule image couvrait, il formait un trait — oblique quand le téléphone tourne.
+- Correction : les 1,5 % du bord de chaque image n'entrent plus dans le décor, et la transition vers l'intérieur est progressive ;
+  l'IA redessine ces zones proprement. Vérifié sur une vidéo « tenue à la main » (rotation + balayage + bord sombre) : traits disparus.
+- Tests : `tests/format_zero.test.mjs` 4/4, `tests/format.test.mjs` 20/20.
+
 ## v9.1 (18 nov. 2026) — « Plein écran, rien coupé » marche enfin SANS rien régler : le téléphone dessine tout le côté
 Constat du propriétaire : toujours des bandes (sans jeton Kaggle, seuls les bords proches étaient dessinés, le reste en flou).
 - **LaMa sur le téléphone** (`lama.js`, `lama-worker.js` ; modèle « big-lama » Apache-2.0, 208 Mo, téléchargé une fois avec accord) :
