@@ -55,10 +55,15 @@ await test("Correction à l'export : un visage manqué avant l'export est trouv�
   const e = await exporter(p, path.join(OUT, "corrige.mp4")), f = await p.evaluate(() => { const f = FMT.etat.res.fidele; return { corrige: f.corrige, restant: f.violations.length, max: f.max, visages: f.visages } }), bilan = await p.textContent("#fmt_bilan");
   return { ok: f.corrige > 0 && f.restant === 0 && f.max <= 1.0005 && /Correction automatique/.test(bilan), info: JSON.stringify(f) } });
 
-await test("Côtés en flou de la vidéo elle-même (option) : rendu sans bande noire, rien d'inventé", async () => {
-  await analyser(p, V("personnes_fixe"), "16:9", "fidele", { bords: "flou" }); const e = await exporter(p, path.join(OUT, "flou.mp4"));
-  const noir = +spawnSync("ffmpeg", ["-v", "info", "-ss", "2", "-i", path.join(OUT, "flou.mp4"), "-frames:v", "1", "-vf", "crop=60:432:0:0,signalstats,metadata=print", "-f", "null", "-"]).stderr.toString().match(/YAVG=([\d.]+)/)[1];
-  ffmpegPlanche(path.join(OUT, "flou.mp4"), "flou"); return { ok: noir > 30 && e.W === 768, info: "luminance moyenne du côté gauche = " + noir } });
+/* côtés : « ambiance » (défaut) = image floutée, sans aucun détail (pas de décor), stable dans le temps ; « bandes noires » au choix */
+const stats = (f, crop) => { const t = spawnSync("ffmpeg", ["-v", "info", "-i", f, "-vf", "crop=" + crop + ",signalstats,metadata=print", "-f", "null", "-"]).stderr.toString(); const y = [...t.matchAll(/YAVG=([\d.]+)/g)].map(m => +m[1]); return { moy: y.reduce((a, b) => a + b, 0) / y.length, sauts: Math.max(...y.slice(1).map((v, i) => Math.abs(v - y[i]))) } };
+const detail = (f, crop) => +(spawnSync("ffmpeg", ["-v", "info", "-ss", "2", "-i", f, "-frames:v", "1", "-vf", "crop=" + crop + ",format=gray,edgedetect=low=0.04:high=0.1,signalstats,metadata=print", "-f", "null", "-"]).stderr.toString().match(/YAVG=([\d.]+)/) || [0, 99])[1];
+await test("Côtés « ambiance » (défaut) : aucune bande noire, aucun contour (rien d'inventé), stable d'une image à l'autre", async () => {
+  await analyser(p, V("personnes_fixe"), "16:9", "fidele"); const b = await p.evaluate(() => FMT.etat.reglages.bords), e = await exporter(p, path.join(OUT, "ambiance.mp4")), f = await fid(), z = stats(path.join(OUT, "ambiance.mp4"), "200:432:20:0"), d = detail(path.join(OUT, "ambiance.mp4"), "200:432:20:0");
+  ffmpegPlanche(path.join(OUT, "ambiance.mp4"), "ambiance"); return { ok: b === "ambiance" && z.moy > 25 && z.sauts < 3 && d < .5 && f.identite.ok, info: JSON.stringify({ bords: b, luminance: +z.moy.toFixed(1), saut_max_image_a_image: +z.sauts.toFixed(2), contours: d, identite: f.identite.ok }) } });
+await test("Côtés en bandes noires (option)", async () => {
+  await analyser(p, V("personnes_fixe"), "16:9", "fidele", { bords: "noir" }); await exporter(p, path.join(OUT, "noir.mp4")); const z = stats(path.join(OUT, "noir.mp4"), "200:432:20:0");
+  return { ok: z.moy < 18, info: "luminance " + z.moy.toFixed(1) } });
 
 console.log(N.errs.length ? "Erreurs de page : " + N.errs.join(" | ") : ""); await N.fermer();
 console.log(res.filter(Boolean).length + "/" + res.length + " réussis"); process.exit(res.every(Boolean) && !N.errs.length ? 0 : 1);

@@ -23,7 +23,7 @@ Déformation **alignée sur l'axe** (famille « axis-aligned deformation », Pan
 - le reste est étiré selon son coût (zones unies d'abord, zones détaillées ou qui bougent épargnées), sans dépasser le seuil de
   perception (10 %), avec une transition douce (≤ 0,02 par colonne près des sujets) ;
 - les lignes droites restent droites, les verticales restent verticales ; **un seul calcul par scène** → aucune ondulation possible ;
-- ce qui n'est pas rempli reste en bandes noires (ou, si on le choisit, flou de la vidéo elle-même — rien d'inventé).
+- ce qui n'est pas rempli reçoit une « ambiance » (v8.6) : la vidéo elle-même très floutée, sans aucun contour ni décor, stable dans le temps ; bandes noires au choix.
 
 ## Banc comparatif (`tests/fidele/banc_fidele.py`, vraies vidéos)
 Vidéos : piétons et visages réels (Intel sample-videos, CC BY 4.0 ; OpenCV vtest, BSD), caméra fixe, balayage, caméra qui avance

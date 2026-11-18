@@ -1,5 +1,12 @@
 # Journal des versions
 
+## v8.6 (18 nov. 2026) — « Fidèle » : rendu amélioré, plus de grandes bandes noires
+- **Côtés « ambiance »** (par défaut) : au lieu de bandes noires, la vidéo elle-même très floutée (flou gaussien), couleurs assourdies,
+  assombrie vers les bords et détachée de l'image par une ombre douce. Aucun décor ni aucune forme : mesuré sur l'export, 0 contour
+  détecté dans les côtés ; lissée dans le temps (saut max d'une image à l'autre : 0,7 niveau sur 255), remise à zéro à chaque changement
+  de plan. L'image filmée reste intacte au pixel près (contrôle à l'export inchangé). Bandes noires toujours disponibles (fiche de scène).
+- Tests : `tests/format_fidele.test.mjs` 14/14.
+
 ## v8.5 (18 nov. 2026) — « Fidèle » : vertical → horizontal SANS GÉNÉRATION, rien d'inventé
 Demande du propriétaire : adapter une vidéo verticale en 16:9 en n'utilisant que les images réellement filmées, sans rien perdre,
 sans déformation perceptible, et sans jamais activer en silence un recadrage ou une déformation.
