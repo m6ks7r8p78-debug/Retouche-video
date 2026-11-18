@@ -15,7 +15,7 @@ const N = await navigateur(8799), p = N.p, fid = () => p.evaluate(() => { const 
 const plans = () => p.evaluate(() => FMT.etat.plans.map((q, s) => ({ variante: q.variante, m: q.mesures, qc: FMT.etat.qc[s] && FMT.etat.qc[s].ok, journal: FMT.etat.qc[s] && FMT.etat.qc[s].journal })));
 /* contrôle commun d'une conversion Fidèle exportée */
 async function fidele(nom, video, format, attendu) {
-  const a = await analyser(p, video, format, "fidele"), P = await plans(), out = path.join(OUT, nom + ".mp4"), e = await exporter(p, out), f = await fid(), src = probe(video), dst = probe(out);
+  const a = await analyser(p, video, format, "fidele", { plein: false }), P = await plans(), out = path.join(OUT, nom + ".mp4"), e = await exporter(p, out), f = await fid(), src = probe(video), dst = probe(out);
   const sv = src.streams.find(s => s.codec_type === "video"), dv = dst.streams.find(s => s.codec_type === "video"), da = dst.streams.find(s => s.codec_type === "audio");
   const dureeOK = Math.abs(+dst.format.duration - +src.format.duration) < .12, cadOK = sv.r_frame_rate === dv.r_frame_rate, imgOK = +dv.nb_frames === +sv.nb_frames;
   const ok = e.W === attendu[0] && e.H === attendu[1] && P.every(q => q.m.conservation === 1 && !q.m.visible && (q.m.etirementProtege == null || q.m.etirementProtege === 1)) && f.max <= 1.0005 && f.violations === 0
@@ -37,20 +37,20 @@ await test("4:3 → 9:16 (axe vertical) : même méthode, par lignes", async () 
 if (!process.env.RAPIDE) await test("Taille iPhone 1080×1920 → 3414×1920 (un pixel filmé = un pixel du fichier), salle de classe", async () => fidele("classe", V("classe_1080x1920"), "16:9", [3414, 1920]));
 
 await test("Variantes : aucune n'est activée sans choix ; « Proportions exactes » = image entière identique ; « Recadrage » et « Étirement uniforme » signalés", async () => {
-  await analyser(p, V("personnes_fixe"), "16:9", "fidele"); const auto = await plans();
+  await analyser(p, V("personnes_fixe"), "16:9", "fidele", { plein: false }); const auto = await plans();
   const choisir = v => p.evaluate(async v => { FMT.etat.reglages.variante = v; await FMT.maj("reglage"); return FMT.etat.plans.map((q, s) => ({ v: q.variante, m: q.mesures, qc: FMT.etat.qc[s].ok, ko: FMT.etat.qc[s].controles.filter(c => !c.ok).map(c => c.code) })) }, v);
   const ex = await choisir("exact"), e = await exporter(p, path.join(OUT, "exact.mp4")), f = await fid(), rc = await choisir("recadrage"), un = await choisir("uniforme");
   return { ok: auto[0].variante === "fidele" && ex[0].m.etirementMax === 1 && f.identite.ok && f.identite.images > 0 && rc[0].m.conservation < .4 && rc[0].ko.includes("conservation") && un[0].m.visible && un[0].ko.includes("fond"),
     info: JSON.stringify({ auto: auto[0].variante, exact: { etir: ex[0].m.etirementMax, identite: f.identite }, recadrage: { conservation: rc[0].m.conservation, ko: rc[0].ko }, uniforme: { etir: un[0].m.etirementMax, ko: un[0].ko } }) } });
 
 await test("Correction avant l'export : sujets retirés exprès + remplissage total → les visages trouvés sous l'étirement sont protégés", async () => {
-  await analyser(p, V("personnes_fixe"), "16:9", "fidele");
+  await analyser(p, V("personnes_fixe"), "16:9", "fidele", { plein: false });
   const r = await p.evaluate(async () => { const E = FMT.etat; E.reglages.variante = "total"; for (const sc of E.analyse.scenes) sc.pistes = []; E.ffExtra = {}; FMT._t.decider(); const avant = E.plans[0].mesures.etirementProtege; await FMT._t.controler(0, () => {});
     return { avant, journal: E.qc[0].journal, ok: E.qc[0].ok, controles: E.qc[0].controles.map(c => c.code + ":" + c.ok), extra: (E.ffExtra[0] || []).length } });
   return { ok: r.extra > 0 && /protégée/.test(r.journal.join(" ")) && r.controles.includes("visages:true"), info: JSON.stringify(r) } });
 
 await test("Correction à l'export : un visage manqué avant l'export est trouvé image par image, protégé, vidéo refaite", async () => {
-  await analyser(p, V("personnes_fixe"), "16:9", "fidele");
+  await analyser(p, V("personnes_fixe"), "16:9", "fidele", { plein: false });
   await p.evaluate(() => { const E = FMT.etat; E.reglages.variante = "total"; for (const sc of E.analyse.scenes) sc.pistes = []; E.ffExtra = {}; FMT._t.decider() });
   const e = await exporter(p, path.join(OUT, "corrige.mp4")), f = await p.evaluate(() => { const f = FMT.etat.res.fidele; return { corrige: f.corrige, restant: f.violations.length, max: f.max, visages: f.visages } }), bilan = await p.textContent("#fmt_bilan");
   return { ok: f.corrige > 0 && f.restant === 0 && f.max <= 1.0005 && /Correction automatique/.test(bilan), info: JSON.stringify(f) } });
@@ -59,11 +59,28 @@ await test("Correction à l'export : un visage manqué avant l'export est trouv�
 const stats = (f, crop) => { const t = spawnSync("ffmpeg", ["-v", "info", "-i", f, "-vf", "crop=" + crop + ",signalstats,metadata=print", "-f", "null", "-"]).stderr.toString(); const y = [...t.matchAll(/YAVG=([\d.]+)/g)].map(m => +m[1]); return { moy: y.reduce((a, b) => a + b, 0) / y.length, sauts: Math.max(...y.slice(1).map((v, i) => Math.abs(v - y[i]))) } };
 const detail = (f, crop) => +(spawnSync("ffmpeg", ["-v", "info", "-ss", "2", "-i", f, "-frames:v", "1", "-vf", "crop=" + crop + ",format=gray,edgedetect=low=0.04:high=0.1,signalstats,metadata=print", "-f", "null", "-"]).stderr.toString().match(/YAVG=([\d.]+)/) || [0, 99])[1];
 await test("Côtés « ambiance » (défaut) : aucune bande noire, aucun contour (rien d'inventé), stable d'une image à l'autre", async () => {
-  await analyser(p, V("personnes_fixe"), "16:9", "fidele"); const b = await p.evaluate(() => FMT.etat.reglages.bords), e = await exporter(p, path.join(OUT, "ambiance.mp4")), f = await fid(), z = stats(path.join(OUT, "ambiance.mp4"), "200:432:20:0"), d = detail(path.join(OUT, "ambiance.mp4"), "200:432:20:0");
+  await analyser(p, V("personnes_fixe"), "16:9", "fidele", { plein: false }); const b = await p.evaluate(() => FMT.etat.reglages.bords), e = await exporter(p, path.join(OUT, "ambiance.mp4")), f = await fid(), z = stats(path.join(OUT, "ambiance.mp4"), "200:432:20:0"), d = detail(path.join(OUT, "ambiance.mp4"), "200:432:20:0");
   ffmpegPlanche(path.join(OUT, "ambiance.mp4"), "ambiance"); return { ok: b === "ambiance" && z.moy > 25 && z.sauts < 3 && d < .5 && f.identite.ok, info: JSON.stringify({ bords: b, luminance: +z.moy.toFixed(1), saut_max_image_a_image: +z.sauts.toFixed(2), contours: d, identite: f.identite.ok }) } });
 await test("Côtés en bandes noires (option)", async () => {
-  await analyser(p, V("personnes_fixe"), "16:9", "fidele", { bords: "noir" }); await exporter(p, path.join(OUT, "noir.mp4")); const z = stats(path.join(OUT, "noir.mp4"), "200:432:20:0");
+  await analyser(p, V("personnes_fixe"), "16:9", "fidele", { bords: "noir", plein: false }); await exporter(p, path.join(OUT, "noir.mp4")); const z = stats(path.join(OUT, "noir.mp4"), "200:432:20:0");
   return { ok: z.moy < 18, info: "luminance " + z.moy.toFixed(1) } });
+
+/* ---------- v8.8 Plein écran (défaut) : remplit la télé, rien d'inventé, cadre qui suit les visages, aucun visage coupé ---------- */
+async function plein(nom, video, attendu) {
+  const a = await analyser(p, video, "16:9", "fidele"), P = await plans(), out = path.join(OUT, nom + ".mp4"), e = await exporter(p, out), f = await p.evaluate(() => { const f = FMT.etat.res.fidele; return { plein: f.plein, coupes: f.coupes.length, visages: f.visages, images: f.images, max: f.max, corrige: f.corrige || 0 } });
+  const bords = [stats(out, "iw:8:0:0"), stats(out, "iw:8:0:ih-8"), stats(out, "8:ih:0:0"), stats(out, "8:ih:iw-8:0")].map(z => +z.moy.toFixed(1)), src = probe(video), dst = probe(out), sv = src.streams.find(x => x.codec_type === "video"), dv = dst.streams.find(x => x.codec_type === "video");
+  ffmpegPlanche(out, nom);
+  return { ok: f.plein && e.W === attendu[0] && e.H === attendu[1] && f.coupes === 0 && f.max <= 1.0005 && bords.every(v => v > 12) && +dv.nb_frames === +sv.nb_frames && e.son && e.tech.ok && P.every(q => q.m.plein && q.qc) && /Plein écran/.test(a.msg),
+    info: JSON.stringify({ sortie: e.W + "×" + e.H, garde: P.map(q => +q.m.conservation.toFixed(3)), fixe: P.map(q => q.m.fixe), agrandi: +P[0].m.agrandissement.toFixed(2), bords_luminance: bords, ...f, ms_par_image: Math.round(e.ms / e.images) }) };
+}
+await test("Plein écran (défaut), personnes qui marchent : toute la télé remplie, aucune bande, aucun visage coupé", () => plein("plein_personnes", V("personnes_fixe"), [1280, 720]));
+await test("Plein écran, visages et caméra qui balaye", () => plein("plein_visages", V("visages_pan"), [1280, 720]));
+await test("Plein écran, plusieurs scènes", () => plein("plein_scenes", V("scenes_multiples"), [1280, 720]));
+if (!process.env.RAPIDE) await test("Plein écran, 1080×1920 → 1920×1080 (télé Full HD)", () => plein("plein_classe", V("classe_1080x1920"), [1920, 1080]));
+await test("Plein écran : cadre volontairement faussé (visages coupés) → trouvé image par image à l'export, cadre corrigé, vidéo refaite", async () => {
+  await analyser(p, V("personnes_fixe"), "16:9", "fidele"); await p.evaluate(() => { const E = FMT.etat; for (const sc of E.analyse.scenes) sc.pistes = []; E.ffCadre = {}; FMT._t.decider(); for (const q of E.plans) { const C = q.ff.cadre; C.y.fill(q.ff.Lp - C.win) } });
+  await exporter(p, path.join(OUT, "plein_corrige.mp4")); const f = await p.evaluate(() => { const f = FMT.etat.res.fidele; return { corrige: f.corrige || 0, coupes: f.coupes.length, visages: f.visages } });
+  return { ok: f.corrige > 0 && f.coupes === 0, info: JSON.stringify(f) } });
 
 console.log(N.errs.length ? "Erreurs de page : " + N.errs.join(" | ") : ""); await N.fermer();
 console.log(res.filter(Boolean).length + "/" + res.length + " réussis"); process.exit(res.every(Boolean) && !N.errs.length ? 0 : 1);

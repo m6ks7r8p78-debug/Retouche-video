@@ -125,7 +125,31 @@ var FFI = (() => {
     if (m.etirementProtege != null) t.push(m.etirementProtege <= 1.0005 ? "visages et corps intacts" : "visages et corps étirés de " + pc(m.etirementProtege - 1));
     if (m.visible) t.push("déformation visible"); return t.join(" · ") }
 
-  const api = { SEUILS, VARIANTES, ORDRE, PROTEGES, bornes, largeurs, importance, resoudre, carte, etirementSous, mesurer, variantes, choisir, decrire, centile };
+  /* v8.8 « Plein écran » : l'image remplit tout l'écran (comme une télé l'attend). Rien n'est inventé ni déformé au-delà de la variante
+     choisie : on GARDE une fenêtre de la dimension perpendiculaire (le haut et le bas pour vertical → horizontal) qui suit les visages
+     et les personnes, comme un cadreur. Mouvement de cadre le plus calme possible : fixe si les sujets restent dans une même bande,
+     sinon lissé sans retard (aller-retour) ; jamais un visage coupé quand il tient dans la fenêtre.
+     Q : { n (images), Lp (longueur perpendiculaire, px), win (taille de la fenêtre, px), cadence, cibles : Array(n) de [{ debut, poids }] ou null,
+           visages : Array(n) de [{ a, b }] (px, perpendiculaire) ou null, defaut } → Float32Array(n) : début de la fenêtre à chaque image */
+  function trajectoire(Q) {
+    const n = Q.n, max = Math.max(0, Q.Lp - Q.win), d = new Float64Array(n).fill(NaN), out = new Float32Array(n);
+    if (max <= 0) return out;
+    for (let j = 0; j < n; j++) { const C = Q.cibles && Q.cibles[j]; if (!C || !C.length) continue; let a = 0, w = 0; for (const c of C) { a += c.debut * c.poids; w += c.poids } if (w > 0) d[j] = borne(a / w, 0, max) }
+    /* trous : valeur voisine (sinon cadre par défaut) */
+    let der = NaN; for (let j = 0; j < n; j++) { if (isNaN(d[j])) d[j] = der; else der = d[j] } der = NaN; for (let j = n - 1; j >= 0; j--) { if (isNaN(d[j])) d[j] = der; else der = d[j] }
+    for (let j = 0; j < n; j++) if (isNaN(d[j])) d[j] = borne(Q.defaut != null ? Q.defaut : max / 2, 0, max);
+    const lisser = (v, tau) => { const al = 1 - Math.exp(-1 / Math.max(1, Q.cadence * tau)); for (let j = 1; j < n; j++) v[j] = v[j - 1] + al * (v[j] - v[j - 1]); for (let j = n - 2; j >= 0; j--) v[j] = v[j + 1] + al * (v[j] - v[j + 1]) };
+    const t = Array.from(d).sort((a, b) => a - b), p10 = t[Math.floor(.1 * (n - 1))], p90 = t[Math.floor(.9 * (n - 1))], fixe = p90 - p10 <= .12 * Q.win;
+    if (fixe) d.fill(t[Math.floor(.5 * (n - 1))]); else lisser(d, .9);
+    /* garde-fou visages : un visage qui tient dans la fenêtre doit y être entier (avec une petite marge) */
+    const garde = () => { let ch = false; for (let j = 0; j < n; j++) { const F = Q.visages && Q.visages[j]; if (!F) continue; for (const f of F) { const m = Math.min(.08 * Q.win, Math.max(0, (Q.win - (f.b - f.a)) / 2));
+          if (f.b - f.a > Q.win) { const c = (f.a + f.b) / 2 - Q.win / 2; if (Math.abs(d[j] - c) > 1) { d[j] = c; ch = true } continue }
+          if (f.a - m < d[j]) { d[j] = f.a - m; ch = true } else if (f.b + m > d[j] + Q.win) { d[j] = f.b + m - Q.win; ch = true } } d[j] = borne(d[j], 0, max) } return ch };
+    for (let k = 0; k < 3 && garde(); k++) if (!fixe || k) lisser(d, .25); garde();
+    for (let j = 0; j < n; j++) out[j] = borne(d[j], 0, max); return out;
+  }
+
+  const api = { trajectoire, SEUILS, VARIANTES, ORDRE, PROTEGES, bornes, largeurs, importance, resoudre, carte, etirementSous, mesurer, variantes, choisir, decrire, centile };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   return api;
 })();

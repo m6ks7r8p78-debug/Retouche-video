@@ -12,12 +12,12 @@ async function envoyer(video, attendu) {
   await p.evaluate(() => { if (window.FMT) FMT.fermer() });
   const [fc] = await Promise.all([p.waitForEvent("filechooser"), p.evaluate(() => document.querySelector("#pickf").click())]); await fc.setFiles(video);
   await p.waitForFunction(() => window.FMT && FMT.etat && FMT.etat.pret && !FMT.etat.occupe, null, { timeout: 600000 }); const a = await p.evaluate(() => ({ msg: document.querySelector("#fmt_msg").textContent, ouverture: FMT.etat.ouverture, faux: !!FMT.etat.vid.faux, sortie: FMT.etat.sortie }));
-  const avant = await p.evaluate(() => ({ occupe: FMT.etat.occupe, pret: FMT.etat.pret })); await p.evaluate(() => FMT.creer()); const e = await p.evaluate(() => { const r = FMT.etat.res; return r && { W: r.W, H: r.H, images: r.images, son: r.son, tech: r.tech.ok, ko: r.tech.controles.filter(c => !c.ok).map(c => c.texte), f: { id: r.fidele.identite.ok, max: r.fidele.max, visages: r.fidele.visages, viol: r.fidele.violations.length } } });
+  const avant = await p.evaluate(() => ({ occupe: FMT.etat.occupe, pret: FMT.etat.pret })); await p.evaluate(() => FMT.creer()); const e = await p.evaluate(() => { const r = FMT.etat.res; return r && { W: r.W, H: r.H, images: r.images, son: r.son, tech: r.tech.ok, ko: r.tech.controles.filter(c => !c.ok).map(c => c.texte), f: { plein: r.fidele.plein, coupes: r.fidele.coupes.length, id: r.fidele.identite.ok || r.fidele.plein, max: r.fidele.max, visages: r.fidele.visages, viol: r.fidele.violations.length } } });
   const fin = await p.textContent("#fmt_msg");
-  return { ok: !!e && e.W === attendu[0] && e.H === attendu[1] && e.tech && e.son && e.f.id && e.f.max <= 1.0005 && /rien d’inventé/.test(a.msg), info: JSON.stringify({ ouverture: a.ouverture, apercu_image_fixe: a.faux, sortie: a.sortie, export: e, fin, avant }) };
+  return { ok: !!e && e.W === attendu[0] && e.H === attendu[1] && e.tech && e.son && e.f.id && e.f.max <= 1.0005 && e.f.coupes === 0 && /Rien d’inventé|rien d’inventé/.test(a.msg), info: JSON.stringify({ ouverture: a.ouverture, apercu_image_fixe: a.faux, sortie: a.sortie, export: e, fin, avant }) };
 }
-await test("Vidéo ordinaire : envoi depuis l'accueil → analyse automatique → export vérifié", () => envoyer(path.join(MED, "personnes_fixe.mp4"), [768, 432]));
-await test("Vidéo de téléphone avec rotation (portrait stocké couché) : bien redressée, 720×1280 → 2276×1280", () => envoyer(ROT, [2276, 1280]));
-await test("Plusieurs scènes", () => envoyer(path.join(MED, "scenes_multiples.mp4"), [1138, 640]));
+await test("Vidéo ordinaire : envoi depuis l'accueil → analyse automatique → export vérifié", () => envoyer(path.join(MED, "personnes_fixe.mp4"), [1280, 720]));
+await test("Vidéo de téléphone avec rotation (portrait stocké couché) : bien redressée, 720×1280 → plein écran 1920×1080", () => envoyer(ROT, [1920, 1080]));
+await test("Plusieurs scènes", () => envoyer(path.join(MED, "scenes_multiples.mp4"), [1280, 720]));
 console.log(errs.length ? "Erreurs de page : " + errs.join(" | ") : ""); await b.close(); srv.kill();
 console.log(res.filter(Boolean).length + "/" + res.length + " réussis"); process.exit(res.every(Boolean) && !errs.length ? 0 : 1);

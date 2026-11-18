@@ -1,5 +1,19 @@
 # Journal des versions
 
+## v8.8 (18 nov. 2026) — Changer de format : « Plein écran » par défaut, la vidéo remplit toute la télé
+Demande du propriétaire : plus aucune bande, la vidéo doit prendre tout l'écran de la télé (toujours sans rien inventer).
+- **Plein écran** (par défaut, bouton « Écran ») : l'image couvre toute la sortie 16:9. Pour une vidéo verticale, le haut et le bas sont
+  coupés (≈ 68 % en 9:16 → 16:9 : c'est la seule façon de remplir sans inventer ni déformer) ; une fenêtre suit les visages et les
+  personnes comme un cadreur (fixe si les sujets restent dans une même bande, sinon mouvement lissé sans retard ; visage aux 2/5 du cadre).
+  Le fond reste élargi de 10 % au plus là où rien d'important ne se trouve (variante Fidèle), ce qui réduit un peu la coupe.
+- **Aucun visage coupé** : contrôle sur 8 images par scène avant l'export, puis image par image à l'export ; un visage coupé déplace
+  le cadre et la vidéo est refaite (testé : cadre faussé exprès → 114 visages corrigés, 0 restant).
+- Sortie « télé » : 1080 px de haut pour une vidéo 1080×1920 (1920×1080) ; l'agrandissement est indiqué (interpolé, aucun détail réel
+  récupéré ; « ✨ Améliorer cette vidéo » peut ensuite affiner).
+- « Image entière » (bouton « Écran ») garde tout, côtés en ambiance floue, comme en v8.6.
+- Tests : `tests/format_fidele.test.mjs` 19/19 (5 nouveaux Plein écran), `tests/format_fidele_webkit.test.mjs` 3/3 (WebKit, émulation iPhone),
+  calculs 29/29. **Pas encore essayé sur ton iPhone ni sur une télé.**
+
 ## v8.7 (18 nov. 2026) — Changer de format : la vidéo envoyée « prend » enfin sur iPhone
 Problème signalé : une vidéo envoyée dans Changer de format ne se chargeait pas.
 - **Cause** : l'outil attendait que le lecteur vidéo du navigateur ait décodé une image, sur une balise vidéo hors de la page. Safari

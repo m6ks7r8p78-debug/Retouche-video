@@ -133,7 +133,7 @@ var FMT = (() => {
   }
 
   /* ================= 2. décision ================= */
-  const REGLAGES = () => ({ mode: "fidele", variante: "auto", bords: "ambiance", fidelite: .5, liberte: .5, intensite: .5, suivi: true, fond: "auto", qualite: "haute", resolution: "auto", cadence: "origine", scenes: {} });
+  const REGLAGES = () => ({ mode: "fidele", plein: true, variante: "auto", bords: "ambiance", fidelite: .5, liberte: .5, intensite: .5, suivi: true, fond: "auto", qualite: "haute", resolution: "auto", cadence: "origine", scenes: {} });
   function cible() { const Z = E.zone; if (E.format === "auto") return FMD.FORMATS[FMD.formatAuto(Z.w, Z.h)]; if (E.format === "perso") return [Math.max(1, E.perso[0]), Math.max(1, E.perso[1])]; return FMD.FORMATS[E.format] }
   function decider() {
     if (E.reglages.mode === "fidele") return deciderFidele();
@@ -170,7 +170,8 @@ var FMT = (() => {
     return B }
   function deciderFidele() {
     const A = E.analyse, Z = E.zone, [rw, rh] = cible(), At = rw / rh, R = E.reglages, T = tailleFidele(Z.w, Z.h, At, R.resolution), ax = T.ax;
-    E.ffExtra = E.ffExtra || {}; E.zero = null; E.At = At; E.sortie = { W: T.W, H: T.H }; E.fidele = T;
+    const plein = !!R.plein && Math.abs(At / (Z.w / Z.h) - 1) > .015; if (plein) Object.assign(T, taillePlein(Z, At, ax, R.resolution));
+    E.ffExtra = E.ffExtra || {}; E.ffCadre = E.ffCadre || {}; E.zero = null; E.At = At; E.sortie = { W: T.W, H: T.H }; E.fidele = T;
     const ap = AP.apercu / Math.min(T.W, T.H); E.apercu = ap >= 1 ? { W: T.W, H: T.H } : { W: pair(T.W * ap), H: pair(T.H * ap) };
     const L = ax === "x" ? Z.w : Z.h, Lp = T.Lp, Tlen = ax === "x" ? Lp * At : Lp / At;
     E.plans = A.scenes.map((sc, s) => { const rs = R.scenes[s] || {}, prof = sc.profil ? sc.profil[ax] : null, n = prof ? prof.e.length : 64, boites = boitesScene(s, ax);
@@ -181,9 +182,31 @@ var FMT = (() => {
       let rec = null; if (id === "recadrage") { /* garde 1/f de la dimension perpendiculaire, centrée sur les sujets */ const f = v.f, keep = Lp / f; let c = .5, w = 0;
         for (const b of boites) { const q = (FFI.PROTEGES[b.classe] != null ? 2 : .5) * (b.poids || .5); c = (c * w + (b.pa + b.pb) / 2 * q) / (w + q); w += q }
         rec = { f, debut: Math.round(borne(c * Lp - keep / 2, 0, Lp - keep)), garde: Math.round(keep) } }
-      return { methode: "fidele", variante: id, auto: auto.id, z: 1, plaque: false, fond: "fidele", axeExt: ax, raisons, mesures: v.mesures, V: V.variantes, boites,
-        ff: { ax, B: v.B, s: v.s, L, Lp, Tlen, rec, uniforme: id === "uniforme" }, cle: ["fidele", id, rw, rh, T.W, T.H, R.bords, boites.length].join("|"), opt: E.opts[s] || (E.opts[s] = { plume: 1, lumiere: true }) } });
+      let cadre = null, mes = v.mesures; if (plein) { rec = null; cadre = cadrer(s, v, ax, Lp, At, T); mes = { ...v.mesures, conservation: cadre.garde, remplissage: 1, plein: true, agrandissement: cadre.k, fixe: cadre.fixe, visible: v.mesures.visible };
+        raisons.unshift("Plein écran : l’image remplit toute la télé ; " + (ax === "x" ? "le haut et le bas sont coupés" : "les côtés sont coupés") + " (" + Math.round((1 - cadre.garde) * 100) + " % de l’image), le cadre " + (cadre.fixe ? "reste fixe" : "suit les visages et les personnes en douceur") + ". Rien n’est inventé.") }
+      return { methode: "fidele", variante: id, auto: auto.id, z: 1, plaque: false, fond: "fidele", axeExt: ax, raisons, mesures: mes, V: V.variantes, boites,
+        ff: { ax, B: v.B, s: v.s, L, Lp, Tlen, rec, uniforme: id === "uniforme", cadre }, cle: ["fidele", id, rw, rh, T.W, T.H, R.bords, boites.length, plein ? "plein" + ((E.ffCadre[s] || []).length) : ""].join("|"), opt: E.opts[s] || (E.opts[s] = { plume: 1, lumiere: true }) } });
     return { plans: E.plans, taille: E.sortie };
+  }
+  /* Plein écran : taille de sortie « télé » (le côté conservé passe à une définition standard : agrandissement interpolé, signalé) */
+  function taillePlein(Z, At, ax, choix) { const vis = ax === "x" ? Z.w / At : Z.h * At;   /* longueur perpendiculaire visible, en px de la source */
+    let petit = choix && choix !== "auto" ? +choix : vis < 400 ? 720 : vis <= 1080 ? 1080 : vis <= 1440 ? 1440 : 2160; const court = At >= 1 ? "H" : "W";
+    let W = At >= 1 ? pair(petit * At) : petit, H = At >= 1 ? petit : pair(petit / At); const m = Math.max(W, H); if (m > AP.plafondZero) { W = pair(W * AP.plafondZero / m); H = pair(H * AP.plafondZero / m) }
+    const k = (ax === "x" ? W / Z.w : H / Z.h); return { W, H, plein: true, exact: false, k, note: k > 1.001 ? "agrandi " + k.toFixed(2).replace(".", ",") + " fois pour la télé : les pixels ajoutés sont interpolés, aucun détail réel n’est récupéré (✨ Améliorer cette vidéo peut ensuite affiner la netteté)" : "" } }
+  /* cadre de la scène s : fenêtre perpendiculaire qui suit les sujets (format-fidele.js, FFI.trajectoire) */
+  function cadrer(s, v, ax, Lp, At, T) {
+    const A = E.analyse, sc = A.scenes[s], n = sc.n; let len = 0; for (let i = 0; i < v.s.length; i++) len += (v.B[i + 1] - v.B[i]) * v.s[i];
+    const AL = ax === "x" ? T.W : T.H, PL = ax === "x" ? T.H : T.W, k = AL / len, win = Math.min(Lp, PL / k), cibles = new Array(n).fill(null), visages = new Array(n).fill(null);
+    const P = (sc.pistes || []).filter(p => p.classe !== "interet" || !(sc.pistes || []).some(q => q.classe !== "interet"));
+    for (const p of P) for (let j = 0; j < n; j++) { if (!p.present[j]) continue; const a = (ax === "x" ? p.y[j] : p.x[j]) * Lp, l = (ax === "x" ? p.h[j] : p.w[j]) * Lp, b = a + l, c = p.classe;
+      /* où placer la fenêtre pour ce sujet : visage aux 2/5 du cadre ; corps : la tête (haut de la boîte) avec de l'air au-dessus */
+      const debut = c === "visage" ? (a + b) / 2 - .4 * win : c === "personne" || c === "animal" ? (l > win ? a - .06 * win : (a + b) / 2 - .5 * win) : (a + b) / 2 - .5 * win;
+      (cibles[j] = cibles[j] || []).push({ debut, poids: (p.poids || .3) * (c === "visage" ? 3 : 1) }); if (c === "visage") (visages[j] = visages[j] || []).push({ a, b }) }
+    for (const f of E.ffCadre[s] || []) { const j = borne(Math.round(f.j), 0, n - 1); for (let q = Math.max(0, j - 2); q <= Math.min(n - 1, j + 2); q++) (visages[q] = visages[q] || []).push({ a: f.a, b: f.b }) }
+    /* sans sujet : centre des détails (profil perpendiculaire de l'analyse) */
+    const pr = sc.profil && sc.profil[ax === "x" ? "y" : "x"]; let defaut = (Lp - win) / 2; if (pr) { let t = 0, m = 0; for (let i = 0; i < pr.e.length; i++) { t += pr.e[i] + pr.m[i]; m += (pr.e[i] + pr.m[i]) * (i + .5) / pr.e.length } if (t > 0) defaut = m / t * Lp - win / 2 }
+    const y = FFI.trajectoire({ n, Lp, win, cadence: A.cadA, cibles, visages, defaut }); let mn = 1e9, mx = -1e9; for (const v of y) { mn = Math.min(mn, v); mx = Math.max(mx, v) }
+    return { y, win, k, garde: win / Lp, fixe: mx - mn < .5, len };
   }
   /* « ambiance » des côtés : flou gaussien (3 passes de boîte) d'une petite copie de l'image qui couvre toute la sortie, couleurs
      un peu assourdies, lissé dans le temps (aucun scintillement ; remis à zéro à chaque changement de plan), assombri vers les bords
@@ -204,12 +227,21 @@ var FMT = (() => {
     x.fillStyle = g1; x.fillRect(0, 0, W, H);
   }
   /* rendu Fidèle d'une image : les colonnes réelles sont posées à leur place dans la sortie (bornes entières : copie exacte à s = 1) */
-  function rendreFidele(R, src, s, plan, opt) {
+  function rendreFidele(R, src, s, plan, opt, j) {
     const F = plan.ff, Z = E.zone, W = R.W, H = R.H, ax = F.ax, x = R.cv.x, e = ax === "x" ? H / E.sortie.H : W / E.sortie.W, k = E.fidele.k * e;
     x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high";
     if (!R.sc || R.sc.width !== Z.w || R.sc.height !== Z.h) R.sc = toile(Z.w, Z.h, true);
     R.sc.x.drawImage(src, Z.x, Z.y, Z.w, Z.h, 0, 0, Z.w, Z.h);   /* une seule lecture de l'image (conversion YUV → RVB faite une fois) */
     if (F.rec) { const r = F.rec; if (ax === "x") x.drawImage(R.sc, 0, r.debut, Z.w, r.garde, 0, 0, W, H); else x.drawImage(R.sc, r.debut, 0, r.garde, Z.h, 0, 0, W, H); return { ox: 0, oy: 0, lw: W, lh: H, k: W / Z.w, exact: false, rec: true } }
+    if (F.cadre) { /* plein écran : colonnes à leur place sur toute la largeur, fenêtre perpendiculaire qui suit les sujets */
+      const C = F.cadre, AL = ax === "x" ? W : H, PL = ax === "x" ? H : W, kk = AL / C.len, ck = s + "|" + plan.cle + "|" + W; R.ff = R.ff || new Map(); let G = R.ff.get(ck);
+      if (!G) { const D = FFI.carte(F.B, F.s, kk, 0), runs = []; for (let i = 0; i < F.s.length;) { let q = i + 1; while (q < F.s.length && Math.abs(F.s[q] - F.s[i]) < 1e-6) q++; runs.push([i, q]); i = q } G = { D, runs }; R.ff.set(ck, G) }
+      const n = C.y.length, a = borne(Math.floor(j || 0), 0, n - 1), b = Math.min(n - 1, a + 1), f = borne((j || 0) - a, 0, 1), y0 = C.y[a] + (C.y[b] - C.y[a]) * f, win = PL / kk, B = F.B, D = G.D;
+      x.fillStyle = "#000"; x.fillRect(0, 0, W, H);
+      for (const [i, q] of G.runs) { const sa = B[i], sl = B[q] - B[i], da = D[i], dl = D[q] - D[i]; if (dl <= 0) continue; if (ax === "x") x.drawImage(R.sc, sa, y0, sl, win, da, 0, dl, H); else x.drawImage(R.sc, y0, sa, win, sl, 0, da, W, dl) }
+      if (opt && opt.carte) { const prot = FFI.importance({ n: F.s.length, boites: plan.boites }).prot; for (let i = 0; i < F.s.length; i++) { const st = F.s[i] - 1, al = prot[i] ? .28 : Math.min(.6, st / .35 * .6); if (al < .02) continue;
+        x.fillStyle = prot[i] ? "rgba(70,215,200," + al + ")" : "rgba(235,60,150," + al + ")"; if (ax === "x") x.fillRect(D[i], 0, D[i + 1] - D[i], H); else x.fillRect(0, D[i], W, D[i + 1] - D[i]) } }
+      return { ox: 0, oy: 0, lw: W, lh: H, k: kk, exact: false, plein: { y0, win } } }
     R.ff = R.ff || new Map(); const ck = s + "|" + plan.cle + "|" + W; let G = R.ff.get(ck);
     if (!G) { const AL = ax === "x" ? W : H, PL = ax === "x" ? H : W; let len = 0; for (let i = 0; i < F.s.length; i++) len += (F.B[i + 1] - F.B[i]) * F.s[i];
       const o = Math.round((AL - k * len) / 2), op = Math.floor((PL - Math.round(F.Lp * k)) / 2), D = FFI.carte(F.B, F.s, k, o), runs = [];
@@ -232,16 +264,20 @@ var FMT = (() => {
   }
   /* vérification d'une scène avant l'export : visages cherchés sur plusieurs images ; un visage sous une zone étirée → protégé, nouvelle décision */
   async function controlerFidele(s, onP) {
-    const A = E.analyse, sc = A.scenes[s], L = E.lecteur, journal = []; let vu = 0, maxV = 1, imgs = 0, vis = true; try { await VISAGE.charger() } catch (e) { vis = false }
+    const A = E.analyse, sc = A.scenes[s], L = E.lecteur, journal = []; let vu = 0, maxV = 1, imgs = 0, vis = true, coupes = 0; try { await VISAGE.charger() } catch (e) { vis = false }
     for (let tour = 0; tour < 2; tour++) { const plan = E.plans[s], F = plan.ff, nb = Math.min(8, sc.n), idx = []; for (let q = 0; q < nb; q++) idx.push(Math.min(L.n - 1, (sc.a0 + Math.floor((q + .5) * sc.n / nb)) * A.pasA));
-      const Z = E.zone, c = toile(Z.w, Z.h, true), nouv = []; vu = 0; maxV = 1; imgs = 0;
-      if (vis && !F.rec) await L.parcourir([...new Set(idx)], async src => { c.x.drawImage(src, Z.x, Z.y, Z.w, Z.h, 0, 0, Z.w, Z.h); imgs++;
-        for (const f of await VISAGE.detecter(c, Z.w, Z.h, .6)) { vu++; const a = (F.ax === "x" ? f.x / Z.w : f.y / Z.h), b = (F.ax === "x" ? (f.x + f.w) / Z.w : (f.y + f.h) / Z.h), st = FFI.etirementSous(F.B, F.s, a, b); maxV = Math.max(maxV, st);
+      const Z = E.zone, c = toile(Z.w, Z.h, true), nouv = [], nc = []; vu = 0; maxV = 1; imgs = 0; coupes = 0;
+      if (vis && !F.rec) await L.parcourir([...new Set(idx)], async (src, i) => { c.x.drawImage(src, Z.x, Z.y, Z.w, Z.h, 0, 0, Z.w, Z.h); imgs++;
+        for (const f of await VISAGE.detecter(c, Z.w, Z.h, .6)) { vu++; const cp = coupe(F, f, i / A.pasA - sc.a0); if (cp) { coupes++; nc.push(cp) } const a = (F.ax === "x" ? f.x / Z.w : f.y / Z.h), b = (F.ax === "x" ? (f.x + f.w) / Z.w : (f.y + f.h) / Z.h), st = FFI.etirementSous(F.B, F.s, a, b); maxV = Math.max(maxV, st);
           if (st > 1.0005 && !F.uniforme) nouv.push({ a: borne(a, 0, 1), b: borne(b, 0, 1), pa: F.ax === "x" ? f.y / Z.h : f.x / Z.w, pb: F.ax === "x" ? (f.y + f.h) / Z.h : (f.x + f.w) / Z.w, classe: "visage", poids: 1 }) } });
-      if (!nouv.length || tour === 1) break;
-      (E.ffExtra[s] = E.ffExtra[s] || []).push(...nouv); journal.push("Vérification : " + nouv.length + " visage(s) trouvé(s) sous une zone étirée → zone(s) protégée(s), nouveau calcul."); decider() }
+      if ((!nouv.length && !nc.length) || tour === 1) break;
+      if (nouv.length) { (E.ffExtra[s] = E.ffExtra[s] || []).push(...nouv); journal.push("Vérification : " + nouv.length + " visage(s) trouvé(s) sous une zone étirée → zone(s) protégée(s), nouveau calcul.") }
+      if (nc.length) { (E.ffCadre[s] = E.ffCadre[s] || []).push(...nc); journal.push("Vérification : " + nc.length + " visage(s) coupé(s) par le cadre → cadre déplacé pour les garder entiers.") }
+      decider() }
     const plan = E.plans[s], m = plan.mesures, pc = v => (Math.round(v * 1000) / 10).toString().replace(".", ",") + " %", C = [];
-    C.push({ code: "conservation", nom: "Image filmée gardée", ok: m.conservation >= .9999, texte: m.conservation >= .9999 ? "100 % (rien n’est coupé)" : pc(m.conservation) + " seulement : " + pc(1 - m.conservation) + " coupé (recadrage choisi)" });
+    if (m.plein) C.push({ code: "cadre", nom: "Visages entiers dans le cadre", ok: !coupes, texte: vis ? (imgs ? (coupes ? coupes + " visage(s) coupé(s)" : "aucun visage coupé") + " sur " + imgs + " image(s) vérifiée(s)" : "non vérifié") : "détecteur de visages indisponible" });
+    if (m.plein) C.push({ code: "conservation", nom: "Plein écran", ok: true, info: true, texte: pc(m.conservation) + " de la hauteur gardée (" + (plan.axeExt === "x" ? "haut et bas" : "côtés") + " coupés, comme demandé), cadre " + (m.fixe ? "fixe" : "qui suit les sujets") + " ; agrandi " + m.agrandissement.toFixed(2).replace(".", ",") + " fois (interpolé)" });
+    else C.push({ code: "conservation", nom: "Image filmée gardée", ok: m.conservation >= .9999, texte: m.conservation >= .9999 ? "100 % (rien n’est coupé)" : pc(m.conservation) + " seulement : " + pc(1 - m.conservation) + " coupé (recadrage choisi)" });
     C.push({ code: "invente", nom: "Contenu inventé", ok: true, texte: "aucun (seuls les pixels filmés sont utilisés)" });
     if (!plan.ff.rec) C.push({ code: "visages", nom: "Visages vérifiés", ok: maxV <= 1.0005, texte: vis ? (imgs ? vu + " visage(s) sur " + imgs + " image(s) : étirement max " + pc(maxV - 1) : "non vérifié") : "détecteur de visages indisponible" });
     if (m.etirementProtege != null) C.push({ code: "sujets", nom: "Sujets protégés", ok: m.etirementProtege <= 1.0005, texte: "étirement " + pc(m.etirementProtege - 1) });
@@ -355,7 +391,7 @@ var FMT = (() => {
       for (let x = 0; x < w; x++) { let a = 0; for (let y = -r; y <= r; y++) a += t[borne(y, 0, h - 1) * w + x]; for (let y = 0; y < h; y++) { d[(y * w + x) * 4 + c] = a / k; a += t[Math.min(h - 1, y + r + 1) * w + x] - t[Math.max(0, y - r) * w + x] } } } }
   /* src : image de la vidéo (orientation d'affichage) ; s : scène ; j : position dans la scène, en images d'analyse (peut être fractionnaire) ; decor : construireDecor() ou null */
   function rendre(R, src, s, j, decor, opt) {
-    if (E.plans[s].methode === "fidele") return rendreFidele(R, src, s, E.plans[s], opt);
+    if (E.plans[s].methode === "fidele") return rendreFidele(R, src, s, E.plans[s], opt, j);
     const A = E.analyse, plan = E.plans[s], Z = E.zone, W = R.W, H = R.H, x = R.cv.x, c = FMM.cadre({ ...plan, pos: [posA(plan, j)] }, 0, Z.w, Z.h, W, H);
     x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high";
     const ext = plan.methode !== "identique" && plan.z < 1;
@@ -450,7 +486,7 @@ var FMT = (() => {
     let err = null; const enc = new VideoEncoder({ output: (c, m) => { try { mx.addVideoChunk(c, m) } catch (e) { err = e } }, error: e => { err = e } }); enc.configure(cfg);
     const zeros = [], Z = E.zone, perteExport = E.zero && (W !== E.sortie.W || H !== E.sortie.H) ? "l’encodeur de cet appareil refuse " + E.sortie.W + "×" + E.sortie.H + " : réduit en " + W + "×" + H : ""; let zc = null, zq = 0;
     /* Fidèle : contrôle IMAGE PAR IMAGE (visages sous une zone étirée, copie exacte des colonnes non étirées, stabilité) */
-    const FV = E.fidele ? { images: 0, visages: 0, max: 1, violations: [], ident: [], dO: 0, dS: 0, vis: false, pc: toile(64, 64, true), ps: toile(64, 64, true), po: null, pz: null } : null;
+    const FV = E.fidele ? { images: 0, visages: 0, max: 1, violations: [], coupes: [], ident: [], dO: 0, dS: 0, vis: false, pc: toile(64, 64, true), ps: toile(64, 64, true), po: null, pz: null } : null;
     if (FV) { try { await VISAGE.charger(); FV.vis = true } catch (e) {} if (W !== E.sortie.W || H !== E.sortie.H) FV.perte = "l’encodeur de cet appareil refuse " + E.sortie.W + "×" + E.sortie.H + " : réduit en " + W + "×" + H }
     const R = rendu(W, H), qw = 192, qh = Math.max(8, Math.round(192 * H / W)), qc = toile(qw, qh, true), mesures = A.scenes.map(() => []); let decor = null, sCour = -1, gp = null, nq = 0, fait = 0, cle = 0;
     try {
@@ -488,16 +524,20 @@ var FMT = (() => {
     const qcs = A.scenes.map((sc, s) => mesures[s].length ? FMQ.bilan(mesures[s], E.plans[s], A.cadA) : null);
     const zero = E.zero ? { ...FMQ.bilanZero(zeros), perte: perteExport || (E.zero.zero ? "" : E.zero.raison || "réduction nécessaire") } : null;
     if (zero) zero.quantif = qp;
-    const fidele = FV ? { images: FV.images, visages: FV.visages, max: FV.max, violations: FV.violations, verifVisages: FV.vis, identite: FMQ.bilanZero(FV.ident), stabilite: FV.dS > 0 ? FV.dO / FV.dS : 1, perte: FV.perte || "", quantif: qp,
+    const fidele = FV ? { images: FV.images, visages: FV.visages, max: FV.max, violations: FV.violations, coupes: FV.coupes, plein: !!E.fidele.plein, verifVisages: FV.vis, identite: FMQ.bilanZero(FV.ident), stabilite: FV.dS > 0 ? FV.dO / FV.dS : 1, perte: FV.perte || "", quantif: qp,
       scenes: E.plans.map(p => ({ variante: p.variante, mesures: p.mesures })) } : null;
     return { fidele, blob, W, H, zero, cadence: cad, images: fait, codec: cfg.codec, son, sonNote: son ? (rawA ? "piste d’origine copiée telle quelle" : "son réencodé (" + acfg.codec + ")") : (sonNote || "la vidéo d’origine n’a pas de son"), ms, tech, qcs, debit: cfg.bitrate };
   }
 
+  /* visage coupé par le cadre du plein écran ? (f : boîte en px de la zone ; j : position dans la scène, en images d'analyse) → contrainte ou null */
+  function coupe(F, f, j) { if (!F.cadre) return null; const C = F.cadre, n = C.y.length, a0 = borne(Math.floor(j), 0, n - 1), y0 = C.y[a0], fa = F.ax === "x" ? f.y : f.x, fb = fa + (F.ax === "x" ? f.h : f.w);
+    if (fb - fa > C.win || f.w * f.h < 36) return null; return fa < y0 - 1 || fb > y0 + C.win + 1 ? { j, a: fa, b: fb } : null }
   /* vérification Fidèle d'une image exportée : i = n° d'image de la source */
   async function verifierFidele(FV, R, c, plan, s, i) {
     const F = plan.ff, Z = E.zone; FV.images++;
     /* 1. visages de CETTE image (détecteur YuNet sur l'image filmée) : aucun ne doit se trouver sous une colonne étirée */
     if (FV.vis && !F.rec && !F.uniforme) { try { for (const f of await VISAGE.detecter(R.sc, Z.w, Z.h, .6)) { FV.visages++; const a = F.ax === "x" ? f.x / Z.w : f.y / Z.h, b = F.ax === "x" ? (f.x + f.w) / Z.w : (f.y + f.h) / Z.h, st = FFI.etirementSous(F.B, F.s, a, b);
+          const cp = coupe(F, f, posDans(s, i)); if (cp && FV.coupes.length < 200) FV.coupes.push({ s, ...cp });
           if (st > FV.max) FV.max = st; if (st > 1.0005 && FV.violations.length < 200) FV.violations.push({ s, i, a: borne(a, 0, 1), b: borne(b, 0, 1), pa: F.ax === "x" ? f.y / Z.h : f.x / Z.w, pb: F.ax === "x" ? (f.y + f.h) / Z.h : (f.x + f.w) / Z.w, st }) } } catch (e) { FV.vis = false } }
     /* 2. toutes les ~12 images : les colonnes non étirées sont relues dans le rendu et comparées pixel par pixel à l'image filmée */
     if (c.exact && c.G && FV.images % 12 === 1) for (const [a, b] of c.G.un) { const sa = F.B[a], sl = F.B[b] - F.B[a], da = c.G.D[a]; if (sl <= 0) continue;
@@ -579,6 +619,7 @@ var FMT = (() => {
 <p class="f-h">Format voulu</p><div class="f-seg" id="fmt_fmts">${FM.map(f => `<button type="button" data-f="${f[0]}" aria-pressed="${f[0] === "auto"}">${f[1]}<small>${f[2]}</small></button>`).join("")}</div>
 <div class="f-row" id="fmt_perso" hidden><label>Largeur <input type="number" id="fmt_pw" min="1" max="100" value="5" inputmode="numeric"></label><label>Hauteur <input type="number" id="fmt_ph" min="1" max="100" value="4" inputmode="numeric"></label></div>
 <p class="f-h">Façon de faire</p><div class="f-seg" id="fmt_modes"><button type="button" data-m="fidele" aria-pressed="true">Fidèle<small>sans génération, rien d’inventé</small></button><button type="button" data-m="zero" aria-pressed="false">Zéro perte<small>toute l’image, au pixel près</small></button><button type="button" data-m="auto" aria-pressed="false">Auto<small>l’IA décide</small></button><button type="button" data-m="fidelite" aria-pressed="false">Fidélité<small>rien d’inventé</small></button><button type="button" data-m="max" aria-pressed="false">Reconstruction max<small>plus de décor recréé</small></button></div>
+<p class="f-h" id="fmt_ecr_t">Écran</p><div class="f-seg" id="fmt_ecr"><button type="button" data-e="plein" aria-pressed="true">Plein écran<small>remplit la télé, coupe le haut et le bas</small></button><button type="button" data-e="entier" aria-pressed="false">Image entière<small>tout garder, côtés en ambiance</small></button></div>
 <div class="f-row"><button class="f-go" id="fmt_go">Analyser la vidéo</button></div>
 <div id="fmt_apres" hidden>
 <div id="fmt_lect"><button class="f-ib" id="fmt_pp" aria-label="Lecture">▶</button><input type="range" id="fmt_pos" min="0" max="1000" value="0" aria-label="Position dans la vidéo"><button class="f-ib" id="fmt_cmp" aria-pressed="true">Comparer</button></div>
@@ -598,13 +639,14 @@ var FMT = (() => {
 <label for="fmt_rr">Résolution</label><select id="fmt_rr"><option value="auto">Automatique (celle de la vidéo)</option><option value="720">720p</option><option value="1080">1080p</option><option value="1440">1440p</option><option value="2160">4K</option></select>
 <label for="fmt_rc">Images par seconde</label><select id="fmt_rc"><option value="origine">Comme l’original</option><option value="30">30</option><option value="25">25</option><option value="24">24</option></select>
 </div></details>
-<details><summary>Ce que fait cet outil, et ses limites</summary><b>Fidèle</b> (par défaut) : <b>aucune génération</b>, seuls les pixels filmés sont utilisés. Toute l’image est gardée ; les visages, personnes et animaux sont copiés pixel pour pixel ; seul le fond peu détaillé est légèrement étiré, sous le seuil où l’œil le remarque (10 %) ; ce qui reste est rempli par une « ambiance » : ta propre image très floutée et assourdie, qui ne montre aucune forme ni aucun décor (ou des bandes noires si tu préfères). Chaque image de la vidéo est vérifiée à l’export (visages, copie exacte, stabilité). <b>Limite impossible à contourner :</b> passer de 9:16 à 16:9 demande 3,16 fois plus de largeur ; on ne peut pas à la fois tout garder, ne rien déformer, remplir l’écran et ne rien ajouter. Les méthodes qui remplissent davantage (étirement plus fort, étirement uniforme, recadrage) sont proposées avec leurs mesures, et ne s’appliquent que si tu les choisis. Le bouton « Carte » montre en <span class="f-lg" style="background:#46d7c8"></span>turquoise ce qui est copié tel quel et en <span class="f-lg" style="background:#eb3c96"></span>rose ce qui est étiré.<br><br>Autres modes : L’image filmée n’est <b>jamais</b> modifiée : l’outil ajoute seulement ce qui manque autour. En mode <b>Zéro perte</b> (par défaut), rien n’est coupé ni réduit : la vidéo est posée pixel pour pixel dans le nouveau format, et c’est vérifié à l’export ; avec un jeton Kaggle, tout le décor ajouté est reconstruit net sur ton serveur gratuit (sinon : décor retrouvé, reconstruit près du bord, puis prolongement flou). Pour chaque scène il compare plusieurs méthodes et garde la meilleure : <b>recadrage</b> qui suit les personnes, <b>décor retrouvé</b> (quand la caméra bouge, ce qu’une image ne montre pas a souvent été filmé par une autre : ce sont de vrais pixels), <b>décor reconstruit</b> par un modèle d’IA (pixels <b>inventés</b>, plausibles mais pas réels, sur une profondeur limitée), puis <b>prolongement flou</b> au-delà. Le bouton « Carte » montre ce qui est <span class="f-lg" style="background:#46d7c8"></span>retrouvé et <span class="f-lg" style="background:#eb3c96"></span>inventé. Le décor ajouté est fixe : ce qui bouge dans la vraie scène (passants, feuillage) ne bouge pas dans la partie ajoutée. Une vidéo verticale ne devient pas une « vraie » horizontale filmée telle quelle : les côtés très profonds restent flous. Tout est calculé sur ton appareil ; rien n’est envoyé.</details>
+<details><summary>Ce que fait cet outil, et ses limites</summary><b>Plein écran</b> (par défaut) : la vidéo remplit toute la télé, sans rien inventer ni déformer ; pour ça, le haut et le bas d’une vidéo verticale sont coupés (environ 68 % de l’image en 9:16 → 16:9) et le cadre suit les visages et les personnes, en douceur ; chaque image est vérifiée (aucun visage coupé). L’image est agrandie pour la télé : la définition augmente, mais aucun détail réel n’est récupéré. <b>Image entière</b> : rien n’est coupé, les côtés sont remplis par une ambiance floue. <br><br><b>Fidèle</b> : <b>aucune génération</b>, seuls les pixels filmés sont utilisés. Toute l’image est gardée ; les visages, personnes et animaux sont copiés pixel pour pixel ; seul le fond peu détaillé est légèrement étiré, sous le seuil où l’œil le remarque (10 %) ; ce qui reste est rempli par une « ambiance » : ta propre image très floutée et assourdie, qui ne montre aucune forme ni aucun décor (ou des bandes noires si tu préfères). Chaque image de la vidéo est vérifiée à l’export (visages, copie exacte, stabilité). <b>Limite impossible à contourner :</b> passer de 9:16 à 16:9 demande 3,16 fois plus de largeur ; on ne peut pas à la fois tout garder, ne rien déformer, remplir l’écran et ne rien ajouter. Les méthodes qui remplissent davantage (étirement plus fort, étirement uniforme, recadrage) sont proposées avec leurs mesures, et ne s’appliquent que si tu les choisis. Le bouton « Carte » montre en <span class="f-lg" style="background:#46d7c8"></span>turquoise ce qui est copié tel quel et en <span class="f-lg" style="background:#eb3c96"></span>rose ce qui est étiré.<br><br>Autres modes : L’image filmée n’est <b>jamais</b> modifiée : l’outil ajoute seulement ce qui manque autour. En mode <b>Zéro perte</b> (par défaut), rien n’est coupé ni réduit : la vidéo est posée pixel pour pixel dans le nouveau format, et c’est vérifié à l’export ; avec un jeton Kaggle, tout le décor ajouté est reconstruit net sur ton serveur gratuit (sinon : décor retrouvé, reconstruit près du bord, puis prolongement flou). Pour chaque scène il compare plusieurs méthodes et garde la meilleure : <b>recadrage</b> qui suit les personnes, <b>décor retrouvé</b> (quand la caméra bouge, ce qu’une image ne montre pas a souvent été filmé par une autre : ce sont de vrais pixels), <b>décor reconstruit</b> par un modèle d’IA (pixels <b>inventés</b>, plausibles mais pas réels, sur une profondeur limitée), puis <b>prolongement flou</b> au-delà. Le bouton « Carte » montre ce qui est <span class="f-lg" style="background:#46d7c8"></span>retrouvé et <span class="f-lg" style="background:#eb3c96"></span>inventé. Le décor ajouté est fixe : ce qui bouge dans la vraie scène (passants, feuillage) ne bouge pas dans la partie ajoutée. Une vidéo verticale ne devient pas une « vraie » horizontale filmée telle quelle : les côtés très profonds restent flous. Tout est calculé sur ton appareil ; rien n’est envoyé.</details>
 </div></div>`;
     document.body.appendChild(d);
     $("#fmt_x").onclick = fermer; $("#fmt_choisir").onclick = () => $("#fmt_f").click(); $("#fmt_f").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if (f) charger(f) };
     $("#fmt_fmts").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; E.format = b.dataset.f; $("#fmt_perso").hidden = E.format !== "perso"; maj("format") };
     $("#fmt_pw").onchange = $("#fmt_ph").onchange = () => { if (!E) return; E.perso = [borne(+$("#fmt_pw").value || 1, 1, 100), borne(+$("#fmt_ph").value || 1, 1, 100)]; maj("format") };
     $("#fmt_modes").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; E.reglages.mode = b.dataset.m; maj("mode") };
+    $("#fmt_ecr").onclick = e => { const b = e.target.closest("button"); if (!b || !E || E.occupe) return; E.reglages.plein = b.dataset.e === "plein"; E.ffCadre = {}; maj("reglage") };
     $("#fmt_go").onclick = () => lancer(); $("#fmt_ex").onclick = () => E && E.occupe === "export" ? (E.stop = true) : creer(); $("#fmt_sv").onclick = enregistrer; $("#fmt_am").onclick = ameliorer;
     $("#fmt_pp").onclick = () => { if (!E || !E.pret) return; const v = E.vid; if (v.paused) v.play().catch(() => {}); else v.pause() };
     $("#fmt_pos").oninput = e => { if (!E || !E.pret) return; E.vid.pause(); E.vid.currentTime = +e.target.value / 1000 * E.lecteur.duree };
@@ -617,8 +659,9 @@ var FMT = (() => {
     return d;
   }
   const MSG = (t, f) => { const m = $("#fmt_msg"); if (m) m.textContent = t || ""; const b = $("#fmt_bar i"); if (b) b.style.width = f == null ? "0" : Math.round(100 * borne(f, 0, 1)) + "%" };
+  const presseEcran = () => { if (!E) return; presse("#fmt_ecr", "e", E.reglages.plein ? "plein" : "entier"); $("#fmt_ecr").hidden = $("#fmt_ecr_t").hidden = E.reglages.mode !== "fidele" };
   const presse = (sel, attr, v) => document.querySelectorAll(sel + " button").forEach(b => b.setAttribute("aria-pressed", b.dataset[attr] === v));
-  function occupe(o) { if (!E) return; E.occupe = o; for (const s of ["#fmt_go", "#fmt_sv", "#fmt_am", "#fmt_choisir"]) $(s).disabled = !!o; $("#fmt_ex").disabled = !!o && o !== "export"; $("#fmt_ex").textContent = o === "export" ? "Arrêter" : "Créer la vidéo"; document.querySelectorAll("#fmt_av input,#fmt_av select,#fmt_fmts button,#fmt_modes button,#fmt_fiche select,#fmt_fiche button").forEach(e => e.disabled = !!o || e.hasAttribute("data-non")) }
+  function occupe(o) { if (!E) return; E.occupe = o; for (const s of ["#fmt_go", "#fmt_sv", "#fmt_am", "#fmt_choisir"]) $(s).disabled = !!o; $("#fmt_ex").disabled = !!o && o !== "export"; $("#fmt_ex").textContent = o === "export" ? "Arrêter" : "Créer la vidéo"; document.querySelectorAll("#fmt_av input,#fmt_av select,#fmt_fmts button,#fmt_modes button,#fmt_ecr button,#fmt_fiche select,#fmt_fiche button").forEach(e => e.disabled = !!o || e.hasAttribute("data-non")) }
 
   async function ouvrir(file) { const d = ui(); d.hidden = false; document.body.classList.add("fmt-ouvert"); if (file) await charger(file) }
   function liberer() { if (!E) return; E.stop = true; try { E.vid.pause(); E.vid.removeAttribute("src"); E.vid.load(); if (E.vid.remove) E.vid.remove(); if (E.lecteur && E.lecteur.v) E.lecteur.v.remove() } catch (e) {} if (E.url) URL.revokeObjectURL(E.url); if (E.resUrl) URL.revokeObjectURL(E.resUrl); E = null }
@@ -643,7 +686,7 @@ var FMT = (() => {
   async function charger(file) {
     liberer(); ui(); $("#fmt_pp").disabled = false; $("#fmt_pp").removeAttribute("data-non"); const vid = attacher(document.createElement("video")); vid.loop = true;
     E = { file, nom: (file.name || "video").replace(/\.[^.]+$/, ""), url: URL.createObjectURL(file), vid, format: "auto", perso: [5, 4], reglages: REGLAGES(), couches: new Map(), decors: new Map(), opts: [], qc: [], comparer: true, split: .5, generateur: true, scene: 0, journal: [] };
-    const moi = E; vid.src = E.url; $("#fmt_vide").hidden = true; $("#fmt_pan").hidden = false; $("#fmt_apres").hidden = true; $("#fmt_res").hidden = true; $("#fmt_carte").hidden = true; presse("#fmt_fmts", "f", "auto"); presse("#fmt_modes", "m", E.reglages.mode); MSG("Ouverture de la vidéo…");
+    const moi = E; vid.src = E.url; $("#fmt_vide").hidden = true; $("#fmt_pan").hidden = false; $("#fmt_apres").hidden = true; $("#fmt_res").hidden = true; $("#fmt_carte").hidden = true; presse("#fmt_fmts", "f", "auto"); presse("#fmt_modes", "m", E.reglages.mode); presseEcran(); MSG("Ouverture de la vidéo…");
     try { let errBalise = null; const t0 = performance.now(); try { await attendreVideo(vid, 1, window.VideoDecoder ? 8000 : 45000) } catch (e) { errBalise = e } if (E !== moi) return; E.ouverture = { balise: errBalise ? errBalise.message : "ok", ms: Math.round(performance.now() - t0) };
       E.lecteur = await ouvrirLecteur(file, errBalise ? null : vid); if (E !== moi) return; const L = E.lecteur; E.zone = { x: 0, y: 0, w: L.w, h: L.h };
       if (errBalise) { if (L.type !== "webcodecs") throw errBalise; E.vid = fauxVideo(L); E.vid.currentTime = 0; await new Promise(r => E.vid.addEventListener("seeked", r, { once: true }));
@@ -677,6 +720,7 @@ var FMT = (() => {
   }
   function resumeFidele() { const A = E.analyse, n = A.scenes.length, pc = v => (Math.round(v * 1000) / 10).toString().replace(".", ",") + " %", [rw, rh] = cible(), P = E.plans;
     const cons = Math.min(...P.map(p => p.mesures.conservation)), rem = Math.min(...P.map(p => p.mesures.remplissage)), rmax = Math.max(...P.map(p => p.mesures.remplissage)), def = Math.max(...P.map(p => p.mesures.etirementMax)), ko = E.qc.filter(q => q && !q.ok).length;
+    if (E.fidele.plein) return MSG("Plein écran, sans génération → " + rw + ":" + rh + ", " + E.sortie.W + "×" + E.sortie.H + ". L’image remplit toute la télé ; " + (P[0].axeExt === "x" ? "le haut et le bas sont coupés" : "les côtés sont coupés") + " (" + pc(1 - cons) + "), le cadre suit les visages. Rien d’inventé. " + (n > 1 ? n + " scènes. " : "") + (ko ? ko + " scène(s) avec un contrôle non satisfait (voir la fiche)." : "Contrôles passés.") + " Pour garder toute l’image : « Image entière ».");
     MSG("Fidèle, sans génération → " + rw + ":" + rh + ", " + E.sortie.W + "×" + E.sortie.H + (E.fidele.exact ? " (un pixel filmé = un pixel du fichier)" : "") + ". Image gardée : " + pc(cons) + ", rien d’inventé. Écran rempli : " + (rem === rmax ? pc(rem) : pc(rem) + " à " + pc(rmax)) + (rmax < .999 ? " (le reste en " + (E.reglages.bords === "noir" ? "bandes noires" : "ambiance floue de ta propre image") + ")" : "") + ". Déformation : " + (def <= 1.0005 ? "aucune" : "max " + pc(def - 1)) + ". " + (n > 1 ? n + " scènes. " : "") + (ko ? ko + " scène(s) avec un contrôle non satisfait (voir la fiche)." : "Contrôles passés.") + (rem < .999 && P.every(p => p.variante === "fidele" || p.variante === "exact") ? " Remplir tout l’écran sans rien inventer obligerait à couper ou à déformer : voir « Méthode »." : "")) }
   function resume() { if (E.fidele) return resumeFidele(); const A = E.analyse, n = A.scenes.length, c = {}; E.plans.forEach(p => c[p.methode] = (c[p.methode] || 0) + 1); const [rw, rh] = cible(), ko = E.qc.filter(q => q && !q.ok).length;
     MSG((E.zero ? (E.zero.zero ? "Zéro perte : chaque pixel filmé est gardé (" + E.zone.w + "×" + E.zone.h + " posé tel quel dans " + E.sortie.W + "×" + E.sortie.H + "). " : "Zéro perte non garanti : " + E.zero.raison + ". ") : "") + (n > 1 ? n + " scènes" : "1 scène") + " → " + (E.format === "auto" ? "format choisi : " : "") + rw + ":" + rh + ", sortie " + E.sortie.W + "×" + E.sortie.H + ". " + Object.entries(c).map(([k, v]) => NOMS[k] + (n > 1 ? " × " + v : "")).join(", ") + "." + (A.zone.bandes ? " Bandes noires d’origine retirées." : "") + (ko ? " " + ko + " scène(s) avec un contrôle non satisfait (voir la fiche)." : " Contrôles passés.") + (E.reprise ? "" : " Analyse : " + (A.ms / 1000).toFixed(1).replace(".", ",") + " s.")) }
@@ -707,7 +751,7 @@ ${q && q.controles.length ? "<p>Contrôles mesurés sur " + q.images + " images 
     $("#fmt_re").onclick = () => { const r = E.reglages.scenes[s] = E.reglages.scenes[s] || {}; r.graine = (r.graine || 0) + 1; delete r.fond; delete r.qc; maj("scene", s) } }
   /* un réglage a changé : nouvelle décision (immédiate), puis décors et contrôles des scènes concernées */
   async function maj(quoi, s) {
-    if (!E || E.occupe) return; presse("#fmt_fmts", "f", E.format); presse("#fmt_modes", "m", E.reglages.mode); if (!E.analyse || !E.pret) return; const moi = E;
+    if (!E || E.occupe) return; presse("#fmt_fmts", "f", E.format); presse("#fmt_modes", "m", E.reglages.mode); presseEcran(); if (!E.analyse || !E.pret) return; const moi = E;
     if (quoi === "format" || quoi === "mode" || (quoi === "reglage")) for (const k in E.reglages.scenes) { delete E.reglages.scenes[k].fond; delete E.reglages.scenes[k].qc }
     if (quoi === "format" || quoi === "mode") E.ffExtra = {};
     occupe("analyse"); E.vid.pause(); E.stop = false; const avant = E.plans.map(p => p.cle), ap = E.apercu.W + "x" + E.apercu.H;
@@ -731,9 +775,10 @@ ${q && q.controles.length ? "<p>Contrôles mesurés sur " + q.images + " images 
     if (!E || E.occupe || !E.pret) return; const moi = E; occupe("export"); E.stop = false; E.vid.pause(); let verrou = null; try { verrou = await navigator.wakeLock.request("screen") } catch (e) {}
     try { let r = await exporter(MSG); if (E !== moi) return;
       /* Fidèle : un visage trouvé à l'export sous une zone étirée (manqué par l'analyse) → sa zone est protégée et la vidéo refaite, une fois */
-      if (r.fidele && r.fidele.violations.length) { const V = r.fidele.violations, sc = [...new Set(V.map(v => v.s))]; for (const v of V) (E.ffExtra[v.s] = E.ffExtra[v.s] || []).push({ a: v.a, b: v.b, pa: v.pa, pb: v.pb, classe: "visage", poids: 1 });
-        decider(); for (const k of sc) await controler(k, t => MSG(t)); MSG("Correction : " + V.length + " visage(s) sous une zone étirée (scène " + sc.map(k => k + 1).join(", ") + ") → protégé(s), la vidéo est refaite…");
-        const avant = V.length; r = await exporter(MSG); if (E !== moi) return; r.fidele.corrige = avant; scenes(); fiche(); resume() }
+      if (r.fidele && (r.fidele.violations.length || r.fidele.coupes.length)) { const V = r.fidele.violations, K = r.fidele.coupes, sc = [...new Set(V.map(v => v.s).concat(K.map(v => v.s)))];
+        for (const v of V) (E.ffExtra[v.s] = E.ffExtra[v.s] || []).push({ a: v.a, b: v.b, pa: v.pa, pb: v.pb, classe: "visage", poids: 1 }); for (const v of K) (E.ffCadre[v.s] = E.ffCadre[v.s] || []).push({ j: v.j, a: v.a, b: v.b });
+        decider(); for (const k of sc) await controler(k, t => MSG(t)); MSG("Correction : " + (V.length + K.length) + " visage(s) " + (K.length ? "coupé(s) par le cadre" : "sous une zone étirée") + " (scène " + sc.map(k => k + 1).join(", ") + ") → corrigé, la vidéo est refaite…");
+        const avant = V.length + K.length; r = await exporter(MSG); if (E !== moi) return; r.fidele.corrige = avant; scenes(); fiche(); resume() }
       E.res = r; if (E.resUrl) URL.revokeObjectURL(E.resUrl); E.resUrl = URL.createObjectURL(r.blob); $("#fmt_rv").src = E.resUrl; $("#fmt_res").hidden = false;
       const ko = r.qcs.filter(q => q && !q.ok).length, li = c => `<li class="${c.ok ? "ok" : "ko"}">${STUDIO.esc(c.nom)} : ${STUDIO.esc(c.texte)}</li>`;
       $("#fmt_bilan").innerHTML = `<ul>${r.tech.controles.map(li).join("")}<li class="info">Fichier : ${r.W}×${r.H}, ${(Math.round(r.cadence * 100) / 100).toString().replace(".", ",")} images/s, ${r.images} images, ${r.codec.startsWith("hvc") ? "HEVC" : "H.264"}, ${(r.blob.size / 1048576).toFixed(1).replace(".", ",")} Mo. Son : ${STUDIO.esc(r.sonNote)}.</li>${r.fidele ? fideleTexte(r) : `<li class="${ko ? "ko" : "ok"}">Contrôles refaits sur la vidéo finale : ${ko ? ko + " scène(s) au-dessus d’un seuil" : "tous sous les seuils"}.</li>`}${zeroTexte(r)}</ul>`;
@@ -744,7 +789,9 @@ ${q && q.controles.length ? "<p>Contrôles mesurés sur " + q.images + " images 
   }
   function fideleTexte(r) { const f = r.fidele, pc = v => (Math.round(v * 1000) / 10).toString().replace(".", ",") + " %", li = (ok, t) => `<li class="${ok ? "ok" : "ko"}">${STUDIO.esc(t)}</li>`, o = [];
     const cons = Math.min(...f.scenes.map(x => x.mesures.conservation)), def = Math.max(...f.scenes.map(x => x.mesures.etirementMax)), rem = f.scenes.map(x => x.mesures.remplissage);
-    o.push(li(cons >= .9999, cons >= .9999 ? "Image filmée gardée à 100 % : rien n’est coupé, rien n’est inventé." : "Recadrage choisi : " + pc(1 - cons) + " de l’image coupée."));
+    if (f.plein) { o.push(li(true, "Plein écran : l’image remplit toute la télé, rien n’est inventé ; " + pc(1 - cons) + " de l’image (" + (E.plans[0].axeExt === "x" ? "haut et bas" : "côtés") + ") hors du cadre, comme demandé."));
+      o.push(li(f.verifVisages && !f.coupes.length, f.verifVisages ? "Cadre vérifié image par image : " + (f.coupes.length ? f.coupes.length + " visage(s) coupé(s)" : "aucun visage coupé") + " (" + f.visages + " visages détectés sur " + f.images + " images)." : "Vérification des visages impossible sur cet appareil.")) }
+    else o.push(li(cons >= .9999, cons >= .9999 ? "Image filmée gardée à 100 % : rien n’est coupé, rien n’est inventé." : "Recadrage choisi : " + pc(1 - cons) + " de l’image coupée."));
     o.push(li(f.verifVisages && f.max <= 1.0005, f.verifVisages ? "Vérifié image par image (" + f.images + " images, " + f.visages + " visages détectés) : étirement max sous un visage = " + pc(f.max - 1) + "." : "Vérification des visages impossible sur cet appareil."));
     if (f.corrige) o.push(li(true, "Correction automatique faite : " + f.corrige + " visage(s) d’abord repéré(s) sous une zone étirée, protégé(s) puis vidéo refaite."));
     if (f.violations.length) o.push(li(false, f.violations.length + " visage(s) encore sous une zone étirée (premier : image " + f.violations[0].i + ")."));
