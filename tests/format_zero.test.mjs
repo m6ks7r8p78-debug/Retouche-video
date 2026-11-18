@@ -32,5 +32,14 @@ await test("Serveur simulé : seuls les décors partent, la couche revient et re
   const e = await exporter(p, path.join(OUT, "serveur.mp4")), z = await zero();
   return { ok: envoi && envoi.length === 1 && envoi[0].types.every(t => t === "image/png") && serveur && parts.flou < .02 && parts.invente > .2 && z.ok && z.differents === 0 && e.W === 1138, info: JSON.stringify({ envoi, parts, z }) } });
 
+await test("v9.0 parcours par défaut : accueil → « Plein écran, rien coupé » (choix par défaut) → analyse automatique → côtés dessinés par le serveur, 0 pixel d'origine modifié", async () => {
+  const VP = path.join(HERE, "medias", "fidele", "personnes_fixe.mp4"); if (!fs.existsSync(VP)) return { ok: false, info: "lancer tests/fidele/creer_videos.sh" };
+  await p.evaluate(() => { FMT.fermer(); delete window.__fmtSansAuto; localStorage.removeItem("fmt_ecran") });
+  const [fc] = await Promise.all([p.waitForEvent("filechooser"), p.evaluate(() => document.querySelector("#pickf").click())]); await fc.setFiles(VP);
+  await p.waitForFunction(() => window.FMT && FMT.etat && FMT.etat.pret && !FMT.etat.occupe, null, { timeout: 600000 });
+  const a = await p.evaluate(() => ({ mode: FMT.etat.reglages.mode, presse: document.querySelector('#fmt_ecr [data-e="ia"]').getAttribute("aria-pressed"), parts: FMT.etat.decors.get(0) && FMT.etat.decors.get(0).parts, plan: FMT.etat.plans.map(q => [q.methode, q.fond, q.z]), qc: FMT.etat.qc.map(q => q && q.journal), serveur: [...FMT.etat.couches.values()].some(g => g.serveur), sortie: FMT.etat.sortie }));
+  const e = await exporter(p, path.join(OUT, "defaut_ia.mp4")), z = await zero(); await p.evaluate(() => { window.__fmtSansAuto = true });
+  return { ok: a.mode === "zero" && a.presse === "true" && a.serveur && a.parts && a.parts.flou < .05 && z.ok && z.differents === 0 && e.W === 768 && e.H === 432, info: JSON.stringify({ ...a, z }) } });
+
 console.log(N.errs.length ? "Erreurs de page : " + N.errs.join(" | ") : ""); await N.fermer();
 console.log(res.filter(Boolean).length + "/" + res.length + " réussis"); process.exit(res.every(Boolean) && !N.errs.length ? 0 : 1);

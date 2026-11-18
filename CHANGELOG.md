@@ -1,5 +1,17 @@
 # Journal des versions
 
+## v9.0 (18 nov. 2026) — « Plein écran, rien coupé » : l'IA dessine les côtés (choix par défaut)
+Demande du propriétaire : « invente-le » — la génération est désormais autorisée pour remplir la télé sans rien couper.
+- **Nouveau choix « Écran »** (mémorisé) : « Plein écran, rien coupé » (défaut) · « Plein écran, rien inventé » (coupe) · « Image entière ».
+- « Plein écran, rien coupé » = mode Zéro perte avec décor généré : la vidéo filmée est posée telle quelle (1080×1920 → 3414×1920,
+  contrôle pixel par pixel à l'export) et les côtés sont dessinés par Stable Diffusion XL Inpainting sur ton serveur Kaggle gratuit
+  (un décor par scène, qui suit la caméra ; personnes et visages exclus du décor inventé). Avec ton accord à chaque envoi.
+- Un décor demandé n'est plus jamais remplacé en silence par du flou quand un contrôle de qualité n'est pas satisfait : raccord élargi,
+  contrôle affiché dans la fiche, et « Relancer la reconstruction » disponible.
+- Sans jeton Kaggle : message clair (seuls les bords proches sont dessinés sur le téléphone, le reste flou).
+- Tests : `tests/format_zero.test.mjs` 3/3 (nouveau parcours par défaut, serveur simulé), Fidèle 18/18, WebKit 3/3, calculs 29/29.
+  **La génération SDXL n'a encore jamais tourné sur une vraie carte Kaggle** (aucun jeton disponible dans l'espace de test).
+
 ## v8.9 (18 nov. 2026) — Changer de format : curseur « Garder plus d'image », et ce qu'on a cherché pour réduire la perte
 Demande : le plein écran perd trop d'image ; trouver une solution sans rien inventer.
 - **Piste étudiée et mesurée : le décor réellement filmé à d'autres moments** (quand la caméra bouge, les côtés ont parfois été filmés
