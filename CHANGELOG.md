@@ -1,5 +1,11 @@
 # Journal des versions
 
+## v9.6 (21 nov. 2026) — L'image IA garde toute sa restauration
+- Le verrou de fidélité (v8.3) n'est plus appliqué à l'image IA : mesuré sur les 20 images de vérité, il retirait au nouveau modèle
+  une partie de sa restauration (LPIPS 0,106 → 0,116) sans rien protéger — le modèle garde déjà les couleurs (écart ΔE 1,95 en
+  moyenne, dérive globale ≤ 1 niveau). Il reste appliqué au rendu sans IA. Variantes essayées et écartées (banc `outils/sr/`) :
+  verrou des seules basses fréquences, enveloppe élargie, flous de 3 à 8 px — toutes entre 0,1064 et 0,125.
+
 ## v9.5 (21 nov. 2026) — Nouvelle IA : plus fidèle, 2 fois plus rapide ; épreuve de vérité corrigée
 - **Nouveau modèle IA** (« Qualité maximale », sur le téléphone et sur Kaggle) : 2xNomosUni_compact_multijpg (Philip Hofmann,
   CC BY 4.0), entraîné sur des images compressées en JPEG et réduites de 6 façons — exactement le défaut des vieux téléphones.

@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v9.5";/* seul endroit où changer le numéro de version */
+const VER="v9.6";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={format:["format-analyse.js","format-directeur.js","format-moteur.js","format-qualite.js","format-fidele.js","format.js"],effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","recalage.js","visages-video.js"],lama:["lama.js"],filtrevideo:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js","recalage.js","visages-video.js","filtre-video.js"],defiltre:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -298,7 +298,9 @@ function draw(el){
   gl.uniform1f(U.ex,show?(exporting?DFG:REC.pv()):1);
   {const on=show&&FLT.tex&&FLT.sel>=0?FLT.f:0;gl.uniform1f(U.lf,on);if(on>0){gl.activeTexture(gl.TEXTURE4);gl.bindTexture(gl.TEXTURE_2D,FLT.tex);gl.uniform1i(U.tl,4);gl.activeTexture(gl.TEXTURE0);gl.uniform1f(U.lrow,FLT.sel);gl.uniform1f(U.lrow2,FLT.sel2>=0?FLT.sel2:FLT.sel);gl.uniform1f(U.lmx,FLT.sel2>=0?FLT.mx:0);gl.uniform1f(U.lnb,FLT.nb)}}
   /* v8.3 verrou de fidélité (défaut 1) : sur l'image IA, la référence est l'image d'origine (srOrig) à sa propre taille */
-  {const f=show&&!dustOnly?FID.v():0;gl.uniform1f(U.fid,f);
+  {/* v9.6 : plus de verrou sur l’image IA : le nouveau modèle garde déjà les couleurs (ΔE 1,95, dérive ≤ 1 niveau, mesuré) et le verrou
+     lui retirait sa restauration (LPIPS 0,106 → 0,116, mesuré) ; il reste appliqué au rendu sans IA */
+   const f=show&&!dustOnly&&!(srIn&&srOrig)?FID.v():0;gl.uniform1f(U.fid,f);
     if(f>0){gl.activeTexture(gl.TEXTURE6);let rw=w,rh=h;
       if(srIn&&srOrig){gl.bindTexture(gl.TEXTURE_2D,texF);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,srOrig);[rw,rh]=dims(srOrig)}
       else gl.bindTexture(gl.TEXTURE_2D,texRef);
