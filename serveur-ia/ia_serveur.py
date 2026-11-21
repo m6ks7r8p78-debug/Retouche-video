@@ -14,14 +14,15 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-NF, NC = 64, 32
-N_POIDS = 3 * NF * 9 + 2 * NF + NC * (NF * NF * 9 + 2 * NF) + NF * 48 * 9 + 48
+NF = 64
+_PAR, _BASE = NF * NF * 9 + 2 * NF, 3 * NF * 9 + 2 * NF + NF * 48 * 9 + 48   # v9.5 : nombre de couches lu dans la taille de sr.bin
 
 
 def charger(sr_bin: bytes, dn: float, device="cuda", demi=True):
     """Poids de l'app pour un débruitage dn (mêmes formules que setWeights de sr.js)."""
     a = np.frombuffer(sr_bin, dtype=np.float16).astype(np.float64)
-    if a.size != 2 * N_POIDS:
+    NC = (a.size // 2 - _BASE) // _PAR; N_POIDS = _BASE + NC * _PAR
+    if NC < 1 or a.size != 2 * N_POIDS:
         raise ValueError("sr.bin inattendu : %d valeurs" % a.size)
     v = dn * a[:N_POIDS] + (1 - dn) * a[N_POIDS:]          # mélange fait en double puis gardé en float32, comme l'app
     v = v.astype(np.float32)

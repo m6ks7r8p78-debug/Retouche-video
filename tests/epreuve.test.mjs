@@ -16,7 +16,7 @@ await p.waitForFunction(() => window.__epreuve !== undefined, null, { timeout: 1
 const r = await p.evaluate(() => ({ e: window.__epreuve, ia: document.querySelector("#o_max").checked, ep: SRX.ep }));
 const res = [], test = (n, ok, info) => { res.push(ok); console.log((ok ? "✓ " : "✗ ") + n + " — " + info) };
 test("épreuve mesurée sur 3 extraits", r.e && r.e.extraits === 3, JSON.stringify(r.e));
-test("ressemblances plausibles (0,5 à 1)", r.e && r.e.ia > .5 && r.e.ia <= 1 && r.e.agrandi > .5 && r.e.agrandi <= 1, "");
+test("écarts plausibles (0 à 0,5)", r.e && r.e.ia >= 0 && r.e.ia < .5 && r.e.agrandi >= 0 && r.e.agrandi < .5, "");
 test("décision appliquée (IA gardée seulement si utile)", r.e && r.ia === r.e.utile, "IA " + (r.ia ? "gardée" : "retirée"));
 test("aperçu IA de nouveau permis après l'épreuve", r.ep === false, "");
 test("aucune erreur de page", !errs.length, errs.join(" | "));

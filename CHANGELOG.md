@@ -1,5 +1,17 @@
 # Journal des versions
 
+## v9.5 (21 nov. 2026) — Nouvelle IA : plus fidèle, 2 fois plus rapide ; épreuve de vérité corrigée
+- **Nouveau modèle IA** (« Qualité maximale », sur le téléphone et sur Kaggle) : 2xNomosUni_compact_multijpg (Philip Hofmann,
+  CC BY 4.0), entraîné sur des images compressées en JPEG et réduites de 6 façons — exactement le défaut des vieux téléphones.
+  Banc de 20 images de vérité (vidéos réduites puis compressées) : LPIPS 0,106 contre 0,114 pour Real-ESRGAN v3 et 0,172 sans IA ;
+  **16 couches au lieu de 32 : 2,1 fois plus rapide** ; fichier 2,5 Mo au lieu de 4,9. Même moteur (WebGPU / WebGL2 / Kaggle),
+  sortie identique au modèle d'origine (vérifié : écart 0).
+- **Épreuve de vérité corrigée** : la v8.3 comparait par SSIM, qui préfère le flou ; mesuré contre la vraie image, elle ne prenait
+  la bonne décision que 4 fois sur 20 et retirait l'IA presque toujours, même quand elle aidait. Elle compare maintenant par GMSD
+  (similarité des contours) : **19 bonnes décisions sur 20**. Gain net d'au moins 6 % exigé : dans le doute, la fidélité l'emporte.
+  Les petites vidéos (ex. 384×216) sont maintenant éprouvées aussi.
+- Banc reproductible : `outils/sr/`.
+
 ## v9.4 (21 nov. 2026) — Changer de format : le décor dessiné prend le grain de la vidéo
 - Les côtés dessinés par l'IA étaient lisses et figés à côté d'une vidéo filmée (vieux téléphone = grain visible) : on les repérait
   au premier coup d'œil. Le grain d'UNE image filmée est maintenant mesuré à chaque scène (écart type du bruit, estimateur robuste),

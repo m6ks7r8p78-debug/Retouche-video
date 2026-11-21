@@ -123,8 +123,9 @@ o=vec4(s/float(k*k),1.);}`;
       if (window.MODELS && model.file === "sr.bin") raw = await MODELS.bytes("sr");
       else { const r = await fetch(model.file); if (!r.ok) throw new Error("poids introuvables"); raw = await r.arrayBuffer() }
       const h = new Uint16Array(raw); const A = new Float32Array(h.length); for (let i = 0; i < h.length; i++) A[i] = h2f(h[i]);
-      const { nf, nc } = model, n = 3 * nf * 9 + 2 * nf + nc * (nf * nf * 9 + 2 * nf) + nf * 48 * 9 + 48;
-      if (A.length !== n * (model.pairs || 1)) throw new Error("fichier de poids inattendu");
+      /* v9.5 : nombre de couches déduit de la taille du fichier (32 pour Real-ESRGAN v3, 16 pour le modèle ×2 « multijpg ») */
+      const nf = model.nf, per = nf * nf * 9 + 2 * nf, base = 3 * nf * 9 + 2 * nf + nf * 48 * 9 + 48, nc = (A.length / (model.pairs || 1) - base) / per, n = base + nc * per;
+      if (!(nc > 0 && Number.isInteger(nc)) || A.length !== n * (model.pairs || 1)) throw new Error("fichier de poids inattendu");
       M = { nf, nc, n, A, halo: nc + 4 };
       const ngh = nf / 4;
       M.pFirst = prog(convSrc(1, true, true, 4), 4); M.pHid = prog(convSrc(ngh, false, true, 4), 4);

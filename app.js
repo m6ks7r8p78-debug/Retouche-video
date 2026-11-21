@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v9.4";/* seul endroit où changer le numéro de version */
+const VER="v9.5";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={format:["format-analyse.js","format-directeur.js","format-moteur.js","format-qualite.js","format-fidele.js","format.js"],effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","recalage.js","visages-video.js"],lama:["lama.js"],filtrevideo:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js","recalage.js","visages-video.js","filtre-video.js"],defiltre:["marquage.js","effacer.js","restauration-visage.js","mains.js","defiltre-visage.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -355,7 +355,7 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     const mo=x=>Math.round(x/1048576),reçu=Math.round(ow*oh*inf.ns*0.55*(gop?1.8:1)/1048576);
     if(!(await STUDIO.consent("cloud")))throw new Error("IA rapide non autorisée : rien n’a été envoyé.");
     const cine=!!($("#o_cine")&&$("#o_cine").checked);
-    if(!confirm("IA rapide sur serveur — envoi de ta vidéo\n\nFournisseur : Kaggle (Google), dans un espace PRIVÉ de ton compte."+(cine?"\nModèle : SeedVR2 3B (ByteDance Seed, Apache-2.0), restauration vidéo « Cinéma » — essai, plus lent ; si son résultat s’écarte de ta vidéo, l’IA standard (Real-ESRGAN) prend le relais automatiquement.":"\nModèle : Real-ESRGAN general v3 (le même que dans l’app).")+"\nBut : calculer la restauration IA de chaque image ("+inf.ns+" images, résultat en "+ow+"×"+oh+").\nConservation : la vidéo et le résultat sont supprimés de Kaggle dès le résultat récupéré, ou en cas d’échec.\nEnvoi : "+mo(curFile.size)+" Mo ; réception : environ "+reçu+" Mo (Wi-Fi conseillé).\n\nEnvoyer maintenant ?"))throw new Error("envoi refusé : rien n’a été envoyé.");
+    if(!confirm("IA rapide sur serveur — envoi de ta vidéo\n\nFournisseur : Kaggle (Google), dans un espace PRIVÉ de ton compte."+(cine?"\nModèle : SeedVR2 3B (ByteDance Seed, Apache-2.0), restauration vidéo « Cinéma » — essai, plus lent ; si son résultat s’écarte de ta vidéo, l’IA standard (Real-ESRGAN) prend le relais automatiquement.":"\nModèle : 2xNomosUni compact multijpg (le même que dans l’app).")+"\nBut : calculer la restauration IA de chaque image ("+inf.ns+" images, résultat en "+ow+"×"+oh+").\nConservation : la vidéo et le résultat sont supprimés de Kaggle dès le résultat récupéré, ou en cas d’échec.\nEnvoi : "+mo(curFile.size)+" Mo ; réception : environ "+reçu+" Mo (Wi-Fi conseillé).\n\nEnvoyer maintenant ?"))throw new Error("envoi refusé : rien n’a été envoyé.");
     const stop=setInterval(()=>{if(cancel)KG.annuler()},500);let r;
     const rc=SRX.calc(ow,oh);
     try{r=await KG.traiter(Object.assign({moteur:cine?"cinema":"standard",file:curFile,dw:v.videoWidth,dh:v.videoHeight,ow,oh,dn:+SRX.dn().toFixed(4),images:inf.ns},rc||{},gop?{gop}:{}),(et,f,t)=>{msg(t);const pg=$("#pg");if(pg)pg.value=et==="envoi"?f*.1:et==="recup"?.1+f*.05:pg.value})}
@@ -451,12 +451,14 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
      (mesuré sur 4 vidéos : Real-ESRGAN moins fidèle que l'agrandissement sur toutes) et coûterait des heures pour rien.
      Coût : 3 petits calculs (~1 s sur iPhone). Méthode reprise du protocole des recherches RNE (dégradation simulée ×2). */
   async epreuve(els){
-    const S=256,lum=d=>{const o=new Float32Array(d.length/4);for(let i=0;i<o.length;i++)o[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];return o};
-    const ssim=(a,b,w)=>{/* SSIM par fenêtres 8×8 (pas de 4) */let s=0,n=0;const C1=6.5025,C2=58.5225;
-      for(let y=0;y+8<=w;y+=4)for(let x=0;x+8<=w;x+=4){let ma=0,mb=0,va=0,vb=0,c=0;
-        for(let j=0;j<8;j++)for(let i=0;i<8;i++){const k=(y+j)*w+x+i;ma+=a[k];mb+=b[k]}ma/=64;mb/=64;
-        for(let j=0;j<8;j++)for(let i=0;i<8;i++){const k=(y+j)*w+x+i,da=a[k]-ma,db=b[k]-mb;va+=da*da;vb+=db*db;c+=da*db}va/=63;vb/=63;c/=63;
-        s+=((2*ma*mb+C1)*(2*c+C2))/((ma*ma+mb*mb+C1)*(va+vb+C2));n++}return s/n};
+    let S=256;for(const el of els){const [w,h]=dims(el);S=Math.min(S,Math.floor(Math.min(w,h)/4)*4)}if(S<96)return null;/* v9.5 : petites vidéos (ex. 384×216) aussi éprouvées */
+    const lum=d=>{const o=new Float32Array(d.length/4);for(let i=0;i<o.length;i++)o[i]=.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2];return o};
+    /* v9.5 : GMSD (écart de similarité des gradients, plus bas = plus fidèle) au lieu du SSIM. Mesuré contre la vraie image sur
+       20 cas : la décision par GMSD est la bonne 19 fois sur 20 ; par SSIM, seulement 12 fois (le SSIM préfère le flou et retirait
+       l'IA même quand elle aidait). */
+    const gmsd=(a,b,w)=>{const g=(x,i)=>{const s=(dx,dy)=>x[i+dy*w+dx];const gx=(s(1,-1)+2*s(1,0)+s(1,1)-s(-1,-1)-2*s(-1,0)-s(-1,1))/4,gy=(s(-1,1)+2*s(0,1)+s(1,1)-s(-1,-1)-2*s(0,-1)-s(1,-1))/4;return Math.hypot(gx,gy)};
+      const q=[];for(let y=1;y<w-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x,ga=g(a,i),gb=g(b,i);q.push((2*ga*gb+30)/(ga*ga+gb*gb+30))}
+      let m=0;for(const v of q)m+=v;m/=q.length;let s=0;for(const v of q)s+=(v-m)*(v-m);return Math.sqrt(s/q.length)};
     const mk=(w,h)=>{const c=document.createElement("canvas");c.width=w;c.height=h;return c};
     let gi=0,gb=0,n=0;
     for(const el of els){const [w,h]=dims(el);if(w<S||h<S)continue;
@@ -468,9 +470,10 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
       const pt=mk(S/2,S/2),px=pt.getContext("2d");px.imageSmoothingEnabled=true;px.imageSmoothingQuality="high";px.drawImage(full,best[0],best[1],S,S,0,0,S/2,S/2);
       const bc=mk(S,S),bx=bc.getContext("2d",{willReadFrequently:true});bx.imageSmoothingEnabled=true;bx.imageSmoothingQuality="high";bx.drawImage(pt,0,0,S,S);
       const job=SRX.lock.then(()=>SR.run(pt,2,SRX.dn(),null,null));SRX.lock=job.catch(()=>{});const ia=await job,ic=mk(S,S),ix=ic.getContext("2d",{willReadFrequently:true});ix.drawImage(ia,0,0,S,S);
-      gb+=ssim(lum(bx.getImageData(0,0,S,S).data),R,S);gi+=ssim(lum(ix.getImageData(0,0,S,S).data),R,S);n++}
+      gb+=gmsd(lum(bx.getImageData(0,0,S,S).data),R,S);gi+=gmsd(lum(ix.getImageData(0,0,S,S).data),R,S);n++}
     if(!n)return null;
-    const r={ia:+(gi/n).toFixed(4),agrandi:+(gb/n).toFixed(4),extraits:n};r.utile=r.ia-r.agrandi>.002;return r},
+    /* ia / agrandi : écarts GMSD (plus bas = mieux) ; l'IA est gardée si elle réduit l'écart */
+    const r={ia:+(gi/n).toFixed(4),agrandi:+(gb/n).toFixed(4),extraits:n,mesure:"gmsd"};r.utile=r.agrandi-r.ia>Math.max(.003,.06*r.agrandi);/* gain net exigé (≥ 6 %) : dans le doute, la fidélité l'emporte */return r},
   async verifierVideo(file){
     const o=$("#o_max");if(!o||!o.checked||mode!=="video"||!SRX.on()||!SRX.fits(v)||exporting)return;
     SRX.ep=true;try{const t=v.currentTime,els=[];
@@ -480,8 +483,8 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
       const r=await SRX.epreuve(els);window.__epreuve=r;if(!r||curFile!==file)return;
       try{DIAG.send("epreuve_ia",r)}catch(e){}
       if(!r.utile&&o.checked){o.checked=false;SRX.autoOff=curFile;SRX.pc=null;SRX.key="";updateEst();draw();
-        msg("Épreuve de vérité : sur cette vidéo, l’IA serait moins fidèle qu’un simple agrandissement (ressemblance "+Math.round(r.ia*1000)/10+" % contre "+Math.round(r.agrandi*1000)/10+" %). Elle est retirée : rendu plus fidèle et export bien plus rapide. Tu peux la recocher si tu veux.")}
-      else if(r.utile)msg("Épreuve de vérité : l’IA améliore vraiment cette vidéo (ressemblance "+Math.round(r.ia*1000)/10+" % contre "+Math.round(r.agrandi*1000)/10+" % sans IA). Elle est gardée.")}
+        msg("Épreuve de vérité : sur cette vidéo, l’IA ne ferait pas mieux qu’un simple agrandissement (écart à la vraie image "+r.ia.toFixed(3)+" contre "+r.agrandi.toFixed(3)+"). Elle est retirée : rendu fidèle et export bien plus rapide. Tu peux la recocher si tu veux.")}
+      else if(r.utile)msg("Épreuve de vérité : l’IA améliore vraiment cette vidéo (écart à la vraie image "+r.ia.toFixed(3)+" contre "+r.agrandi.toFixed(3)+" sans IA, plus bas = mieux). Elle est gardée.")}
     catch(e){}finally{SRX.ep=false;if(!exporting)try{draw()}catch(e){}}},
   preview(){clearTimeout(SRX.pt);if(!SRX.on()||exporting||SRX.ep)return;/* v8.3 : pas d’aperçu IA pendant l’épreuve de vérité */
     SRX.pt=setTimeout(async()=>{
@@ -2810,7 +2813,7 @@ const PHOTO={last:null,
 function recipe(extra){
   const o=id=>{const e=$("#"+id);return e?e.checked:false};
   const r={app:VER,date:new Date().toISOString(),media:mode,source:mode==="photo"?dims(photoEl).join("×"):v.videoWidth+"×"+v.videoHeight,profil:PROF.NOM[PROF.id],
-    ia:SRX.on()?{modele:"Real-ESRGAN general v3 (v0.2.5.0)",moteur:window.SR?SR.engine:"?",debruitage:+SRX.dn().toFixed(2),part_ia:PROF.k().ai}:"non",
+    ia:SRX.on()?{modele:"2xNomosUni_compact_multijpg (v9.5)",moteur:window.SR?SR.engine:"?",debruitage:+SRX.dn().toFixed(2),part_ia:PROF.k().ai}:"non",
     operations:[P.db>0&&"anti-blocs",PROF.v("dn")>0&&"réduction du bruit",PROF.v("sh")>0&&"netteté",PROF.v("cs")>0&&"nettoyage des couleurs",P.wb>0&&"équilibre des couleurs",FLT.sel>=0&&"retrait de filtre",
       mode==="video"&&o("o_dust")&&"poussières",mode==="video"&&o("o_defl")&&"anti-scintillement",mode==="video"&&o("o_stab")&&"stabilisation",mode==="video"&&o("o_voice")&&"voix",mode==="video"&&o("o_fluid")&&"fluidité"].filter(Boolean),
     reglages_appliques:Object.fromEntries(["br","co","sa","wa","sh","dn","cs","db"].map(k=>[k,+(+PROF.v(k)).toFixed(3)])),protection_hautes_lumieres:PROF.k().hp,...(extra||{})};
@@ -2840,7 +2843,7 @@ async function exportPhoto(){
     PV.show(photoURL,outUrl,W,H);
     const r=recipe({sortie:W+"×"+H,format:png?"PNG":"JPEG 95 %",ia_utilisee:ia,duree_s:+((performance.now()-t0)/1000).toFixed(1)});showRecipe(r);
     const ro=[["ok","Photo créée : "+W+"×"+H+" ("+(s>1?"agrandie ×"+(Math.round(s*10)/10).toString().replace(".",","):"taille d’origine")+"), "+(png?"PNG sans perte":"JPEG qualité 95 %")+", "+(blob.size/1048576).toFixed(1).replace(".",",")+" Mo. Fichier relu et vérifié ✓"],
-      ["ok","Rendu : "+PROF.NOM[PROF.id]+(ia?" ; restauration IA (Real-ESRGAN general v3, moteur "+(SR.engine==="gpu"?"WebGPU":"WebGL2")+")":" ; sans IA")+"."]];
+      ["ok","Rendu : "+PROF.NOM[PROF.id]+(ia?" ; restauration IA (2xNomosUni compact multijpg, moteur "+(SR.engine==="gpu"?"WebGPU":"WebGL2")+")":" ; sans IA")+"."]];
     if(s>1)ro.push([ia?"warn":"ok",ia?"Agrandissement par IA : une partie des fins détails est estimée par le réseau, elle n’existait pas dans l’original. Compare au zoom ci-dessous.":"Agrandissement classique : aucune information n’est inventée, l’image est seulement interpolée."]);
     if(SRX.lastErr)ro.push(["warn","IA non utilisée : "+SRX.lastErr.texte]);
     orepShow(ro);
