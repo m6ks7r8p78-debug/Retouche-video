@@ -1,5 +1,18 @@
 # Journal des versions
 
+## v9.4 (21 nov. 2026) — Changer de format : le décor dessiné prend le grain de la vidéo
+- Les côtés dessinés par l'IA étaient lisses et figés à côté d'une vidéo filmée (vieux téléphone = grain visible) : on les repérait
+  au premier coup d'œil. Le grain d'UNE image filmée est maintenant mesuré à chaque scène (écart type du bruit, estimateur robuste),
+  comparé à celui du décor, et le décor reçoit exactement le grain qui lui manque (σ ajouté = √(σ vidéo² − σ décor²)), animé à chaque
+  image, à la taille du grain de la vidéo. Mesuré (vidéo de test bruitée, export 768×432) : grain vidéo 4,1 / 6,0 → décor 3,9 / 6,2
+  (avant : décor lisse). Vidéo propre : rien d'ajouté. La vidéo filmée reste intacte au pixel près (contrôle à l'export : 0 différence).
+- Banc des limites de LaMa (tests/format/banc_lama.md) : avec une vérité terrain (vidéo 16:9 réelle, centre 9:16 gardé, côtés à
+  reconstruire), aucune variante faisable sur le téléphone (une fenêtre par côté, bandes successives de 64 à 256 px, fenêtres
+  retournées, contexte reflété) ne rapproche nettement les côtés de la réalité (LPIPS 0,61 à 0,69, tous mauvais). LaMa est fait pour
+  boucher des trous entourés d'image, pas pour prolonger une scène sur 60 % de sa largeur. Le vrai saut ne peut venir que d'un modèle
+  génératif de scène (Stable Diffusion XL, déjà branché sur ton Kaggle, jamais encore essayé).
+- Tests : format_zero 4/4, format 20/20, sw 8/8.
+
 ## v9.3 (18 nov. 2026) — Plus rapide, et option « Élargir la vidéo »
 - **Vitesse** (« Plein écran, rien coupé ») : 2 fenêtres de dessin par scène au lieu de 4 (×2) ; le modèle se télécharge et se prépare
   pendant l'analyse ; le site s'isole (en-têtes COOP/COEP ajoutés par le service worker) pour que l'IA calcule sur plusieurs cœurs

@@ -349,17 +349,34 @@ var FMT = (() => {
     /* images à lire : plus la caméra bouge, plus il en faut ; sur pied, quelques-unes suffisent (elles servent seulement de contexte) */
     const max = sc.verrou ? 4 : AP.echantillons, choix = []; { let acc = 1e9, der = -1e9; const pasT = sc.n / max; for (let j = 0; j < sc.n; j++) { if (j) { const m = sc.M[j], q = sc.M[j - 1]; acc += Math.hypot((m[2] - q[2]) / A.aw, (m[5] - q[5]) / A.ah) + Math.abs(m[0] - q[0]) } if (acc >= .025 || j - der >= pasT) { choix.push(j); acc = 0; der = j } }
       while (choix.length > max) { for (let k = choix.length - 2; k > 0; k -= 2) choix.splice(k, 1) } }
-    const pc = toile(P.w, P.h, true); let fait = 0;
+    const pc = toile(P.w, P.h, true); let fait = 0; const gv = [];   /* v9.4 matière d'UNE image filmée (l'assemblage de plusieurs images est plus lisse que la vidéo) */
     await L.parcourir(choix.map(j => Math.min(L.n - 1, (sc.a0 + j) * A.pasA)), async (src, i) => { const j = choix[fait], B = FMM.versPlaque(P, Ms[j]);
       pc.x.setTransform(1, 0, 0, 1, 0, 0); pc.x.clearRect(0, 0, P.w, P.h); pc.x.setTransform(...FMM.versCanvas(B)); pc.x.imageSmoothingQuality = "high"; pc.x.drawImage(src, Z.x, Z.y, Z.w, Z.h, 0, 0, Z.w, Z.h);
-      FMM.plaqueAccumuler(P, pc.x.getImageData(0, 0, P.w, P.h).data, B, Z.w, Z.h); fait++; onP && onP("Scène " + (s + 1) + " : décor " + Math.round(100 * fait / choix.length) + " %"); await souffler() });
+      const dI = pc.x.getImageData(0, 0, P.w, P.h).data; if (gv.length < 4) gv.push(matiere(dI, P.w, P.h).grain);
+      FMM.plaqueAccumuler(P, dI, B, Z.w, Z.h); fait++; onP && onP("Scène " + (s + 1) + " : décor " + Math.round(100 * fait / choix.length) + " %"); await souffler() });
     const geo = { k: P.k, x0: P.x0, y0: P.y0, w: P.w, h: P.h }, fin = FMM.plaqueFinir(P), bes = FMM.besoin(geo, Ms, plan, Z.w, Z.h, W, H, 4);
-    return { geo, fin, bes };
+    const med = a => a.length ? a.slice().sort((x, y) => x - y)[a.length >> 1] : 0;
+    return { geo, fin, bes, gv: med(gv) };
   }
   /* bâtit le décor de la scène s pour une sortie W×H. Renvoie null si la scène n'en a pas besoin. */
+  /* v9.4 matière du réel (pixels opaques de la plaque) : grain = écart type du bruit (niveaux, estimateur robuste sur le laplacien) ;
+     net = renfort de netteté à donner au décor dessiné pour approcher l'énergie fine du réel (0 … 1,2). */
+  function matiere(rgba, w, h, garde) {
+    const L = (x, y) => { const i = (y * w + x) * 4; return rgba[i + 3] > 250 && (!garde || garde(i)) ? .299 * rgba[i] + .587 * rgba[i + 1] + .114 * rgba[i + 2] : NaN };
+    const lap = [], pas = Math.max(1, Math.round(Math.sqrt(w * h / 60000)));
+    for (let y = 1; y < h - 1; y += pas) for (let x = 1; x < w - 1; x += pas) { const v = 4 * L(x, y) - L(x - 1, y) - L(x + 1, y) - L(x, y - 1) - L(x, y + 1); if (v === v) lap.push(Math.abs(v)) }
+    if (lap.length < 200) return { grain: 0, net: 0 };
+    /* bruit blanc σ : |laplacien| a un écart type σ·√20 ; la médiane (robuste aux contours) vaut 0,6745 × cet écart type */
+    lap.sort((a, b) => a - b); return { grain: Math.min(12, lap[lap.length >> 1] / .6745 / Math.sqrt(20)) };
+  }
+  /* grain animé : motif de bruit gaussien (gris moyen ± σ), décalé à chaque image */
+  let motifGrain = null;
+  function grainMotif() { if (motifGrain) return motifGrain; const c = toile(256, 256), id = c.x.createImageData(256, 256); let s = 12345; const r = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+    for (let i = 0; i < 256 * 256; i++) { const g = Math.sqrt(-2 * Math.log(r() + 1e-9)) * Math.cos(6.2832 * r()), v = 128 + 40 * g; id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = v; id.data[i * 4 + 3] = 255 }
+    c.x.putImageData(id, 0, 0); return motifGrain = c }
   async function construireDecor(s, W, H, maxPx, onP) {
     const plan = E.plans[s]; if (!plan.plaque || plan.z === 1) return null;
-    const { geo, fin, bes } = await plaqueScene(s, W, H, maxPx, onP);
+    const { geo, fin, bes, gv } = await plaqueScene(s, W, H, maxPx, onP);
     /* Zéro perte + serveur : la couche complète vient de Kaggle (etendreServeur) ; tant qu'elle manque, le modèle du téléphone remplit
        ce qu'il sait faire (sa propre portée), rangé sous une autre clé pour ne pas être pris pour la couche du serveur */
     const cleS = s + "|" + plan.cle, kgSans = plan.generateur === "kaggle" && !E.couches.has(cleS), cle = kgSans ? cleS + "|local" : cleS;
@@ -383,14 +400,21 @@ var FMT = (() => {
     /* assemblage : inventé dessous, réel (bord fondu) dessus */
     const cv = toile(geo.w, geo.h), rc = toile(geo.w, geo.h), al = toile(G.w, G.h), ad = new ImageData(G.w, G.h); for (let i = 0; i < plume.length; i++) { ad.data[i * 4 + 3] = plume[i] } al.x.putImageData(ad, 0, 0);
     rc.x.putImageData(new ImageData(fin.rgba, geo.w, geo.h), 0, 0); rc.x.globalCompositeOperation = "destination-in"; rc.x.imageSmoothingQuality = "high"; rc.x.drawImage(al, 0, 0, geo.w, geo.h); rc.x.globalCompositeOperation = "source-over";
-    cv.x.imageSmoothingQuality = "high"; if (gen) cv.x.drawImage(gen.cv, (gen.x * geo.k - geo.x0), (gen.y * geo.k - geo.y0), gen.w * geo.k, gen.h * geo.k); cv.x.drawImage(rc, 0, 0);
+    cv.x.imageSmoothingQuality = "high"; if (gen) cv.x.drawImage(gen.cv, (gen.x * geo.k - geo.x0), (gen.y * geo.k - geo.y0), gen.w * geo.k, gen.h * geo.k);
+    /* v9.4 matière : le décor dessiné (calculé petit puis agrandi) est plus mou que la vidéo ; on lui rend la netteté mesurée du réel */
+    /* v9.4 grain : le décor reçoit le bruit qui lui manque pour égaler celui d'UNE image filmée (σ ajouté = √(σ réel² − σ décor²)) */
+    const mat = { grain: 0 };
+    if (gen && gv > .5) { const dd = cv.x.getImageData(0, 0, geo.w, geo.h).data, gd = matiere(dd, geo.w, geo.h, i => fin.rgba[i + 3] < 250).grain;
+      mat.grain = Math.sqrt(Math.max(0, gv * gv - gd * gd)); mat.reel = gv; mat.decor = gd }
+    cv.x.drawImage(rc, 0, 0);
     /* carte : rose = inventé, turquoise = retrouvé dans d'autres images */
     const carte = toile(G.w, G.h), cd = new ImageData(G.w, G.h); let nr = 0, ni = 0, nb = 0; let gd = null, memeG = false; if (gen) { const gg = toile(G.w, G.h, true); gg.x.drawImage(gen.cv, 0, 0, G.w, G.h); gd = gg.x.getImageData(0, 0, G.w, G.h).data; memeG = true }
     for (let i = 0; i < G.w * G.h; i++) { const bx = Math.min(bes.w - 1, Math.floor((i % G.w + .5) / G.e / bes.q)), by = Math.min(bes.h - 1, Math.floor((Math.floor(i / G.w) + .5) / G.e / bes.q)); if (!bes.carte[by * bes.w + bx]) continue; nb++;
       if (plume[i] > 127) { nr++; cd.data.set([70, 215, 200, 105], i * 4) } else if (memeG && gd[i * 4 + 3] > 127) { ni++; cd.data.set([235, 60, 150, 120], i * 4) } }
     carte.x.putImageData(cd, 0, 0);
     if (kgSans && E.kaggleNote) journal.push(E.kaggleNote);
-    return { geo, cv, carte, gen, journal, parts: nb ? { reel: nr / nb, invente: ni / nb, flou: Math.max(0, 1 - (nr + ni) / nb) } : { reel: 0, invente: 0, flou: 1 }, cle: plan.cle, W, H };
+    if (gen && mat.grain > .4) journal.push("Matière : grain animé ajouté au décor dessiné (" + mat.grain.toFixed(1) + " niveaux), pour égaler celui de la vidéo (" + mat.reel.toFixed(1) + ") — le décor ne paraît plus figé et lisse.");
+    return { geo, cv, carte, gen, journal, grain: mat.grain, parts: nb ? { reel: nr / nb, invente: ni / nb, flou: Math.max(0, 1 - (nr + ni) / nb) } : { reel: 0, invente: 0, flou: 1 }, cle: plan.cle, W, H };
   }
 
   /* ================= 4. rendu d'une image ================= */
@@ -423,7 +447,15 @@ var FMT = (() => {
         if (bas.some(v => v < 255)) { t.globalCompositeOperation = "multiply"; t.fillStyle = "rgb(" + bas + ")"; t.fillRect(0, 0, W, H) }
         if (haut.some(v => v > 0)) { t.globalCompositeOperation = "color-dodge"; t.fillStyle = "rgb(" + haut + ")"; t.fillRect(0, 0, W, H) }
         t.globalCompositeOperation = "destination-in"; t.setTransform(...FMM.versCanvas(TS)); t.drawImage(decor.cv, 0, 0); t.globalCompositeOperation = "source-over" }
-      t.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(R.tmp, 0, 0);
+      t.setTransform(1, 0, 0, 1, 0, 0);
+      /* v9.4 grain de la vidéo sur le décor (sinon il paraît figé et lisse à côté de l'image filmée) : motif décalé à chaque image,
+         à la taille du grain de la vidéo (c.k), force = grain mesuré ; mode « incrustation » (plus discret dans les noirs et les blancs) */
+      if (decor.grain > .4 && !(opt && opt.carte)) { const gq = R.gq || (R.gq = toile(W, H)), gx = gq.x, m = grainMotif(), k = Math.max(1, c.k), f = Math.floor(j * 7919) % 256;
+        gx.setTransform(1, 0, 0, 1, 0, 0); gx.globalCompositeOperation = "source-over"; gx.clearRect(0, 0, W, H); const pat = gx.createPattern(m, "repeat");
+        pat.setTransform(new DOMMatrix([k, 0, 0, k, (f * 37) % 256, (f * 101) % 256])); gx.fillStyle = pat; gx.globalAlpha = Math.min(1, decor.grain / 30);   /* étalonné : σ obtenu ≈ σ de la vidéo (tests/format_zero, vidéo bruitée) */ gx.fillRect(0, 0, W, H);
+        gx.globalAlpha = 1; gx.globalCompositeOperation = "destination-in"; gx.drawImage(R.tmp, 0, 0); gx.globalCompositeOperation = "source-over";
+        t.globalCompositeOperation = "overlay"; t.drawImage(gq, 0, 0); t.globalCompositeOperation = "source-over" }
+      x.drawImage(R.tmp, 0, 0);
       if (opt && opt.carte) { x.setTransform(...FMM.versCanvas(TS)); x.imageSmoothingEnabled = false; x.drawImage(decor.carte, 0, 0, g.w, g.h); x.setTransform(1, 0, 0, 1, 0, 0); x.imageSmoothingEnabled = true } }
     /* c) Zéro perte : l'image d'origine est posée telle quelle, entièrement opaque (aucun pixel fondu ni recouvert) */
     if (plan.zero) { /* raccord SANS toucher l'image : son bord est reflété (miroir) sur quelques pixels du côté ajouté, en fondu vers le décor */
