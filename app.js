@@ -93,7 +93,7 @@ function dims(s){return [s.videoWidth||s.naturalWidth||s.width||0,s.videoHeight|
 function setMode(){
   const ph=mode==="photo";
   $("#app").hidden=false;$("#st0").hidden=true;
-  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#plc").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);document.querySelectorAll(".ponly").forEach(e=>e.hidden=!ph);$("#qwrap").hidden=ph;if(ph)$("#rec").hidden=true;$("#pv").hidden=true;SRX.lastErr=null;PROF.why="";PROF.hint();document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
+  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#plc").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);document.querySelectorAll(".ponly").forEach(e=>e.hidden=!ph);$("#qwrap").hidden=ph;if(ph)$("#rec").hidden=true;$("#pv").hidden=true;SRX.lastErr=null;SRX.off=false;SRX.warned=false;PROF.why="";PROF.hint();document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
   $("#ex").textContent=ph?"Améliorer la photo":($("#q").value==="-1"?"Nettoyer (taille d’origine)":$("#q").value==="3840"?"Améliorer en 4K":"Améliorer en Full HD");
   $("#out").hidden=true;
 }
@@ -846,7 +846,8 @@ v.onloadedmetadata=()=>{
   $("#app").hidden=false;$("#st0").hidden=true;$("#pick .lbl").textContent="Autre vidéo";mode="video";setMode();clearTimeout(wd);
   size(PREVIEW);msg("");
   chips([v.videoWidth+"×"+v.videoHeight,fmtT(v.duration),(curFile.size<524288?"<1":(curFile.size/1048576).toFixed(0))+" Mo"]);$("#tc").hidden=false;$("#tc").textContent="0:00 / "+fmtT(v.duration);updateEst();
-  if(Math.max(v.videoWidth,v.videoHeight)>=1500){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Ta vidéo est déjà en haute définition : le Full HD est choisi (bien plus rapide, presque aussi net). Tu peux repasser en 4K ci-dessus.'}
+  /* Respecter le choix 4K déjà enregistré. Ne pas remplacer la cible par Full HD à chaque import HD. */
+  if(Math.max(v.videoWidth,v.videoHeight)>=1500&&!localStorage.getItem("q")){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Full HD choisi par défaut (plus rapide). Sélectionne 4K si tu veux une sortie UHD.'}
   window.__safe=null;
   try{FREP.run(curFile)}catch(e){}
   setTimeout(()=>{try{SRX.videoCheck()}catch(e){}try{TR.info()}catch(e){}},0);
@@ -2736,7 +2737,7 @@ const PHOTO={last:null,
     const el=photoEl;if(!el)return;const [w,h]=dims(el);
     const th=photoThumb||el,f=AZ.grab(th,Math.min(640,dims(th)[0])),st=AZ.stats(f),noise=AZ.noise(f),sharp=AZ.sharp(f);let blk=null;try{blk=AZ.block(el)}catch(e){}
     const m={kind:"photo",w,h,noise,sharp,blk,p2:st.p2,p50:st.p50,p98:st.p98,sat:st.sat};PHOTO.last=m;
-    const n=[],it=[],big=w*h>1100000;
+    const n=[],it=[],big=w*h>SR.MAXPX_HD;
     n.push("Définition : "+w+"×"+h+" ("+(w*h/1e6).toFixed(1).replace(".",",")+" Mpx). "+(big?"Déjà détaillée : nettoyage léger, sans IA (elle n’ajouterait rien).":"Petite : agrandissement "+(Math.max(w,h)<1500?"×3":"×2")+(SRX.on()?" avec restauration IA ; une partie des détails sera estimée, pas d’origine.":" (IA désactivée)."))); it.push(null);
     if(blk&&blk.r>=REC.T.blk){P.db=Math.max(.35,Math.min(1,(blk.r-1.15)/.45));DB.ph=[blk.px,blk.py];n.push("Carrés de compression mesurés (indice "+blk.r.toFixed(2).replace(".",",")+") : lissés.");it.push("db")}
     if(noise>=REC.T.noiseHi){P.dn=.5;n.push("Bruit ou grain marqué : réduction du bruit renforcée.");it.push("dn")}
