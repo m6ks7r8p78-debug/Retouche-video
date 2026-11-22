@@ -10,7 +10,9 @@
    - le résultat ×4 complet est gardé : l'aperçu puis l'export d'une même image ne lancent le réseau qu'une fois. */
 var SR = (() => {
   const CORE = 224;
-  const MAXPX = 1100000;                           // au-delà (image déjà HD), l'IA n'apporte rien et serait très longue
+  const MAXPX = 1100000; // plafond par appel GPU, pas un diagnostic de qualité
+  const MAXPX_HD = 2200000; // 1080p compressé : restauré par morceaux
+  const TILE_CORE = 384, TILE_HALO = 32; // marge > champ réceptif du réseau de 16 couches
   /* v10.1 IA en cascade : pour une petite vidéo agrandie ×2,6 ou plus (480p → 4K…), l'IA est appliquée deux fois (×2 puis ×2).
      Banc outils/sr/cascade.py (vérité HD, entrée réduite puis H.264) : ×4 LPIPS 0,2698 → 0,2578 ; ×3 0,2480 → 0,2335.
      La seconde passe reçoit l'image déjà ×2 : limite propre (mémoire « full » RGBA8 ≤ 6832 px de large). */
@@ -212,7 +214,49 @@ o=vec4(s/float(k*k),1.);}`;
   let engine = null, running = 0;
   /* choix du moteur : « auto » (WebGPU puis WebGL2), « gpu » ou « gl » (réglable dans « Modèles IA ») */
   function pref() { try { return window.__srgl ? "gl" : localStorage.getItem("sr_moteur") || (localStorage.getItem("srgl") === "1" ? "gl" : "auto") } catch (e) { return "auto" } }
+  /* Une source 1080p peut être très dégradée. Restaurer à la résolution SOURCE
+     par zones chevauchantes, sans réduction préalable vers du 720p.
+     Chaque appel du modèle reste sous MAXPX pour limiter la mémoire GPU. */
+  function tilePlan(W, H) {
+    const out = [];
+    for (let y = 0; y < H; y += TILE_CORE) for (let x = 0; x < W; x += TILE_CORE) {
+      const w = Math.min(TILE_CORE, W - x), h = Math.min(TILE_CORE, H - y);
+      const sx = Math.max(0, x - TILE_HALO), sy = Math.max(0, y - TILE_HALO);
+      const ex = Math.min(W, x + w + TILE_HALO), ey = Math.min(H, y + h + TILE_HALO);
+      out.push({ x, y, w, h, sx, sy, sw: ex - sx, sh: ey - sy });
+    }
+    return out;
+  }
+  async function runTiled(src, s, dn, onTile, key, small = run) {
+    const W = src.videoWidth || src.displayWidth || src.naturalWidth || src.width;
+    const H = src.videoHeight || src.displayHeight || src.naturalHeight || src.height;
+    if (!(W > 0 && H > 0) || W * H > MAXPX_HD) throw new Error("source trop grande pour la restauration locale ; utiliser le serveur IA");
+    s = Math.min(4, Math.max(.25, s));
+    const OW = Math.round(W * s), OH = Math.round(H * s);
+    if (OW * OH > 3840 * 2160 * 1.02) throw new Error("sortie trop grande pour les ressources locales (limite 4K)");
+    const out = document.createElement("canvas"); out.width = OW; out.height = OH;
+    const ox = out.getContext("2d");
+    if (!ox) throw new Error("composition 2D indisponible");
+    const tile = document.createElement("canvas"), tx = tile.getContext("2d");
+    if (!tx) throw new Error("lecture 2D indisponible");
+    const plan = tilePlan(W, H);
+    for (let i = 0; i < plan.length; i++) {
+      const p = plan[i]; tile.width = p.sw; tile.height = p.sh;
+      tx.drawImage(src, p.sx, p.sy, p.sw, p.sh, 0, 0, p.sw, p.sh);
+      if (p.sw * p.sh > MAXPX) throw new Error("tuile dépasse le budget GPU");
+      const restored = await small(tile, s, dn, f => onTile && onTile((i + f) / plan.length), key == null ? null : key + "|tuile:" + i);
+      const rx = restored.width / p.sw, ry = restored.height / p.sh;
+      const dx = Math.round(p.x * s), dy = Math.round(p.y * s);
+      const dw = Math.round((p.x + p.w) * s) - dx, dh = Math.round((p.y + p.h) * s) - dy;
+      ox.drawImage(restored, (p.x - p.sx) * rx, (p.y - p.sy) * ry, p.w * rx, p.h * ry, dx, dy, dw, dh);
+      if (onTile) onTile((i + 1) / plan.length);
+    }
+    return out;
+  }
   async function run(src, s, dn, onTile, key, lim) {
+    const W = src.videoWidth || src.displayWidth || src.naturalWidth || src.width;
+    const H = src.videoHeight || src.displayHeight || src.naturalHeight || src.height;
+    if (!lim && W * H > MAXPX && W * H <= MAXPX_HD) return runTiled(src, s, dn, onTile, key);
     running++;
     try {
       const p = pref();
@@ -275,13 +319,13 @@ o=vec4(s/float(k*k),1.);}`;
     return cvs;
   }
   return {
-    init, run, MAXPX, MAXPX2, unload, bench,
+    init, run, runTiled, tilePlan, MAXPX, MAXPX2, MAXPX_HD, unload, bench,
     /* la cascade s'applique-t-elle à une image W×H agrandie ×s ? */
     casc(W, H, s) { return s >= CASC && W * H <= MAXPX && 4 * W * H <= MAXPX2 },
     get ok() { return engine === "gpu" ? true : st }, get why() { return why }, get engine() { return engine || "?" },
     get busy() { return running > 0 },
     /* vitesse mesurée du dernier calcul : millisecondes par mégapixel d'image d'origine */
     get speed() { return stats.px ? Math.round(stats.ms / stats.px * 1e6) : 0 },
-    fits(W, H) { return W * H <= MAXPX },
+    fits(W, H) { return W > 0 && H > 0 && W * H <= MAXPX_HD },
   };
 })();
