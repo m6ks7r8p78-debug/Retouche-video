@@ -85,6 +85,8 @@ var KG = (() => {
     abort = new AbortController();
     const u = await moi(), slug = "retouche-ia-" + Date.now().toString(36), ref = u + "/" + slug, ds = slug + "-donnees", t0 = Date.now(); dernier = slug;
     let fin = false;
+    const limite = 15 * 60 * 1000;
+    const checkTime = () => { if (Date.now() - t0 > limite) throw new Error("Kaggle : plus de 15 minutes d’attente. Arrêt et nettoyage des ressources, pour ne pas laisser tourner un calcul sans résultat.") };
     try {
       ev("envoi", 0, "Préparation de l’envoi…");
       const cine = o.moteur === "cinema";   /* v8.1 : moteur « Cinéma » (SeedVR2, serveur-ia/cinema_kaggle.py), repli automatique sur l'IA standard */
@@ -97,13 +99,14 @@ var KG = (() => {
       const envois = [[params, "params.json"], [py, "ia_serveur.py"], [sr, "sr.bin"], [sr2, "sr2.bin"], ...repli, [o.file, "video" + ext]];
       const tot = envois.reduce((t, [b]) => t + b.size, 0); let base = 0;
       for (const [b, n] of envois) {
+        checkTime();
         const tk = await depot(b, n, f => ev("envoi", (base + f * b.size) / tot, "Envoi de la vidéo vers ton espace privé Kaggle… " + Math.round((base + f * b.size) / tot * 100) + " %"));
         base += b.size; files.push({ token: tk }); attendus[n] = b.size;
       }
       const cd = await api("datasets.DatasetApiService", "CreateDataset", { ownerSlug: u, slug: ds, title: ds.replace(/-/g, " "), licenseName: "other", isPrivate: true, files });
       if (cd.error) throw new Error("Kaggle : " + cd.error);
       for (let i = 0; ; i++) {
-        let s = {};
+        checkTime();let s = {};
         try { s = await api("datasets.DatasetApiService", "GetDatasetStatus", { ownerSlug: u, datasetSlug: ds }) }
         catch (e) { if (!(e.status === 403 || e.status === 404) || i > 24) throw e }   /* jeu tout juste créé : pas encore visible */
         if (/ready/i.test(s.status || "")) break;
@@ -120,7 +123,7 @@ var KG = (() => {
       if (sk.error) throw new Error("Kaggle : " + sk.error);
       let st = "", t1 = Date.now();
       for (;;) {
-        await attendre(15000);
+        checkTime();await attendre(15000);checkTime();
         const s = await api("kernels.KernelsApiService", "GetKernelSessionStatus", { userName: u, kernelSlug: slug });
         st = String(s.status || "");
         const min = Math.round((Date.now() - t1) / 60000);
@@ -128,7 +131,7 @@ var KG = (() => {
         if (/ERROR|CANCEL/i.test(st)) throw new Error("le calcul a échoué sur Kaggle" + (s.failureMessage ? " : " + s.failureMessage : ""));
         ev("calcul", 0, (/QUEUED/i.test(st) ? "En attente d’une carte graphique Kaggle…" : (cine ? "Restauration Cinéma (SeedVR2) sur les cartes graphiques Kaggle…" : "Calcul IA sur les cartes graphiques Kaggle…")) + " (" + min + " min)");
       }
-      ev("recup", 0, "Récupération du résultat…");
+      checkTime();ev("recup", 0, "Récupération du résultat…");
       const info = await recup(u, slug, "info.json");
       if (!info || !info.ok || info.images_lues !== o.images || !info.sortie || info.sortie.width !== o.ow || info.sortie.height !== o.oh)
         throw new Error("résultat incomplet ou différent de la vidéo (contrôle : " + (info ? info.images_lues + "/" + o.images + " images" : "absent") + ")");
