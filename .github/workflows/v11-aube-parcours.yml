@@ -1,0 +1,68 @@
+name: AUBE v11 - vrais parcours navigateur sur moteur PR92
+on:
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'mode-simple.js'
+      - 'index.html'
+      - 'aube*.js'
+      - 'aube*.css'
+      - 'sw.js'
+      - 'tests/v11_aube_parcours.test.mjs'
+      - '.github/workflows/v11-aube-parcours.yml'
+jobs:
+  parcours-aube:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Code de la PR v11.1 sans déploiement
+        uses: actions/checkout@v4
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Navigateur Chromium Playwright sans cloud utilisateur
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund --prefix "$RUNNER_TEMP/rpa-browser" playwright@1.56.1
+          "$RUNNER_TEMP/rpa-browser/node_modules/.bin/playwright" install --with-deps chromium
+          sudo apt-get install -y ffmpeg python3-pil python3-numpy python3-skimage || sudo apt-get install -y ffmpeg python3-pil python3-numpy
+          command -v ffprobe
+      - name: Chrome officiel avec prise en charge MP4 H.264/AAC
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            "$RUNNER_TEMP/rpa-browser/node_modules/.bin/playwright" install chrome
+          fi
+          command -v google-chrome
+          google-chrome --version
+          echo "CHROME=$(command -v google-chrome)" >> "$GITHUB_ENV"
+      - name: Générer uniquement des médias de test synthétiques
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tests/creer_medias.py tests/medias
+          test -s tests/medias/visage_vieuxtel.jpg
+          test -s tests/medias/video_vieuxtel.mp4
+      - name: Rejouer les 97 contrôles historiques AUBE sur v11.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PW="$RUNNER_TEMP/rpa-browser/node_modules/playwright/index.mjs"
+          node tests/v11_aube_parcours.test.mjs
+      - name: Essai spécifique vidéo de 0,7 seconde avec MP4 et audio
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PW="$RUNNER_TEMP/rpa-browser/node_modules/playwright/index.mjs"
+          node tests/v11_07s_video.test.mjs
+      - name: Métriques de sortie anonymes (sans photo privée)
+        if: always()
+        run: |
+          echo "Tests e2e de préproduction uniquement."
+          echo "Safari iPhone réel et comparaison de restauration 4K restent non mesurés."
