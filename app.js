@@ -614,11 +614,11 @@ function analyze(){
 
 /* ===== Épreuve IA rapide, sur UNE zone de l'image native : aucun export nécessaire =====
    L'utilisateur peut juger si le vrai modèle reconstruit un détail AVANT d'attendre sa vidéo. */
-const IATEST={active:false,
+const IATEST={active:false,diag:null,
   async run(){
     if(this.active||exporting||mode!=="video"||!curFile||!v.videoWidth)return;
     const btn=$("#ia_test"),box=$("#ia_result"),st=$("#ia_status"),pair=$("#ia_pair"),file=curFile;
-    this.active=true;btn.disabled=true;box.hidden=false;pair.hidden=true;
+    this.active=true;this.diag=null;btn.disabled=true;box.hidden=false;pair.hidden=true;$("#ia_votes").hidden=true;$("#ia_feedback").hidden=true;
     st.textContent="Lecture d’une seule image, puis calcul du vrai modèle IA sur une petite région…";
     const origin=v.currentTime,wasPlaying=!v.paused,prevDeadline=window.__iaDeadlineMs;
     /* Un essai sur une image ne doit pas pouvoir bloquer l'iPhone pendant une heure. */
@@ -651,12 +651,32 @@ const IATEST={active:false,
       const seconds=(performance.now()-start)/1000;
       const speed=SR.speed;
       try{if(speed>0)localStorage.setItem("srspd",String(speed))}catch(e){}
-      st.textContent="Modèle IA réellement exécuté en "+seconds.toFixed(1).replace(".",",")+" s sur "+side+"×"+side+" px natifs. Écart moyen au simple agrandissement : "+delta.toFixed(1).replace(".",",")+"/255 (différence, pas preuve de qualité). Choisis à l’œil la version la plus fidèle.";
+      this.diag={app:VER,date:new Date().toISOString(),source:[W,H],region:[side,side],sortie:[base.width,base.height],modele:"sr",moteur:SR.engine||"inconnu",duree_s:+seconds.toFixed(2),difference_moyenne_255:+delta.toFixed(2),gain_visuel:"non_evalue"};
+      $("#ia_votes").hidden=false;
+      st.textContent="Modèle IA réellement exécuté en "+seconds.toFixed(1).replace(".",",")+" s sur "+side+"×"+side+" px natifs. Écart moyen au simple agrandissement : "+delta.toFixed(1).replace(".",",")+"/255 (différence, pas preuve de qualité). Choisis à l’œil la version la plus fidèle et donne ton avis.";
       updateEst();
     }catch(e){st.textContent="Épreuve IA impossible : "+((e&&e.message)||e)+". Aucun résultat n’est présenté comme restauré."}
     finally{window.__iaDeadlineMs=prevDeadline||null;this.active=false;btn.disabled=false;if(file===curFile&&mode==="video")try{await seekEl(v,Math.max(0,origin));draw()}catch(e){}}
   }};
 $("#ia_test").onclick=()=>IATEST.run();
+for(const [id,decision] of [["ia_better","mieux"],["ia_worse","pas_mieux"]]){
+  $("#"+id).onclick=()=>{
+    if(!IATEST.diag)return;
+    IATEST.diag.gain_visuel=decision;
+    try{
+      const key="ia_evaluations_locales",a=JSON.parse(localStorage.getItem(key)||"[]");
+      if(Array.isArray(a)){a.push({...IATEST.diag});localStorage.setItem(key,JSON.stringify(a.slice(-50)))}
+    }catch(e){}
+    $("#ia_feedback").hidden=false;
+    $("#ia_feedback").textContent="Ton avis (« "+(decision==="mieux"?"c’est mieux":"pas mieux")+" ») est conservé sur ce téléphone, sans vidéo ni image envoyée. Copie le bilan si tu veux me le transmettre.";
+  };
+}
+$("#ia_copy").onclick=async()=>{
+  if(!IATEST.diag)return;
+  const txt=JSON.stringify(IATEST.diag,null,2);
+  try{if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error("presse-papiers indisponible");await navigator.clipboard.writeText(txt);$("#ia_feedback").hidden=false;$("#ia_feedback").textContent="Bilan copié. Tu peux le coller dans la conversation pour que j’analyse le résultat."}
+  catch(e){$("#ia_feedback").hidden=false;$("#ia_feedback").textContent="Copie automatique indisponible : "+txt}
+};
 
 /* Comparaison */
 const cmp=$("#cmp");
