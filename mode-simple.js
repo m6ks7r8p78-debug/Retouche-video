@@ -6,7 +6,7 @@
   let m="simple",plan=null,retouche=null;
   try{m=localStorage.getItem("ui_mode")==="expert"?"expert":"simple"}catch(e){}
   const mx=$("#o_max"),sv=$("#o_srv"),ia=$("#s_ia"),h=$("#s_iah"),ex=$("#ex");
-  const kg=()=>!!(window.KG&&KG.actif());
+  const kg=()=>!!(window.KG&&window.KG.actif());
   const setCheck=(e,val)=>{if(e&&e.checked!==val){e.checked=val;e.dispatchEvent(new Event("change",{bubbles:true}))}};
   const setQ=q=>{const e=$("#q");if(e&&e.value!==q){e.value=q;e.dispatchEvent(new Event("change",{bubbles:true}))}};
   const fps=()=>{try{return typeof OFPS==="number"&&OFPS>0?OFPS:30}catch(e){return 30}};
@@ -15,22 +15,22 @@
     if(!window.IABUDGET||!window.SR||!v.videoWidth||!v.videoHeight)return null;
     const [ow,oh]=outDims(v.videoWidth,v.videoHeight,+q);
     let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}
-    return IABUDGET.estimate({w:v.videoWidth,h:v.videoHeight,ow,oh,duration:duration(),fps:fps(),msPerMP:ms,
-      iak:!!(window.IAK&&IAK.actif()),cascade:!!(SR.casc&&SR.casc(v.videoWidth,v.videoHeight,ow/v.videoWidth))});
+    return window.IABUDGET.estimate({w:v.videoWidth,h:v.videoHeight,ow,oh,duration:duration(),fps:fps(),msPerMP:ms,
+      iak:!!(window.IAK&&IAK.actif()),cascade:!!(window.SR.casc&&window.SR.casc(v.videoWidth,v.videoHeight,ow/v.videoWidth))});
   }
   function decide(){
     if(mode!=="video"||!v.videoWidth)return null;
     const wh=v.videoWidth*v.videoHeight;
     const cloud=kg()&&!!window.VideoDecoder&&wh<=8.9e6;
-    const local=window.SR&&SR.fits(v.videoWidth,v.videoHeight)&&!(window.MODELS&&MODELS.isOff("sr"));
+    const local=window.SR&&window.SR.fits(v.videoWidth,v.videoHeight)&&!(window.MODELS&&window.MODELS.isOff("sr"));
     const hi=local?estimate("3840"):null,lo=local?estimate("1920"):null;
     /* Réserve une marge pour l'encodage et les écarts mesurés sur Safari. */
     if(cloud)return{kind:"cloud",q:"3840",ia:true,remote:true,
       note:"Restauration IA 4K prévue sur GPU distant. Un accord sera demandé avant tout envoi."};
-    if(local&&hi&&hi.sec<=Math.min(420,IABUDGET.LIMIT_SEC*.7))return{
+    if(local&&hi&&hi.sec<=Math.min(420,window.IABUDGET.LIMIT_SEC*.7))return{
       kind:"local",q:"3840",ia:true,remote:false,
       note:"Restauration 4K IA calculée sur cet appareil (temps contrôlé)."};
-    if(local&&lo&&lo.sec<=Math.min(420,IABUDGET.LIMIT_SEC*.7))return{
+    if(local&&lo&&lo.sec<=Math.min(420,window.IABUDGET.LIMIT_SEC*.7))return{
       kind:"local",q:"1920",ia:true,remote:false,
       note:"Restauration IA Full HD sur cet appareil (temps contrôlé)."};
     /* Impossible de promettre une restauration 4K IA rapide localement.
