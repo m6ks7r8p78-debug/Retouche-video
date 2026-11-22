@@ -39,3 +39,40 @@ Les deux workflows `ia-vitesse.yml` et `v11-aube-pr92.yml` contrôlent les fichi
 4. Revue des résultats par Claude, puis éventuelle fusion **explicite** dans `main`. Ne jamais fusionner automatiquement.
 
 **Un arrêt de calcul à 600 s ne signifie pas qu'une vidéo a été restaurée en 600 s.**
+
+## Diagnostic Chromium du 22 novembre — cause de l'échec vidéo identifiée
+
+La reprise des parcours AUBE dans le Chromium Playwright open source a
+donné **88 contrôles réussis, 1 en échec**. Les commandes photo, outils,
+interactions AUBE, photo exportée et rechargement hors ligne ont réussi.
+
+Le diagnostic du lecteur vidéo lors de l'import après photo :
+```json
+{
+  "inputCount": 1,
+  "videoWidth": 0,
+  "networkState": 3,
+  "videoErrorCode": 4,
+  "videoErrorMessage": "DEMUXER_ERROR_NO_SUPPORTED_STREAMS: FFmpegDemuxer: no supported streams",
+  "codecSupport": ""
+}
+```
+Un SECOND scénario indépendant sur la vidéo de **0,7 seconde** échoue
+également lors de la lecture des métadonnées du même type de fichier MP4.
+
+**Conclusion diagnostique :** le Chromium installé dans ce banc
+n'annonce aucun décodeur pour le codec H.264 et refuse le flux AVANT
+le moteur RetoucheProAI. Il ne faut **pas** interpréter cet échec
+comme une régression de la restauration. Mais il ne faut pas non plus
+déclarer l'export MP4 validé !
+
+**Correction de l'outillage uniquement :** le workflow impose Google
+Chrome officiel, et les scripts d'E2E utilisent son exécutable via
+`CHROME`. Le codec H.264/AAC est vérifié par un vrai import et un
+vrai MP4 de sortie. La CI doit être **relancée et évaluée**.
+Aucun changement de l'application n'a été effectué pour contourner
+artificiellement ce diagnostic.
+
+**Reste impératif :** Chrome desktop n'est pas Safari physique.
+Les vraies performances, fidélité et le délai utilisateur 10–15 min
+doivent encore être testés et mesurés séparément sur iPhone.
