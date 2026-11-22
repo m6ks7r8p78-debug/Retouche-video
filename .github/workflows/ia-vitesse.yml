@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'app.js'
+      - 'mode-simple.js'
       - 'index.html'
       - 'budget-ia.js'
       - 'sr.js'
@@ -10,6 +11,7 @@ on:
       - 'kaggle.js'
       - 'sw.js'
       - 'tests/budget_ia.test.mjs'
+      - 'tests/simple_auto.test.mjs'
       - '.github/workflows/ia-vitesse.yml'
 jobs:
   protections_ia:
@@ -22,12 +24,15 @@ jobs:
       - name: Syntaxe des moteurs et contrôleurs
         run: |
           node --check app.js
+          node --check mode-simple.js
           node --check budget-ia.js
           node --check sr.js
           node --check sr-gpu.js
           node --check kaggle.js
       - name: Budget de temps et vrai aperçu IA
         run: node tests/budget_ia.test.mjs
+      - name: Un seul bouton et retouches apres conversion
+        run: node tests/simple_auto.test.mjs
       - name: Empreinte et cache PWA
         run: |
           node tests/sw.test.mjs --maj
