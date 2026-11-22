@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v10.1";/* seul endroit où changer le numéro de version */
+const VER="v10.2";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","recalage.js","visages-video.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -354,7 +354,10 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
       const a=await SR.run(el,2,SRX.dn(),onTile?f=>onTile(f*.2):null,key==null?null:key+"|c1");
       const k=SRX.cc||(SRX.cc=document.createElement("canvas"));if(k.width!==a.width||k.height!==a.height){k.width=a.width;k.height=a.height}
       const kx=k.getContext("2d");kx.globalCompositeOperation="copy";kx.drawImage(a,0,0);kx.globalCompositeOperation="source-over";
-      try{return await SR.run(k,s/2,SRX.dn(),onTile?f=>onTile(.2+f*.8):null,key==null?null:key+"|c2",SR.MAXPX2)}
+      const t2=onTile?f=>onTile(.2+f*.8):null,k2=key==null?null:key+"|c2";
+      /* v10.2 : 2e passe par le petit réseau dédié (sr2.bin, ≈ 7 fois moins de calcul et plus fidèle) ; sinon grand réseau ; sinon une passe */
+      if(window.SR2&&!(window.MODELS&&MODELS.isOff("sr2"))&&!SRX.sr2Err)try{const c=await SR2.run(k,s/2,SRX.dn(),t2,k2,SR.MAXPX2);SRX.cascNet="petit";return c}catch(e){SRX.sr2Err=(e&&e.message)||"erreur"}
+      try{const c=await SR.run(k,s/2,SRX.dn(),t2,k2,SR.MAXPX2);SRX.cascNet="grand";return c}
       catch(e){if(/DESACTIVE|CORROMPU|INCOMPATIBLE/.test(e&&e.message))throw e;SRX.cascErr=(e&&e.message)||"erreur";return SR.run(el,s,SRX.dn(),onTile,key)}},kk=exporting&&mode==="video"&&window.IAK&&IAK.actif()?"k"+SRX.expId+":"+cv.width+"x"+cv.height:null;
     const job=SRX.lock.then(()=>kk?IAK.image(el,kk,ia):ia());SRX.lock=job.catch(()=>{});const c=await job;try{if(SR.speed)localStorage.setItem("srspd",SR.speed)}catch(e){}return c},
   /* IA rapide : envoi à Kaggle, attente, récupération ; renvoie un lecteur d'images {image(rang), fermer()} */
@@ -449,7 +452,7 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
   /* durée de l'IA pour toute la vidéo, d'après la vitesse mesurée sur CE téléphone ; au-delà d'une heure, elle est décochée
      pour cette vidéo (l'iPhone ne peut pas rester des heures au premier plan), avec la marche à suivre pour l'utiliser quand même */
   iaSec(){let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}if(!ms||mode!=="video"||!v.duration)return 0;
-    const [a,b]=trimRange(),[ow]=outDims(v.videoWidth,v.videoHeight,+$("#q").value),cx=SR.casc&&SR.casc(v.videoWidth,v.videoHeight,ow/v.videoWidth)?5:1;
+    const [a,b]=trimRange(),[ow]=outDims(v.videoWidth,v.videoHeight,+$("#q").value),cx=SR.casc&&SR.casc(v.videoWidth,v.videoHeight,ow/v.videoWidth)?1.6:1;/* v10.2 : 2e passe par le petit réseau */
     return cx*(b-a)*(OFPS||30)*(v.videoWidth*v.videoHeight/1e6)*ms/1000/(window.IAK&&IAK.actif()?3.5:1)},/* v8.3 : IA par clés (≥ ×3,5 mesuré) */
   videoCheck(){const o=$("#o_max");if(!o||mode!=="video"||!SRX.fits(v))return;const sec=SRX.iaSec();
     if(sec>3600&&o.checked){o.checked=false;SRX.autoOff=curFile;updateEst();
@@ -646,7 +649,7 @@ function updateEst(){
       let sec=dur*30*(px/sp.p)/sp.r,ia="";
       /* qualité maximale : temps du réseau mesuré sur cet appareil (millisecondes par mégapixel d'image d'origine) */
       if(SRX.on()&&SRX.fits(v)){let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}
-        const cx=SR.casc&&SR.casc(w,h,Math.sqrt(px/(w*h)))?5:1;/* v10.1 : IA en cascade = 5 fois le calcul */
+        const cx=SR.casc&&SR.casc(w,h,Math.sqrt(px/(w*h)))?1.6:1;/* v10.2 : IA en cascade ≈ 1,6 fois le calcul (petit réseau en 2e passe) */
         if(ms>0)sec+=cx*dur*(OFPS||30)*(w*h/1e6)*ms/1000;else ia=" L’IA ajoutera du temps : il sera connu après un premier essai (aperçu en pause)."}
       t+=" Durée estimée : "+(sec>90?"environ "+(sec>5400?String(Math.round(sec/3600*10)/10).replace(".",",")+" h":Math.round(sec/60)+" min"):"moins de 2 min")+" (d’après ton dernier export)."+ia;
     }else t+=" La durée estimée s’affichera après ton premier export.";
@@ -1733,7 +1736,7 @@ $("#ex").onclick=async()=>{
     if(!cfg)throw new Error("Encodage vidéo non pris en charge.");
     /* IA rapide (v3.4) : toutes les images IA sont calculées sur les cartes graphiques gratuites du compte Kaggle,
        puis relues ici à la place du calcul IA du téléphone ; tout le reste de l'export est inchangé */
-    SRX.remote=null;SRX.cascErr=null;SRX.cascade=false;SRX.idx=-1;SRX.miss=0;SRX.remoteErr=null;SRX.mapr=null;SRX.decal=0;window.__iaCalage=null;
+    SRX.remote=null;SRX.cascErr=null;SRX.sr2Err=null;SRX.cascNet=null;SRX.cascade=false;SRX.idx=-1;SRX.miss=0;SRX.remoteErr=null;SRX.mapr=null;SRX.decal=0;window.__iaCalage=null;
     try{window.__simpleSync&&window.__simpleSync()}catch(e){}
     if(SRX.on()&&(SRX.fits(v)||SRX.srvOK())&&window.KG&&$("#o_srv")&&$("#o_srv").checked){
       /* v6.1 : la vitesse (barre ou Time Repair, à l'envers compris) et « Mouvement plus fluide » marchent avec l'IA rapide */
@@ -1955,7 +1958,7 @@ $("#ex").onclick=async()=>{
         $("#orep_s").textContent=nb?"Compte rendu de l’export : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu de l’export : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro;window.__retried4k=false}catch(e){}
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
       try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)]}))}catch(e){}
-      try{DIAG.send("export",{ok:true,codec:cfg.codec,cascade:!!SRX.cascade,cascErr:SRX.cascErr||null,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,...(window.__glN?{gl_reprises:window.__glN}:{}),msg:$("#st1").textContent.slice(0,400)})}catch(e){}
+      try{DIAG.send("export",{ok:true,codec:cfg.codec,cascade:!!SRX.cascade,cascNet:SRX.cascNet||null,sr2Err:SRX.sr2Err||null,cascErr:SRX.cascErr||null,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,...(window.__glN?{gl_reprises:window.__glN}:{}),msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
   }catch(e){

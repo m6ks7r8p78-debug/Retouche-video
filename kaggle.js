@@ -89,12 +89,12 @@ var KG = (() => {
       ev("envoi", 0, "Préparation de l’envoi…");
       const cine = o.moteur === "cinema";   /* v8.1 : moteur « Cinéma » (SeedVR2, serveur-ia/cinema_kaggle.py), repli automatique sur l'IA standard */
       const params = new Blob([JSON.stringify(Object.assign({ dn: o.dn, ow: o.ow, oh: o.oh, dw: o.dw, dh: o.dh, images: o.images, version: 1, qp: 16, moteur: cine ? "cinema" : "standard" }, o.rw ? { rw: o.rw, rh: o.rh } : {}, o.gop ? { gop: o.gop } : {}))], { type: "application/json" });
-      const sr = await (await texte("sr.bin")).blob(), py = await (await texte("serveur-ia/ia_serveur.py")).blob(), std = await (await texte("serveur-ia/traitement_kaggle.py")).text();
+      const sr = await (await texte("sr.bin")).blob(), sr2 = await (await texte("sr2.bin")).blob(), py = await (await texte("serveur-ia/ia_serveur.py")).blob(), std = await (await texte("serveur-ia/traitement_kaggle.py")).text();
       const code = cine ? await (await texte("serveur-ia/cinema_kaggle.py")).text() : std;
       const ext = ((o.file.name || "").match(/\.(mp4|mov|m4v)$/i) || [".mp4"])[0].toLowerCase();
       const files = [], attendus = {};
       const repli = cine ? [[new Blob([std], { type: "text/x-python" }), "traitement_kaggle.py"]] : [];
-      const envois = [[params, "params.json"], [py, "ia_serveur.py"], [sr, "sr.bin"], ...repli, [o.file, "video" + ext]];
+      const envois = [[params, "params.json"], [py, "ia_serveur.py"], [sr, "sr.bin"], [sr2, "sr2.bin"], ...repli, [o.file, "video" + ext]];
       const tot = envois.reduce((t, [b]) => t + b.size, 0); let base = 0;
       for (const [b, n] of envois) {
         const tk = await depot(b, n, f => ev("envoi", (base + f * b.size) / tot, "Envoi de la vidéo vers ton espace privé Kaggle… " + Math.round((base + f * b.size) / tot * 100) + " %"));

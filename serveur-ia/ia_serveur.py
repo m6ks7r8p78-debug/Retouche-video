@@ -18,16 +18,18 @@ NF = 64
 _PAR, _BASE = NF * NF * 9 + 2 * NF, 3 * NF * 9 + 2 * NF + NF * 48 * 9 + 48   # v9.5 : nombre de couches lu dans la taille de sr.bin
 
 
-def charger(sr_bin: bytes, dn: float, device="cuda", demi=True):
-    """Poids de l'app pour un débruitage dn (mêmes formules que setWeights de sr.js)."""
+def charger(sr_bin: bytes, dn: float, device="cuda", demi=True, nf=NF, paires=2):
+    """Poids de l'app pour un débruitage dn (mêmes formules que setWeights de sr.js).
+    v10.2 : nf / paires réglables (sr2.bin : petit réseau de la 2e passe de la cascade, nf=32, un seul jeu)."""
     a = np.frombuffer(sr_bin, dtype=np.float16).astype(np.float64)
-    NC = (a.size // 2 - _BASE) // _PAR; N_POIDS = _BASE + NC * _PAR
-    if NC < 1 or a.size != 2 * N_POIDS:
+    par, base = nf * nf * 9 + 2 * nf, 3 * nf * 9 + 2 * nf + nf * 48 * 9 + 48
+    NC = (a.size // paires - base) // par; N_POIDS = base + NC * par
+    if NC < 1 or a.size != paires * N_POIDS:
         raise ValueError("sr.bin inattendu : %d valeurs" % a.size)
-    v = dn * a[:N_POIDS] + (1 - dn) * a[N_POIDS:]          # mélange fait en double puis gardé en float32, comme l'app
+    v = dn * a[:N_POIDS] + (1 - dn) * a[N_POIDS:] if paires == 2 else a   # mélange fait en double puis gardé en float32, comme l'app
     v = v.astype(np.float32)
     couches, o = [], 0
-    formes = [(3, NF, True)] + [(NF, NF, True)] * NC + [(NF, 48, False)]
+    formes = [(3, nf, True)] + [(nf, nf, True)] * NC + [(nf, 48, False)]
     dt = torch.float16 if demi else torch.float32
     for ci, co, act in formes:
         w = torch.from_numpy(v[o:o + co * ci * 9].copy()).view(co, ci, 3, 3); o += co * ci * 9
@@ -88,8 +90,9 @@ def traiter(couches, images_u8, s, demi=True):
 
 
 CASC = 2.6
-def traiter_casc(couches, images_u8, s, demi=True):
-    """v10.1 : même règle que l'app (sr.js) : agrandissement ×2,6 ou plus → IA ×2 puis IA de nouveau sur ce résultat."""
+def traiter_casc(couches, images_u8, s, demi=True, couches2=None):
+    """v10.1 : même règle que l'app (sr.js) : agrandissement ×2,6 ou plus → IA ×2 puis IA de nouveau sur ce résultat.
+    v10.2 : la 2e passe utilise le petit réseau dédié (sr2.bin) quand il est fourni."""
     if s < CASC:
         return traiter(couches, images_u8, s, demi)
-    return traiter(couches, traiter(couches, images_u8, 2.0, demi), s / 2, demi)
+    return traiter(couches2 or couches, traiter(couches, images_u8, 2.0, demi), s / 2, demi)

@@ -8,7 +8,8 @@
    - l'image est traitée par tuiles avec une marge plus grande que le champ de vision du réseau : résultat identique
      à un calcul d'un seul bloc, mémoire limitée, et on rend la main au navigateur entre les tuiles ;
    - le résultat ×4 complet est gardé : l'aperçu puis l'export d'une même image ne lancent le réseau qu'une fois. */
-var SR = (() => {
+/* v10.2 : fabrique — SR (grand réseau, sr.bin) et SR2 (petit réseau de la 2e passe de la cascade, sr2.bin) */
+var mkSR = (CFG) => {
   const CORE = 224;
   const MAXPX = 1100000;                           // au-delà (image déjà HD), l'IA n'apporte rien et serait très longue
   /* v10.1 IA en cascade : pour une petite vidéo agrandie ×2,6 ou plus (480p → 4K…), l'IA est appliquée deux fois (×2 puis ×2).
@@ -121,10 +122,10 @@ o=vec4(s/float(k*k),1.);}`;
       if (!g) { why = "ce navigateur n’a pas WebGL2"; return st = false }
       if (!g.getExtension("EXT_color_buffer_float")) { why = "la carte graphique ne gère pas les calculs en virgule flottante"; return st = false }
       if (g.getParameter(g.MAX_DRAW_BUFFERS) < 4) { why = "carte graphique trop limitée"; return st = false }
-      model = model || { file: "sr.bin", nf: 64, nc: 32, pairs: 2 };
+      model = model || CFG;
       /* poids lus par le gestionnaire de modèles : empreinte SHA-256 vérifiée (fichier abîmé = refusé) */
       let raw;
-      if (window.MODELS && model.file === "sr.bin") raw = await MODELS.bytes("sr");
+      if (window.MODELS && model.file === CFG.file) raw = await MODELS.bytes(CFG.id);
       else { const r = await fetch(model.file); if (!r.ok) throw new Error("poids introuvables"); raw = await r.arrayBuffer() }
       const h = new Uint16Array(raw); const A = new Float32Array(h.length); for (let i = 0; i < h.length; i++) A[i] = h2f(h[i]);
       /* v9.5 : nombre de couches déduit de la taille du fichier (32 pour Real-ESRGAN v3, 16 pour le modèle ×2 « multijpg ») */
@@ -216,18 +217,18 @@ o=vec4(s/float(k*k),1.);}`;
     running++;
     try {
       const p = pref();
-      if (p !== "gl" && (engine !== "gl" || p === "gpu") && window.SRGPU && navigator.gpu) {
-        try { const c = await SRGPU.run(src, s, dn, onTile, key); engine = "gpu"; stats = { ms: SRGPU.speed, px: 1e6 }; return c }
+      if (p !== "gl" && (engine !== "gl" || p === "gpu") && window[CFG.gpu] && navigator.gpu) {
+        try { const c = await window[CFG.gpu].run(src, s, dn, onTile, key); engine = "gpu"; stats = { ms: window[CFG.gpu].speed, px: 1e6 }; return c }
         catch (e) { if (/trop grande|DESACTIVE|CORROMPU|INCOMPATIBLE/.test(e && e.message)) throw e;
           /* WebGPU en échec : on libère ce qu'il occupait avant de passer à WebGL2 (évite le cumul de mémoire) */
-          try { SRGPU.unload() } catch (x) {} engine = "gl"; why = "WebGPU : " + ((e && e.message) || "erreur") }
+          try { window[CFG.gpu].unload() } catch (x) {} engine = "gl"; why = "WebGPU : " + ((e && e.message) || "erreur") }
       }
       const c = await runGL(src, s, dn, onTile, key, lim); engine = "gl"; return c;
     } finally { running-- }
   }
   /* libère toute la mémoire graphique du réseau ; il sera rechargé (et revérifié) au prochain usage */
   function unload() {
-    try { if (window.SRGPU) SRGPU.unload() } catch (e) {}
+    try { if (window[CFG.gpu]) window[CFG.gpu].unload() } catch (e) {}
     if (g) { try { const x = g.getExtension("WEBGL_lose_context"); if (x) x.loseContext() } catch (e) {} }
     g = null; cvs = null; st = null; M = null; full = null; fullW = fullH = 0; fbFull = null; X0 = X1 = XL = null; fbs = null; tileW = tileH = 0; dnCur = -1; cacheKey = null; img = null; vao = null;
     if (engine === "gpu" || engine === "gl") engine = null;
@@ -241,13 +242,13 @@ o=vec4(s/float(k*k),1.);}`;
       try { await run(c, 1, .3, null, null); const t0 = performance.now(); await run(c, 1, .3, null, null); const ms = performance.now() - t0;
         out.push(lab + (engine === (p === "gpu" ? "gpu" : "gl") ? " : " + (ms / 65536 * 1e6 / 1000).toFixed(1).replace(".", ",") + " s par mégapixel" : " : indisponible")) }
       catch (e) { out.push(lab + " : échec (" + ((e && e.message) || "erreur") + ")") } finally { engine = e0 } };
-    try { if (window.SRGPU && navigator.gpu) await one("gpu", "WebGPU"); await one("gl", "WebGL2") }
+    try { if (window[CFG.gpu] && navigator.gpu) await one("gpu", "WebGPU"); await one("gl", "WebGL2") }
     finally { try { if (keep) localStorage.setItem("sr_moteur", keep); else localStorage.removeItem("sr_moteur") } catch (e) {} engine = null }
-    try { const k = window.SRGPU && SRGPU.kernel; if (k && k.ms1) out.push("calcul WebGPU retenu : " + (k.k === "4" ? "4 pixels par fil" : "1 pixel par fil") + " (essai : " + k.ms1 + " ms contre " + k.ms4 + " ms" + (k.why ? ", " + k.why : "") + ")") } catch (e) {}
+    try { const k = window[CFG.gpu] && window[CFG.gpu].kernel; if (k && k.ms1) out.push("calcul WebGPU retenu : " + (k.k === "4" ? "4 pixels par fil" : "1 pixel par fil") + " (essai : " + k.ms1 + " ms contre " + k.ms4 + " ms" + (k.why ? ", " + k.why : "") + ")") } catch (e) {}
     return out.join(" ; ");
   }
-  if (window.MODELS) MODELS.register("sr", {
-    loaded: () => !!(st === true || (window.SRGPU && SRGPU.loaded)), busy: () => running > 0,
+  if (window.MODELS) MODELS.register(CFG.id, {
+    loaded: () => !!(st === true || (window[CFG.gpu] && window[CFG.gpu].loaded)), busy: () => running > 0,
     unload, bench, engine: () => { engine = null } });
   async function runGL(src, s, dn, onTile, key, lim) {
     if (!(await init())) throw new Error(why);
@@ -284,4 +285,6 @@ o=vec4(s/float(k*k),1.);}`;
     get speed() { return stats.px ? Math.round(stats.ms / stats.px * 1e6) : 0 },
     fits(W, H) { return W * H <= MAXPX },
   };
-})();
+};
+var SR = mkSR({ id: "sr", file: "sr.bin", nf: 64, pairs: 2, gpu: "SRGPU" });
+var SR2 = mkSR({ id: "sr2", file: "sr2.bin", nf: 32, pairs: 1, gpu: "SRGPU2" });

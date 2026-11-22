@@ -38,3 +38,11 @@ vidéo (SeedVR2, « Moteur Cinéma » sur Kaggle) et par les mesures sur l'iPhon
 bicubique ×4 0,3484 · IA ×2 + bicubique ×2 (avant) 0,2698 · + Lanczos 0,2736 · + netteté 0,2818 · IA sur bicubique ×2 0,2918 ·
 **IA ×2 puis IA ×2 0,2578** ; mélange des deux à 50 % 0,2597, 75 % 0,2600, 125 % 0,2749. En ×3 (vérité 960×540) :
 0,2480 → 0,2335 (cascade ×4 puis réduction). Seuil retenu : ×2,6.
+
+## v10.2 — petit réseau dédié à la 2e passe (retenu : `sr2.bin`)
+`casc_donnees.py` (train : 13 vidéos Intel hors banc + 30 vidéos Pexels, 310 images ; val : 10 autres vidéos Pexels, 20 images ;
+HR ≤ 960 px → ×¼ (filtre au hasard, bruit parfois) → H.264 CRF 20–33 → 1re passe de l'app = MID), `casc_entrainer.py NF NC IT [lr]`
+(MID → HR, L1 + 0,3 LPIPS, patchs 48 px), `casc_export.py` (→ sr2.bin, écart avec PyTorch ≤ 1 niveau).
+LPIPS banc cascade.py / val Pexels : sans cascade 0,2698 / 0,3181 · grand réseau ×2 (v10.1) 0,2578 / 0,2975 ·
+**nf32 nc8 (750 itérations) 0,2113 / 0,2809**, PSNR 32,51 / 29,78 · nf16 nc8 0,2188 / 0,2816 · nf32 lr 2e-4 0,2114 / 0,2824.
+Au-delà de ~1500 itérations le score remonte (peu de données) : on garde le meilleur point.

@@ -19,6 +19,7 @@ T0 = time.time()
 P = json.load(open(os.path.join(ENTREE, "params.json")))
 VID = [f for f in glob.glob(os.path.join(ENTREE, "*")) if not f.endswith((".json", ".py", ".bin"))][0]
 SR = open(os.path.join(ENTREE, "sr.bin"), "rb").read()
+_p2 = os.path.join(ENTREE, "sr2.bin"); SR2 = open(_p2, "rb").read() if os.path.exists(_p2) else None   # v10.2 : petit réseau de la 2e passe
 INFO = {"version": 1, "gpu": [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())],
         "sr_bin_sha256": hashlib.sha256(SR).hexdigest(), "params": P}
 
@@ -70,6 +71,7 @@ enc = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", 
 
 ng = max(1, torch.cuda.device_count())
 modeles = [IA.charger(SR, P["dn"], device=f"cuda:{g}") for g in range(ng)]
+modeles2 = [IA.charger(SR2, P["dn"], device=f"cuda:{g}", nf=32, paires=1) if SR2 else None for g in range(ng)]
 B, taille = 2, RW * RH * 3
 lots_in, lots_out = queue.Queue(maxsize=8), {}
 fini = threading.Event(); verrou = threading.Condition(); erreurs = []
@@ -83,7 +85,7 @@ def travail(g):
         try:
             n = len(buf) // taille
             x = torch.frombuffer(bytearray(buf), dtype=torch.uint8).view(n, RH, RW, 3).to(f"cuda:{g}")
-            y = IA.traiter_casc(modeles[g], x, s).cpu().numpy().tobytes()
+            y = IA.traiter_casc(modeles[g], x, s, couches2=modeles2[g]).cpu().numpy().tobytes()
         except Exception as e:
             erreurs.append(repr(e)); y = None
         with verrou:

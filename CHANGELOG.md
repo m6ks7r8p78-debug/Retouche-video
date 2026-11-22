@@ -1,5 +1,14 @@
 # Journal des versions
 
+## v10.2 (22 nov. 2026) — IA en cascade 4 à 5 fois plus rapide ET plus nette
+- La 2e passe de la cascade (v10.1) n'utilise plus le grand réseau mais un **petit réseau entraîné pour RetoucheProAI** (`sr2.bin`,
+  174 Ko, 32 canaux, 8 couches) : il apprend à partir de l'image déjà restaurée par le grand réseau. À cette taille, **≈ 7 fois
+  moins de calcul** : la cascade coûte ≈ 1,6 fois une passe au lieu de 5. Mesuré dans Chrome (moteur logiciel) : 98 s au lieu de 447 s.
+- **Plus net que la v10.1**, sur deux jeux de vidéos jamais vues à l'entraînement (LPIPS, plus bas = mieux) :
+  vidéos Intel 0,258 → **0,211** ; vidéos Pexels 0,298 → **0,281** (sans cascade : 0,270 et 0,318). PSNR aussi meilleur (32,5 dB).
+- Identique au pixel près à la référence en WebGL2 et en WebGPU (`tests/cascade.test.mjs`, 10 tests) ; replis : grand réseau,
+  puis une seule passe. Aussi sur Kaggle. Essais écartés : 16 canaux (un peu moins net), autre vitesse d'apprentissage (pas mieux).
+
 ## v10.1 (22 nov. 2026) — IA en cascade : les petites vidéos montent en 4K bien plus nettes
 - Une petite vidéo agrandie ×2,6 ou plus (vieux téléphone 320×240, 480p, 576p… vers la 4K) passe désormais **deux fois** par
   l'IA : ×2, puis ×2 de nouveau sur ce résultat, au lieu d'un agrandissement simple après la première passe.

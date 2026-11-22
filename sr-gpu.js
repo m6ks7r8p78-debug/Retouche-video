@@ -3,7 +3,8 @@
    le résultat est le même qu'en WebGL2, mais le calcul passe par des « compute shaders », bien plus adaptés aux réseaux
    de neurones (mémoire partagée entre les fils de calcul, pas de passage par des textures).
    Si WebGPU manque ou échoue, sr.js garde son moteur WebGL2. */
-var SRGPU = (() => {
+/* v10.2 : fabrique — une instance par réseau (sr.bin : grand réseau ; sr2.bin : petit réseau de la 2e passe de la cascade) */
+var mkSRGPU = (CFG) => {
   const CORE = 224, WG = 8;
   let dev = null, st = null, why = "", M = null, dnCur = -1, layers = [], pipes = {}, tile = null, full = null, img = null, outT = null, stats = { ms: 0, px: 0 }, cacheKey = null;
 
@@ -140,11 +141,11 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
       const myDev = dev;
       myDev.lost.then(info => { if (dev !== myDev || (info && info.reason === "destroyed")) return; st = false; why = "carte graphique perdue" });
       /* poids lus par le gestionnaire de modèles : empreinte SHA-256 vérifiée */
-      let raw; if (window.MODELS) raw = await MODELS.bytes("sr"); else { const r = await fetch("sr.bin"); if (!r.ok) throw new Error("poids introuvables"); raw = await r.arrayBuffer() }
+      let raw; if (window.MODELS) raw = await MODELS.bytes(CFG.id); else { const r = await fetch(CFG.file); if (!r.ok) throw new Error("poids introuvables"); raw = await r.arrayBuffer() }
       const h = new Uint16Array(raw), A = new Float32Array(h.length); for (let i = 0; i < h.length; i++) A[i] = h2f(h[i]);
       /* v9.5 : nombre de couches déduit de la taille du fichier (32 pour Real-ESRGAN v3, 16 pour le modèle ×2 « multijpg ») */
-      const nf = 64, per = nf * nf * 9 + 2 * nf, base = 3 * nf * 9 + 2 * nf + nf * 48 * 9 + 48, nc = (A.length / 2 - base) / per, n = base + nc * per;
-      if (!(nc > 0 && Number.isInteger(nc)) || A.length !== 2 * n) throw new Error("fichier de poids inattendu");
+      const nf = CFG.nf, per = nf * nf * 9 + 2 * nf, base = 3 * nf * 9 + 2 * nf + nf * 48 * 9 + 48, nc = (A.length / CFG.pairs - base) / per, n = base + nc * per;
+      if (!(nc > 0 && Number.isInteger(nc)) || A.length !== CFG.pairs * n) throw new Error("fichier de poids inattendu");
       M = { nf, nc, n, A, halo: nc + 4 };
       const mk = code => dev.createComputePipeline({ layout: "auto", compute: { module: dev.createShaderModule({ code }), entryPoint: "main" } });
       pipes.first = mk(CONV(true)); pipes.conv = mk(CONV(false)); pipes.shuf = mk(SHUF);
@@ -168,7 +169,7 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
 
   function setWeights(dn) {
     if (dn === dnCur) return; dnCur = dn; cacheKey = null;
-    const { A, n, nf, nc } = M, val = i => dn * A[i] + (1 - dn) * A[n + i];
+    const { A, n, nf, nc } = M, val = CFG.pairs === 2 ? (i => dn * A[i] + (1 - dn) * A[n + i]) : (i => A[i]);
     layers.forEach(L => { L.w.destroy(); L.b.destroy() }); layers = [];
     const shapes = [[3, nf, 1]]; for (let i = 0; i < nc; i++) shapes.push([nf, nf, 1]); shapes.push([nf, 48, 0]);
     let o = 0;
@@ -230,7 +231,7 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
      résultats identiques exigés (sinon la version d'origine est gardée), puis la plus rapide est retenue et mémorisée. */
   const KV = "1";   /* à changer si une version de calcul change : la comparaison est alors refaite */
   let kinfo = null;
-  function K() { if (kinfo) return kinfo.k; try { const o = JSON.parse(localStorage.getItem("sr_noyau") || "null"); if (o && o.v === KV) { kinfo = o; return o.k } } catch (e) {} return "1" }
+  function K() { if (kinfo) return kinfo.k; try { const o = JSON.parse(localStorage.getItem("sr_noyau" + (CFG.id === "sr" ? "" : CFG.id)) || "null"); if (o && o.v === KV) { kinfo = o; return o.k } } catch (e) {} return "1" }
   async function readFull(W, H) {
     const bpr = Math.ceil(W * 16 / 256) * 256, rb = dev.createBuffer({ size: bpr * H * 4, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
     const enc = dev.createCommandEncoder(); enc.copyTextureToBuffer({ texture: full }, { buffer: rb, bytesPerRow: bpr }, [W * 4, H * 4]); dev.queue.submit([enc.finish()]);
@@ -248,7 +249,7 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
     cacheKey = null;
     kinfo = { v: KV, k: diff <= 1 && t4 < t1 * .95 ? "4" : "1", ms1: Math.round(t1), ms4: Math.round(t4), ecart: diff, at: Date.now(),
       why: diff > 1 ? "résultats différents (écart " + diff + "/255) : version d'origine gardée" : "" };
-    try { localStorage.setItem("sr_noyau", JSON.stringify(kinfo)) } catch (e) {}
+    try { localStorage.setItem("sr_noyau" + (CFG.id === "sr" ? "" : CFG.id), JSON.stringify(kinfo)) } catch (e) {}
     return kinfo;
   }
 
@@ -285,4 +286,5 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
     return out2d;
   }
   return { init, run, unload, tune, get kernel() { return kinfo }, get loaded() { return st === true && !!dev }, get ok() { return st }, get why() { return why }, get speed() { return stats.px ? Math.round(stats.ms / stats.px * 1e6) : 0 } };
-})();
+};
+var SRGPU = mkSRGPU({ id: "sr", file: "sr.bin", nf: 64, pairs: 2 }), SRGPU2 = mkSRGPU({ id: "sr2", file: "sr2.bin", nf: 32, pairs: 1 });

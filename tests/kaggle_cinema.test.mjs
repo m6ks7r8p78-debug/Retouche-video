@@ -56,6 +56,6 @@ test("Standard : inchangé (pas d'Internet, pas de fichier en plus)", async () =
   const sk = appels.find(([m]) => m === "SaveKernel")[1];
   assert.equal(sk.text, fs.readFileSync(path.join(RACINE, "serveur-ia/traitement_kaggle.py"), "utf8"));
   assert.equal(sk.enableInternet, false);
-  assert.deepEqual(Object.keys(envois).filter(k => !k.startsWith("__")).sort(), ["ia_serveur.py", "params.json", "sr.bin", "video.mp4"]);
+  assert.deepEqual(Object.keys(envois).filter(k => !k.startsWith("__")).sort(), ["ia_serveur.py", "params.json", "sr.bin", "sr2.bin", "video.mp4"]);
   assert.equal(JSON.parse(envois["__params.json"]).moteur, "standard");
 });
