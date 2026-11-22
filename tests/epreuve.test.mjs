@@ -17,7 +17,7 @@ const r = await p.evaluate(() => ({ e: window.__epreuve, ia: document.querySelec
 const res = [], test = (n, ok, info) => { res.push(ok); console.log((ok ? "✓ " : "✗ ") + n + " — " + info) };
 test("épreuve mesurée sur 3 extraits", r.e && r.e.extraits === 3, JSON.stringify(r.e));
 test("écarts plausibles (0 à 0,5)", r.e && r.e.ia >= 0 && r.e.ia < .5 && r.e.agrandi >= 0 && r.e.agrandi < .5, "");
-test("décision appliquée (IA gardée seulement si utile)", r.e && r.ia === r.e.utile, "IA " + (r.ia ? "gardée" : "retirée"));
+test("mesure informative : l'IA demandée reste cochée même si le score est défavorable", r.e && r.ia === true, "IA " + (r.ia ? "conservée" : "retirée"));
 test("aperçu IA de nouveau permis après l'épreuve", r.ep === false, "");
 test("aucune erreur de page", !errs.length, errs.join(" | "));
 console.log("durée " + Math.round((Date.now() - t0) / 1000) + " s\nRésultat : " + res.filter(Boolean).length + " réussis, " + res.filter(x => !x).length + " échoués.");
