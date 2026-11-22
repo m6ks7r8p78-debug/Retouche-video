@@ -1,0 +1,28 @@
+name: Restauration IA HD - controles
+on:
+  pull_request:
+    paths:
+      - 'sr.js'
+      - 'app.js'
+      - 'models.js'
+      - 'sw.js'
+      - 'tests/hd_tuiles.test.mjs'
+      - 'tests/epreuve.test.mjs'
+      - '.github/workflows/ia-hd-tests.yml'
+jobs:
+  geometrie_et_integrite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe du moteur et de l'application
+        run: |
+          node --check sr.js
+          node --check app.js
+          node --check models.js
+      - name: Recollage HD et garanties anti faux 4K
+        run: node tests/hd_tuiles.test.mjs
+      - name: Integrite du cache PWA (empreinte exacte requise)
+        run: node tests/sw.test.mjs
