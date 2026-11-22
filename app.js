@@ -455,9 +455,7 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     const [a,b]=trimRange(),[ow]=outDims(v.videoWidth,v.videoHeight,+$("#q").value),cx=SR.casc&&SR.casc(v.videoWidth,v.videoHeight,ow/v.videoWidth)?1.6:1;/* v10.2 : 2e passe par le petit réseau */
     return cx*(b-a)*(OFPS||30)*(v.videoWidth*v.videoHeight/1e6)*ms/1000/(window.IAK&&IAK.actif()?3.5:1)},/* v8.3 : IA par clés (≥ ×3,5 mesuré) */
   videoCheck(){const o=$("#o_max");if(!o||mode!=="video"||!SRX.fits(v))return;const sec=SRX.iaSec();
-    if(sec>3600&&o.checked){o.checked=false;SRX.autoOff=curFile;updateEst();
-      msg("Qualité maximale (IA) désactivée pour cette vidéo : elle prendrait environ "+(sec>5400?String(Math.round(sec/360)/10).replace(".",",")+" h":Math.round(sec/60)+" min")+" sur ton iPhone. Pour l’utiliser quand même, choisis un extrait court (Réglages → Partie à traiter), puis recoche « Qualité maximale ».")}
-    else if(SRX.autoOff&&SRX.autoOff!==curFile&&!o.checked&&(pref("o_max")||"1")==="1"){o.checked=true;SRX.autoOff=null;updateEst()}},
+    if(sec>600&&o.checked)msg("Restauration locale potentiellement très longue : teste une seule image avant de lancer l’export. L’IA reste cochée ; le budget de 10 minutes sera vérifié avant le calcul.")},
   /* v8.3 ÉPREUVE DE VÉRITÉ : la vidéo sert elle-même de vérité. Sur 3 extraits de 256 px (les plus détaillés de 3 images),
      l'extrait est réduit de moitié, l'IA le reconstruit, et on compare à l'extrait réel (SSIM de luminance), contre un simple
      agrandissement. Si l'IA ne fait pas mieux que l'agrandissement sur CETTE vidéo, elle est retirée : elle la dénaturerait
