@@ -14,6 +14,7 @@ python3 tests/creer_medias.py   # crée tests/medias/ (images libres de droits d
 
 | Commande | Ce qui est vérifié |
 |---|---|
+| `node tests/hd_tuiles.test.mjs` | **v10.2 (expérimental)** : 1080p horizontal/vertical traité par tuiles 384 px avec halo 32 px, couverture complète sans trou ni chevauchement, budget GPU par tuile, refus explicite au-delà de 2,2 Mpx et garde contre une sortie 4K présentée comme restaurée si l’IA n’a pas travaillé. Ce test simule l’inférence et ne prouve pas la qualité du modèle. |
 | `node tests/gestionnaire.test.mjs` | gestionnaire de modèles : installation, reprise après coupure ou annulation, fichier corrompu, empreinte fausse, taille fausse, stockage insuffisant, modèle incompatible ou absent, appels simultanés, perte de réseau, mise à jour réussie / échouée, retour arrière, libération de mémoire, mémoire saturée, désactivation, `sr.bin` abîmé, nettoyage sans toucher aux médias, protection des modèles, fenêtre « Modèles IA » |
 | `node tests/app.test.mjs tests/medias tests/sorties [--ia]` | parcours complet : photos (analyse, profil, export JPEG / PNG, comparateur avec zoom, grande photo 12 Mpx), vidéos (paysage et portrait en 4K, 1080p, 720p personnalisée, taille d’origine ; durée, cadence, son, format d’image vérifiés avec ffprobe), photo animée avec le vrai modèle de profondeur (placer `depth.onnx` dans `tests/medias/`) |
 | `node tests/sw.test.mjs` | service worker : à la mise à jour, seuls les anciens caches de l’app sont retirés (modèles téléchargés et /radar/ gardés) ; fichiers hors ligne et polices locales présents |
@@ -29,3 +30,9 @@ python3 tests/creer_medias.py   # crée tests/medias/ (images libres de droits d
 
 Le modèle de profondeur (27 Mo) n’est pas dans le dépôt : le télécharger à l’adresse figée indiquée dans `models.js`
 (empreinte SHA-256 `fcf51f1b…f20d`) et le placer dans `tests/medias/depth.onnx`.
+
+## Validation obligatoire avant intégration v10.2
+
+- Lancer `node tests/hd_tuiles.test.mjs`, `node tests/epreuve.test.mjs`, `node tests/cascade.test.mjs`, `node tests/app.test.mjs` et `node tests/sw.test.mjs`.
+- Recalculer l’empreinte PWA après tout changement : `node tests/sw.test.mjs --maj`, puis relancer le test ; **ne pas publier** si l’empreinte est périmée.
+- Sur iPhone physique : tester une source 1080p compressée vers 4K, une 480p vers 4K et l’échec volontaire du moteur IA ; vérifier détails contre agrandissement bicubique, absence de coutures, son, durée, stabilité et attestation du nombre d’images IA. Une géométrie correcte ne prouve pas une amélioration perceptuelle.
