@@ -56,5 +56,5 @@ await assert.rejects(() => SR.runTiled({ width: 2560, height: 1440 }, 2, .3, nul
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
 assert.ok(app.includes("aucune conversion classique ne remplace silencieusement"));
 assert.ok(app.includes("restauration_ia_images:framesIA"));
-assert.ok(app.includes('!localStorage.getItem("q")'));
+assert.ok(app.includes('!aChoisiQ'));
 console.log("Résultat : " + (count + 4) + " contrôles réussis (sans GPU réel).");
