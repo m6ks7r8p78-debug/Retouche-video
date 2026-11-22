@@ -65,6 +65,10 @@
   }
   function refresh(){
     if(m!=="simple")return;
+    /* Le moteur transforme #ex en bouton « Annuler » pendant la conversion.
+       AUBE lit CE libellé pour activer sa commande d'annulation.
+       Ne jamais le remplacer par « Améliorer » pendant un export. */
+    if(exporting||window.__exStarting||/annul/i.test(ex?.textContent||""))return;
     if(mode==="photo"){ex.textContent="✨ Améliorer ma photo";return}
     if(!v.videoWidth){ex.textContent="✨ Améliorer ma vidéo";return}
     ex.textContent="✨ Améliorer ma vidéo";
