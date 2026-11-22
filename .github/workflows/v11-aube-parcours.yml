@@ -46,6 +46,13 @@ jobs:
           set -euo pipefail
           export PW="$RUNNER_TEMP/rpa-browser/node_modules/playwright/index.mjs"
           node tests/v11_aube_parcours.test.mjs
+      - name: Essai spécifique vidéo de 0,7 seconde avec MP4 et audio
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PW="$RUNNER_TEMP/rpa-browser/node_modules/playwright/index.mjs"
+          node tests/v11_07s_video.test.mjs
       - name: Métriques de sortie anonymes (sans photo privée)
         if: always()
         run: |
