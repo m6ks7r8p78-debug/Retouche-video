@@ -86,18 +86,30 @@ body{--acc:#b39cff}
 /* v11.1 — ouverture immédiate et avant/après à maintenir */
 .ab-opening{display:none;position:absolute;inset:0;z-index:3;place-content:center;justify-items:center;gap:6px;text-align:center;padding:24px;color:#f7f5ff}
 .ab-opening-now .ab-opening{display:grid}
-.ab-opening-now #cv,.ab-opening-now .ab-hold,.ab-opening-now .ab-preview-label{visibility:hidden}
+.ab-opening-now #cv,.ab-opening-now .ab-preview-label{visibility:hidden}
 .ab-opening strong{font-size:15px;font-weight:750;letter-spacing:-.01em}
 .ab-opening small{font-size:11px;color:#b3bcdb;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ab-opening-orb{width:46px;height:46px;border-radius:50%;margin-bottom:10px;background:conic-gradient(from 0deg,#ffb997,#f6a6c8,#b39cff,#8ef0dc,#ffb997);
  -webkit-mask:radial-gradient(circle,transparent 55%,#000 57%);mask:radial-gradient(circle,transparent 55%,#000 57%);animation:abSpin 1.1s linear infinite}
 @keyframes abSpin{to{transform:rotate(360deg)}}
-.ab-hold{position:absolute;z-index:3;right:14px;bottom:14px;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px 0 13px;
- border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(16,19,42,.72);color:#fff;font-size:12px;font-weight:700;letter-spacing:.01em;
- box-shadow:0 10px 26px -12px #000c,inset 0 1px rgba(255,255,255,.18);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none;
- transition:transform .16s cubic-bezier(.2,.8,.2,1),background .2s,border-color .2s}
-.ab-hold svg{width:18px;height:18px}
-.ab-holding .ab-hold{transform:scale(.95);background:linear-gradient(120deg,#ffcf9f,#f6a6c8 55%,#c3abff);color:#1d1838;border-color:transparent}
+/* v11.2 — barre de commandes : Lire/Pause, avant/après À MAINTENIR, curseur */
+.ab-ctrls{display:flex;align-items:center;gap:8px;flex:none}
+.ab-scrubber-line .ab-ctrl{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 16px;
+ border-radius:999px;border:1px solid rgba(201,211,255,.2);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02));
+ color:var(--ab-text);font:700 13px var(--fb,system-ui);letter-spacing:.005em;box-shadow:inset 0 1px rgba(255,255,255,.12),0 8px 20px -14px #000;
+ -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
+ transition:transform .14s cubic-bezier(.2,.8,.2,1),background .2s,border-color .2s,box-shadow .2s,color .2s}
+.ab-scrubber-line .ab-ctrl svg{width:18px;height:18px;flex:none}
+.ab-scrubber-line .ab-ctrl:active{transform:scale(.95)}
+.ab-ctrl-play.ab-on{border-color:#b9a6ff;background:linear-gradient(180deg,rgba(185,166,255,.26),rgba(185,166,255,.08))}
+.ab-ctrl-hold{touch-action:none;background:linear-gradient(120deg,rgba(255,207,159,.16),rgba(246,166,200,.14) 55%,rgba(195,171,255,.16))!important;border-color:rgba(255,200,190,.38)!important}
+.ab-holding .ab-ctrl-hold{transform:scale(.95);background:linear-gradient(120deg,#ffcf9f,#f6a6c8 55%,#c3abff)!important;color:#1d1838;border-color:transparent!important;box-shadow:0 0 0 4px rgba(246,166,200,.22),0 10px 24px -10px #f6a6c8}
+.ab-ctrl-icon{width:46px;padding:0!important}
+.ab-ctrl-icon[aria-pressed="true"]{border-color:#8ef0dc;color:#8ef0dc}
+.ab-photo-mode #ab-timeline,.ab-photo-mode #ab-time,.ab-photo-mode #ab-play,.ab-photo-mode #ab-split{display:none!important}
+.ab-photo-mode .ab-scrubber-line{justify-content:center;margin-top:0}
+.ab-photo-mode .ab-ctrl-hold{flex:1}
+@media(max-width:400px){.ab-scrubber-line .ab-ctrl{padding:0 13px;font-size:12px}.ab-ctrls{gap:6px}#ab-time{font-size:11px}}
 .ab-holding .ab-preview-label{background:#ffd2b0;color:#2a1d33;border-color:transparent}
 .ab-preview-label{transition:background .18s,color .18s}
 #cv{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -109,3 +121,8 @@ body{--acc:#b39cff}
 .ab-scrubber-line button svg{width:17px;height:17px;flex:none}
 #ab-time{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ab-muted)}
 #ab-time #tc{position:static;display:inline;padding:0;background:none;color:var(--ab-muted);font-size:12px}
+.ab-scrubber-line{flex-wrap:wrap;row-gap:12px}
+#ab-time{width:100%;order:-1;text-align:right;margin-top:-2px}
+.ab-ctrls{width:100%}
+.ab-ctrls .ab-ctrl-hold{flex:1;min-width:0}
+.ab-holding .ab-scrubber-line .ab-ctrl-hold{color:#1d1838!important}

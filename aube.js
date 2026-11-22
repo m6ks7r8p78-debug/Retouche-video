@@ -17,6 +17,8 @@ const paths={
  dots:'<circle cx="4" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="20" cy="12" r="1"/>',
  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
  check:'<path d="m4 12 5 5L20 6"/>',
+ pause:'<path d="M8 5v14M16 5v14"/>',
+ split:'<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M12 2v20"/>',
  eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'
 };
 function icon(name){return '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(paths[name]||paths.spark)+'</svg>'}
@@ -51,9 +53,11 @@ root.innerHTML=
  '<div class="ab-render" id="ab-render"></div>'+
  '<div class="ab-viewer" id="ab-viewer"><span class="ab-preview-label" id="ab-preview-label">AMÉLIORÉ</span><span id="ab-live-badge"></span>'+
  '<div class="ab-opening" id="ab-opening" aria-live="polite"><span class="ab-opening-orb"></span><strong>Ouverture de ton souvenir…</strong><small id="ab-opening-sub"></small></div>'+
- '<button type="button" class="ab-hold" id="ab-hold" aria-label="Maintenir pour voir l’original">'+icon("eye")+'<span>Maintiens : original</span></button></div>'+
+ '</div>'+
  '<div class="ab-scrubber" id="ab-scrubber"><div id="ab-timeline"></div><div class="ab-scrubber-line"><span id="ab-time"></span>'+
- '<div><button type="button" id="ab-play">'+icon("play")+' Lire</button> <button type="button" id="ab-compare">'+icon("layers")+' Comparer</button></div></div></div>'+
+ '<div class="ab-ctrls"><button type="button" id="ab-play" class="ab-ctrl ab-ctrl-play" aria-label="Lire">'+icon("play")+'<span>Lire</span></button>'+
+ '<button type="button" id="ab-compare" class="ab-ctrl ab-ctrl-hold" aria-label="Maintenir pour voir l’original">'+icon("eye")+'<span>Maintenir : avant</span></button>'+
+ '<button type="button" id="ab-split" class="ab-ctrl ab-ctrl-icon" aria-pressed="false" aria-label="Comparer avec un curseur">'+icon("split")+'</button></div></div></div>'+
  '<div class="ab-work-tools"><button type="button" class="ab-button" id="ab-new">'+icon("upload")+' Autre fichier</button>'+
  '<button type="button" class="ab-button" id="ab-tools">'+icon("sliders")+' Outils avancés</button></div></div>'+
  '<div class="ab-panel"><h2>Redonner vie à l’image</h2><p>L’Aube prépare le traitement. Tu gardes la main sur le résultat.</p>'+
@@ -154,10 +158,11 @@ attach("tp2","#ab-more-settings");attach("tp3","#ab-more-tools");
 attach("mg","#ab-more-extras");attach("bt","#ab-more-extras");attach("activite","#ab-more-extras");
 for(const id of ["kbres","bares"])attach(id,"#ab-more-extras");
 /* Avant / après : maintenir le bouton (ou l'image) montre l'original, relâcher revient à l'amélioré (vraie bascule du moteur #cmp). */
-const holdBtn=$("#ab-hold"),cmpB=$("#cmp"),cvB=$("#cv");let holding=false,holdT=0,holdXY=null;
+const holdBtn=$("#ab-compare"),cmpB=$("#cmp"),cvB=$("#cv");let holding=false,holdT=0,holdXY=null;
 const pe=(t)=>{try{cmpB&&cmpB.dispatchEvent(new PointerEvent(t,{bubbles:true,cancelable:true,pointerType:"touch"}))}catch(e){}};
 function holdOn(){if(holding||!cmpB)return;holding=true;pe("pointerdown");root.classList.add("ab-holding");$("#ab-preview-label").textContent="ORIGINAL";try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
 function holdOff(){clearTimeout(holdT);holdXY=null;if(!holding)return;holding=false;pe("pointerup");root.classList.remove("ab-holding");$("#ab-preview-label").textContent="AMÉLIORÉ"}
+holdBtn.addEventListener("click",e=>e.preventDefault());
 holdBtn.addEventListener("pointerdown",e=>{e.preventDefault();try{holdBtn.setPointerCapture(e.pointerId)}catch(_){}holdOn()});
 ["pointerup","pointercancel","lostpointercapture"].forEach(n=>holdBtn.addEventListener(n,holdOff));
 holdBtn.addEventListener("contextmenu",e=>e.preventDefault());
@@ -175,7 +180,10 @@ function startOpening(file){if(!file)return;opening=true;clearTimeout(openT);ope
  const mb=file.size/1048576;$("#ab-opening-sub").textContent=file.name+" · "+(mb<1?Math.max(1,Math.round(file.size/1024))+" Ko":mb.toFixed(mb>=10?0:1).replace(".",",")+" Mo");refresh()}
 function legacy(id){const e=$("#"+id);if(e&&!e.disabled){e.click();return true}return false}
 $("#ab-play").addEventListener("click",()=>legacy("pp"));
-$("#ab-compare").addEventListener("click",()=>legacy("spl"));
+$("#ab-split").addEventListener("click",()=>{legacy("spl");$("#ab-split").setAttribute("aria-pressed",String($("#spl")?.getAttribute("aria-pressed")==="true"))});
+/* Lire / Pause : l'étiquette suit le vrai lecteur */
+const syncPlay=()=>{try{const playing=typeof v!=="undefined"&&!v.paused&&!v.ended;const b=$("#ab-play");b.innerHTML=icon(playing?"pause":"play")+"<span>"+(playing?"Pause":"Lire")+"</span>";b.setAttribute("aria-label",playing?"Pause":"Lire");b.classList.toggle("ab-on",playing)}catch(e){}};
+try{["play","playing","pause","ended","emptied"].forEach(n=>v.addEventListener(n,syncPlay))}catch(e){}
 $("#ab-enhance").addEventListener("click",()=>{if(!legacy("ex"))toast("Le traitement n’est pas disponible pour ce fichier.")});
 $("#ab-save").addEventListener("click",()=>{if(!legacy("sv"))toast("L’enregistrement n’est pas encore disponible.")});
 $("#ab-after-compare").addEventListener("click",()=>{if(!legacy("bab")&&!legacy("bas2"))toast("La comparaison n’est pas disponible.")});
@@ -200,8 +208,7 @@ function refresh(){
  $("#ab-state-pill").textContent=running?"En cours":result?"Terminé":"Prêt à améliorer";
  $("#ab-file-text").textContent=isPhoto?"Restauration de ta photo":"Restauration de ta vidéo";
  $("#ab-quality-group").hidden=!!isPhoto;
- $("#ab-scrubber").hidden=!!isPhoto;
- $("#ab-play").hidden=!!isPhoto;
+ root.classList.toggle("ab-photo-mode",!!isPhoto);
  const rec=$("#rec_t"),st=$("#st0"),st1=$("#st1");
  const message=(rec&&!$("#rec")?.hidden?rec.textContent:st?.textContent||"").trim();
  $("#ab-analysis").textContent=result?"Ton souvenir est restauré.":message||"Analyse automatique prête.";
@@ -216,7 +223,7 @@ function refresh(){
  $("#ab-after-compare").hidden=!(result&&!isPhoto&&!$("#bab")?.hidden);
  $("#ab-render").hidden=!result;
  $("#ab-viewer").hidden=!!result;
- $("#ab-scrubber").hidden=!!result||isPhoto;
+ $("#ab-scrubber").hidden=!!result;
  const tc=$("#tc");$("#ab-live-badge").textContent=isPhoto?"PHOTO":"VIDÉO";
  if(photoBusy){
   $("#ab-percent").textContent="";$("#ab-track").removeAttribute("aria-valuenow");

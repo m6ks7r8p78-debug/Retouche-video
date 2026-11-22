@@ -536,10 +536,18 @@ function size(L){
   const s=Math.min(L/Math.max(w,h),L*9/16/Math.min(w,h));
   cv.width=Math.round(w*s/2)*2;cv.height=Math.round(h*s/2)*2;draw();
 }
+let rvfcT=0;
 function loop(){
-  draw();
+  rvfcT=performance.now();draw();
   if(v.requestVideoFrameCallback)v.requestVideoFrameCallback(loop);else requestAnimationFrame(loop);
 }
+/* v11.2 : garde de l'aperçu. Sur iPhone, Safari peut cesser d'appeler requestVideoFrameCallback pour le lecteur caché :
+   la vidéo avançait mais l'aperçu restait figé (il ne changeait qu'en touchant un bouton). Si aucune image n'a été
+   dessinée depuis 250 ms pendant la lecture, on redessine à chaque rafraîchissement de l'écran. */
+(function guard(){
+  try{if(looping&&!exporting&&mode==="video"&&!v.paused&&!v.ended&&performance.now()-rvfcT>250)draw()}catch(e){}
+  requestAnimationFrame(guard);
+})();
 
 /* Réglages avancés */
 const S=[["cs","Nettoyage des couleurs",0,1,.05],["br","Luminosité",-.3,.3,.01],["co","Contraste",.6,1.6,.01],["sa","Couleurs",0,2,.01],["wa","Chaleur",-.15,.15,.01],["wb","Équilibre des couleurs (dominante)",0,1,.05],["sh","Netteté",0,2,.05],["dn","Réduction du bruit",0,1,.05]];

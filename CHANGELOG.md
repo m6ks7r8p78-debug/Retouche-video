@@ -1,5 +1,11 @@
 # Journal des versions
 
+## v11.2 (22 nov. 2026) — Lecture réparée et nouveaux boutons d'aperçu
+- **Lecture** : sur iPhone, la vidéo avançait mais l'aperçu restait figé (il ne changeait qu'en touchant un bouton). Safari peut
+  cesser d'envoyer les images du lecteur caché : une garde redessine alors l'aperçu à chaque rafraîchissement de l'écran.
+- **Boutons d'aperçu redessinés** : Lire / Pause (l'étiquette suit la lecture), « Maintenir : avant » à garder appuyé pour voir
+  l'original (relâcher = amélioré, aussi pour les photos), curseur avant / après en bouton icône ; durée au-dessus.
+
 ## v11.1 (22 nov. 2026) — Aperçu fluide et avant / après à maintenir
 - **Aperçu qui ne saute plus** : l'analyse de fond (défauts, épreuve de vérité, caméra virtuelle, contrôle de lecture) lit ses images
   dans un second lecteur invisible au lieu de déplacer la vidéo affichée. Avant, l'aperçu sautait à 25 %, 50 %, 75 %… pendant
