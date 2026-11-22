@@ -4,7 +4,7 @@ const C="retouche-v103",F=["./","index.html","app.js","budget-ia.js","atelier.js
 const LOURDS=["sr.bin","sr2.bin","rnnoise.mjs","modeles/edgetam_encodeur.onnx","modeles/edgetam_decodeur.onnx"];
 /* empreinte de tous les fichiers ci-dessus : recalculée par « node tests/sw.test.mjs --maj » à chaque version. Comme elle change dès
    qu'un fichier change, le téléphone voit toujours qu'une nouvelle version existe (test : tests/sw.test.mjs). */
-const H="9e2574bd1c2ecd4b";
+const H="21324b5e6295025c";
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(F.map(u=>new Request(u,{cache:"reload"})))).then(()=>self.skipWaiting()))});
 /* v3.2 : on ne retire que les anciennes versions de l'app (« retouche-v… »). Avant, tout autre cache était effacé à chaque mise à jour,
    y compris les modèles IA téléchargés (« retouche-modeles-v1 ») et les caches de l'autre app du site (/radar/). */
