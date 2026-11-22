@@ -97,6 +97,10 @@ function setMode(){
   $("#ex").textContent=ph?"Améliorer la photo":($("#q").value==="-1"?"Nettoyer (taille d’origine)":$("#q").value==="3840"?"Améliorer en 4K":"Améliorer en Full HD");
   $("#out").hidden=true;
   $("#ia_test").hidden=ph;$("#ia_result").hidden=true;
+  $("#auto_tweaks").hidden=true;$("#auto_reprocess").hidden=true;
+  $("#auto_note").hidden=ph;
+  $("#auto_result_summary").textContent="";
+  try{window.__simpleRefresh&&window.__simpleRefresh()}catch(e){}
 }
 if(!gl){msg("Ton navigateur ne gère pas le traitement vidéo (WebGL).");$("#pick").disabled=true}
 try{const ex=sessionStorage.getItem("exp");if(ex){sessionStorage.removeItem("exp");let info={};try{info=JSON.parse(ex)}catch(e){}
@@ -2047,6 +2051,7 @@ $("#ex").onclick=async()=>{
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
       $("#rv").hidden=false;$("#pv").hidden=true;{const pk=window.__planK;baShow(!isPlan||!!(pk&&!pk.rev),pk?pk.a:tS,null,null,pk&&!pk.rev?pk.s:1)}if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#erb").hidden=true;$("#rvb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
+       try{window.__simpleExportDone&&window.__simpleExportDone({width:cfg.width,height:cfg.height,frames:total,iaFrames:frameIA,iaRequested:srUse})}catch(e){}
       /* images identiques à la suivante : signe d'une recherche d'image ratée SEULEMENT en lecture par recherche (repli) ;
          en lecture séquentielle, ce sont les images de la source elle-même (plan fixe, mouvement très lent) : pas une erreur */
       const frozen=!plan&&poolUp&&maxRun>=3;
