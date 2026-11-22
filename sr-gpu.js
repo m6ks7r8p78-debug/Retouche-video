@@ -246,9 +246,11 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
     const N = 96, c = document.createElement("canvas"); c.width = c.height = N; const x = c.getContext("2d");
     for (let i = 0; i < N; i += 4) for (let j = 0; j < N; j += 4) { x.fillStyle = "rgb(" + ((i * 37 + j * 11) & 255) + "," + ((i * 13 ^ j * 7) & 255) + "," + ((i + j * 3) & 255) + ")"; x.fillRect(i, j, 4, 4) }
     const time = async k => { const t0 = performance.now(); await network(c, N, N, null, k); return performance.now() - t0 };
+    /* Deux vérifications de résultat, puis UNE mesure échauffée par noyau.
+       Ancien parcours : six réseaux complets ; nouveau : quatre, sans perdre la vérification des pixels. */
     await time("1"); const r1 = await readFull(N, N); await time("4"); const r4 = await readFull(N, N);
     let diff = 0; for (let i = 0; i < r1.length; i++) { const d = Math.abs(r1[i] - r4[i]); if (d > diff) diff = d }
-    const t1 = Math.min(await time("1"), await time("1")), t4 = Math.min(await time("4"), await time("4"));
+    const t1 = await time("1"), t4 = await time("4");
     cacheKey = null;
     kinfo = { v: KV, k: diff <= 1 && t4 < t1 * .95 ? "4" : "1", ms1: Math.round(t1), ms4: Math.round(t4), ecart: diff, at: Date.now(),
       why: diff > 1 ? "résultats différents (écart " + diff + "/255) : version d'origine gardée" : "" };
