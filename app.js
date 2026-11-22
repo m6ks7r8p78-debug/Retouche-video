@@ -96,6 +96,7 @@ function setMode(){
   $("#pp").hidden=ph;$("#tm").hidden=ph;$("#plc").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);document.querySelectorAll(".ponly").forEach(e=>e.hidden=!ph);$("#qwrap").hidden=ph;if(ph)$("#rec").hidden=true;$("#pv").hidden=true;SRX.lastErr=null;SRX.off=false;SRX.warned=false;PROF.why="";PROF.hint();document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
   $("#ex").textContent=ph?"Améliorer la photo":($("#q").value==="-1"?"Nettoyer (taille d’origine)":$("#q").value==="3840"?"Améliorer en 4K":"Améliorer en Full HD");
   $("#out").hidden=true;
+  $("#ia_test").hidden=ph;$("#ia_result").hidden=true;
 }
 if(!gl){msg("Ton navigateur ne gère pas le traitement vidéo (WebGL).");$("#pick").disabled=true}
 try{const ex=sessionStorage.getItem("exp");if(ex){sessionStorage.removeItem("exp");let info={};try{info=JSON.parse(ex)}catch(e){}
