@@ -1,0 +1,36 @@
+name: IA - budget et aperçu rapide
+on:
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'budget-ia.js'
+      - 'sr.js'
+      - 'sr-gpu.js'
+      - 'kaggle.js'
+      - 'sw.js'
+      - 'tests/budget_ia.test.mjs'
+      - '.github/workflows/ia-vitesse.yml'
+jobs:
+  protections_ia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe des moteurs et contrôleurs
+        run: |
+          node --check app.js
+          node --check budget-ia.js
+          node --check sr.js
+          node --check sr-gpu.js
+          node --check kaggle.js
+      - name: Budget de temps et vrai aperçu IA
+        run: node tests/budget_ia.test.mjs
+      - name: Empreinte et cache PWA
+        run: |
+          node tests/sw.test.mjs --maj
+          node tests/sw.test.mjs
+      - name: Interdire un cache de production périmé
+        run: git diff --exit-code -- sw.js
