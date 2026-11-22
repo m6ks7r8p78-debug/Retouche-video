@@ -204,6 +204,9 @@ struct P{rat:vec2<f32>,fsz:vec2<i32>,k:i32,pad:i32};
     }
     const [X0, X1, XL] = tile.bufs, nT = Math.ceil(W / CORE) * Math.ceil(H / CORE); let done = 0;
     for (let cy = 0; cy < H; cy += CORE) for (let cx = 0; cx < W; cx += CORE) {
+      /* Arrêt coopératif entre tuiles : ne pas bloquer un iPhone pendant des heures. */
+      if(window.__iaDeadlineMs&&performance.now()>window.__iaDeadlineMs)
+        throw new Error("Budget IA local de 10 min dépassé : calcul arrêté avant une autre tuile.");
       const ex = Math.max(0, Math.min(cx - halo, W - TW)), ey = Math.max(0, Math.min(cy - halo, H - TH));
       const enc = dev.createCommandEncoder(), tmp = [];
       let cur = X0, nxt = X1;
