@@ -846,8 +846,9 @@ v.onloadedmetadata=()=>{
   $("#app").hidden=false;$("#st0").hidden=true;$("#pick .lbl").textContent="Autre vidéo";mode="video";setMode();clearTimeout(wd);
   size(PREVIEW);msg("");
   chips([v.videoWidth+"×"+v.videoHeight,fmtT(v.duration),(curFile.size<524288?"<1":(curFile.size/1048576).toFixed(0))+" Mo"]);$("#tc").hidden=false;$("#tc").textContent="0:00 / "+fmtT(v.duration);updateEst();
-  /* Respecter le choix 4K déjà enregistré. Ne pas remplacer la cible par Full HD à chaque import HD. */
-  if(Math.max(v.videoWidth,v.videoHeight)>=1500&&!localStorage.getItem("q")){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Full HD choisi par défaut (plus rapide). Sélectionne 4K si tu veux une sortie UHD.'}
+  /* Respecter le choix 4K déjà enregistré, même si Safari bloque le stockage local. */
+  let aChoisiQ=false;try{aChoisiQ=!!localStorage.getItem("q")}catch(e){}
+  if(Math.max(v.videoWidth,v.videoHeight)>=1500&&!aChoisiQ){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Full HD choisi par défaut (plus rapide). Sélectionne 4K si tu veux une sortie UHD.'}
   window.__safe=null;
   try{FREP.run(curFile)}catch(e){}
   setTimeout(()=>{try{SRX.videoCheck()}catch(e){}try{TR.info()}catch(e){}},0);
@@ -1578,7 +1579,7 @@ const FREP={info:null,
     else if(x.chk===null)warn("Le fichier n’a pas pu être relu pour vérification (le lecteur de cet appareil ne l’a pas ouvert à temps).");
     if(x.son)ok("Son : présent ✓");else if(x.why==="ta vidéo n’a pas de son")ok("Son : la vidéo d’origine n’en a pas.");else bad("Son absent : "+(x.why||"raison inconnue")+".");
     if(x.iaRequested){
-      if(x.iaFrames===x.frames)ok("Restauration IA réellement appliquée : "+x.iaFrames+" images sur "+x.frames+".");
+      if(x.iaFrames===x.frames)ok("Chaîne de restauration IA appliquée (calcul et propagation temporelle) : "+x.iaFrames+" images sur "+x.frames+".");
       else warn("Restauration IA incomplète : "+x.iaFrames+" images sur "+x.frames+". Le résultat ne doit pas être présenté comme entièrement restauré.");
     }else ok("Restauration IA non activée : taille de sortie et corrections classiques uniquement.");
     if(x.memDown)warn("Taille réduite automatiquement pour ne pas saturer la mémoire de l’iPhone.");
