@@ -50,8 +50,6 @@ jobs:
           test -s tests/medias/video_vieuxtel.mp4
       - name: Rejouer les 97 contrôles historiques AUBE sur v11.1
         shell: bash
-        env:
-          CHROME: ""
         run: |
           set -euo pipefail
           export PW="$RUNNER_TEMP/rpa-browser/node_modules/playwright/index.mjs"
