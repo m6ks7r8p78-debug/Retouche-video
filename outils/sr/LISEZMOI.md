@@ -20,3 +20,15 @@ Accord de l'épreuve avec le vrai gain (20 cas) : avec l'ancien modèle et le SS
 toujours, même quand elle aidait ; avec le nouveau modèle : SSIM 12/20, LPIPS 18/20, **GMSD 19/20 (retenu, calculable sur iPhone)**.
 Conversion : `sr.bin` = poids ×2 posés dans la grille ×4 du moteur (chaque point ×2 recopié en bloc 2×2) — sortie identique au
 modèle d'origine (écart 0), 16 couches au lieu de 32.
+
+## Essais du 22/11/2026 — rien de retenu (ne pas refaire sans idée nouvelle)
+Même banc (LPIPS contre la vraie image ; modèle actuel 0,106 sur 20 images, 0,0943 sur 30 images de séquences) :
+- **Affinage du modèle sur un vrai codec vidéo** (`ft_paires_video.py`, `ft_affinage.py`) : 366 paires tirées de 13 vidéos libres
+  (réduites ×2, H.264 CRF 20–34 avec images P/B, bruit parfois), vidéos du banc exclues. L1+0,2 LPIPS, 2e-5 : 0,116 → 0,114 ;
+  0,1 L1 + LPIPS, 5e-6 : 0,1135. Toujours moins bon que le départ : trop peu de données pour améliorer un modèle déjà bien entraîné.
+- **Gros modèle** 2xNomosUni_esrgan_multijpg (RRDB, 33 Mo) : 0,1024 (−3 %) mais 5,4 fois plus lent : inutilisable sur iPhone,
+  gain trop faible pour ajouter un second moteur sur Kaggle.
+- **Fusion de plusieurs images avant l'IA** (`sequences.py`, `fusion_temporelle.py`, alignement par flux optique, poids selon
+  l'erreur) : ±1 image 0,0980, ±2 images 0,0989 contre 0,0943 sans fusion : l'alignement imparfait floute plus qu'il ne débruite.
+Conclusion : sur le téléphone, le modèle actuel est au plafond de ce qu'on sait mesurer ; le prochain vrai saut passe par un modèle
+vidéo (SeedVR2, « Moteur Cinéma » sur Kaggle) et par les mesures sur l'iPhone.
