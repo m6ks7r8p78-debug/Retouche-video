@@ -111,7 +111,27 @@ try{
     const f=path.join(OUT,"video-"+d.suggestedFilename());await d.saveAs(f);const pr=probe(f);
     const vs=pr.streams.find(s=>s.codec_type==="video"),as=pr.streams.find(s=>s.codec_type==="audio");
     ok(vs&&vs.height>=1080&&as&&Number(pr.format.duration)>1,"Vidéo : fichier MP4 valide ("+vs?.codec_name+" "+vs?.width+"×"+vs?.height+", son "+(as?.codec_name||"absent")+", "+Number(pr.format.duration).toFixed(1)+" s)");
-   }catch(e){ok(false,"Vidéo réelle — "+e.message.split("\n")[0])}
+   }catch(e){
+      const diagnostic=await page.evaluate(()=>{
+       const v0=typeof v!=="undefined"?v:null;
+       const fi=document.querySelector("#f");
+       const status=document.querySelector("#st1");
+       return {mode:typeof mode!=="undefined"?mode:"inconnu",
+        exporting:typeof exporting!=="undefined"?exporting:null,
+        exStarting:!!window.__exStarting,
+        inputCount:fi?.files?.length||0,inputName:fi?.files?.[0]?.name||null,
+        videoWidth:v0?.videoWidth||0,videoHeight:v0?.videoHeight||0,
+        readyState:v0?.readyState,networkState:v0?.networkState,
+        videoErrorCode:v0?.error?.code||null,videoErrorMessage:v0?.error?.message||null,
+        hasVideoSource:!!v0?.currentSrc,videoPaused:v0?.paused,
+        outputHidden:document.querySelector("#out")?.hidden,
+        appStatus:status?.textContent?.slice(0,150),
+        codecSupport:document.createElement("video").canPlayType('video/mp4; codecs="avc1.4D401F"')
+       };
+      }).catch(x=>({captureError:String(x)}));
+      console.log("DIAGNOSTIC_IMPORT_VIDEO_APRES_PHOTO "+JSON.stringify(diagnostic));
+      ok(false,"Vidéo réelle — "+e.message.split("\n")[0]);
+    }
   }
   ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),W+" : aucun défilement latéral après traitement");
   ok(errs.length===0,W+" : aucune exception JavaScript ("+errs.slice(0,2).join("; ")+")");
