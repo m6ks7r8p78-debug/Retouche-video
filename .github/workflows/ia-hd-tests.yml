@@ -24,5 +24,10 @@ jobs:
           node --check models.js
       - name: Recollage HD et garanties anti faux 4K
         run: node tests/hd_tuiles.test.mjs
-      - name: Integrite du cache PWA (empreinte exacte requise)
-        run: node tests/sw.test.mjs
+      - name: Recalculer et afficher l'empreinte PWA attendue
+        run: |
+          node tests/sw.test.mjs --maj
+          grep 'const H=' sw.js
+          node tests/sw.test.mjs
+      - name: L'empreinte doit etre committee (interdit de publier avec ancien cache)
+        run: git diff --exit-code -- sw.js
