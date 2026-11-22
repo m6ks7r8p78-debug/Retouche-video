@@ -177,6 +177,9 @@ o=vec4(s/float(k*k),1.);}`;
     }
     const nT = Math.ceil(W / CORE) * Math.ceil(H / CORE); let done = 0;
     for (let cy = 0; cy < H; cy += CORE) for (let cx = 0; cx < W; cx += CORE) {
+      /* Arrêt coopératif entre tuiles : ne pas bloquer un iPhone pendant des heures. */
+      if(window.__iaDeadlineMs&&performance.now()>window.__iaDeadlineMs)
+        throw new Error("Budget IA local de 10 min dépassé : calcul arrêté avant une autre tuile.");
       const ex = Math.max(0, Math.min(cx - halo, W - TW)), ey = Math.max(0, Math.min(cy - halo, H - TH));
       let cur = X0, curF = fbs.x0, nxt = X1, nxtF = fbs.x1;
       g.viewport(0, 0, TW, TH);

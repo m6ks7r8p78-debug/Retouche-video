@@ -14,6 +14,7 @@ python3 tests/creer_medias.py   # crée tests/medias/ (images libres de droits d
 
 | Commande | Ce qui est vérifié |
 |---|---|
+| `node tests/budget_ia.test.mjs` | Vitesse : blocage des traitements IA locaux estimés à plus de 10 min, prévisualisation d'une image native, arrêt entre tuiles, intégrité de la preuve IA, pas de calcul caché au chargement. Contrôles statiques sans GPU réel. |
 | `node tests/gestionnaire.test.mjs` | gestionnaire de modèles : installation, reprise après coupure ou annulation, fichier corrompu, empreinte fausse, taille fausse, stockage insuffisant, modèle incompatible ou absent, appels simultanés, perte de réseau, mise à jour réussie / échouée, retour arrière, libération de mémoire, mémoire saturée, désactivation, `sr.bin` abîmé, nettoyage sans toucher aux médias, protection des modèles, fenêtre « Modèles IA » |
 | `node tests/app.test.mjs tests/medias tests/sorties [--ia]` | parcours complet : photos (analyse, profil, export JPEG / PNG, comparateur avec zoom, grande photo 12 Mpx), vidéos (paysage et portrait en 4K, 1080p, 720p personnalisée, taille d’origine ; durée, cadence, son, format d’image vérifiés avec ffprobe), photo animée avec le vrai modèle de profondeur (placer `depth.onnx` dans `tests/medias/`) |
 | `node tests/sw.test.mjs` | service worker : à la mise à jour, seuls les anciens caches de l’app sont retirés (modèles téléchargés et /radar/ gardés) ; fichiers hors ligne et polices locales présents |
@@ -29,3 +30,14 @@ python3 tests/creer_medias.py   # crée tests/medias/ (images libres de droits d
 
 Le modèle de profondeur (27 Mo) n’est pas dans le dépôt : le télécharger à l’adresse figée indiquée dans `models.js`
 (empreinte SHA-256 `fcf51f1b…f20d`) et le placer dans `tests/medias/depth.onnx`.
+
+## Essai de la vitesse IA (v10.3 expérimental)
+
+1. Importer une vidéo test de **0,7 s**. Cliquer « Tester la vraie IA sur une image » avant tout export.
+2. Vérifier l'avant/après sur la même région de 192 × 192 pixels natifs (×2), sans traitement colorimétrique. Mesurer la durée réelle. Un écart entre images ne suffit pas à prouver un gain.
+3. Tenter l'export 4K local : si le budget conservateur dépasse 10 minutes, refuser immédiatement au lieu de lancer une heure de calcul. Proposer Kaggle avec autorisation explicite.
+4. Tester un court 480p avec GPU ; vérifier fichier MP4 relisible, résolution, son, FPS, cadence, réelle application IA sur chaque image ou propagation contrôlée.
+5. Tester un blocage GPU simulé : arrêt entre tuiles, information explicite, absence de faux résultat 4K.
+6. Tester Kaggle en compte privé : une opération qui dépasse 15 minutes est arrêtée avec nettoyage des ressources. Pas de promesse de quota ni de durée fixe.
+
+Les tests automatiques **ne démontrent pas** une accélération réelle du 4K : la validation iPhone et des benchmarks visuels sont indispensables.
