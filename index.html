@@ -497,7 +497,7 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
         <div id="qwrap">
           <p class="help">Choisis la taille du résultat. Tout le reste est réglé automatiquement.</p>
           <div class="seg" role="group" aria-label="Taille du résultat">
-            <button data-q="3840" aria-pressed="false">4K<small>3840 · plus long</small></button>
+            <button data-q="3840" aria-pressed="false">4K<small>vraie IA si disponible</small></button>
             <button data-q="1920" aria-pressed="true">Full HD<small>conseillé</small></button>
             <button data-q="-1" aria-pressed="false">Origine<small>nettoyage seul</small></button>
           </div>
@@ -518,6 +518,16 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
         </div>
         <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><p class="help" id="rec_hint" hidden style="margin:6px 0 0">Déjà appliqué. Décoche ce que tu ne veux pas.</p></div>
         <div class="card simple-only" id="sai"><label class="chk"><input type="checkbox" id="s_ia"><span><b>⚡ Qualité IA</b><span id="s_iah"></span></span></label></div>
+        <button class="btn" id="ia_test" type="button" style="margin-top:12px">🔎 Tester la vraie IA sur une image</button>
+        <section class="card" id="ia_result" hidden aria-label="Épreuve rapide de restauration IA" style="margin-top:12px">
+          <h2>Avant / après IA — région de l’image d’origine</h2>
+          <p class="help" id="ia_status" role="status">Lancement du moteur…</p>
+          <div id="ia_pair" style="display:grid;grid-template-columns:1fr 1fr;gap:10px" hidden>
+            <figure style="margin:0;min-width:0"><img id="ia_before" alt="Région originale agrandie classiquement" style="display:block;width:100%;border-radius:8px"><figcaption>Sans IA (bicubique)</figcaption></figure>
+            <figure style="margin:0;min-width:0"><img id="ia_after" alt="Région réellement reconstruite par le modèle IA" style="display:block;width:100%;border-radius:8px"><figcaption>Avec restauration IA</figcaption></figure>
+          </div>
+          <p class="help">Test sur une région native de 192 × 192 pixels au maximum, à ×2, sans correction de couleur. Ce n’est pas la conversion de la vidéo entière ni une garantie de gain visuel.</p>
+        </section>
         <button class="btn main big" id="ex" style="margin-top:12px">Améliorer en 4K</button>
         <progress id="pg" value="0" max="1" hidden></progress>
         <p class="st" id="st1" role="status"></p>
@@ -687,6 +697,7 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
 <script defer src="analyse.js"></script>
 <script defer src="contribution.js"></script>
 <script defer src="visage.js"></script>
+<script defer src="budget-ia.js"></script>
 <script defer src="app.js"></script>
 <script defer src="studio.js"></script>
 <script defer src="abo.js"></script>
