@@ -16,7 +16,8 @@ const paths={
  save:'<path d="M12 3v14m-5-5 5 5 5-5M4 20h16"/>',
  dots:'<circle cx="4" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="20" cy="12" r="1"/>',
  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
- check:'<path d="m4 12 5 5L20 6"/>'
+ check:'<path d="m4 12 5 5L20 6"/>',
+ eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'
 };
 function icon(name){return '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(paths[name]||paths.spark)+'</svg>'}
 const root=d.createElement("div");root.id="aube-root";
@@ -48,7 +49,9 @@ root.innerHTML=
  '<span class="ab-pill" id="ab-state-pill">Prêt</span></div>'+
  '<div class="ab-grid-work"><div class="ab-work-preview">'+
  '<div class="ab-render" id="ab-render"></div>'+
- '<div class="ab-viewer" id="ab-viewer"><span class="ab-preview-label">APERÇU DU SOUVENIR</span><span id="ab-live-badge"></span></div>'+
+ '<div class="ab-viewer" id="ab-viewer"><span class="ab-preview-label" id="ab-preview-label">AMÉLIORÉ</span><span id="ab-live-badge"></span>'+
+ '<div class="ab-opening" id="ab-opening" aria-live="polite"><span class="ab-opening-orb"></span><strong>Ouverture de ton souvenir…</strong><small id="ab-opening-sub"></small></div>'+
+ '<button type="button" class="ab-hold" id="ab-hold" aria-label="Maintenir pour voir l’original">'+icon("eye")+'<span>Maintiens : original</span></button></div>'+
  '<div class="ab-scrubber" id="ab-scrubber"><div id="ab-timeline"></div><div class="ab-scrubber-line"><span id="ab-time"></span>'+
  '<div><button type="button" id="ab-play">'+icon("play")+' Lire</button> <button type="button" id="ab-compare">'+icon("layers")+' Comparer</button></div></div></div>'+
  '<div class="ab-work-tools"><button type="button" class="ab-button" id="ab-new">'+icon("upload")+' Autre fichier</button>'+
@@ -130,7 +133,7 @@ drawer.addEventListener("click",e=>{const btn=e.target.closest("[data-ab-proxy]"
  closeAll();original.click();
  if(btn.dataset.abProxy==="pickm"){const target=$("#mg");if(target&&!target.hidden)open(drawer)}
 });
-const mediaFile=type=>{kind=type;requestAnimationFrame(refresh)};
+const mediaFile=type=>{kind=type;const inp=$(type==="photo"?"#fp":"#f");startOpening(inp?.files?.[0]);requestAnimationFrame(refresh)};
 $("#f")?.addEventListener("change",()=>mediaFile("video"));
 $("#fp")?.addEventListener("change",()=>mediaFile("photo"));
 for(const target of ["#ab-home","#ab-viewer"]){const node=$(target);
@@ -150,6 +153,26 @@ for(const id of ["ri","pv","ba","rv"])attach(id,"#ab-render");
 attach("tp2","#ab-more-settings");attach("tp3","#ab-more-tools");
 attach("mg","#ab-more-extras");attach("bt","#ab-more-extras");attach("activite","#ab-more-extras");
 for(const id of ["kbres","bares"])attach(id,"#ab-more-extras");
+/* Avant / après : maintenir le bouton (ou l'image) montre l'original, relâcher revient à l'amélioré (vraie bascule du moteur #cmp). */
+const holdBtn=$("#ab-hold"),cmpB=$("#cmp"),cvB=$("#cv");let holding=false,holdT=0,holdXY=null;
+const pe=(t)=>{try{cmpB&&cmpB.dispatchEvent(new PointerEvent(t,{bubbles:true,cancelable:true,pointerType:"touch"}))}catch(e){}};
+function holdOn(){if(holding||!cmpB)return;holding=true;pe("pointerdown");root.classList.add("ab-holding");$("#ab-preview-label").textContent="ORIGINAL";try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}}
+function holdOff(){clearTimeout(holdT);holdXY=null;if(!holding)return;holding=false;pe("pointerup");root.classList.remove("ab-holding");$("#ab-preview-label").textContent="AMÉLIORÉ"}
+holdBtn.addEventListener("pointerdown",e=>{e.preventDefault();try{holdBtn.setPointerCapture(e.pointerId)}catch(_){}holdOn()});
+["pointerup","pointercancel","lostpointercapture"].forEach(n=>holdBtn.addEventListener(n,holdOff));
+holdBtn.addEventListener("contextmenu",e=>e.preventDefault());
+holdBtn.addEventListener("keydown",e=>{if((e.key===" "||e.key==="Enter")&&!e.repeat){e.preventDefault();holdOn()}});
+holdBtn.addEventListener("keyup",e=>{if(e.key===" "||e.key==="Enter")holdOff()});
+const splitOn=()=>$("#spl")?.getAttribute("aria-pressed")==="true";
+if(cvB){cvB.addEventListener("pointerdown",e=>{if(splitOn())return;holdXY=[e.clientX,e.clientY];clearTimeout(holdT);holdT=setTimeout(()=>{if(holdXY)holdOn()},170)});
+ cvB.addEventListener("pointermove",e=>{if(holdXY&&!holding&&Math.hypot(e.clientX-holdXY[0],e.clientY-holdXY[1])>9){clearTimeout(holdT);holdXY=null}});
+ ["pointerup","pointercancel","pointerleave"].forEach(n=>cvB.addEventListener(n,holdOff));
+ cvB.addEventListener("contextmenu",e=>e.preventDefault())}
+window.addEventListener("blur",holdOff);d.addEventListener("visibilitychange",holdOff);
+/* Ouverture : l'espace de travail s'affiche dès le choix du fichier, sans attendre que le lecteur ait lu le fichier. */
+let opening=false,openT=0;
+function startOpening(file){if(!file)return;opening=true;clearTimeout(openT);openT=setTimeout(()=>{opening=false;schedule()},45000);
+ const mb=file.size/1048576;$("#ab-opening-sub").textContent=file.name+" · "+(mb<1?Math.max(1,Math.round(file.size/1024))+" Ko":mb.toFixed(mb>=10?0:1).replace(".",",")+" Mo");refresh()}
 function legacy(id){const e=$("#"+id);if(e&&!e.disabled){e.click();return true}return false}
 $("#ab-play").addEventListener("click",()=>legacy("pp"));
 $("#ab-compare").addEventListener("click",()=>legacy("spl"));
@@ -161,7 +184,9 @@ $$("[data-ab-q]").forEach(b=>b.addEventListener("click",()=>{const legacyButton=
 $$("[data-ab-prof]").forEach(b=>b.addEventListener("click",()=>{const legacyButton=$('[data-prof="'+b.dataset.abProf+'"]');if(legacyButton)legacyButton.click();requestAnimationFrame(refresh)}));
 function pressed(group,val,attr){$$(group+" [data-ab-"+attr+"]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset["ab"+attr[0].toUpperCase()+attr.slice(1)]===val)))}
 function refresh(){
- const loaded=B.classList.contains("loaded")&&!$("#app")?.hidden;
+ const ready=B.classList.contains("loaded")&&!$("#app")?.hidden;
+ const v0=d.querySelector("body>video");if(opening&&ready&&(kind==="photo"||(v0&&v0.readyState>=1&&!/Chargement/.test($("#st0")?.textContent||""))))opening=false;
+ const loaded=ready||opening;root.classList.toggle("ab-opening-now",opening);
  const out=$("#out"),pg=$("#pg"),exb=$("#ex"),st1t=($("#st1")?.textContent||"").trim();
  const video=loaded&&pg&&!pg.hidden,photoBusy=loaded&&!video&&!!exb?.disabled&&/…$|en cours/i.test(st1t)&&!/Terminé/.test(st1t);
  const running=video||photoBusy,result=loaded&&out&&!out.hidden&&!running;

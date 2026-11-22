@@ -71,7 +71,7 @@ try{
   console.log(JSON.stringify({status:"PASS",input_duration_s:0.7,
     total_walltime_s:Number(elapsed.toFixed(2)),output_duration_s:dur,
     video_codec:"h264",audio_codec:"aac",ai_asked_after_auto:diag.ia,
-    environment:"Chromium - médias synthétiques, PAS Safari iPhone physique",
+    environment:"Google Chrome Linux, médias synthétiques, PAS Safari iPhone physique",
     guarantee_4k_under_15_minutes:"NON TESTÉ"},null,2));
   await ctx.close();
 }finally{

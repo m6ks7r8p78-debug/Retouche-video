@@ -1,12 +1,12 @@
-# RetoucheProAI — intégration expérimentale AUBE v11.0 × PR #92
+# RetoucheProAI — intégration expérimentale AUBE v11.1 × PR #92
 
 **Statut : brouillon de préproduction, NE PAS FUSIONNER NI DÉPLOYER avant Safari physique.**
 
 ## Source et portée
 
-- Base officielle : `main` v11.0 `4dd8c294ea43a545f049844517e1aa6fb9d72410` (AUBE V2.2 publiée par Claude).
+- Base officielle : `main` v11.1 `4e84f7d6fb65ecbb4e0a91f7350f2b513ac4197e` (AUBE V2.2 enrichie par Claude : aperçu fluide, appui long avant/après, ouverture immédiate).
 - Protection IA : portage depuis la [PR #92](https://github.com/m6ks7r8p78-debug/Retouche-video/pull/92), branchée historiquement sur v10.2 et donc impossible à fusionner directement sans risque de régression.
-- Branche d'essai : `chatgpt-v11-aube-pr92-integration-20261122`, version `v11.1-essai`, cache **`retouche-v111`**.
+- Branche d'essai : `chatgpt-v11-aube-pr92-integration-20261122`, version `v11.2-essai`, cache **`retouche-v112`**.
 - Aucune vidéo personnelle, aucun entraînement, aucun nouveau poids IA, aucune mise en ligne.
 
 ## Modifications déjà proposées
@@ -15,7 +15,7 @@
 2. `mode-simple.js` : un bouton Auto et possibilité de retoucher après le premier export ; repli sans IA explicitement indiqué si les ressources sont insuffisantes.
 3. `budget-ia.js`, `sr.js`, `sr-gpu.js`, `kaggle.js` : estimation de la complexité, plafonds prudents avant export, interruptions coopératives entre les tuiles et vérification des délais distants. Le délai **600 s = limite de sécurité, pas délai d'export certifié**.
 4. `index.html` : 169 identifiants historiques préservés + 16 nouveaux contrôles = **185** ; les quatre injections AUBE présentes. Suppression d'une règle PR92 qui cachait `#flow` et `#outils` même quand AUBE en avait besoin.
-5. `sw.js` : `retouche-v111`, nouveau `budget-ia.js` précaché, quatre fichiers AUBE présents. L'empreinte SHA-256 doit être recalculée et **vérifiée dans la CI**.
+5. `sw.js` : `retouche-v112`, nouveau `budget-ia.js` précaché, quatre fichiers AUBE présents. L'empreinte SHA-256 doit être recalculée et **vérifiée dans la CI**.
 6. Aucun octet modifié dans `aube.css`, `aube.js`, `aube-etapes.css`, `aube-etapes.js`, `sr.bin` et `sr2.bin`.
 
 ## Tests et limites
@@ -76,3 +76,11 @@ artificiellement ce diagnostic.
 **Reste impératif :** Chrome desktop n'est pas Safari physique.
 Les vraies performances, fidélité et le délai utilisateur 10–15 min
 doivent encore être testés et mesurés séparément sur iPhone.
+
+## Coordination du 22 novembre : conservation v11.1 Claude
+
+La première branche de la PR #93 partait de v11.0. Après publication de v11.1 par Claude, elle a été **réconciliée dans un commit de fusion à deux parents**, directement dans la branche brouillon, **sans toucher à main**. Les sept blocs de modification de `app.js` de Claude sont conservés ; le bloc « caméra + fin d'analyse » a été combiné sélectivement pour garder la suppression volontaire de l'épreuve IA coûteuse au chargement. Les fichiers `aube*.js/css` de main v11.1 sont conservés octet-identiques. Les correctifs de la PR #92 apportent `budget-ia.js` et les scénarios Auto, sans toucher aux poids `sr.bin`/`sr2.bin`.
+
+Un défaut d'intégration a été corrigé : **l'actualisation Auto ne doit plus remplacer le libellé « Annuler » pendant un export**, car AUBE lit ce libellé pour autoriser le bouton d'annulation. Autre garde : **une résolution 4K/Full HD/Original choisie par l'utilisateur dans AUBE prévaut sur le plan Auto** jusqu'à l'import suivant. Des scénarios de test unitaires le vérifient. L'essai 0,7 s a déjà produit un MP4 H264+AAC réel en **15,03 s** sur Google Chrome de CI, **sans réseau IA**, pas sur Safari iPhone.
+
+Les tests complets v11.2 sur la nouvelle base doivent être exécutés : la compatibilité statique seule ne prouve ni le parcours vidéo complet ni l'efficacité des poids IA. L'empreinte du cache v112 est recalculée par CI avant approbation de la PR.

@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v11.1-essai";/* seul endroit où changer le numéro de version */
+const VER="v11.2-essai";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","recalage.js","visages-video.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -11,6 +11,24 @@ const msg=t=>{document.querySelectorAll(".st[id]").forEach(e=>{e.textContent=t||
 const cv=$("#cv"),gl=cv.getContext("webgl",{preserveDrawingBuffer:true,antialias:false});
 const v=document.createElement("video");v.playsInline=true;v.muted=true;v.setAttribute("playsinline","");v.preload="auto";
 v.style.cssText="position:fixed;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(v);
+/* v11.1 : « jumeau d'analyse » : les mesures de fond (analyse, épreuve de vérité, caméra virtuelle) lisent les MÊMES images
+   dans un second lecteur, pour que l'aperçu ne saute plus d'un endroit à l'autre pendant l'analyse. Repli sur v s'il échoue. */
+const va=document.createElement("video");va.playsInline=true;va.muted=true;va.setAttribute("playsinline","");va.preload="auto";
+va.style.cssText=v.style.cssText;document.body.appendChild(va);
+let vaSrc=null,vaOk=null;
+function twinFree(){vaSrc=null;vaOk=null;try{va.removeAttribute("src");va.load()}catch(e){}}
+async function twin(){
+  if(!url||exporting)return v;
+  if(vaSrc===url&&vaOk!==null)return vaOk?va:v;
+  vaSrc=url;vaOk=null;va.src=url;va.load();
+  const ready=await new Promise(res=>{const t=setTimeout(()=>res(false),8000);
+    va.addEventListener("loadeddata",()=>{clearTimeout(t);res(true)},{once:true});va.addEventListener("error",()=>{clearTimeout(t);res(false)},{once:true})});
+  let ok=ready&&va.videoWidth===v.videoWidth&&va.videoHeight===v.videoHeight;
+  if(ok){/* contrôle : une recherche doit aboutir à une image lisible */
+    ok=await new Promise(res=>{const t=setTimeout(()=>res(false),4000);va.addEventListener("seeked",()=>{clearTimeout(t);res(true)},{once:true});va.currentTime=Math.min(.1,(va.duration||1)/2)});
+    if(ok)try{const c=document.createElement("canvas");c.width=c.height=8;c.getContext("2d").drawImage(va,0,0,8,8)}catch(e){ok=false}}
+  if(vaSrc!==url)return v;vaOk=ok;if(!ok)twinFree(),vaSrc=url,vaOk=false;return ok?va:v;
+}
 let HP=.7;/* force de la protection des hautes lumières */
 const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],r:1};let WBG=[1,1,1],DFG=1;
 /* ===== Profils de rendu =====
@@ -492,10 +510,10 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     const r={ia:+(gi/n).toFixed(4),agrandi:+(gb/n).toFixed(4),extraits:n,mesure:"gmsd"};r.utile=r.agrandi-r.ia>Math.max(.003,.06*r.agrandi);/* gain net exigé (≥ 6 %) : dans le doute, la fidélité l'emporte */return r},
   async verifierVideo(file){
     const o=$("#o_max");if(!o||!o.checked||mode!=="video"||!SRX.on()||!SRX.fits(v)||exporting)return;
-    SRX.ep=true;try{const t=v.currentTime,els=[];
-      for(const f of [.25,.5,.75]){if(curFile!==file||exporting)return;await seekEl(v,Math.min(v.duration-.05,v.duration*f));
-        const [w,h]=dims(v),c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(v,0,0,w,h);els.push(c)}
-      await seekEl(v,t);if(curFile!==file||exporting)return;
+    SRX.ep=true;try{const t=v.currentTime,els=[],e=await twin();
+      for(const f of [.25,.5,.75]){if(curFile!==file||exporting)return;await seekEl(e,Math.min(e.duration-.05,e.duration*f));
+        const [w,h]=dims(e),c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(e,0,0,w,h);els.push(c)}
+      if(e===v)await seekEl(v,t);if(curFile!==file||exporting)return;
       const r=await SRX.epreuve(els);window.__epreuve=r;if(!r||curFile!==file)return;
       try{DIAG.send("epreuve_ia",r)}catch(e){}
       if(!r.utile&&o.checked){o.checked=false;SRX.autoOff=curFile;SRX.pc=null;SRX.key="";updateEst();draw();
@@ -800,8 +818,9 @@ async function makeSeq(start,fps){
     r=new SeqReader(curFile,inf);r.setFps(fps);await r.open(r.map(start));const c0=await r.need(start);
     const t=document.createElement("canvas");t.width=24;t.height=18;const x=t.getContext("2d",{willReadFrequently:true});
     x.drawImage(c0,0,0,24,18);const da=x.getImageData(0,0,24,18).data;
-    await seekEl(v,Math.min((start+.5)/fps,v.duration-.001));
-    x.drawImage(v,0,0,24,18);const db=x.getImageData(0,0,24,18).data;
+    const ev=exporting?v:await twin();/* v11.1 : contrôle fait sur le jumeau hors export (l'aperçu ne saute pas) */
+    await seekEl(ev,Math.min((start+.5)/fps,ev.duration-.001));
+    x.drawImage(ev,0,0,24,18);const db=x.getImageData(0,0,24,18).data;
     let sd=0;for(let z=0;z<da.length;z++)if(z%4<3)sd+=Math.abs(da[z]-db[z]);sd/=1296;
     window.__seqInfo="seq diff "+sd.toFixed(1);
     if(sd<28)return r;
@@ -915,7 +934,7 @@ function loadFile(f){
   return new Promise(res=>{
   window.__metaDone=res;setTimeout(()=>{if(window.__metaDone===res){window.__metaDone=null;res()}},20000);
   curFile=f;az=false;try{FLT.reset()}catch(e){}try{if(window.CAM){CAM.S.fiche=null;CAM.S.lens=null;camShow()}}catch(e){}if(url)URL.revokeObjectURL(url);
-  url=URL.createObjectURL(f);v.src=url;v.load();
+  twinFree();url=URL.createObjectURL(f);v.src=url;v.load();
   msg("Chargement de la vidéo… ("+(f.size/1048576).toFixed(0)+" Mo)");$("#out").hidden=true;["dupn","socn","bab","bares","kbb","kbo","kbres","pv","erb","rvb"].forEach(i=>$("#"+i).hidden=true);
   clearTimeout(wd);wd=setTimeout(()=>{if(!v.videoWidth)msg("Le chargement est très long. Fichier trop lourd ou format non lisible ? Essaie une vidéo plus courte"+(v.error?" (erreur "+v.error.code+")":"")+".")},12000);
   });
@@ -1073,7 +1092,8 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
     $("#rec").hidden=false;$("#rec_t").textContent="Analyse de ta vidéo en cours…";$("#rec_l").textContent="";
     try{
       const fps=await lim(measureFps(),8000,FPS);if(halt())return;
-      const m=await AZ.run(v,{fps,cancel:halt});if(!m||halt())return;
+      const ea=await twin();if(halt())return;
+      const m=await AZ.run(ea,{fps,cancel:halt});if(!m||halt())return;
       let fl=null;
       if(window.VideoDecoder&&v.duration>.5){
         const total=Math.min(Math.floor(v.duration*fps)-1,150);
@@ -1107,10 +1127,10 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
          image réellement restaurée grâce au bouton « Tester la vraie IA sur une image ». */
       /* v6.0 caméra virtuelle : fiche de l'appareil et mesures de l'objectif (6 images), même quand la case est décochée : la fiche s'affiche
          et, avec l'accord « diagnostic », ses nombres aident à régler l'app pour chaque type d'appareil */
-      if(window.CAM&&!halt()){try{if(await lim(CAM.analyser(v,my,{bruit:m.noise,blocs:m.blk&&m.blk.r,cancel:halt}),25000,null)&&!halt()){camShow();DIAG.send("camera",CAM.diag())}}catch(e){}}
+      if(window.CAM&&!halt()){try{if(await lim(CAM.analyser(ea,my,{bruit:m.noise,blocs:m.blk&&m.blk.r,cancel:halt}),25000,null)&&!halt()){camShow();DIAG.send("camera",CAM.diag())}}catch(e){}}
       try{DIAG.send("analyse",{ms:Math.round(performance.now()-TA),mesures:{bruit:+m.noise.toFixed(2),nettete:Math.round(m.sharp),poussieres:Math.round(m.dust),tremble:m.shake,blocs:m.blk&&+m.blk.r.toFixed(2),dominante:m.gains&&m.gains.map(x=>+x.toFixed(2)),son:m.audio},scint:fl,reco:r.n})}catch(e){}
     }catch(e){ok=false;$("#rec").hidden=true}
-    finally{if(window.SRX)SRX.ep=false;if(curFile===my&&!exporting){try{await lim(seekEl(v,t0),3500)}catch(e){}draw()}if(REC.pr===pr)REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
+    finally{if(window.SRX)SRX.ep=false;if(curFile===my&&!exporting&&!vaOk){try{await lim(seekEl(v,t0),3500)}catch(e){}draw()}if(REC.pr===pr)REC.pr=null;done();if(REC.stop&&!$("#rec_l").children.length)$("#rec").hidden=true}
   }
 };
 
@@ -1781,7 +1801,7 @@ $("#ex").onclick=async()=>{
   if(REC.pr){window.__exStarting=true;msg("Fin de l’analyse, puis l’export démarre…");REC.stop=true;REC.redo=curFile;try{await Promise.race([REC.pr,new Promise(r=>setTimeout(r,4000))])}catch(e){}finally{window.__exStarting=false;REC.pr=null}}
   if(!window.VideoEncoder||!window.Mp4Muxer){msg("L’export image par image n’est pas disponible sur cet appareil (mets iOS à jour).");return}
   if(SPD.k()!==1&&!window.__plan&&!window.__baMode)return TR.go(SPD.k());
-  exporting=true;cancel=false;v.pause();show=1;SRX.expId=(SRX.expId||0)+1;try{IAK.reinit()}catch(e){}try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
+  exporting=true;cancel=false;v.pause();show=1;twinFree();SRX.expId=(SRX.expId||0)+1;try{IAK.reinit()}catch(e){}try{sessionStorage.setItem("exp",JSON.stringify({name:curFile&&curFile.name,size:curFile&&curFile.size,q:$("#q").value,dur:Math.round(v.duration),w:v.videoWidth,h:v.videoHeight,voix:$("#o_voice").checked,stab:$("#o_stab").checked,pouss:$("#o_dust").checked,scint:$("#o_defl").checked}))}catch(e){}
   try{const ch=window.__baMode||window.__plan?null:LEARN.record();DIAG.send("export_debut",ch&&Object.keys(ch).length?{ajustements:ch}:{})}catch(e){}
   window.__exT=Date.now();const btn=$("#ex"),label=btn.textContent;btn.textContent="Annuler";
   $("#pg").hidden=false;$("#pg").value=0;$("#out").hidden=true;$("#dupn").hidden=true;

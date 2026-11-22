@@ -15,9 +15,9 @@ const blobSHA=name=>{
 };
 const unchanged={
   "aube.css":"f0d5013e80a0ed5cb7e9560ace0fe2ae4fbd6d69",
-  "aube.js":"17ab3b8da9da89837b4029333e610d4b5afb2f41",
-  "aube-etapes.css":"836ec5e9414142908990d799852891e2089457a1",
-  "aube-etapes.js":"f482ff70c6cfe83b74038b2c12155565f5a67138",
+  "aube.js":"8b0f65656a81731bdb44aac6e23ec72c425e077f",
+  "aube-etapes.css":"0b7278d601155876a5f74fbb9961863483e2817c",
+  "aube-etapes.js":"e6a2392fa97e3d4ca4b0ddacb28e70a626c77bbd",
   "sr.bin":"32e0d26a5685149aa03ca43f35df6cd0ead36a87",
   "sr2.bin":"8cf6dcf4c0e1560d5108fc7ed3c37d5b6f1d1274"
 };
@@ -47,7 +47,7 @@ assert.doesNotMatch(html,/body\.simple #flow,body\.simple #outils/,
                    "Règle héritée de PR92 masquerait des étapes AUBE");
 console.log("✓ AUBE intacte, nouvelles commandes IA accessibles en mode avancé");
 
-assert.match(text("app.js"),/const VER="v11\.1-essai"/,"ne pas rétrograder vers v10.3");
+assert.match(text("app.js"),/const VER="v11\.2-essai"/,"ne pas rétrograder vers v10.3");
 assert.match(text("app.js"),/const IATEST=/);
 assert.match(text("app.js"),/window\.__simpleExportDone/);
 assert.match(text("mode-simple.js"),/window\.__simpleRefresh/);
@@ -57,7 +57,7 @@ assert.match(text("kaggle.js"),/checkTime/);
 console.log("✓ moteur expérimental v11.1 et garde-fous IA reliés");
 
 const sw=text("sw.js");
-assert.match(sw,/const C="retouche-v111"/,"cache ne doit pas rétrograder à v103");
+assert.match(sw,/const C="retouche-v112"/,"cache ne doit pas rétrograder à v103");
 for(const f of ["budget-ia.js","aube.css","aube-etapes.css","aube.js","aube-etapes.js"]){
   assert.ok(sw.includes('"'+f+'"'),"ressource hors ligne absente : "+f);
 }

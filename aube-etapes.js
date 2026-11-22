@@ -66,7 +66,7 @@ resultControls.append(moreResult);moreResult.addEventListener("click",()=>window
 let oldState="",lastMessage="",poll=null;
 const strip=s=>String(s||"").replace(/\s+/g," ").trim();
 function update(){
- const loaded=B.classList.contains("loaded")&&!$("#app")?.hidden;
+ const loaded=(B.classList.contains("loaded")&&!$("#app")?.hidden)||$("#aube-root").classList.contains("ab-opening-now");
  if(!loaded){oldState="";return}
  const pg=$("#pg"),out=$("#out"),busy=!!(pg&&!pg.hidden)||B.classList.contains("ab-processing"),finished=!!(out&&!out.hidden&&!busy);
  const state=busy?"processing":finished?"result":"analysis";
