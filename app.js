@@ -1,5 +1,5 @@
 /* ===== Noyau de l'app — sorti d'index.html en v6.4 : chargé en différé (defer), la page s'affiche avant que le script soit lu ===== */
-const VER="v10.2";/* seul endroit où changer le numéro de version */
+const VER="v10.3-essai";/* seul endroit où changer le numéro de version */
 /* v6.4 : modules lourds chargés à la demande (une seule fois) ; demarrage.js les précharge quand le téléphone est libre */
 const MODULES={effacer:["marquage.js","effacer.js"],relief:["depth.js"],visages:["restauration-visage.js"],visvideo:["restauration-visage.js","recalage.js","visages-video.js"]},__charges={};
 function chargerScript(src){return __charges[src]||(__charges[src]=new Promise((ok,ko)=>{const s=document.createElement("script");s.src=src;s.async=false;
@@ -93,7 +93,7 @@ function dims(s){return [s.videoWidth||s.naturalWidth||s.width||0,s.videoHeight|
 function setMode(){
   const ph=mode==="photo";
   $("#app").hidden=false;$("#st0").hidden=true;
-  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#plc").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);document.querySelectorAll(".ponly").forEach(e=>e.hidden=!ph);$("#qwrap").hidden=ph;if(ph)$("#rec").hidden=true;$("#pv").hidden=true;SRX.lastErr=null;PROF.why="";PROF.hint();document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
+  $("#pp").hidden=ph;$("#tm").hidden=ph;$("#plc").hidden=ph;document.querySelectorAll(".vonly").forEach(e=>e.hidden=ph);document.querySelectorAll(".ponly").forEach(e=>e.hidden=!ph);$("#qwrap").hidden=ph;if(ph)$("#rec").hidden=true;$("#pv").hidden=true;SRX.lastErr=null;SRX.off=false;SRX.warned=false;PROF.why="";PROF.hint();document.body.classList.add("loaded");showTab("tp1");$("#bdg").hidden=false;
   $("#ex").textContent=ph?"Améliorer la photo":($("#q").value==="-1"?"Nettoyer (taille d’origine)":$("#q").value==="3840"?"Améliorer en 4K":"Améliorer en Full HD");
   $("#out").hidden=true;
 }
@@ -499,7 +499,7 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
         msg("Épreuve de vérité : sur cette vidéo, l’IA ne ferait pas mieux qu’un simple agrandissement (écart à la vraie image "+r.ia.toFixed(3)+" contre "+r.agrandi.toFixed(3)+"). Elle est retirée : rendu fidèle et export bien plus rapide. Tu peux la recocher si tu veux.")}
       else if(r.utile)msg("Épreuve de vérité : l’IA améliore vraiment cette vidéo (écart à la vraie image "+r.ia.toFixed(3)+" contre "+r.agrandi.toFixed(3)+" sans IA, plus bas = mieux). Elle est gardée.")}
     catch(e){}finally{SRX.ep=false;if(!exporting)try{draw()}catch(e){}}},
-  preview(){clearTimeout(SRX.pt);if(!SRX.on()||exporting||SRX.ep)return;/* v8.3 : pas d’aperçu IA pendant l’épreuve de vérité */
+  preview(){clearTimeout(SRX.pt);if(!SRX.on()||exporting||SRX.ep||mode==="video")return;/* aucun calcul IA vidéo caché ; aperçu explicite seulement */
     SRX.pt=setTimeout(async()=>{
       const el=cur();if(!el||exporting||SRX.ep||!show||(mode==="video"&&!v.paused)||!SRX.fits(el))return;
       const key=SRX.k();if(SRX.key===key&&SRX.pc)return;SRX.badge(2);
@@ -612,6 +612,49 @@ function analyze(){
     finally{b.disabled=false}
   };
 })();
+
+/* ===== Épreuve IA rapide, sur UNE zone de l'image native : aucun export nécessaire =====
+   L'utilisateur peut juger si le vrai modèle reconstruit un détail AVANT d'attendre sa vidéo. */
+const IATEST={active:false,
+  async run(){
+    if(this.active||exporting||mode!=="video"||!curFile||!v.videoWidth)return;
+    const btn=$("#ia_test"),box=$("#ia_result"),st=$("#ia_status"),pair=$("#ia_pair"),file=curFile;
+    this.active=true;btn.disabled=true;box.hidden=false;pair.hidden=true;
+    st.textContent="Lecture d’une seule image, puis calcul du vrai modèle IA sur une petite région…";
+    const origin=v.currentTime,wasPlaying=!v.paused;
+    try{
+      if(wasPlaying)v.pause();
+      const [a,b]=trimRange(),t=Math.max(0,Math.min(Math.max(0,v.duration-.04),(a+b)/2));
+      await seekEl(v,t);
+      if(file!==curFile||mode!=="video")return;
+      const W=v.videoWidth,H=v.videoHeight,side=Math.max(2,Math.min(192,W,H));
+      const patch=document.createElement("canvas");patch.width=patch.height=side;
+      const px=patch.getContext("2d");if(!px)throw new Error("lecture de la région indisponible");
+      px.drawImage(v,Math.floor((W-side)/2),Math.floor((H-side)/2),side,side,0,0,side,side);
+      const base=document.createElement("canvas");base.width=base.height=side*2;
+      const bx=base.getContext("2d",{willReadFrequently:true});bx.imageSmoothingEnabled=true;bx.imageSmoothingQuality="high";
+      bx.drawImage(patch,0,0,side*2,side*2);
+      $("#ia_before").src=base.toDataURL("image/png");
+      const start=performance.now();
+      const key=SRX.lock.then(()=>SR.run(patch,2,SRX.dn(),f=>{st.textContent="Calcul IA réel : "+Math.round(f*100)+" % des tuiles…"},null));
+      SRX.lock=key.catch(()=>{});
+      const ai=await key;
+      if(file!==curFile)return;
+      const restored=document.createElement("canvas");restored.width=base.width;restored.height=base.height;
+      const rx=restored.getContext("2d",{willReadFrequently:true});rx.drawImage(ai,0,0,restored.width,restored.height);
+      const before=bx.getImageData(0,0,base.width,base.height).data,after=rx.getImageData(0,0,base.width,base.height).data;
+      let delta=0;for(let k=0;k<before.length;k+=4)delta+=(Math.abs(before[k]-after[k])+Math.abs(before[k+1]-after[k+1])+Math.abs(before[k+2]-after[k+2]))/3;
+      delta=delta/(before.length/4);
+      $("#ia_after").src=restored.toDataURL("image/png");pair.hidden=false;
+      const seconds=(performance.now()-start)/1000;
+      const speed=SR.speed;
+      try{if(speed>0)localStorage.setItem("srspd",String(speed))}catch(e){}
+      st.textContent="Modèle IA réellement exécuté en "+seconds.toFixed(1).replace(".",",")+" s sur "+side+"×"+side+" px natifs. Écart moyen au simple agrandissement : "+delta.toFixed(1).replace(".",",")+"/255 (différence, pas preuve de qualité). Choisis à l’œil la version la plus fidèle.";
+      updateEst();
+    }catch(e){st.textContent="Épreuve IA impossible : "+((e&&e.message)||e)+". Aucun résultat n’est présenté comme restauré."}
+    finally{this.active=false;btn.disabled=false;if(file===curFile&&mode==="video")try{await seekEl(v,Math.max(0,origin));draw()}catch(e){}}
+  }};
+$("#ia_test").onclick=()=>IATEST.run();
 
 /* Comparaison */
 const cmp=$("#cmp");
@@ -771,7 +814,7 @@ async function stabEnable(on){
 /* mémorisation des options. Poussières, scintillement, voix et stabilisation sont ensuite réglées par l'analyse de CHAQUE vidéo :
    seules « mode rapide », « qualité maximale » et « fluidité » gardent le choix d'une vidéo à l'autre. */
 const pref=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}};
-const OPT_AFTER={o_stab:e=>stabEnable(e.checked),o_defl:()=>draw(),o_max:()=>{SRX.pc=null;SRX.key="";updateEst();draw()}};
+const OPT_AFTER={o_stab:e=>stabEnable(e.checked),o_defl:()=>draw(),o_max:()=>{SRX.off=false;SRX.lastErr=null;SRX.pc=null;SRX.key="";updateEst();draw()}};
 ["o_stab","o_voice","o_defl","o_dust","o_fast","o_max","o_fluid","o_srv","o_cine"].forEach(id=>{const e=$("#"+id);
   e.addEventListener("change",()=>{pref(id,e.checked?"1":"0");if(id==="o_max")SRX.autoOff=null;if(OPT_AFTER[id])OPT_AFTER[id](e)})});
 /* v6.0 caméra virtuelle : fiche de l'appareil affichée sous la case, correction appliquée seulement si la case est cochée */
@@ -846,7 +889,8 @@ v.onloadedmetadata=()=>{
   $("#app").hidden=false;$("#st0").hidden=true;$("#pick .lbl").textContent="Autre vidéo";mode="video";setMode();clearTimeout(wd);
   size(PREVIEW);msg("");
   chips([v.videoWidth+"×"+v.videoHeight,fmtT(v.duration),(curFile.size<524288?"<1":(curFile.size/1048576).toFixed(0))+" Mo"]);$("#tc").hidden=false;$("#tc").textContent="0:00 / "+fmtT(v.duration);updateEst();
-  if(Math.max(v.videoWidth,v.videoHeight)>=1500){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Ta vidéo est déjà en haute définition : le Full HD est choisi (bien plus rapide, presque aussi net). Tu peux repasser en 4K ci-dessus.'}
+  let qDejaChoisie=false;try{qDejaChoisie=!!localStorage.getItem("q")}catch(e){}
+  if(Math.max(v.videoWidth,v.videoHeight)>=1500&&!qDejaChoisie){$('#q').value='1920';$('#q').dispatchEvent(new Event('change'));$('#qhint').textContent='Full HD choisi par défaut. Le choix 4K reste disponible.'}
   window.__safe=null;
   try{FREP.run(curFile)}catch(e){}
   setTimeout(()=>{try{SRX.videoCheck()}catch(e){}try{TR.info()}catch(e){}},0);
@@ -1022,7 +1066,8 @@ const REC={last:null,pv(){try{if(mode!=="video"||!REC.fg||REC.fgf!==curFile||!$(
       if(r.o.bias){for(const k in r.o.bias)P[k]=Math.max(k==="co"||k==="sa"?.8:-.3,Math.min(k==="co"||k==="sa"?1.4:.3,P[k]+r.o.bias[k]));sync()}
       if(r.o.skip)r.it&&r.it.forEach((k,i)=>{const id={dust:"o_dust",defl:"o_defl",stab:"o_stab",voice:"o_voice"}[k];if(id&&r.o.skip[id]){REC.toggle(k,false,r);(r.off=r.off||{})[i]=true}});
       REC.show(r);LEARN.snap();
-      if(!halt()){try{await lim(SRX.verifierVideo(my),60000,null)}catch(e){}}
+      /* Épreuve coûteuse supprimée du chargement automatique : l'utilisateur juge d'abord une
+         image réellement restaurée grâce au bouton « Tester la vraie IA sur une image ». */
       /* v6.0 caméra virtuelle : fiche de l'appareil et mesures de l'objectif (6 images), même quand la case est décochée : la fiche s'affiche
          et, avec l'accord « diagnostic », ses nombres aident à régler l'app pour chaque type d'appareil */
       if(window.CAM&&!halt()){try{if(await lim(CAM.analyser(v,my,{bruit:m.noise,blocs:m.blk&&m.blk.r,cancel:halt}),25000,null)&&!halt()){camShow();DIAG.send("camera",CAM.diag())}}catch(e){}}
@@ -1576,6 +1621,8 @@ const FREP={info:null,
       if(Math.abs(x.fps[1]-x.fps[0])>.05)ok("Cadence : "+(Math.round(x.fps[0]*100)/100)+" → "+x.fps[1]+" images par seconde (option « Mouvement plus fluide »).");else ok("Cadence d’origine conservée : "+(Math.round(x.fps[0]*100)/100)+" images par seconde ✓");}
     else if(x.chk===null)warn("Le fichier n’a pas pu être relu pour vérification (le lecteur de cet appareil ne l’a pas ouvert à temps).");
     if(x.son)ok("Son : présent ✓");else if(x.why==="ta vidéo n’a pas de son")ok("Son : la vidéo d’origine n’en a pas.");else bad("Son absent : "+(x.why||"raison inconnue")+".");
+    if(x.iaRequested){if(x.iaFrames===x.frames)ok("Restauration IA réellement exécutée ou propagée : "+x.iaFrames+"/"+x.frames+" images.");else bad("Restauration IA partielle : "+x.iaFrames+"/"+x.frames+" images.")}
+    else ok("Traitement classique, sans restauration IA.");
     if(x.memDown)warn("Taille réduite automatiquement pour ne pas saturer la mémoire de l’iPhone.");
     if(x.retry4k)warn("La 4K n’a pas tenu sur cet iPhone : export refait en Full HD.");
     if(x.dupRun>=3)warn("Quelques images semblent figées (série de "+x.dupRun+") : si la vidéo saccade, réessaie.");
@@ -1711,6 +1758,21 @@ $("#ex").onclick=async()=>{
     if(fast)stabOn=false;
     if(!isPlan&&!fast&&$("#o_stab").checked&&!STAB){stabOn=true;STAB=await stabAnalyze();msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde")}
     const dT=Math.max(.2,tE-tS);
+    /* Garde-fou: aucun calcul local très long sans mesure. Ne jamais remplacer la restauration
+       demandée par une interpolation simplement colorisée. 4K n'est pas une preuve de détail. */
+    if($("#o_max").checked){
+      if(!SRX.on())throw new Error("IA demandée mais modèle indisponible. Ouvre Modèles IA ou désactive explicitement l’IA pour un export classique.");
+      const cloud=SRX.srvOK();
+      if(!cloud&&!SRX.fits(v))throw new Error("Cette source dépasse la limite IA locale. Pour une vraie restauration, active le GPU Kaggle (avec consentement) ; tu peux déjà utiliser le bouton Tester la vraie IA sur une image.");
+      if(!cloud){
+        const [ow,oh]=outDims(v.videoWidth,v.videoHeight,+$("#q").value);
+        let sp=0;try{sp=+localStorage.getItem("srspd")||0}catch(e){}
+        const pred=IABUDGET.estimate({w:v.videoWidth,h:v.videoHeight,ow,oh,duration:dT,fps:OUTF,
+          msPerMP:sp,iak:!!(window.IAK&&IAK.actif()),cascade:!!(SR.casc&&SR.casc(v.videoWidth,v.videoHeight,ow/v.videoWidth))});
+        if(!pred.allowed)throw new Error("Export IA local refusé avant le calcul : "+IABUDGET.label(pred.sec)+" selon l’estimation prudente, au-delà du budget de 10 min. Lance d’abord « Tester la vraie IA sur une image », ou utilise le GPU Kaggle avec autorisation. Aucun faux résultat 4K ne sera produit.");
+        window.__iaDeadlineMs=performance.now()+IABUDGET.LIMIT_SEC*1000;
+      }
+    }
     msg("Cadence de la vidéo : "+(Math.round(OFPS*10)/10)+" images par seconde");
     /* résolution et encodeur */
     let cfg=null,rdr0=false;window.__memDown=false;
@@ -1846,9 +1908,10 @@ $("#ex").onclick=async()=>{
       const L=plan?plan.map(pp=>pp.a):Array.from({length:total},(_,k)=>k+off),ns=[.08,.2,.32,.44,.56,.68,.8,.92].map(f=>L[Math.min(L.length-1,Math.floor(f*L.length))]);
       try{await SRX.caler(ns,OFPS)}catch(e){if(cancel)throw e;throw new Error("IA rapide : "+((e&&e.message)||e)+". Rien n’est perdu : décoche « Qualité IA » pour l’améliorer sans IA.")}}
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
-    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();let glN=0;window.__glN=0;
+    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();let frameIA=0,glN=0;window.__glN=0;
     for(let i=0;i<total;i++){
       if(cancel||err)break;
+      if(window.__iaDeadlineMs&&performance.now()>window.__iaDeadlineMs)throw new Error("Budget IA local de 10 min dépassé. Export interrompu, sans faux 4K. Utilise l’essai sur une image ou le GPU Kaggle.");
       const pl=plan?plan[i]:{a:i+off};const t0=performance.now();let qa=-1,qb=-1,src=null;if(!rdr)DUST.on=false;DFG=dfg?dfg[i]:1;
       /* saut en arrière dans un plan (prolongation) : la lecture séquentielle repart de là */
       if(rdr&&isPlan&&(pl.a<pMax-1||(SRX.remote&&pl.a===pMax-1&&!rdr.peek(pl.a)))){
@@ -1887,14 +1950,17 @@ $("#ex").onclick=async()=>{
       if(window.__baMode)split=BA.split(i,total);
       let f=null,p1=performance.now();
       try{
-        const p0=performance.now();{const M=!SRX.remote?null:rdr?z=>rdr.map(z):SRX.mapr?z=>SRX.rang(z):null;SRX.idx=!M?-1:pl.b==null?M(pl.a):{a:M(pl.a),b:M(pl.b),w:pl.w,fl:fcache&&fcache.j===pl.j?fcache.fl:null}}if(!(srUse&&await SRX.render(src)))draw(src);p1=performance.now();tDr+=p1-p0;
+        const p0=performance.now();{const M=!SRX.remote?null:rdr?z=>rdr.map(z):SRX.mapr?z=>SRX.rang(z):null;SRX.idx=!M?-1:pl.b==null?M(pl.a):{a:M(pl.a),b:M(pl.b),w:pl.w,fl:fcache&&fcache.j===pl.j?fcache.fl:null}}const didIA=srUse&&await SRX.render(src);
+        if(srUse&&!didIA)throw new Error("IA demandée mais non appliquée : export arrêté au lieu de fournir une fausse restauration 4K.");
+        if(!didIA)draw(src);else frameIA++;
+        p1=performance.now();tDr+=p1-p0;
         if(glPerdu())throw new Error("Canvas has no frame (moteur graphique retiré)");
         {let fs=BA.src(i,total);if(rvvOn)fs=RVV.appliquer(fs,i);f=new VideoFrame(fs,{timestamp:Math.round(i*1e6/OUTF),duration:Math.round(1e6/OUTF)})}
       }catch(e){
         /* v6.6 : l'iPhone a retiré le moteur graphique (mémoire) : on attend qu'il le rende et on refait CETTE image, sans rien perdre */
         if(glPerdu()&&!cancel){glN++;if(glN>4||!(await glPret(12000)))throw new Error("moteur graphique indisponible");
           msg("Mémoire graphique de l’iPhone saturée : reprise à l’image "+(i+1)+"…");q-=pl.b!=null?2:1;i--;continue}
-        if(!rdr||SRX.remote)throw e;
+        if(!rdr||SRX.remote||/IA demandée|Budget IA/.test(String(e&&e.message)))throw e;
         window.__seqInfo="seq abandon image "+((e&&e.message)||e);rdr.close();rdr=null;
         q=0;for(let z=0;z<i;z++){q+=plan&&plan[z].b!=null?2:1}
         await initPool();poolMode=true;for(let z=q;z<q+POOL;z++)go(z);
@@ -1953,12 +2019,12 @@ $("#ex").onclick=async()=>{
       try{DIAG.demander()}catch(e){}
       msg((wa?"Terminé !":audioWhy==="ta vidéo n’a pas de son"?"Terminé ! (vidéo sans son)":"Terminé, mais sans le son"+(audioWhy?" : "+audioWhy:"")+".")+" "+cfg.width+"×"+cfg.height+", "+(outBlob.size/1048576).toFixed(1)+" Mo."+(frozen?" Attention : quelques images semblent figées, réessaie si la vidéo saccade.":""));
       let chk=null;try{chk=await probeInfo(outBlob)}catch(e){}
-      try{const ro=FREP.out({chk,w:cfg.width,h:cfg.height,mo:(outBlob.size/1048576).toFixed(1),codec:cfg.codec,mbps:(cfg.bitrate/1e6).toFixed(1),frames:total,expected:plan?total:Math.max(1,Math.round(dT*OUTF)),son:!!wa,why:audioWhy,memDown:!!window.__memDown,retry4k:!!window.__retried4k,dupRun:frozen?maxRun+1:0,slow:!rdr0&&!isPlan,big:cfg.width*cfg.height>2073600*1.2,ar:[v.videoWidth,v.videoHeight],fps:[OFPS,OUTF],dur:[dT,(plan?total:total)/OUTF]});
+      try{const ro=FREP.out({chk,w:cfg.width,h:cfg.height,iaFrames:frameIA,iaRequested:srUse,mo:(outBlob.size/1048576).toFixed(1),codec:cfg.codec,mbps:(cfg.bitrate/1e6).toFixed(1),frames:total,expected:plan?total:Math.max(1,Math.round(dT*OUTF)),son:!!wa,why:audioWhy,memDown:!!window.__memDown,retry4k:!!window.__retried4k,dupRun:frozen?maxRun+1:0,slow:!rdr0&&!isPlan,big:cfg.width*cfg.height>2073600*1.2,ar:[v.videoWidth,v.videoHeight],fps:[OFPS,OUTF],dur:[dT,(plan?total:total)/OUTF]});
         const l=$("#orep_l");l.textContent="";let nb=0;ro.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
         $("#orep_s").textContent=nb?"Compte rendu de l’export : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu de l’export : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro;window.__retried4k=false}catch(e){}
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
-      try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)]}))}catch(e){}
-      try{DIAG.send("export",{ok:true,codec:cfg.codec,cascade:!!SRX.cascade,cascNet:SRX.cascNet||null,sr2Err:SRX.sr2Err||null,cascErr:SRX.cascErr||null,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,...(window.__glN?{gl_reprises:window.__glN}:{}),msg:$("#st1").textContent.slice(0,400)})}catch(e){}
+      try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,ia_images:frameIA,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)]}))}catch(e){}
+      try{DIAG.send("export",{ok:true,codec:cfg.codec,cascade:!!SRX.cascade,cascNet:SRX.cascNet||null,sr2Err:SRX.sr2Err||null,cascErr:SRX.cascErr||null,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,ia_images:frameIA,...(window.__glN?{gl_reprises:window.__glN}:{}),msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
   }catch(e){
@@ -1970,7 +2036,7 @@ $("#ex").onclick=async()=>{
     try{DIAG.send("export",{ok:false,err:m.slice(0,300)})}catch(x){}}
   finally{
     if(SRX.remote){try{SRX.remote.fermer()}catch(e){}SRX.remote=null;SRX.idx=-1}
-    window.__plan=null;window.__planK=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
+    window.__plan=null;window.__planK=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;window.__iaDeadlineMs=null;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}
     if(window.__retryPending)try{$("#q").dispatchEvent(new Event("change"));document.querySelectorAll("[data-q]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.q===$("#q").value?"true":"false"))}catch(e){}
