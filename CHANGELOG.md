@@ -1,5 +1,15 @@
 # Journal des versions
 
+## v11.1 (22 nov. 2026) — Aperçu fluide et avant / après à maintenir
+- **Aperçu qui ne saute plus** : l'analyse de fond (défauts, épreuve de vérité, caméra virtuelle, contrôle de lecture) lit ses images
+  dans un second lecteur invisible au lieu de déplacer la vidéo affichée. Avant, l'aperçu sautait à 25 %, 50 %, 75 %… pendant
+  jusqu'à 2 minutes. Mesures identiques au chiffre près (vérifié sur une vidéo de 60 s) ; repli automatique sur l'ancien
+  fonctionnement si le second lecteur ne s'ouvre pas.
+- **Avant / après** : bouton « Maintiens : original » sur l'aperçu (et appui long sur l'image) — l'original tant qu'on appuie,
+  l'amélioré au relâcher ; étiquette ORIGINAL / AMÉLIORÉ.
+- **Import** : l'espace de travail s'ouvre dès le choix du fichier (« Ouverture de ton souvenir… ») au lieu de rester sur l'accueil.
+- Barre de lecture : boutons Lire / Comparer compacts et durée lisible.
+
 ## v11.0 (22 nov. 2026) — Nouvelle interface AUBE
 - Toute l'app passe à l'interface **AUBE** (conçue avec ChatGPT, validée par le propriétaire), finalisée et vérifiée par Claude :
   accueil « Réveiller un souvenir », quatre étapes (Importer, Analyser, Restaurer, Conserver), outils avancés regroupés dans
