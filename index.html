@@ -527,6 +527,12 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
             <figure style="margin:0;min-width:0"><img id="ia_after" alt="Région réellement reconstruite par le modèle IA" style="display:block;width:100%;border-radius:8px"><figcaption>Avec restauration IA</figcaption></figure>
           </div>
           <p class="help">Test sur une région native de 192 × 192 pixels au maximum, à ×2, sans correction de couleur. Ce n’est pas la conversion de la vidéo entière ni une garantie de gain visuel.</p>
+          <div id="ia_votes" hidden style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <button class="btn" type="button" id="ia_better">👍 C’est mieux</button>
+            <button class="btn" type="button" id="ia_worse">👎 Pas mieux</button>
+            <button class="btn" type="button" id="ia_copy">Copier le bilan</button>
+          </div>
+          <p class="help" id="ia_feedback" hidden role="status">Ton avis est enregistré sur cet appareil, sans image envoyée.</p>
         </section>
         <button class="btn main big" id="ex" style="margin-top:12px">Améliorer en 4K</button>
         <progress id="pg" value="0" max="1" hidden></progress>
