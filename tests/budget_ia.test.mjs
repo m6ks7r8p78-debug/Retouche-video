@@ -21,8 +21,8 @@ assert.ok(withoutIak.keys>=bad.keys,"sans propagation, davantage de calculs de m
 assert.equal(IABUDGET.LIMIT_SEC,600);
 assert.match(IABUDGET.label(610),/11 min/);
 const html=load("index.html"),app=load("app.js"),sr=load("sr.js"),gpu=load("sr-gpu.js"),kg=load("kaggle.js");
-assert.ok(html.includes('id="ia_test"')&&html.includes('id="ia_after"')&&html.includes('src="budget-ia.js"'));
-assert.ok(app.includes('const IATEST=')&&app.includes('IABUDGET.estimate('));
+assert.ok(html.includes('id="ia_test"')&&html.includes('id="ia_after"')&&html.includes('id="ia_better"')&&html.includes('id="ia_worse"')&&html.includes('id="ia_copy"')&&html.includes('src="budget-ia.js"'));
+assert.ok(app.includes('const IATEST=')&&app.includes('IABUDGET.estimate(')&&app.includes('ia_evaluations_locales'));
 assert.ok(app.includes('ia_images:frameIA')&&app.includes('if(srUse&&!didIA)'));
 assert.ok(app.includes('window.__iaDeadlineMs=null;'));
 assert.ok(sr.includes('window.__iaDeadlineMs')&&gpu.includes('window.__iaDeadlineMs'));
