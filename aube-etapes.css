@@ -1,0 +1,85 @@
+/* AUBE V2.1 — mise en scène des étapes. */
+.ab-steps-work{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:8px 0 18px}
+.ab-step-work{display:flex;align-items:center;gap:8px;padding:10px 7px;background:var(--ab-card);border:1px solid var(--ab-line);border-radius:14px;color:var(--ab-muted);font-size:11px;font-weight:700}
+.ab-step-index{display:grid;place-items:center;width:27px;height:27px;flex:none;border:1px solid var(--ab-line);border-radius:9px;font-size:10px}
+.ab-step-now{background:#6152927d;border-color:#b7a6ff;color:#fff}.ab-step-now .ab-step-index{background:var(--ab-grad);color:#302143;border:0}
+.ab-step-done,.ab-step-done .ab-step-index{color:var(--ab-cyan);border-color:var(--ab-cyan)}
+.ab-media-card{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:13px 15px;border:1px solid var(--ab-line);border-radius:18px;background:var(--ab-card)}
+.ab-media-icon,.ab-insight-spark,.ab-output-glyph{display:grid;place-items:center;width:39px;height:39px;flex:none;border-radius:12px;background:#ab9cff25;color:var(--ab-violet)}
+.ab-media-icon svg,.ab-media-state svg,.ab-insight-spark svg,.ab-output-glyph svg{width:19px;height:19px}
+.ab-media-copy{flex:1;min-width:0}.ab-media-copy strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.ab-media-copy small{display:block;color:var(--ab-muted);font-size:11px;margin-top:4px}.ab-media-state{color:var(--ab-cyan)}
+.ab-insights{padding:14px;border:1px solid #b1a4fc36;background:#b19efe0d;border-radius:17px;margin:18px 0}
+.ab-insight-title{display:flex;gap:11px;align-items:center;margin-bottom:9px}
+.ab-insight-title strong,.ab-output-text strong{display:block;font-size:13px}
+.ab-insight-title small,.ab-output-text small{display:block;color:var(--ab-muted);font-size:11px;margin-top:3px}
+.ab-insights #rec{background:transparent!important;border:0;padding:0;margin:0!important;box-shadow:none}
+.ab-insights #rec h2{display:none}.ab-insights #rec_t,.ab-insights #rec_l{color:var(--ab-muted);font-size:12px;line-height:1.5}
+.ab-output-intent{display:flex;align-items:center;justify-content:space-between;gap:11px;margin-top:18px;padding:13px;background:var(--ab-card2);border:1px solid var(--ab-line);border-radius:17px}
+.ab-output-text{display:flex;align-items:center;gap:10px}.ab-output-glyph{width:36px;height:36px;background:#8ce6d526;color:var(--ab-cyan)}
+.ab-switch{width:49px;height:29px;padding:3px;border-radius:999px;background:#393d60;border:1px solid var(--ab-line);flex:none;cursor:pointer}
+.ab-switch span{display:block;width:21px;height:21px;border-radius:50%;background:#eee7ff;transition:transform .2s}
+.ab-switch[aria-checked=true]{background:#81d9ca}.ab-switch[aria-checked=true] span{transform:translateX(19px);background:#13383a}.ab-switch:disabled{opacity:.45}
+.ab-output-note{font-size:11px!important;color:var(--ab-muted);padding-top:13px}
+.ab-outcome{display:flex;align-items:center;gap:15px;margin:6px 0 20px;padding:19px;border:1px solid #84eed956;border-radius:23px;background:linear-gradient(120deg,#174d503d,#6455a924)}
+.ab-outcome-emblem{display:grid;place-items:center;flex:none;width:53px;height:53px;background:linear-gradient(135deg,#d3fff0,#8ee2d3);color:#17383d;border-radius:17px;box-shadow:0 12px 25px #67eac125}
+.ab-outcome-emblem svg{width:27px;height:27px}.ab-outcome h2{font-size:22px;line-height:1.1;margin:8px 0}.ab-outcome p{font-size:12px;color:var(--ab-muted);line-height:1.5;margin:0}
+.ab-result-notes{border-top:1px solid var(--ab-line);padding:12px 0;margin:8px 0}.ab-result-notes strong{font-size:13px;color:var(--ab-cyan)}
+.ab-again{display:flex!important;width:100%;margin-top:10px}.ab-again[hidden]{display:none!important}
+.ab-result-controls{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0}.ab-result-controls .ab-result-more{flex:1}
+.ab-result-controls #bat,.ab-result-controls #pvsolo{background:var(--ab-card);color:var(--ab-text);border:1px solid var(--ab-line);border-radius:14px;min-height:44px;padding:10px;font-size:12px}
+.ab-finished #ab-save{display:flex!important;justify-content:center;align-items:center;gap:12px;min-height:63px;background:linear-gradient(110deg,#c2ffdc,#84e7d8)!important;color:#15313a!important;font-size:15px;box-shadow:0 16px 35px -20px #78e7d6}
+.ab-finished #ab-save:before{content:"↓";font-size:23px}
+.ab-progress-sequence{margin:0 0 22px;text-align:left}
+.ab-progress-sequence>div{display:flex;align-items:center;gap:10px;padding:7px 0;color:#99a3c4;font-size:12px}
+.ab-progress-sequence svg{width:19px;height:19px}
+.ab-progress-sequence>div:first-child{color:#84eed9}.ab-progress-sequence .ab-current{color:#ffd1d8;font-weight:750}
+.ab-progress-subtitle{font-size:11px!important;color:#b7c0de!important;margin:-9px 0 19px}
+.ab-error-box{display:flex;gap:10px;margin:15px 0;padding:14px;border:1px solid #f49b9b77;border-radius:16px;background:#b750651b;color:#ffc1cb}
+.ab-error-box svg{width:22px;height:22px}.ab-error-box strong{font-size:13px}.ab-error-box p{font-size:12px;color:#f4bdc9;margin:6px 0 12px}
+.ab-drawer-note{font-size:12px;color:var(--ab-muted);line-height:1.5;margin:8px 0 15px}
+@media(max-width:580px){.ab-steps-work{gap:5px}.ab-step-work{flex-direction:column;gap:5px;text-align:center;padding:8px 2px;font-size:9px;border-radius:12px}
+.ab-step-index{width:25px;height:25px}.ab-media-card{padding:12px}.ab-outcome{padding:14px;gap:11px}
+.ab-outcome-emblem{width:43px;height:43px;border-radius:13px}.ab-outcome h2{font-size:20px}.ab-outcome p{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.ab-switch span{transition:none}}
+/* AUBE V2.2 — finitions (Claude) : parcours sans doublon, analyse visible, progression honnête, retour tactile */
+.ab-loaded .ab-journey{display:none}
+body.simple .ab-insights #rec:not([hidden]){display:block!important}
+.ab-insights #rec_t{display:none}
+.ab-insights #rec_l{margin-top:12px}
+.ab-insights #rec_l label{gap:10px;padding:7px 0;min-height:30px}
+.ab-insights #rec_hint{font-size:11px;color:var(--ab-muted)}
+.ab-finished .ab-panel>p:first-of-type,.ab-finished #ab-analysis{display:none}
+.ab-indetermine .ab-percent{display:none}
+.ab-indetermine .ab-track{position:relative;margin-top:26px}
+.ab-indetermine .ab-track i{position:absolute;width:38%!important;animation:abIndet 1.5s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes abIndet{0%{transform:translateX(-105%)}100%{transform:translateX(270%)}}
+.ab-button,.ab-opt,.ab-choice,.ab-drawer .ab-quick button,.ab-step-work{transition:transform .16s cubic-bezier(.2,.8,.2,1),box-shadow .2s,background-color .2s,border-color .2s}
+.ab-button:active:not(:disabled),.ab-opt:active,.ab-choice:active,.ab-drawer .ab-quick button:active{transform:scale(.97)}
+.ab-button:disabled{opacity:.48;cursor:not-allowed}
+.ab-drawer .ab-quick button[aria-pressed="true"]{border-color:#b9a6ff;box-shadow:0 0 0 1px #b9a6ff inset}
+#ab-drawer #activite{margin-top:16px}
+@media(prefers-reduced-motion:reduce){.ab-indetermine .ab-track i{animation:none;width:100%!important;opacity:.55}.ab-button:active,.ab-opt:active,.ab-choice:active{transform:none}}
+#aube-root #inst:not([hidden]){display:block;margin-top:18px;padding:14px 16px;border:1px solid var(--ab-line);border-radius:18px;background:var(--ab-card);color:inherit;font-size:13px;line-height:1.45}
+#aube-root #inst strong{display:block;margin-bottom:4px}#aube-root #inst p{margin:0 0 10px;color:var(--ab-muted)}
+#aube-root #instx{min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--ab-line);background:transparent;color:inherit;font-weight:650}
+/* Écran de traitement : toujours sur fond nuit, lisible aussi en mode clair */
+.ab-progress-shade{color:#f7f5ff}
+.ab-progress-card h2{color:#f7f5ff}
+.ab-progress-card .ab-eyebrow{color:#8ef0dc}
+.ab-progress-card .ab-button{background:rgba(255,255,255,.06)!important;border-color:rgba(201,211,255,.22)!important;color:#f7f5ff!important}
+.ab-progress-card .ab-button:disabled{opacity:.6;color:#c8cdea!important}
+/* Accent des commandes du moteur intégrées (cases, zoom, curseurs) aligné sur la palette AUBE */
+body{--acc:#b39cff}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]) body{--acc:#6a4fd8}}
+:root[data-theme="light"] body{--acc:#6a4fd8}
+#aube-root input[type=checkbox],#aube-root input[type=range],#ab-drawer input[type=checkbox],#ab-drawer input[type=range]{accent-color:var(--acc)}
+/* Mode clair : les surfaces nuit d'AUBE (fenêtres, volet d'outils, panneau de restauration) gardent leur teinte
+   mais reçoivent les couleurs de texte de nuit — sinon titres sombres sur fond sombre (illisibles). */
+.ab-dialog,.ab-panel{--ab-text:#f7f5ff;--ab-muted:#b3bcdb;--ab-line:rgba(201,211,255,.16);--ab-card:#1b2140;--ab-card2:#252b4b;color:var(--ab-text)}
+.ab-dialog h2,.ab-panel h2,.ab-panel h3,.ab-dialog summary,.ab-choice strong{color:var(--ab-text)}
+.ab-dialog .ab-eyebrow,.ab-panel .ab-eyebrow{color:#8ef0dc}
+.ab-dialog .ab-close{color:var(--ab-text)}
+.ab-panel .ab-opt,.ab-panel .ab-button,.ab-dialog .ab-quick button,.ab-dialog .ab-button{color:var(--ab-text)}
+.ab-panel .ab-again{background:rgba(255,255,255,.05)!important;border-color:var(--ab-line)!important}
+#ab-drawer #tp2,#ab-drawer #tp3,#ab-drawer #activite,#ab-drawer #mg,#ab-drawer #bt{--ink:#f7f5ff;--mut:#b3bcdb;--panel:#1b2140;--panel2:#232947;--bg:#12172f;--bg2:#161b35;--line:rgba(201,211,255,.16);--line2:rgba(201,211,255,.26);color:#f7f5ff}

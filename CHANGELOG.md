@@ -1,5 +1,14 @@
 # Journal des versions
 
+## v11.0 (22 nov. 2026) — Nouvelle interface AUBE
+- Toute l'app passe à l'interface **AUBE** (conçue avec ChatGPT, validée par le propriétaire), finalisée et vérifiée par Claude :
+  accueil « Réveiller un souvenir », quatre étapes (Importer, Analyser, Restaurer, Conserver), outils avancés regroupés dans
+  « Le studio complet » (visages, effacer une zone, regrouper, modèles IA, paramètres, mode expert, activité).
+- **Moteur v10.2 inchangé** (mêmes fichiers au octet près) : seules index.html (2 feuilles, 2 scripts) et sw.js (cache retouche-v110) changent.
+- Progression : pourcentage lu sur le moteur pour les vidéos, barre sans pourcentage pour les photos (jamais de progression inventée).
+- Vérifié dans Chromium : 97 contrôles de parcours réels (photo, vidéo, annulation, export MP4 vérifié, hors ligne) + suites du moteur.
+  Essai sur iPhone Safari physique encore à faire. Retour arrière : branche `sauvegarde-v10.2`.
+
 ## v10.2 (22 nov. 2026) — IA en cascade 4 à 5 fois plus rapide ET plus nette
 - La 2e passe de la cascade (v10.1) n'utilise plus le grand réseau mais un **petit réseau entraîné pour RetoucheProAI** (`sr2.bin`,
   174 Ko, 32 canaux, 8 couches) : il apprend à partir de l'image déjà restaurée par le grand réseau. À cette taille, **≈ 7 fois
