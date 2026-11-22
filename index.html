@@ -363,7 +363,7 @@ body:not(.simple) .simple-only{display:none!important}
 #sai{margin-top:12px}#sai .chk{margin:0;border:0;padding:0}
 #s_iah{display:block;font-weight:400;opacity:.8;margin-top:2px}
 
-/* ---------- outils plein écran (Effacer, Retirer un filtre, Visages) : même système, toujours en « chambre noire » ----------
+/* ---------- outils plein écran (Effacer, Visages) : même système, toujours en « chambre noire » ----------
    Ces écrans injectent leurs propres styles (effacer.js, defiltre-visage.js, restauration-visage.js) ; la couche ci-dessous,
    plus précise (body #…), leur donne l'identité du studio sans toucher à leur fonctionnement. Toujours sombres : on y juge l'image. */
 body #ez,body #dfv,body #rvis{--t-bg:#0b0b0d;--t-pan:#16161a;--t-pan2:#1e1e23;--t-line:rgba(255,255,255,.09);--t-line2:rgba(255,255,255,.18);
@@ -433,8 +433,6 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
     <input type="file" id="fp" accept="image/*" hidden>
     <input type="file" id="fe" accept="image/*" hidden>
     <input type="file" id="fv" accept="image/*" hidden>
-    <input type="file" id="ff" accept="video/*" hidden>
-    <input type="file" id="fd" accept="image/*" hidden>
     <input type="file" id="fm" accept="video/*" multiple hidden>
     <form class="lnk" id="lnkf" autocomplete="off" novalidate>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>
@@ -557,7 +555,6 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
           <button class="btn" id="bab" style="margin-top:8px" hidden>🎬 Créer un avant / après à partager (10 s)</button>
           <button class="btn" id="kbb" style="margin-top:8px" hidden>🎞️ Animer la photo en vidéo (8 s)</button>
           <button class="btn" id="erb" style="margin-top:8px" hidden>🩹 Effacer une zone de la photo d’origine (IA)</button>
-          <button class="btn" id="dfb" style="margin-top:8px" hidden>🐶 Retirer le filtre (museau, oreilles…) de la photo d’origine (IA, essai)</button>
           <button class="btn" id="rvb" style="margin-top:8px" hidden>🙂 Restaurer les visages de la photo d’origine (IA, essai)</button>
           <label class="chk" id="kbo" hidden style="margin-top:8px"><input type="checkbox" id="o_relief" checked><span><b>Effet de relief</b>La caméra se déplace doucement dans la photo : le premier plan bouge plus que le fond. Rien n’est modifié dans la photo. Télécharge 27 Mo la première fois.</span></label>
           <div id="kbres" hidden style="margin-top:12px"><h2 style="margin:0 0 8px">Photo animée</h2><video id="kbv" controls playsinline loop style="width:100%;border-radius:12px;background:#000;max-height:52vh"></video>
@@ -588,7 +585,6 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
           <label class="chk"><input type="checkbox" id="o_fast"><span><b>Mode rapide</b>Plus rapide pour les longues vidéos (sans stabilisation ni fluidité).</span></label>
           <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Moins de tremblements (image un peu recadrée).</span></label>
           <label class="chk"><input type="checkbox" id="o_defl"><span><b>Anti-scintillement</b>Pour les vieux films dont la lumière clignote.</span></label>
-          <label class="chk"><input type="checkbox" id="o_rfv"><span><b>Retirer le filtre du visage (IA, essai)</b>Museau, oreilles, lunettes dessinées, autocollants… retirés sur toute la vidéo, sans scintillement : une seule reconstruction, qui suit la tête. Ce qui est reconstruit est inventé (plausible, pas retrouvé).</span></label>
           <label class="chk"><input type="checkbox" id="o_rvv"><span><b>Restaurer les visages (IA, essai)</b>Yeux, peau, cheveux reconstruits sur les visages, stables d’une image à l’autre. Vidéos courtes : environ 20 s de calcul par image clé (une image sur 3), modèle de 86 Mo téléchargé une fois.</span></label>
           <label class="chk"><input type="checkbox" id="o_dust"><span><b>Poussières et points noirs</b>Efface les petites taches des films numérisés.</span></label>
           <label class="chk"><input type="checkbox" id="o_voice"><span><b>Voix plus claire</b>Retire le souffle et les bruits de fond.</span></label>
@@ -608,22 +604,13 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
           <button class="btn" data-p="vhs">Cassette VHS</button>
           <button class="btn" data-p="film">Film jauni</button>
           <button class="btn" data-p="dark">Vieux téléphone, peu de lumière</button>
-          <button class="btn" data-p="beauty">Vidéo avec filtre beauté</button>
         </div>
         <div id="sl"></div>
         </details>
       </div>
 
       <div class="panel" id="tp3" hidden>
-        <div class="card" id="flt" hidden><h2>Retirer un filtre de réseau social <span class="mono" style="font-weight:400">(essai)</span></h2>
-          <p class="help" id="flt_h">Touche la miniature qui paraît la plus naturelle (peau, murs, vêtements). « Aucun » garde la vidéo telle quelle.</p>
-          <div id="flt_g" class="fgrid"></div>
-          <div id="flt_s" hidden><label class="help" style="display:block;margin:10px 0 4px">Force du retrait <span class="mono" id="flt_v">100 %</span></label><input type="range" id="flt_r" min="0" max="1" step=".05" value="1" aria-label="Force du retrait">
-</div>
-          <p class="help" style="margin:10px 0 0">Retire les filtres de couleur et de lumière. Pas les autocollants, textes, masques ou déformations.</p></div>
-        <button class="btn" id="diagb2" style="margin:0 0 10px">📋 Copier le diagnostic</button>
-        <button class="btn" id="fmb" style="margin:10px 0 0">📐 Changer le format de cette vidéo (16:9, 9:16, carré…)</button>
-        <button class="btn" id="fltb" style="margin:10px 0">Retirer un filtre de réseau social (essai)</button>
+                <button class="btn" id="diagb2" style="margin:0 0 10px">📋 Copier le diagnostic</button>
         <div class="card" id="trc" style="margin:0 0 14px">
           <h2>Vitesse et sens de lecture</h2>
           <p class="help" id="tr_info">Corrige une vidéo accélérée ou ralentie, ou la remet à l’endroit. La partie choisie dans Réglages est respectée.</p>
@@ -656,9 +643,7 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
       <button class="tool" type="button" id="pickm"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="7" width="7" height="10" rx="1.5"/><rect x="14.5" y="7" width="7" height="10" rx="1.5"/><path d="M9.5 12h5"/></svg></span><span class="lbl">Regrouper des vidéos<small>Mettre bout à bout, puis améliorer</small></span></button>
     </div>
     <div class="grp"><p class="grp-h">Reconstruire</p>
-      <button class="tool ia" type="button" id="pickf"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="3" width="8" height="18" rx="2"/><path d="M8 8H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h3M16 8h3a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-3" stroke-dasharray="2.5 2.5"/></svg></span><span class="lbl">Changer le format d’une vidéo <span class="bdg2">IA · nouveau</span><small>Verticale ↔ horizontale, 4:3 → 16:9, carré…</small></span></button>
       <button class="tool ia" type="button" id="pickv"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="10" r="5"/><path d="M5 20c1.5-3.2 4-4.5 7-4.5s5.5 1.3 7 4.5"/><path d="M19 3l.7 1.6L21.3 5l-1.6.7L19 7.3l-.7-1.6L16.7 5l1.6-.4z"/></svg></span><span class="lbl">Visages d’une photo <span class="bdg2">IA · essai</span><small>Yeux, peau, cheveux ; zones inventées signalées</small></span></button>
-      <button class="tool ia" type="button" id="pickd"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/><path d="M6 6l-2-3M18 6l2-3M9 15h6"/><path d="M3 21L21 3"/></svg></span><span class="lbl">Retirer un filtre du visage <span class="bdg2">IA · essai</span><small>Accessoires et effets Snapchat, Instagram</small></span></button>
       <button class="tool ia" type="button" id="picke"><span class="ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.5l4 4-9.5 9.5H6v-4z"/><path d="M4 21h16"/><path d="M13 7l4 4"/></svg></span><span class="lbl">Effacer une zone <span class="bdg2">IA</span><small>Reconstruction par IA</small></span></button>
     </div>
   </aside>

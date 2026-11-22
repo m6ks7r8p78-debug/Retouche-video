@@ -23,9 +23,9 @@ window.ABO = (() => {
     { id: "mensuel", nom: "Mensuel", prix: "5,99 €", detail: "TTC par mois, sans engagement, résiliable à tout moment" },
     { id: "annuel", nom: "Annuel", prix: "34,99 €", detail: "TTC par an, soit 2,92 € par mois, renouvelé chaque année", top: "−51 %" }
   ];
-  const AVANTAGES = ["Export en 4K", "IA qualité maximale", "Retirer un filtre de réseau social", "Effacer une zone (IA)",
+  const AVANTAGES = ["Export en 4K", "IA qualité maximale", "Effacer une zone (IA)",
     "Corriger une vidéo accélérée ou ralentie", "Regrouper des vidéos et améliorer tout un lot", "Aucune publicité", "Utilisable hors ligne"];
-  const RAISONS = { k4: "L’export en 4K", ia: "L’IA qualité maximale", filtre: "Le retrait de filtre", effacer: "« Effacer une zone »",
+  const RAISONS = { k4: "L’export en 4K", ia: "L’IA qualité maximale", effacer: "« Effacer une zone »",
     tr: "La correction de vitesse (Time Repair)", regrouper: "Le regroupement de vidéos", lot: "L’amélioration d’un lot de vidéos",
     hl: "L’utilisation hors ligne" };
 
@@ -40,7 +40,7 @@ window.ABO = (() => {
   }
   const actif = () => !!C.actif;
   const premium = () => !actif() || valide(lire());
-  const besoin = { k4: 1, ia: 1, filtre: 1, effacer: 1, tr: 1, regrouper: 1, lot: 1, hl: 1 };
+  const besoin = { k4: 1, ia: 1, effacer: 1, tr: 1, regrouper: 1, lot: 1, hl: 1 };
   const autorise = f => premium() || !besoin[f];
 
   /* ---------- vérification d'une clé de licence Polar (site web) ---------- */
@@ -147,7 +147,7 @@ window.ABO = (() => {
     document.documentElement.classList.add("abo-verrou");
     ramener();
     /* clics : on bloque avant le code de l'app (phase de capture) */
-    const CLICS = [['[data-q="3840"]', "k4"], ["#fltb", "filtre"], ["#erb", "effacer"], ["#picke", "effacer"], ["#tr_go", "tr"],
+    const CLICS = [['[data-q="3840"]', "k4"], ["#erb", "effacer"], ["#picke", "effacer"], ["#tr_go", "tr"],
       ["#pickm", "regrouper"], ["#mggo", "regrouper"], ["#exall", "lot"]];
     document.addEventListener("click", e => {
       if (premium()) return;
@@ -191,7 +191,7 @@ window.ABO = (() => {
   css.textContent =
     ".abo-b{margin-left:auto;padding:7px 12px;border-radius:999px;border:0;font:700 13px/1 inherit;color:#fff;background:linear-gradient(120deg,#0f7bff,#5b5bff 45%,#a23bff);cursor:pointer}" +
     ".abo-verrou [data-q=\"3840\"] small::after{content:\" 🔒\"}" +
-    ".abo-verrou #fltb::after,.abo-verrou #erb::after,.abo-verrou #tr_go::after,.abo-verrou #mggo::after,.abo-verrou #exall::after,.abo-verrou #pickm .lbl::after,.abo-verrou #picke .lbl::after{content:\" 🔒\"}" +
+    ".abo-verrou #erb::after,.abo-verrou #tr_go::after,.abo-verrou #mggo::after,.abo-verrou #exall::after,.abo-verrou #pickm .lbl::after,.abo-verrou #picke .lbl::after{content:\" 🔒\"}" +
     ".abo-verrou #sai b::after{content:\" 🔒\"}" +
     ".abo-dlg{max-width:min(94vw,440px);border:1px solid var(--line);border-radius:18px;background:var(--panel);color:var(--ink);padding:20px 18px 16px}" +
     ".abo-dlg::backdrop{background:rgba(0,0,0,.55)}.abo-dlg h2{margin:0 28px 10px 0;font-size:20px;line-height:1.25}" +

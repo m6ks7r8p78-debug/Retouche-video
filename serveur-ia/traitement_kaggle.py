@@ -83,7 +83,7 @@ def travail(g):
         try:
             n = len(buf) // taille
             x = torch.frombuffer(bytearray(buf), dtype=torch.uint8).view(n, RH, RW, 3).to(f"cuda:{g}")
-            y = IA.traiter(modeles[g], x, s).cpu().numpy().tobytes()
+            y = IA.traiter_casc(modeles[g], x, s).cpu().numpy().tobytes()
         except Exception as e:
             erreurs.append(repr(e)); y = None
         with verrou:

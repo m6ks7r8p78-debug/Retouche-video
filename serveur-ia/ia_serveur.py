@@ -85,3 +85,11 @@ def traiter(couches, images_u8, s, demi=True):
     full8 = torch.floor(full * 255 + 0.5) / 255             # texture RGBA8 de l'app
     out = reduire(full8, OW, OH)
     return torch.floor(out * 255 + 0.5).clamp_(0, 255).to(torch.uint8).permute(0, 2, 3, 1).contiguous()
+
+
+CASC = 2.6
+def traiter_casc(couches, images_u8, s, demi=True):
+    """v10.1 : même règle que l'app (sr.js) : agrandissement ×2,6 ou plus → IA ×2 puis IA de nouveau sur ce résultat."""
+    if s < CASC:
+        return traiter(couches, images_u8, s, demi)
+    return traiter(couches, traiter(couches, images_u8, 2.0, demi), s / 2, demi)

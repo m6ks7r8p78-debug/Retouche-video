@@ -11,6 +11,10 @@
 var SR = (() => {
   const CORE = 224;
   const MAXPX = 1100000;                           // au-delà (image déjà HD), l'IA n'apporte rien et serait très longue
+  /* v10.1 IA en cascade : pour une petite vidéo agrandie ×2,6 ou plus (480p → 4K…), l'IA est appliquée deux fois (×2 puis ×2).
+     Banc outils/sr/cascade.py (vérité HD, entrée réduite puis H.264) : ×4 LPIPS 0,2698 → 0,2578 ; ×3 0,2480 → 0,2335.
+     La seconde passe reçoit l'image déjà ×2 : limite propre (mémoire « full » RGBA8 ≤ 6832 px de large). */
+  const MAXPX2 = 1700000, CASC = 2.6;
   let g = null, cvs = null, st = null, why = "", vao, img, full = null, fullW = 0, fullH = 0, fbFull = null;
   let M = null;                                    // modèle chargé : {nf, nc, halo, A (poids, 1 ou 2 jeux), layers, progs}
   let dnCur = -1, tileW = 0, tileH = 0, X0, X1, XL, fbs = null, cacheKey = null, stats = { ms: 0, px: 0 };
@@ -208,7 +212,7 @@ o=vec4(s/float(k*k),1.);}`;
   let engine = null, running = 0;
   /* choix du moteur : « auto » (WebGPU puis WebGL2), « gpu » ou « gl » (réglable dans « Modèles IA ») */
   function pref() { try { return window.__srgl ? "gl" : localStorage.getItem("sr_moteur") || (localStorage.getItem("srgl") === "1" ? "gl" : "auto") } catch (e) { return "auto" } }
-  async function run(src, s, dn, onTile, key) {
+  async function run(src, s, dn, onTile, key, lim) {
     running++;
     try {
       const p = pref();
@@ -218,7 +222,7 @@ o=vec4(s/float(k*k),1.);}`;
           /* WebGPU en échec : on libère ce qu'il occupait avant de passer à WebGL2 (évite le cumul de mémoire) */
           try { SRGPU.unload() } catch (x) {} engine = "gl"; why = "WebGPU : " + ((e && e.message) || "erreur") }
       }
-      const c = await runGL(src, s, dn, onTile, key); engine = "gl"; return c;
+      const c = await runGL(src, s, dn, onTile, key, lim); engine = "gl"; return c;
     } finally { running-- }
   }
   /* libère toute la mémoire graphique du réseau ; il sera rechargé (et revérifié) au prochain usage */
@@ -245,10 +249,10 @@ o=vec4(s/float(k*k),1.);}`;
   if (window.MODELS) MODELS.register("sr", {
     loaded: () => !!(st === true || (window.SRGPU && SRGPU.loaded)), busy: () => running > 0,
     unload, bench, engine: () => { engine = null } });
-  async function runGL(src, s, dn, onTile, key) {
+  async function runGL(src, s, dn, onTile, key, lim) {
     if (!(await init())) throw new Error(why);
     const W = src.videoWidth || src.displayWidth || src.naturalWidth || src.width, H = src.videoHeight || src.displayHeight || src.naturalHeight || src.height;
-    if (W * H > MAXPX) throw new Error("image trop grande");
+    if (W * H > (lim || MAXPX)) throw new Error("image trop grande");
     if (W * 4 > g.getParameter(g.MAX_TEXTURE_SIZE) || H * 4 > g.getParameter(g.MAX_TEXTURE_SIZE)) throw new Error("image trop grande pour la carte graphique");
     s = Math.min(4, Math.max(.25, s)); setWeights(dn == null ? .3 : dn);
     g.bindVertexArray(vao);
@@ -271,7 +275,9 @@ o=vec4(s/float(k*k),1.);}`;
     return cvs;
   }
   return {
-    init, run, MAXPX, unload, bench,
+    init, run, MAXPX, MAXPX2, unload, bench,
+    /* la cascade s'applique-t-elle à une image W×H agrandie ×s ? */
+    casc(W, H, s) { return s >= CASC && W * H <= MAXPX && 4 * W * H <= MAXPX2 },
     get ok() { return engine === "gpu" ? true : st }, get why() { return why }, get engine() { return engine || "?" },
     get busy() { return running > 0 },
     /* vitesse mesurée du dernier calcul : millisecondes par mégapixel d'image d'origine */

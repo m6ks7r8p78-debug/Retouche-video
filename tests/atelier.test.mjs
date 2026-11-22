@@ -25,7 +25,7 @@ await test("Ancienne composition absente (titre promotionnel, 3 gros boutons, é
   const r = { hero: !!document.querySelector(".hero"), picks: !!document.querySelector(".picks,.pickbtn"), steps: !!document.querySelector(".steps"), sprock: !!document.querySelector(".sprock") };
   return { ok: !r.hero && !r.picks && !r.steps && !r.sprock, info: JSON.stringify(r) } }));
 await test("Outils par besoin : chaque bouton ouvre le bon sélecteur de fichier", async () => {
-  const pairs = [['[data-proxy="#pickp"]', "#fp"], ['[data-proxy="#pick"]', "#f"], ["#pickm", "#fm"], ["#pickv", "#fv"], ["#pickd", "#fd"], ["#picke", "#fe"]]; const vu = [];
+  const pairs = [['[data-proxy="#pickp"]', "#fp"], ['[data-proxy="#pick"]', "#f"], ["#pickm", "#fm"], ["#pickv", "#fv"], ["#picke", "#fe"]]; const vu = [];
   for (const [btn, inp] of pairs) {
     const ok = await m.evaluate(([btn, inp]) => new Promise(res => { const i = document.querySelector(inp); const o = i.click; let f = false; i.click = () => { f = true }; document.querySelector(btn).click(); i.click = o; res(f) }), [btn, inp]);
     vu.push(btn + (ok ? " ✓" : " ✗"));

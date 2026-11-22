@@ -1,5 +1,24 @@
 # Journal des versions
 
+## v10.1 (22 nov. 2026) — IA en cascade : les petites vidéos montent en 4K bien plus nettes
+- Une petite vidéo agrandie ×2,6 ou plus (vieux téléphone 320×240, 480p, 576p… vers la 4K) passe désormais **deux fois** par
+  l'IA : ×2, puis ×2 de nouveau sur ce résultat, au lieu d'un agrandissement simple après la première passe.
+  Banc à vérité connue (`outils/sr/cascade.py`, image HD réduite puis compressée en H.264) : ×4 LPIPS 0,270 → **0,258** (−4,5 %),
+  ×3 0,248 → **0,234** (−5,8 %). Essais écartés : netteté ajoutée (0,282), Lanczos (0,274), IA sur image pré-agrandie (0,292),
+  mélange à 50 % (0,260).
+- Même résultat au pixel près que la référence (`tests/cascade.test.mjs`, écart moyen 0,03 niveau) ; si la seconde passe échoue
+  (mémoire), repli automatique sur une passe. Aussi sur Kaggle (`traiter_casc`). Le calcul IA est environ 5 fois plus long pour
+  ces vidéos (l'estimation de durée en tient compte) ; les vidéos HD (×2) ne changent pas.
+
+## v10.0 (22 nov. 2026) — Ménage : on retire ce qui ne marchait qu'à moitié
+- **Retiré : « Changer de format »** (horizontal ↔ vertical) : l'extension des côtés par IA (MI-GAN/LaMa) restait floue ou
+  inventait des formes ; aucun modèle utilisable sur téléphone ne donne un prolongement réaliste.
+- **Retiré : « Retirer un filtre »** (filtres de couleur des réseaux sociaux, filtres AR sur photo et vidéo, préréglage beauté) :
+  résultats irréguliers, mesurés seulement sur des filtres simulés.
+- Code, modèles (détecteur d'éléments, MediaPipe mains, EfficientDet), tests et mentions (tarifs, CGV, guide, licences) retirés ;
+  l'app est plus légère. Restent : amélioration 4K, IA qualité maximale, Effacer une zone, visages, relief, son, Moteur Cinéma.
+  Ancien état archivé sur la branche `archive-avant-v10-format-filtres`.
+
 ## v9.6 (21 nov. 2026) — L'image IA garde toute sa restauration
 - Le verrou de fidélité (v8.3) n'est plus appliqué à l'image IA : mesuré sur les 20 images de vérité, il retirait au nouveau modèle
   une partie de sa restauration (LPIPS 0,106 → 0,116) sans rien protéger — le modèle garde déjà les couleurs (écart ΔE 1,95 en

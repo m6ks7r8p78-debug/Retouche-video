@@ -41,9 +41,9 @@ await test("Allumé sans Premium : bouton Premium, IA décochée, 4K ramenée en
 await test("Allumé sans Premium : toucher 4K ouvre l’offre et garde Full HD", async () => {
   await p.evaluate(() => document.querySelector('[data-q="3840"]').click()); const t = await dlgTitre(p); const q = await p.evaluate(() => document.getElementById("q").value); await fermer(p);
   return { ok: /4K/.test(t) && q === "1920", info: "« " + t + " », q=" + q } });
-await test("Allumé sans Premium : chaque outil Premium ouvre l’offre (filtre, effacer, Time Repair, regrouper, lot, IA)", async () => {
+await test("Allumé sans Premium : chaque outil Premium ouvre l’offre (effacer, Time Repair, regrouper, lot, IA)", async () => {
   const out = [];
-  for (const s of ["#fltb", "#erb", "#picke", "#tr_go", "#pickm", "#mggo", "#exall"]) { await p.evaluate(s => { const e = document.querySelector(s); e.hidden = false; e.click() }, s); out.push(s + ":" + ((await dlgTitre(p)) ? "ok" : "NON")); await fermer(p) }
+  for (const s of ["#erb", "#picke", "#tr_go", "#pickm", "#mggo", "#exall"]) { await p.evaluate(s => { const e = document.querySelector(s); e.hidden = false; e.click() }, s); out.push(s + ":" + ((await dlgTitre(p)) ? "ok" : "NON")); await fermer(p) }
   await p.evaluate(() => { const c = document.getElementById("o_max"); c.checked = true; c.dispatchEvent(new Event("change", { bubbles: true })) });
   const ia = await dlgTitre(p); const coche = await p.evaluate(() => document.getElementById("o_max").checked); await fermer(p);
   out.push("IA:" + (/IA/.test(ia) && !coche ? "ok" : "NON"));

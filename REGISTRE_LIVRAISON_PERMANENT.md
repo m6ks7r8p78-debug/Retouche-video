@@ -12,10 +12,12 @@ VALIDÉ SUR MÉDIAS RÉELS AUTORISÉS · VALIDÉ SUR IPHONE · TERMINÉ SELON LE
 
 ---
 
-## Tableau de bord (à jour : v8.3, 15/11/2026)
+## Tableau de bord (à jour : v10.0, 22/11/2026)
 
 | | Fonctions |
 |---|---|
+| **v10.0 — RETIRÉES de l'app** | F06/F08/F10/F30 (retirer un filtre couleur/AR, photo et vidéo), F35/F36 (Changer de format, côtés générés ou ambiance) : retirées à la demande du propriétaire (résultats partiels). Code archivé sur la branche `archive-avant-v10-format-filtres`. Les lignes plus bas qui les citent décrivent l'historique. |
+| **v9.5/v9.6** | F03 IA qualité maximale : nouveau modèle 2xNomosUni compact multijpg (LPIPS 0,106 vs 0,114), épreuve de vérité GMSD ; non validé sur iPhone |
 | **Terminées selon les critères** | aucune |
 | **Validées sur iPhone** (usage réel du propriétaire / diagnostics reçus) | F01 amélioration vidéo classique · F03 IA locale (photo) · F19 voix plus claire · F05 retrait de filtre couleur (vidéo) |
 | **Validées sur médias réels autorisés** (pas sur iPhone) | **F13 restauration des visages (photo)** — nouvelle en v6.9 |
