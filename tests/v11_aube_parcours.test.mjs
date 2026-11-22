@@ -22,7 +22,7 @@ async function ctxFor(viewport,scheme){const mobile=viewport.width<600;
 const analysed=p=>p.waitForFunction(()=>!document.querySelector("#rec").hidden&&/mesuré|Aucun défaut|repéré|bon état/.test(document.querySelector("#rec_t").textContent),null,{timeout:120000});
 try{
  await wait();
- browser=await chromium.launch({headless:true,args:["--use-angle=swiftshader","--enable-unsafe-swiftshader","--autoplay-policy=no-user-gesture-required"]});
+ browser=await chromium.launch({headless:true,executablePath:process.env.CHROME||undefined,args:["--use-angle=swiftshader","--enable-unsafe-swiftshader","--autoplay-policy=no-user-gesture-required"]});
  for(const [viewport,scheme] of [[{width:390,height:844},"dark"],[{width:430,height:932},"light"],[{width:1440,height:900},"dark"]]){
   const W=viewport.width+" "+scheme;const {ctx,page,errs}=await ctxFor(viewport,scheme);
   ok(await page.locator("#ab-start").isVisible(),W+" : accueil AUBE, bouton « Réveiller un souvenir » visible");
