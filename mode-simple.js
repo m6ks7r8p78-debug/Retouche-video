@@ -4,6 +4,16 @@
 (()=>{
   const $=q=>document.querySelector(q),B=document.body;
   let m="simple",plan=null,retouche=null;
+  /* AUBE expose un choix de résolution indépendant du bouton Auto.
+     Un choix explicite doit rester prioritaire (jusqu'au prochain import).
+     Le handler délégué fonctionne même si AUBE crée ses boutons plus tard. */
+  let aubeResolutionManuelle=false;
+  document.addEventListener("click",e=>{
+    if(e.target?.closest?.("[data-ab-q]"))aubeResolutionManuelle=true;
+  },true);
+  document.addEventListener("change",e=>{
+    if(e.target?.id==="f"||e.target?.id==="fp")aubeResolutionManuelle=false;
+  },true);
   try{m=localStorage.getItem("ui_mode")==="expert"?"expert":"simple"}catch(e){}
   const mx=$("#o_max"),sv=$("#o_srv"),ia=$("#s_ia"),h=$("#s_iah"),ex=$("#ex");
   const kg=()=>!!(window.KG&&window.KG.actif());
@@ -70,6 +80,14 @@
   if(toggle)toggle.onclick=()=>{m=m==="simple"?"expert":"simple";try{localStorage.setItem("ui_mode",m)}catch(e){}apply();window.scrollTo({top:0,behavior:"smooth"})};
   if(ex)ex.addEventListener("click",()=>{
     if(m!=="simple"||mode!=="video"||!v.videoWidth||exporting||window.__exStarting||window.__baMode||window.__plan)return;
+    /* Un choix AUBE 4K/Full HD/Original ne doit jamais être remplacé
+       par le plan automatique lorsque l'utilisateur lance le bouton. */
+    if(aubeResolutionManuelle){
+      plan=null;
+      const note=$("#auto_note");
+      if(note)note.textContent="Résolution choisie manuellement dans AUBE. Le moteur vérifie toujours le budget IA avant la conversion.";
+      return;
+    }
     prepare(decide()); /* immédiatement avant l'ancien gestionnaire d'export */
   },true);
   for(const b of document.querySelectorAll("[data-auto-retouch]"))b.onclick=()=>{
