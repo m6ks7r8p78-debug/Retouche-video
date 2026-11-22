@@ -31,6 +31,16 @@ jobs:
           "$RUNNER_TEMP/rpa-browser/node_modules/.bin/playwright" install --with-deps chromium
           sudo apt-get install -y ffmpeg python3-pil python3-numpy python3-skimage || sudo apt-get install -y ffmpeg python3-pil python3-numpy
           command -v ffprobe
+      - name: Chrome officiel avec prise en charge MP4 H.264/AAC
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v google-chrome >/dev/null 2>&1; then
+            "$RUNNER_TEMP/rpa-browser/node_modules/.bin/playwright" install chrome
+          fi
+          command -v google-chrome
+          google-chrome --version
+          echo "CHROME=$(command -v google-chrome)" >> "$GITHUB_ENV"
       - name: Générer uniquement des médias de test synthétiques
         shell: bash
         run: |
