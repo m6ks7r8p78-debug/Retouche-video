@@ -22,7 +22,7 @@ function scene({w=848,h=480,d=.7,remote=false,local=true,mode="video"}={}){
     textContent:"",listeners:{},dataset:{},setAttribute(k,v){this[k]=v},addEventListener(type,fn){this.listeners[type]=fn},
     dispatchEvent(e){this.listeners[e.type]?.(e)},click(){this.listeners.click?.()}}]));
   const tweaks=["natural","sharp","light"].map(kind=>({dataset:{autoRetouch:kind},setAttribute(k,v){this[k]=v}}));
-  const document={body:{classList:{toggle(){}}},querySelector:s=>els[s]||null,querySelectorAll:s=>s==="[data-auto-retouch]"?tweaks:[]};
+  const document={listeners:{},addEventListener(type,fn){this.listeners[type]=fn},body:{classList:{toggle(){}}},querySelector:s=>els[s]||null,querySelectorAll:s=>s==="[data-auto-retouch]"?tweaks:[]};
   const data=new Map([["ui_mode","simple"]]);
   const localStorage={getItem:k=>data.has(k)?data.get(k):null,setItem:(k,v)=>data.set(k,String(v))};
   const win={KG:{actif:()=>remote},VideoDecoder:remote?function(){}:undefined,
@@ -36,7 +36,7 @@ function scene({w=848,h=480,d=.7,remote=false,local=true,mode="video"}={}){
   Object.assign(mock,{IABUDGET:vm.runInNewContext(budget+"\nIABUDGET",{})});
   win.IABUDGET=mock.IABUDGET;
   vm.runInNewContext(code,mock);
-  return{els,tweaks,win,mock,data};
+  return{els,tweaks,win,mock,data,document};
 }
 {
  const x=scene();x.els["#ex"].listeners.click();
@@ -75,5 +75,23 @@ function scene({w=848,h=480,d=.7,remote=false,local=true,mode="video"}={}){
  x.tweaks[1].onclick();assert.equal(x.win.profile,"details");
  assert.equal(x.els["#auto_reprocess"].hidden,false);
  pass++;console.log("✓ après résultat : retouches facultatives, premier export conservé");
+}
+{
+ const x=scene({local:false});
+ x.els["#q"].value="3840";
+ x.document.listeners.click({target:{closest:selector=>selector==="[data-ab-q]"?{dataset:{abQ:"3840"}}:null}});
+ x.els["#ex"].listeners.click();
+ assert.equal(x.els["#q"].value,"3840","AUBE 4K manuelle ne doit PAS revenir à Full HD");
+ assert.equal(x.els["#o_max"].checked,true,"IA manuelle préservée ; le moteur vérifiera son propre budget");
+ pass++;console.log("✓ AUBE : résolution 4K explicitement choisie non écrasée par le plan Auto");
+}
+{
+ const x=scene({local:false});
+ x.els["#q"].value="3840";
+ x.document.listeners.click({target:{closest:()=>({dataset:{abQ:"3840"}})}});
+ x.document.listeners.change({target:{id:"f"}});
+ x.els["#ex"].listeners.click();
+ assert.equal(x.els["#q"].value,"1920","nouvelle vidéo : le mode Auto doit revenir");
+ pass++;console.log("✓ nouvel import : le choix manuel précédent ne bloque pas l'automatisation");
 }
 console.log("Résultat : "+pass+"/"+pass+" scénarios fonctionnels (sans GPU réel).");
