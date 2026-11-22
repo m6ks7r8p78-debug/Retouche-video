@@ -719,6 +719,17 @@ function updateEst(){
       t+=" Durée estimée : "+(sec>90?"environ "+(sec>5400?String(Math.round(sec/3600*10)/10).replace(".",",")+" h":Math.round(sec/60)+" min"):"moins de 2 min")+" (d’après ton dernier export)."+ia;
     }else t+=" La durée estimée s’affichera après ton premier export.";
   }
+  if(mode==="video"&&v.videoWidth&&v.duration&&SRX.on()&&!SRX.srvOK()){
+    try{
+      const [ow,oh]=outDims(v.videoWidth,v.videoHeight,q),[a,b]=trimRange();
+      const sp=+localStorage.getItem("srspd")||0;
+      const info=IABUDGET.estimate({w:v.videoWidth,h:v.videoHeight,ow,oh,duration:b-a,fps:OFPS||30,
+        msPerMP:sp,iak:!!(window.IAK&&IAK.actif()),cascade:!!(SR.casc&&SR.casc(v.videoWidth,v.videoHeight,ow/v.videoWidth))});
+      if(!SRX.fits(v))t+=" Attention : source trop grande pour l’IA locale. Utilise Kaggle avec autorisation, ou teste d’abord une seule image.";
+      else if(!info.allowed)t+=" Le calcul IA local est probablement trop long ("+IABUDGET.label(info.sec)+") : il sera bloqué avant l’export. Utilise l’aperçu sur une image ou Kaggle.";
+      else t+=" Estimation IA prudente : "+IABUDGET.label(info.sec)+". Lance d’abord le test sur une image.";
+    }catch(e){}
+  }
   $("#qhint").textContent=t;
 }
 document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{
