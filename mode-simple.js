@@ -16,7 +16,7 @@
     const [ow,oh]=outDims(v.videoWidth,v.videoHeight,+q);
     let ms=0;try{ms=+localStorage.getItem("srspd")||0}catch(e){}
     return window.IABUDGET.estimate({w:v.videoWidth,h:v.videoHeight,ow,oh,duration:duration(),fps:fps(),msPerMP:ms,
-      iak:!!(window.IAK&&IAK.actif()),cascade:!!(window.SR.casc&&window.SR.casc(v.videoWidth,v.videoHeight,ow/v.videoWidth))});
+      iak:!!(window.IAK&&window.IAK.actif()),cascade:!!(window.SR.casc&&window.SR.casc(v.videoWidth,v.videoHeight,ow/v.videoWidth))});
   }
   function decide(){
     if(mode!=="video"||!v.videoWidth)return null;
