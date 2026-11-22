@@ -94,4 +94,17 @@ function scene({w=848,h=480,d=.7,remote=false,local=true,mode="video"}={}){
  assert.equal(x.els["#q"].value,"1920","nouvelle vidéo : le mode Auto doit revenir");
  pass++;console.log("✓ nouvel import : le choix manuel précédent ne bloque pas l'automatisation");
 }
+{
+ const x=scene();
+ x.els["#ex"].textContent="Annuler";
+ x.mock.exporting=true;
+ x.win.__simpleRefresh();
+ assert.equal(x.els["#ex"].textContent,"Annuler",
+   "AUBE doit reconnaître l'état annulable pendant un export");
+ x.mock.exporting=false;
+ x.win.__simpleRefresh();
+ assert.equal(x.els["#ex"].textContent,"Annuler",
+   "le rafraîchissement intermédiaire ne doit pas masquer Annuler");
+ pass++;console.log("✓ conversion vidéo : Auto ne masque plus le bouton Annuler d'AUBE");
+}
 console.log("Résultat : "+pass+"/"+pass+" scénarios fonctionnels (sans GPU réel).");
