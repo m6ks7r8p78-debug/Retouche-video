@@ -620,8 +620,11 @@ const IATEST={active:false,
     const btn=$("#ia_test"),box=$("#ia_result"),st=$("#ia_status"),pair=$("#ia_pair"),file=curFile;
     this.active=true;btn.disabled=true;box.hidden=false;pair.hidden=true;
     st.textContent="Lecture d’une seule image, puis calcul du vrai modèle IA sur une petite région…";
-    const origin=v.currentTime,wasPlaying=!v.paused;
+    const origin=v.currentTime,wasPlaying=!v.paused,prevDeadline=window.__iaDeadlineMs;
+    /* Un essai sur une image ne doit pas pouvoir bloquer l'iPhone pendant une heure. */
+    window.__iaDeadlineMs=performance.now()+90*1000;
     try{
+      if(REC.pr){REC.stop=true;try{await Promise.race([REC.pr,new Promise(r=>setTimeout(r,3000))])}catch(e){}}
       if(wasPlaying)v.pause();
       const [a,b]=trimRange(),t=Math.max(0,Math.min(Math.max(0,v.duration-.04),(a+b)/2));
       await seekEl(v,t);
@@ -651,7 +654,7 @@ const IATEST={active:false,
       st.textContent="Modèle IA réellement exécuté en "+seconds.toFixed(1).replace(".",",")+" s sur "+side+"×"+side+" px natifs. Écart moyen au simple agrandissement : "+delta.toFixed(1).replace(".",",")+"/255 (différence, pas preuve de qualité). Choisis à l’œil la version la plus fidèle.";
       updateEst();
     }catch(e){st.textContent="Épreuve IA impossible : "+((e&&e.message)||e)+". Aucun résultat n’est présenté comme restauré."}
-    finally{this.active=false;btn.disabled=false;if(file===curFile&&mode==="video")try{await seekEl(v,Math.max(0,origin));draw()}catch(e){}}
+    finally{window.__iaDeadlineMs=prevDeadline||null;this.active=false;btn.disabled=false;if(file===curFile&&mode==="video")try{await seekEl(v,Math.max(0,origin));draw()}catch(e){}}
   }};
 $("#ia_test").onclick=()=>IATEST.run();
 
@@ -1735,6 +1738,7 @@ function friendly(m){
   return "Échec de l’export : "+(m||"erreur inconnue")+". Réessaie en Full HD ; si ça recommence, envoie-moi ce message.";
 }
 $("#ex").onclick=async()=>{
+  if(IATEST.active){msg("L’épreuve rapide IA est en cours. Attends son résultat avant de lancer la conversion.");return}
   if(window.__exStarting)return;
   if(exporting){if(Date.now()-(window.__exT||0)<1500)return;cancel=true;return}
   if(mode==="photo"){exportPhoto();return}
