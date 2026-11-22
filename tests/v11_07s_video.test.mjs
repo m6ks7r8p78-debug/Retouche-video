@@ -25,7 +25,7 @@ try{
     try{if((await fetch(address)).ok)break}catch{}
     await new Promise(resolve=>setTimeout(resolve,250));
   }
-  browser=await chromium.launch({args:["--use-angle=swiftshader",
+  browser=await chromium.launch({executablePath:process.env.CHROME||undefined,args:["--use-angle=swiftshader",
       "--enable-unsafe-swiftshader","--autoplay-policy=no-user-gesture-required"]});
   const ctx=await browser.newContext({viewport:{width:390,height:844},
       isMobile:true,hasTouch:true,acceptDownloads:true});
