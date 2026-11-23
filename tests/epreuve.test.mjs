@@ -12,6 +12,9 @@ await p.goto("http://localhost:" + PORT + "/index.html"); await p.waitForFunctio
 await p.evaluate(() => { localStorage.setItem("autorisations", JSON.stringify({ modele: { ok: true } })); const m = document.querySelector("#o_max"); m.checked = true; m.dispatchEvent(new Event("change")) });
 const t0 = Date.now();
 await p.setInputFiles("#f", VID); await p.waitForFunction(() => v.videoWidth > 0, null, { timeout: 30000 });
+/* L'épreuve coûteuse n'est plus lancée automatiquement au chargement. */
+await p.waitForFunction(() => v.videoWidth > 0 && !REC.pr, null, { timeout: 120000 });
+await p.evaluate(() => SRX.verifierVideo(curFile));
 await p.waitForFunction(() => window.__epreuve !== undefined, null, { timeout: 1800000 });
 const r = await p.evaluate(() => ({ e: window.__epreuve, ia: document.querySelector("#o_max").checked, ep: SRX.ep }));
 const res = [], test = (n, ok, info) => { res.push(ok); console.log((ok ? "✓ " : "✗ ") + n + " — " + info) };

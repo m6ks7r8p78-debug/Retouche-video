@@ -1,0 +1,44 @@
+name: Laboratoire restauration — véritable réseau SR sur iPhone simulé
+on:
+  pull_request:
+    paths:
+      - 'essai-restauration.html'
+      - 'tests/v11_laboratoire_essai.test.mjs'
+      - 'sr.js'
+      - 'sr-gpu.js'
+      - '.github/workflows/labo-restauration.yml'
+jobs:
+  laboratoire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer navigateur de test
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund --prefix "$RUNNER_TEMP/rpa-preview" playwright@1.56.1
+          "$RUNNER_TEMP/rpa-preview/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Réelle inférence neurale + comparaison et feedback local
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PW="$RUNNER_TEMP/rpa-preview/node_modules/playwright/index.mjs"
+          if command -v google-chrome >/dev/null 2>&1; then export CHROME="$(command -v google-chrome)"; fi
+          node tests/v11_laboratoire_essai.test.mjs
+      - name: Vérifier le laboratoire réellement publié sur le domaine existant
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 35 --retry 2 https://retoucheproai.com/essai-restauration.html -o /tmp/labo-public.html
+          grep -q 'Laboratoire IA' /tmp/labo-public.html
+          grep -q 'sr-gpu.js' /tmp/labo-public.html
+          grep -q 'Aucun changement de contraste' /tmp/labo-public.html
+          echo "URL publique du laboratoire vérifiée, page IA reçue."
+      - name: Rappel de portée
+        run: echo "Un test Chrome n'est pas une validation Safari iPhone physique ni un export vidéo 4K."

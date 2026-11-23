@@ -1,0 +1,33 @@
+/* Vérification de la protection contre les exports IA interminables.
+   Lancer : node tests/budget_ia.test.mjs ; aucun modèle lourd téléchargé. */
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import vm from "node:vm";
+import { fileURLToPath } from "node:url";
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
+const load=p=>fs.readFileSync(path.join(root,p),"utf8");
+const IABUDGET=vm.runInNewContext(load("budget-ia.js")+"\nIABUDGET",{});
+const sample={w:1088,h:1920,ow:2160,oh:3812,duration:.7,fps:30,iak:true};
+const bad=IABUDGET.estimate(sample);
+assert.equal(bad.frames,21);
+assert.equal(bad.allowed,false,"aucune attente locale > 10 min sur une video HD 0,7 s sans mesure");
+const short=IABUDGET.estimate({w:160,h:120,ow:640,oh:480,duration:.7,fps:30,iak:true,msPerMP:26000});
+assert.equal(short.allowed,true,"un tres petit fichier mesure peut etre traite");
+const costly=IABUDGET.estimate({w:854,h:480,ow:3840,oh:2160,duration:10,fps:30,msPerMP:42000,cascade:true});
+assert.equal(costly.allowed,false,"refuser une longue 4K locale");
+const withoutIak=IABUDGET.estimate({...sample,iak:false,msPerMP:25000});
+assert.ok(withoutIak.keys>=bad.keys,"sans propagation, davantage de calculs de modele");
+assert.equal(IABUDGET.LIMIT_SEC,600);
+assert.match(IABUDGET.label(610),/11 min/);
+const html=load("index.html"),app=load("app.js"),sr=load("sr.js"),gpu=load("sr-gpu.js"),kg=load("kaggle.js");
+assert.ok(html.includes('id="ia_test"')&&html.includes('id="ia_after"')&&html.includes('id="ia_better"')&&html.includes('id="ia_worse"')&&html.includes('id="ia_copy"')&&html.includes('src="budget-ia.js"'));
+assert.ok(app.includes('const IATEST=')&&app.includes('IABUDGET.estimate(')&&app.includes('ia_evaluations_locales'));
+assert.ok(app.includes('ia_images:frameIA')&&app.includes('if(srUse&&!didIA)'));
+assert.ok(app.includes('window.__iaDeadlineMs=null;'));
+assert.ok(sr.includes('window.__iaDeadlineMs')&&gpu.includes('window.__iaDeadlineMs'));
+assert.ok(kg.includes('15 * 60 * 1000'));
+assert.ok(!app.includes('await lim(SRX.verifierVideo(my),60000,null)'));
+console.log("✓ échantillon 0,7 s Full HD interdit en local sans mesure");
+console.log("✓ aperçu, budget, arrêt du calcul et preuve de restauration intégrés");
+console.log("Résultat : 15 contrôles réussis (sans iPhone/GPU réel).");

@@ -356,7 +356,10 @@ dialog.mdl::backdrop{background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(4px
 
 /* ---------- mode simple (par défaut) : l'essentiel ; « Mode expert » réaffiche tout ---------- */
 body.simple .lnkh,body.simple .tabs,body.simple #prof,body.simple #rec,body.simple #qhint,body.simple #qwrap>.help,body.simple #asst,body.simple #frep,body.simple #spl,body.simple #meta,
-body.simple #ai,body.simple #rtb,body.simple #socn,body.simple #bab,body.simple #kbb,body.simple #erb,body.simple #orep,body.simple #tech,body.simple #rec_after,body.simple .top .tag{display:none!important}
+body.simple #ai,body.simple #rtb,body.simple #socn,body.simple #bab,body.simple #kbb,body.simple #erb,body.simple #orep,body.simple #tech,body.simple #rec_after,body.simple #qwrap,body.simple #sai,body.simple #ia_test,body.simple #ia_result,body.simple .top .tag{display:none!important}
+/* Grand public : un espace d’import et un résultat ; le catalogue d’outils et
+   les tableaux de bord restent dans « Options avancées ». */
+/* AUBE v11 : ne pas masquer les étapes ni les commandes #flow/#outils dans le mode simple. */
 body.simple #tp2,body.simple #tp3{display:none!important}
 body.simple #tp1{display:block!important}
 body:not(.simple) .simple-only{display:none!important}
@@ -499,7 +502,7 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
         <div id="qwrap">
           <p class="help">Choisis la taille du résultat. Tout le reste est réglé automatiquement.</p>
           <div class="seg" role="group" aria-label="Taille du résultat">
-            <button data-q="3840" aria-pressed="false">4K<small>3840 · plus long</small></button>
+            <button data-q="3840" aria-pressed="false">4K<small>vraie IA si disponible</small></button>
             <button data-q="1920" aria-pressed="true">Full HD<small>conseillé</small></button>
             <button data-q="-1" aria-pressed="false">Origine<small>nettoyage seul</small></button>
           </div>
@@ -520,11 +523,29 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
         </div>
         <div class="card rec" id="rec" hidden style="margin-top:12px"><h2>Analyse automatique</h2><p id="rec_t" class="help" style="margin:0"></p><ul id="rec_l"></ul><p class="help" id="rec_hint" hidden style="margin:6px 0 0">Déjà appliqué. Décoche ce que tu ne veux pas.</p></div>
         <div class="card simple-only" id="sai"><label class="chk"><input type="checkbox" id="s_ia"><span><b>⚡ Qualité IA</b><span id="s_iah"></span></span></label></div>
-        <button class="btn main big" id="ex" style="margin-top:12px">Améliorer en 4K</button>
+        <button class="btn" id="ia_test" type="button" style="margin-top:12px">🔎 Tester la vraie IA sur une image</button>
+        <section class="card" id="ia_result" hidden aria-label="Épreuve rapide de restauration IA" style="margin-top:12px">
+          <h2>Avant / après IA — région de l’image d’origine</h2>
+          <p class="help" id="ia_status" role="status">Lancement du moteur…</p>
+          <div id="ia_pair" style="display:grid;grid-template-columns:1fr 1fr;gap:10px" hidden>
+            <figure style="margin:0;min-width:0"><img id="ia_before" alt="Région originale agrandie classiquement" style="display:block;width:100%;border-radius:8px"><figcaption>Sans IA (bicubique)</figcaption></figure>
+            <figure style="margin:0;min-width:0"><img id="ia_after" alt="Région réellement reconstruite par le modèle IA" style="display:block;width:100%;border-radius:8px"><figcaption>Avec restauration IA</figcaption></figure>
+          </div>
+          <p class="help">Test sur une région native de 192 × 192 pixels au maximum, à ×2, sans correction de couleur. Ce n’est pas la conversion de la vidéo entière ni une garantie de gain visuel.</p>
+          <div id="ia_votes" hidden style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <button class="btn" type="button" id="ia_better">👍 C’est mieux</button>
+            <button class="btn" type="button" id="ia_worse">👎 Pas mieux</button>
+            <button class="btn" type="button" id="ia_copy">Copier le bilan</button>
+          </div>
+          <p class="help" id="ia_feedback" hidden role="status">Ton avis est enregistré sur cet appareil, sans image envoyée.</p>
+        </section>
+        <p class="help simple-only" id="auto_note" role="status">L’application choisit automatiquement le meilleur traitement compatible avec ta vidéo.</p>
+        <button class="btn main big" id="ex" style="margin-top:12px">✨ Améliorer ma vidéo</button>
         <progress id="pg" value="0" max="1" hidden></progress>
         <p class="st" id="st1" role="status"></p>
         <div class="card" id="out" hidden>
           <h2>Résultat</h2>
+          <p class="help simple-only" id="auto_result_summary" role="status"></p>
           <div class="rec" id="rec_after"><p class="help" id="rec_at" style="margin:0 0 6px"></p><ul id="rec_a"></ul><button class="btn" id="rec_b" hidden></button></div>
           <img id="ri" alt="Photo retouchée" hidden>
           <div class="pv" id="pv" hidden>
@@ -551,6 +572,17 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
           <button class="btn" id="bat" style="margin-top:8px" hidden>Voir le résultat seul</button>
           <video id="rv" controls playsinline></video>
           <button class="btn main" id="sv" style="margin-top:10px" hidden>Enregistrer la vidéo</button>
+          <div class="card simple-only" id="auto_tweaks" hidden style="margin-top:14px">
+            <h3 style="margin:0 0 8px">Une petite retouche en plus ?</h3>
+            <p class="help" style="margin:0 0 8px">Ton résultat est prêt. Tu peux le garder ou choisir une légère retouche.</p>
+            <div class="row" role="group" aria-label="Retouches facultatives">
+              <button class="btn" type="button" data-auto-retouch="natural">Plus naturel</button>
+              <button class="btn" type="button" data-auto-retouch="sharp">Plus net</button>
+              <button class="btn" type="button" data-auto-retouch="light">Plus lumineux</button>
+            </div>
+            <p class="help" id="auto_tweaks_note" role="status" style="margin:8px 0"></p>
+            <button class="btn main" type="button" id="auto_reprocess" hidden>Appliquer et reconvertir</button>
+          </div>
           <button class="btn" id="rtb" style="margin-top:8px" hidden>Refaire avec le son (en temps réel)</button>
           <p class="help" id="socn" hidden style="margin:10px 0 0">Pour publier sur TikTok ou Instagram : active « Importer en haute qualité » dans l’app au moment de publier, sinon elle recompresse fortement la vidéo.</p>
           <p class="help" id="dupn" hidden style="margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--line)"></p>
@@ -689,6 +721,7 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
 <script defer src="analyse.js"></script>
 <script defer src="contribution.js"></script>
 <script defer src="visage.js"></script>
+<script defer src="budget-ia.js"></script>
 <script defer src="app.js"></script>
 <script defer src="studio.js"></script>
 <script defer src="abo.js"></script>
