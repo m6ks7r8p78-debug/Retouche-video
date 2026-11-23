@@ -161,7 +161,7 @@ file.addEventListener('change',()=>{
   $('#sourceNote').textContent='Mets la vidéo en pause à l’instant de ton choix. Touche l’image pour déplacer la zone de test.';
  }else{
   photo.src=url;
-  photo.onload=()=>{displayMedia('photo');say(pilotRequired&&!pilotNet?'Photo prête. Choisis maintenant le fichier .bin du nouveau modèle.':'Photo prête. Touche la zone à restaurer, puis lance l’IA.');};
+  photo.onload=()=>{displayMedia('photo');say(pilotRequired&&!pilotNet?'Photo prête. Touche Restaurer pour choisir le fichier .bin du nouveau modèle automatiquement.':'Photo prête. Touche la zone à restaurer, puis lance l’IA.');};
   photo.onerror=()=>say('Impossible de lire cette photo.');
   $('#sourceNote').textContent='Touche la photo pour déplacer le centre de la zone de test.';
  }
