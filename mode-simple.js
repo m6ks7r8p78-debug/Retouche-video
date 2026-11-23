@@ -81,7 +81,7 @@
   }
   const toggle=$("#modeb");
   if(toggle)toggle.onclick=()=>{m=m==="simple"?"expert":"simple";try{localStorage.setItem("ui_mode",m)}catch(e){}apply();window.scrollTo({top:0,behavior:"smooth"})};
-  if(ex)ex.addEventListener("click",()=>{
+  if(ex)ex.addEventListener("click",e=>{
     if(m!=="simple"||mode!=="video"||!v.videoWidth||exporting||window.__exStarting||window.__baMode||window.__plan)return;
     /* Un choix AUBE 4K/Full HD/Original ne doit jamais être remplacé
        par le plan automatique lorsque l'utilisateur lance le bouton. */
