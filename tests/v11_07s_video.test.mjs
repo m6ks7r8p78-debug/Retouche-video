@@ -37,6 +37,10 @@ try{
        JSON.stringify({modele:{ok:true}})));
   await page.locator("#f").setInputFiles(sample);
   await page.waitForFunction(()=>typeof v!=="undefined"&&v.videoWidth>0,null,{timeout:30000});
+  /* Cette épreuve est volontairement un témoin MP4 classique : elle demande
+     explicitement 1080p sans IA, jamais une "restauration" automatique. */
+  await page.locator('#ab-quality [data-ab-q="1920"]').click();
+  await page.evaluate(()=>{const o=document.querySelector("#o_max");o.checked=false;o.dispatchEvent(new Event("change",{bubbles:true}))});
   const start=Date.now();
   await page.locator("#ab-enhance").click();
   await page.waitForFunction(()=>{
