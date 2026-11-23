@@ -586,6 +586,7 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
           <div id="camf" class="help" hidden style="margin:-2px 0 10px;padding:10px 12px;border-radius:12px;background:var(--panel)"></div>
           <label class="chk"><input type="checkbox" id="o_fast"><span><b>Mode rapide</b>Plus rapide pour les longues vidéos (sans stabilisation ni fluidité).</span></label>
           <label class="chk"><input type="checkbox" id="o_stab"><span><b>Stabiliser</b>Moins de tremblements (image un peu recadrée).</span></label>
+          <label class="chk"><input type="checkbox" id="o_raf" checked><span><b>Rafale — détail réel multi-images</b>Fusionne chaque image avec ses voisines : plus de vrai détail, moins de bruit et de blocs, rien d’inventé.</span></label>
           <label class="chk"><input type="checkbox" id="o_defl"><span><b>Anti-scintillement</b>Pour les vieux films dont la lumière clignote.</span></label>
           <label class="chk"><input type="checkbox" id="o_rvv"><span><b>Restaurer les visages (IA, essai)</b>Yeux, peau, cheveux reconstruits sur les visages, stables d’une image à l’autre. Vidéos courtes : environ 20 s de calcul par image clé (une image sur 3), modèle de 86 Mo téléchargé une fois.</span></label>
           <label class="chk"><input type="checkbox" id="o_dust"><span><b>Poussières et points noirs</b>Efface les petites taches des films numérisés.</span></label>
@@ -689,6 +690,7 @@ body #ez button:focus-visible,body #dfv button:focus-visible,body #rvis button:f
 <script defer src="analyse.js"></script>
 <script defer src="contribution.js"></script>
 <script defer src="visage.js"></script>
+<script defer src="rafale.js"></script>
 <script defer src="app.js"></script>
 <script defer src="studio.js"></script>
 <script defer src="abo.js"></script>

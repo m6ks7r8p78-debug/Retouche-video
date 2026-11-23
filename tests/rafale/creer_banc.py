@@ -11,7 +11,7 @@ from skimage import data
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1] if len(sys.argv) > 1 else "/tmp/rafale_banc"
-N = 11
+N = int(os.environ.get("RAFALE_N", "11"))
 rng = np.random.default_rng(7)
 
 

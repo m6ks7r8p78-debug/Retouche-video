@@ -48,7 +48,7 @@ const PROF={id:"equilibre",manual:false,
   gamma(){const K=PROF.k();if(!K.lift)return 1;const m=PROF.m,p50=m&&m.p50!=null?Math.max(.02,m.p50):.15;return Math.max(1,Math.min(2.2,Math.log(p50)/Math.log(K.lift)))},rec:"equilibre",why:"",
   k(){return PROF.T[PROF.id]||PROF.T.equilibre},
   /* valeur réellement appliquée d'un réglage */
-  v(n){const K=PROF.k();switch(n){case"sh":return Math.min(2,P.sh*K.sh);case"dn":return Math.min(1,P.dn*K.dn);case"cs":return Math.min(1,P.cs*K.cs);
+  v(n){const K=PROF.k();switch(n){case"sh":return Math.min(2,P.sh*K.sh);case"dn":return Math.min(1,P.dn*K.dn*(window.__rafDn||1));case"cs":return Math.min(1,P.cs*K.cs);
     case"br":return P.br*K.c;case"co":return 1+(P.co-1)*K.c+(K.con||0);case"sa":return 1+(P.sa-1)*K.c+(K.sat||0);case"wa":return P.wa*K.c+(K.warm||0);default:return P[n]}},
   set(id,manual){if(!PROF.T[id])return;PROF.id=id;if(manual!=null){PROF.manual=manual;try{if(manual&&id!==PROF.rec)localStorage.setItem("profil",id);else localStorage.removeItem("profil")}catch(e){}}
     document.querySelectorAll("[data-prof]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.prof===id?"true":"false"));PROF.hint();
@@ -278,7 +278,7 @@ function draw(el){
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,s0);
   if(fw!==w||fh!==h){fw=w;fh=h;for(const [x,z] of TS)if(x===tex)TS.delete(x);else if(x!==texKM&&(z[0]!==w||z[1]!==h)){gl.bindTexture(gl.TEXTURE_2D,x);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,null);TS.delete(x)}gl.bindTexture(gl.TEXTURE_2D,tex)}
   let dustSwap=false,dbSwap=false;const tex0=tex;
-  if(show&&!srIn&&!dustOnly&&P.db>0&&(exporting||mode!=="video"||v.paused)/* v3.11 : anti-blocs sauté pendant la lecture de l'aperçu (fluidité) ; à l'arrêt et à l'export il est appliqué */&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
+  if(show&&!srIn&&!dustOnly&&P.db>0&&!(exporting&&window.__rafSrc)&&(exporting||mode!=="video"||v.paused)/* v3.11 : anti-blocs sauté pendant la lecture de l'aperçu (fluidité) ; à l'arrêt et à l'export il est appliqué */&&progK&&gl.getProgramParameter(progK,gl.LINK_STATUS)&&gl.getProgramParameter(progKM,gl.LINK_STATUS)){
     const bw=Math.ceil(w/8)+2,bh=Math.ceil(h/8)+2;
     pass(progKM,tex,texKM,bw,bh,()=>{gl.uniform1i(UKM.t,0);gl.uniform2f(UKM.px,1/w,1/h);gl.uniform2f(UKM.ph,DB.ph[0],DB.ph[1])});
     gl.activeTexture(gl.TEXTURE5);gl.bindTexture(gl.TEXTURE_2D,texKM);gl.activeTexture(gl.TEXTURE0);
@@ -1864,6 +1864,14 @@ $("#ex").onclick=async()=>{
           try{DIAG.send("visages_video",{images:r.images,avec_visage:r.avec_visage,cles:r.cles,K:r.K,ms:r.ms})}catch(e){}
         }catch(e){if(cancel)throw e;window.__rvv={erreur:(e&&e.message)||String(e)};msg("Visages non restaurés ("+dire(e)+") : la vidéo est améliorée sans cette étape.")}}
     }}
+    /* v12.0 RAFALE (rafale.js) : super-résolution multi-images — chaque image est fusionnée avec ses 4 voisines alignées au
+       dixième de pixel : vrai détail filmé (rien d'inventé), bruit et blocs divisés, aucun scintillement. Lecture image par image,
+       sans changement de vitesse ni IA (qui a son propre chemin). Grille ×2 si la sortie est au moins 1,5 fois plus grande. */
+    let RAF=null,rafS=1,rafP=-1,rafErr=null;const RAFR=2;
+    if(!isPlan&&!plan&&$("#o_raf")&&$("#o_raf").checked&&!SRX.on()&&!SRX.remote&&window.RAFALE&&RAFALE.dispo()&&window.VideoDecoder&&!window.__noseq){
+      try{const vw=v.videoWidth,vh=v.videoHeight;rafS=cv.width>=1.5*vw&&vw*vh*4<=2.4e6?2:1;RAF=window.__rafInst=RAFALE.creer();rafP=off-1;window.__rafDn=.6}
+      catch(e){RAF=null;rafErr=(e&&e.message)||String(e)}}
+    window.__raf=RAF?{s:rafS,R:RAFR}:{non:rafErr||"désactivée"};
     let pBack=0;if(isPlan){let mx=-1;for(const pp of plan){if(pp.a<mx-1)pBack++;mx=Math.max(mx,pp.b!=null?pp.b:pp.a)}}
     const seqPlanOK=!isPlan||pBack<=Math.max(2,plan.length/45)||!!SRX.remote;/* v6.1 : avec l'IA rapide, même à l'envers (l'image du serveur doit être exactement la même image) */
     if(seqPlanOK&&window.VideoDecoder&&!window.__noseq&&(cv.width*cv.height<=2073600*1.2||SRX.remote||isPlan)){/* v4.5 : avec Kaggle, toujours (4K compris) */
@@ -1887,8 +1895,16 @@ $("#ex").onclick=async()=>{
       pMax=Math.max(pMax,pl.b!=null?pl.b:pl.a);
       if(rdr){
         try{
-          const ca=await rdr.need(pl.a);src=ca;q++;
-          if(dustOn&&pl.b==null){
+          let ca;
+          if(RAF&&pl.b==null){
+            /* les images sont lues une seule fois, dans l'ordre, jusqu'à 2 images en avance ; la fusion remplace l'image lue */
+            const fin=off+total-1;while(rafP<Math.min(fin,pl.a+RAFR)){rafP++;RAF.pousser(rafP,await rdr.need(rafP))}
+            try{ca=RAF.fusion(pl.a,{s:rafS,R:RAFR});window.__rafSrc=true}
+            catch(e){window.__raf={erreur:(e&&e.message)||String(e)};try{RAF.liberer()}catch(x){}RAF=null;window.__rafSrc=false;window.__rafDn=1;
+              rdr.close();rdr=await makeSeq(pl.a,OFPS);if(!rdr)throw e;ca=await rdr.need(pl.a)}
+          }else ca=await rdr.need(pl.a);
+          src=ca;q++;
+          if(dustOn&&pl.b==null&&!RAF){
             const cn=await rdr.need(pl.a+1),pv=(pl.a>0&&rdr.peek(pl.a-1))||ca;
             DUST.p=pv;DUST.n=cn;DUST.on=true;
           }else DUST.on=false;
@@ -1898,7 +1914,7 @@ $("#ex").onclick=async()=>{
             src=bc}
         }catch(e){
           /* repli : ancienne méthode */
-          if(cancel){rdr.close();rdr=null;break}window.__seqInfo="seq abandon "+((e&&e.message)||e);rdr.close();rdr=null;src=null;
+          if(cancel){rdr.close();rdr=null;break}window.__seqInfo="seq abandon "+((e&&e.message)||e);rdr.close();rdr=null;src=null;if(RAF){try{RAF.liberer()}catch(x){}RAF=null;window.__rafSrc=false;window.__rafDn=1}
           q=0;for(let z=0;z<i;z++){q+=plan&&plan[z].b!=null?2:1}
           await initPool();poolMode=true;for(let z=q;z<q+POOL;z++)go(z);
         }
@@ -1998,6 +2014,7 @@ $("#ex").onclick=async()=>{
     try{DIAG.send("export",{ok:false,err:m.slice(0,300)})}catch(x){}}
   finally{
     if(SRX.remote){try{SRX.remote.fermer()}catch(e){}SRX.remote=null;SRX.idx=-1}
+    window.__rafSrc=false;window.__rafDn=1;try{if(window.__rafInst)window.__rafInst.liberer()}catch(e){}window.__rafInst=null;
     window.__plan=null;window.__planK=null;window.__planFps=null;window.__planAudio=null;window.__planAudioWhy=null;DUST.on=false;DUST.p=DUST.n=null;DFG=1;poolMode=false;exporting=false;try{sessionStorage.removeItem("exp")}catch(e){}btn.textContent=label;$("#pg").hidden=true;
     size(PREVIEW);v.currentTime=Math.min(1,v.duration/3);
     if(wl)try{wl.release()}catch(e){}
