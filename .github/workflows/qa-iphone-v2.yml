@@ -1,0 +1,55 @@
+name: QA iPhone V2 — bouton Restaurer accessible
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'essai-iphone-v2.html'
+      - 'tests/qa_iphone_v2.test.mjs'
+      - '.github/workflows/qa-iphone-v2.yml'
+  workflow_dispatch:
+jobs:
+  no-silent-fallback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier que le script est bien du JavaScript valide
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'JS'
+          const fs=require('fs'),vm=require('vm');
+          const s=fs.readFileSync('essai-iphone-v2.html','utf8');
+          const js=s.match(/<script>([\s\S]*?)<\/script>/g)||[];
+          if(js.length!==1)throw new Error('Inline script unique attendu');
+          new vm.Script(js[0].replace(/^<script>/,'').replace(/<\/script>$/,''));
+          if(!s.includes('const pilotRequired = true'))throw new Error('Le blocage du modèle public est absent');
+          console.log('SCRIPT ET VERROU PILOTE OK');
+          JS
+      - name: Installer le navigateur de test
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund --prefix "$RUNNER_TEMP/qa-pilote" playwright@1.56.1
+          "$RUNNER_TEMP/qa-pilote/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Vérifier le flux exclusif sur un écran de taille iPhone
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PW="$RUNNER_TEMP/qa-pilote/node_modules/playwright/index.mjs"
+          if command -v google-chrome >/dev/null 2>&1; then export CHROME="$(command -v google-chrome)"; fi
+          node tests/qa_iphone_v2.test.mjs
+      - name: Vérifier que l'adresse publique ne sert pas une ancienne page
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --silent --show-error --retry 5 --retry-delay 8 --max-time 30 \
+            "https://retoucheproai.com/essai-iphone-v2.html" -o /tmp/pilote-public.html
+          grep -q 'const pilotRequired = true' /tmp/pilote-public.html
+          grep -q 'RetoucheProAI_MODELE_PILOTE_PRIVE_V1.bin' /tmp/pilote-public.html
+          echo "Le nouveau parcours privé est visible sur le domaine public."
