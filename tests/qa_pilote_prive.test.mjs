@@ -31,7 +31,7 @@ try{
   assert.match(await page.locator('h1').innerText(),/nouveau modèle privé/i);
   assert.match(await page.locator('#activeModel').innerText(),/MODE PILOTE/);
   assert.ok(await page.locator('#pilotModeNotice').isVisible());
-  assert.ok(await page.locator('#go').isDisabled(),'Aucun lancement avec le modèle public');
+  assert.ok(await page.locator('#go').isEnabled(),'Le bouton doit être disponible et ouvrir les fichiers selon le contexte');
   assert.equal(await page.locator('#factor').inputValue(),'2');
   assert.ok(await page.locator('#factor option[value="4"]').isDisabled());
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Pas de scroll horizontal');
@@ -48,12 +48,12 @@ try{
     name:'source-synthetique.jpg',mimeType:'image/jpeg',buffer:Buffer.from(jpeg,'base64')
   });
   await page.waitForFunction(()=>!document.querySelector('#source').hidden,{},{timeout:20000});
-  assert.ok(await page.locator('#go').isDisabled(),'Vidéo/photo chargée ne doit pas activer sr.bin');
-  assert.match(await page.locator('#status').innerText(),/Choisis maintenant le fichier .bin/);
+  assert.ok(await page.locator('#go').isEnabled(),'Une photo chargée doit permettre de démarrer le parcours pilote');
+  assert.match(await page.locator('#status').innerText(),/Touche Restaurer pour choisir le fichier .bin/);
 
   // Vérifie que le vrai bouton ouvre le sélecteur des Fichiers iPhone.
   const fc=page.waitForEvent('filechooser',{timeout:20000});
-  await page.locator('#choosePilot').click();
+  await page.locator('#go').click();
   const chooser=await fc;
   assert.ok(chooser.isMultiple()===false);
   await chooser.setFiles({
@@ -62,7 +62,7 @@ try{
     buffer:Buffer.alloc(24192)
   });
   await page.waitForFunction(()=>/Empreinte incompatible/.test(document.querySelector('#status').textContent),null,{timeout:15000});
-  assert.ok(await page.locator('#go').isDisabled(),'Poids inconnus : aucun retour vers ancien modèle');
+  assert.ok(await page.locator('#go').isEnabled(),'Le bouton reste utilisable pour sélectionner un autre fichier');
   assert.match(await page.locator('#activeModel').innerText(),/MODE PILOTE/);
   assert.ok(await page.locator('#result').isHidden(),'Aucune fausse sortie de restauration');
 
@@ -70,7 +70,14 @@ try{
     name:'faux-taille.bin',mimeType:'application/octet-stream',buffer:Buffer.alloc(16)
   });
   assert.match(await page.locator('#status').innerText(),/Poids non compatibles/);
-  assert.ok(await page.locator('#go').isDisabled());
+  assert.ok(await page.locator('#go').isEnabled());
+  // Après rejet d'un poids invalide, Restaurer doit rouvrir immédiatement Fichiers.
+  const retry=page.waitForEvent('filechooser',{timeout:20000});
+  await page.locator('#go').click();
+  const retryPicker=await retry;
+  await retryPicker.setFiles({name:'encore-invalide.bin',mimeType:'application/octet-stream',buffer:Buffer.alloc(32)});
+  assert.match(await page.locator('#status').innerText(),/Poids non compatibles/);
+  assert.ok(await page.locator('#result').isHidden());
   assert.deepEqual(posts,[],'Aucune requête POST de média ou modèle');
   assert.deepEqual(errors,[],'Erreur JS dans le mode pilote exclusif');
   console.log('PILOTE_EXCLUSIF_PASS',{
