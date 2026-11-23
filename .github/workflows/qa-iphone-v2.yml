@@ -5,12 +5,13 @@ on:
     paths:
       - 'essai-iphone-v2.html'
       - 'tests/qa_iphone_v2.test.mjs'
+      - 'tests/qa_iphone_v2_inference.test.mjs'
       - '.github/workflows/qa-iphone-v2.yml'
   workflow_dispatch:
 jobs:
   no-silent-fallback:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 18
     permissions:
       contents: read
     steps:
@@ -44,6 +45,13 @@ jobs:
           export PW="$RUNNER_TEMP/qa-pilote/node_modules/playwright/index.mjs"
           if command -v google-chrome >/dev/null 2>&1; then export CHROME="$(command -v google-chrome)"; fi
           node tests/qa_iphone_v2.test.mjs
+      - name: Vraie inférence sur image et poids synthétiques (aucun média utilisateur)
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PW="$RUNNER_TEMP/qa-pilote/node_modules/playwright/index.mjs"
+          if command -v google-chrome >/dev/null 2>&1; then export CHROME="$(command -v google-chrome)"; fi
+          node tests/qa_iphone_v2_inference.test.mjs
       - name: Vérifier que l'adresse publique ne sert pas une ancienne page
         shell: bash
         run: |
