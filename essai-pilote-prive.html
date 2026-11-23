@@ -62,8 +62,8 @@ footer{margin-top:26px;font-size:12px;color:#91aab8}
 <p id="activeModel" role="status" class="small"><strong>Modèle actif : sr.bin, ancien modèle.</strong> Pour essayer le nouveau modèle entraîné, importe d'abord <code>RetoucheProAI_MODELE_PILOTE_PRIVE_V1.bin</code>.</p>
 <label for="pilotBin">Fichier du nouveau modèle privé (.bin)</label>
 <button id="choosePilot" type="button" class="primary">1. Choisir le nouveau modèle (.bin)</button>
-<input id="pilotBin" type="file" accept=".bin,application/octet-stream" aria-describedby="pilotHelp">
-<p id="pilotModeNotice" class="small" hidden>Le nouveau modèle est obligatoire. Si tu touches Restaurer sans l’avoir importé, le sélecteur Fichiers s’ouvrira automatiquement. Aucun traitement avec l’ancien modèle.</p>
+<input id="pilotBin" type="file" aria-describedby="pilotHelp">
+<p id="pilotModeNotice" class="small" hidden>Le nouveau modèle est obligatoire. Restaurer ouvre directement Fichiers si nécessaire. Sur iPhone, choisis le fichier .bin enregistré dans Téléchargements : tous les fichiers sont visibles et la bonne empreinte est vérifiée automatiquement. Aucun traitement avec l’ancien modèle.</p>
 <p id="pilotHelp" class="small">Sans fichier : modèle public sr.bin. Avec notre fichier .bin privé : nouveau pilote entraîné sur 5 vidéos, ×2 uniquement. Le fichier de poids reste sur ton iPhone ; il n'est pas envoyé au site.</p>
 <label for="zone">Zone à restaurer</label>
 <div class="controls">
