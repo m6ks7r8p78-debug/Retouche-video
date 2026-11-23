@@ -61,7 +61,9 @@ footer{margin-top:26px;font-size:12px;color:#91aab8}
 <h2>2. Choisir le modèle IA</h2>
 <p id="activeModel" role="status" class="small"><strong>Modèle actif : sr.bin, ancien modèle.</strong> Pour essayer le nouveau modèle entraîné, importe d'abord <code>RetoucheProAI_MODELE_PILOTE_PRIVE_V1.bin</code>.</p>
 <label for="pilotBin">Fichier du nouveau modèle privé (.bin)</label>
+<button id="choosePilot" type="button" class="primary">1. Choisir le nouveau modèle (.bin)</button>
 <input id="pilotBin" type="file" accept=".bin,application/octet-stream" aria-describedby="pilotHelp">
+<p id="pilotModeNotice" class="small" hidden>Essai du pilote privé uniquement : sans le fichier .bin validé, aucun traitement ni résultat de l’ancien modèle ne sont autorisés.</p>
 <p id="pilotHelp" class="small">Sans fichier : modèle public sr.bin. Avec notre fichier .bin privé : nouveau pilote entraîné sur 5 vidéos, ×2 uniquement. Le fichier de poids reste sur ton iPhone ; il n'est pas envoyé au site.</p>
 <label for="zone">Zone à restaurer</label>
 <div class="controls">
@@ -98,13 +100,25 @@ const $=s=>document.querySelector(s),file=$('#file'),video=$('#video'),photo=$('
 const go=$('#go'),status=$('#status'),result=$('#result'),source=$('#source');
 let url=null,media=null,pos={x:.5,y:.5},busy=false,release=null,verdict='À évaluer',audit=null;
 let pilotURL=null,pilotNet=null,pilotSHA=null;
+const pilotRequired = new URLSearchParams(location.search).get("mode")==="pilote";
+const canRun=()=>!!media&&(!pilotRequired||!!pilotNet);
+$("#choosePilot").addEventListener("click",()=>$("#pilotBin").click());
+if(pilotRequired){
+  $("h1").textContent="Essaie ton nouveau modèle privé.";
+  $("#pilotModeNotice").hidden=false;
+  $("#activeModel").textContent="MODE PILOTE : aucun modèle chargé. Importe RetoucheProAI_MODELE_PILOTE_PRIVE_V1.bin avant tout calcul.";
+  $("#pilotHelp").textContent="Obligatoire : sélectionne le fichier .bin fourni dans ChatGPT et enregistré dans Fichiers sur ton iPhone. Sans lui, aucun calcul de l’ancien modèle.";
+  $("#go").textContent="2. Restaurer avec le nouveau modèle entraîné";
+  $("#factor").value="2";$("#factor option[value='4']").disabled=true;
+}
 $('#pilotBin').addEventListener('change',async()=>{
  if(busy){say('Le traitement est en cours : attends son résultat avant de changer de modèle.');return}
+  go.disabled=true;
  const f=$('#pilotBin').files?.[0];if(pilotNet){try{pilotNet.unload()}catch(e){}pilotNet=null}
  if(pilotURL){URL.revokeObjectURL(pilotURL);pilotURL=null}pilotSHA=null;
- $('#factor option[value="4"]').disabled=false;
+ $('#factor option[value="4"]').disabled=pilotRequired;
  $('#reference').value='bicubique';$('#reference option[value="current"]').disabled=true;
- if(!f){$('#activeModel').textContent='Modèle actif : ANCIEN sr.bin. Tu ne testes pas le modèle entraîné.';say('Modèle public sr.bin rétabli.');return}
+ if(!f){$('#activeModel').textContent=pilotRequired?'MODE PILOTE : modèle manquant, essai bloqué.':'Modèle actif : ANCIEN sr.bin. Tu ne testes pas le modèle entraîné.';go.disabled=!canRun();say(pilotRequired?'Sélectionne le nouveau modèle avant de lancer le traitement.':'Modèle public sr.bin rétabli.');return}
  try{
   const expected=24192; // nf16 / nc2 / x4, poids FP16 avec une unique paire.
   if(f.size!==expected)throw Error('Poids non compatibles : taille attendue '+expected+' octets.');
@@ -119,8 +133,8 @@ $('#pilotBin').addEventListener('change',async()=>{
   $('#factor').value='2';$('#factor option[value="4"]').disabled=true;
   $('#reference option[value="current"]').disabled=false;$('#reference').value='current';
   $('#activeModel').textContent='Modèle actif : NOUVEAU pilote privé entraîné sur 5 vidéos. ×2 seulement ; comparaison directe à sr.bin.';
-   result.hidden=true;say('NOUVEAU modèle privé chargé localement ('+f.size+' octets). Comparaison directe avec sr.bin sélectionnée (deux calculs, plus long). Aucun fichier envoyé.');
- }catch(e){pilotNet=null;pilotSHA=null;$('#pilotBin').value='';$('#activeModel').textContent='Modèle actif : ANCIEN sr.bin. Le pilote privé n’a pas été accepté.';say('Modèle privé refusé : '+(e.message||e));}
+   result.hidden=true;go.disabled=!canRun();say('NOUVEAU modèle privé chargé localement ('+f.size+' octets). Comparaison directe avec sr.bin sélectionnée (deux calculs, plus long). Aucun fichier envoyé.');
+ }catch(e){pilotNet=null;pilotSHA=null;$('#pilotBin').value='';$('#activeModel').textContent=pilotRequired?'MODE PILOTE : fichier non accepté. Ancien modèle interdit.':'Modèle actif : ANCIEN sr.bin. Le pilote privé n’a pas été accepté.';go.disabled=!canRun();say('Modèle privé refusé : '+(e.message||e));}
 });
 const say=t=>{status.textContent=t;};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -128,7 +142,7 @@ const create=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height
 function displayMedia(which){
  media=which;
  video.hidden=which!=='video';photo.hidden=which!=='photo';source.hidden=false;
- go.disabled=false;result.hidden=true;pos={x:.5,y:.5};$('#target').style.left='50%';$('#target').style.top='50%';
+ go.disabled=!canRun();result.hidden=true;pos={x:.5,y:.5};$('#target').style.left='50%';$('#target').style.top='50%';
 }
 file.addEventListener('change',()=>{
  if(url){URL.revokeObjectURL(url);url=null}
@@ -138,12 +152,12 @@ file.addEventListener('change',()=>{
  url=URL.createObjectURL(f);
  if(f.type.startsWith('video/')){
   video.src=url;video.load();
-  video.onloadeddata=()=>{displayMedia('video');say('Vidéo prête. Mets-la en pause sur l’image à tester, puis lance la vraie IA.');};
+  video.onloadeddata=()=>{displayMedia('video');say(pilotRequired&&!pilotNet?'Vidéo prête. Choisis maintenant le fichier .bin du nouveau modèle.':'Vidéo prête. Mets-la en pause sur l’image à tester, puis lance la vraie IA.');};
   video.onerror=()=>say('Impossible de lire cette vidéo dans Safari.');
   $('#sourceNote').textContent='Mets la vidéo en pause à l’instant de ton choix. Touche l’image pour déplacer la zone de test.';
  }else{
   photo.src=url;
-  photo.onload=()=>{displayMedia('photo');say('Photo prête. Touche la zone à restaurer, puis lance l’IA.');};
+  photo.onload=()=>{displayMedia('photo');say(pilotRequired&&!pilotNet?'Photo prête. Choisis maintenant le fichier .bin du nouveau modèle.':'Photo prête. Touche la zone à restaurer, puis lance l’IA.');};
   photo.onerror=()=>say('Impossible de lire cette photo.');
   $('#sourceNote').textContent='Touche la photo pour déplacer le centre de la zone de test.';
  }
@@ -166,6 +180,7 @@ $('#slider').addEventListener('input',compareSlide);
 function waitImage(el){return new Promise((ok,fail)=>{el.onload=ok;el.onerror=fail;})}
 async function compute(){
  if(busy||!media)return;
+ if(pilotRequired&&!pilotNet){say('Nouveau modèle privé obligatoire ; aucun retour silencieux vers sr.bin.');return}
  busy=true;go.disabled=true;result.hidden=true;verdict='À évaluer';audit=null;
  try{
   if(!window.SR||typeof window.SR.run!=='function')throw Error('Le moteur neuronal sr.js n’est pas chargé.');
@@ -217,6 +232,7 @@ async function compute(){
   audit={type:media,source:w+'×'+h,zone:cw+'×'+ch,position:Math.round(pos.x*100)+'% / '+Math.round(pos.y*100)+'%',
     sortie:W+'×'+H,echelle:'×'+factor,moteur:network.engine||'inconnu',duree_s:ms,reference:compareName,ecart_rgb_sur_255:mad,
     modele:pilotNet?'pilote privé 5 vidéos (SRVGG nf16 nc2)':'sr.bin',
+    ...(pilotRequired?{mode_essai:'pilote_prive_exclusif'}:{}),
     ...(pilotNet?{empreinte_pilote_sha256:pilotSHA}:{}),verdict};
   $('#numbers').textContent='Modèle : '+(pilotNet?'NOUVEAU pilote privé':'ANCIEN sr.bin')+' · réseau : '+audit.moteur+' · source '+audit.zone+' → '+audit.sortie+
     ' · '+ms+' s pour le candidat · écart RGB moyen vs '+compareName+' : '+mad+'/255';
@@ -226,7 +242,7 @@ async function compute(){
  }catch(e){
   say('Échec du vrai calcul neuronal : '+(e&&e.message||String(e))+
   '. Aucun faux résultat classique n’a été créé.');
- }finally{busy=false;go.disabled=!media;}
+ }finally{busy=false;go.disabled=!canRun();}
 }
 go.addEventListener('click',compute);$('#redo').addEventListener('click',()=>{result.hidden=true;source.scrollIntoView({behavior:'smooth'})});
 document.querySelectorAll('[data-grade]').forEach(b=>b.addEventListener('click',()=>{
