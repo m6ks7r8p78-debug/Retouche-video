@@ -63,7 +63,7 @@ footer{margin-top:26px;font-size:12px;color:#91aab8}
 <label for="pilotBin">Fichier du nouveau modèle privé (.bin)</label>
 <button id="choosePilot" type="button" class="primary">1. Choisir le nouveau modèle (.bin)</button>
 <input id="pilotBin" type="file" accept=".bin,application/octet-stream" aria-describedby="pilotHelp">
-<p id="pilotModeNotice" class="small" hidden>Essai du pilote privé uniquement : sans le fichier .bin validé, aucun traitement ni résultat de l’ancien modèle ne sont autorisés.</p>
+<p id="pilotModeNotice" class="small" hidden>Le nouveau modèle est obligatoire. Si tu touches Restaurer sans l’avoir importé, le sélecteur Fichiers s’ouvrira automatiquement. Aucun traitement avec l’ancien modèle.</p>
 <p id="pilotHelp" class="small">Sans fichier : modèle public sr.bin. Avec notre fichier .bin privé : nouveau pilote entraîné sur 5 vidéos, ×2 uniquement. Le fichier de poids reste sur ton iPhone ; il n'est pas envoyé au site.</p>
 <label for="zone">Zone à restaurer</label>
 <div class="controls">
@@ -72,7 +72,8 @@ footer{margin-top:26px;font-size:12px;color:#91aab8}
 <select id="reference" aria-label="Comparer au"><option value="bicubique">Comparer à la bicubique</option><option value="current" disabled>Comparer à sr.bin actuel (plus long)</option></select>
 </div>
 <p class="small">Touche l'image pour choisir le centre de la zone. Le réseau traite les pixels d'origine, sans les réduire artificiellement avant le test. ×4 peut être plus lent.</p>
-<button id="go" class="primary" disabled>Restaurer cette zone par IA</button>
+<button id="go" class="primary">Restaurer cette zone par IA</button>
+<p id="actionHelp" class="small">Commence par importer une photo ou une vidéo. Le bouton Restaurer ouvre Fichiers si ton modèle privé n’est pas encore sélectionné.</p>
 <p id="status" role="status" aria-live="polite">Aucun média sélectionné.</p>
 </section>
 <section class="panel wide" id="result" hidden>
@@ -99,16 +100,17 @@ footer{margin-top:26px;font-size:12px;color:#91aab8}
 const $=s=>document.querySelector(s),file=$('#file'),video=$('#video'),photo=$('#photo');
 const go=$('#go'),status=$('#status'),result=$('#result'),source=$('#source');
 let url=null,media=null,pos={x:.5,y:.5},busy=false,release=null,verdict='À évaluer',audit=null;
-let pilotURL=null,pilotNet=null,pilotSHA=null;
+let pilotURL=null,pilotNet=null,pilotSHA=null,autoRunAfterModel=false;
 const pilotRequired = true; // Page distincte : tout calcul exige les poids privés vérifiés.
-const canRun=()=>!!media&&(!pilotRequired||!!pilotNet);
-$("#choosePilot").addEventListener("click",()=>$("#pilotBin").click());
+const canRun=()=>!!media;
+const syncButton=()=>{go.disabled=busy;if(pilotRequired){go.textContent=pilotNet?'Restaurer avec le NOUVEAU modèle privé':'Restaurer → choisir le fichier .bin';$('#actionHelp').textContent=media?(pilotNet?'Vidéo ou photo prête : touche Restaurer pour traiter avec ton pilote privé.':'Touche Restaurer : Fichiers s’ouvrira pour charger le modèle privé, puis la restauration démarrera automatiquement.'):'Commence par importer une photo ou une vidéo. Le bouton Restaurer ouvrira Fichiers pour choisir le média.';}};
+$("#choosePilot").addEventListener("click",()=>{autoRunAfterModel=false;$("#pilotBin").click();});
 if(pilotRequired){
   $("h1").textContent="Essaie ton nouveau modèle privé.";
   $("#pilotModeNotice").hidden=false;
   $("#activeModel").textContent="MODE PILOTE : aucun modèle chargé. Importe RetoucheProAI_MODELE_PILOTE_PRIVE_V1.bin avant tout calcul.";
   $("#pilotHelp").textContent="Obligatoire : sélectionne le fichier .bin fourni dans ChatGPT et enregistré dans Fichiers sur ton iPhone. Sans lui, aucun calcul de l’ancien modèle.";
-  $("#go").textContent="2. Restaurer avec le nouveau modèle entraîné";
+  $("#go").textContent="Restaurer → choisir le fichier .bin";
   $("#factor").value="2";$("#factor option[value='4']").disabled=true;
 }
 $('#pilotBin').addEventListener('change',async()=>{
@@ -118,7 +120,7 @@ $('#pilotBin').addEventListener('change',async()=>{
  if(pilotURL){URL.revokeObjectURL(pilotURL);pilotURL=null}pilotSHA=null;
  $('#factor option[value="4"]').disabled=pilotRequired;
  $('#reference').value='bicubique';$('#reference option[value="current"]').disabled=true;
- if(!f){$('#activeModel').textContent=pilotRequired?'MODE PILOTE : modèle manquant, essai bloqué.':'Modèle actif : ANCIEN sr.bin. Tu ne testes pas le modèle entraîné.';go.disabled=!canRun();say(pilotRequired?'Sélectionne le nouveau modèle avant de lancer le traitement.':'Modèle public sr.bin rétabli.');return}
+ if(!f){$('#activeModel').textContent=pilotRequired?'MODE PILOTE : modèle manquant, essai bloqué.':'Modèle actif : ANCIEN sr.bin. Tu ne testes pas le modèle entraîné.';syncButton();say(pilotRequired?'Sélectionne le nouveau modèle avant de lancer le traitement.':'Modèle public sr.bin rétabli.');return}
  try{
   const expected=24192; // nf16 / nc2 / x4, poids FP16 avec une unique paire.
   if(f.size!==expected)throw Error('Poids non compatibles : taille attendue '+expected+' octets.');
@@ -133,8 +135,9 @@ $('#pilotBin').addEventListener('change',async()=>{
   $('#factor').value='2';$('#factor option[value="4"]').disabled=true;
   $('#reference option[value="current"]').disabled=false;$('#reference').value='current';
   $('#activeModel').textContent='Modèle actif : NOUVEAU pilote privé entraîné sur 5 vidéos. ×2 seulement ; comparaison directe à sr.bin.';
-   result.hidden=true;go.disabled=!canRun();say('NOUVEAU modèle privé chargé localement ('+f.size+' octets). Comparaison directe avec sr.bin sélectionnée (deux calculs, plus long). Aucun fichier envoyé.');
- }catch(e){pilotNet=null;pilotSHA=null;$('#pilotBin').value='';$('#activeModel').textContent=pilotRequired?'MODE PILOTE : fichier non accepté. Ancien modèle interdit.':'Modèle actif : ANCIEN sr.bin. Le pilote privé n’a pas été accepté.';go.disabled=!canRun();say('Modèle privé refusé : '+(e.message||e));}
+   result.hidden=true;syncButton();say('NOUVEAU modèle privé chargé localement ('+f.size+' octets). Comparaison directe avec sr.bin sélectionnée. Aucun fichier envoyé.');
+   if(autoRunAfterModel&&media){autoRunAfterModel=false;requestAnimationFrame(()=>compute());}
+ }catch(e){pilotNet=null;pilotSHA=null;$('#pilotBin').value='';$('#activeModel').textContent=pilotRequired?'MODE PILOTE : fichier non accepté. Ancien modèle interdit.':'Modèle actif : ANCIEN sr.bin. Le pilote privé n’a pas été accepté.';autoRunAfterModel=false;syncButton();say('Modèle privé refusé : '+(e.message||e)+' Réessaie avec le fichier exact indiqué dans ChatGPT.');}
 });
 const say=t=>{status.textContent=t;};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -142,7 +145,7 @@ const create=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height
 function displayMedia(which){
  media=which;
  video.hidden=which!=='video';photo.hidden=which!=='photo';source.hidden=false;
- go.disabled=!canRun();result.hidden=true;pos={x:.5,y:.5};$('#target').style.left='50%';$('#target').style.top='50%';
+ syncButton();result.hidden=true;pos={x:.5,y:.5};$('#target').style.left='50%';$('#target').style.top='50%';
 }
 file.addEventListener('change',()=>{
  if(url){URL.revokeObjectURL(url);url=null}
@@ -152,7 +155,8 @@ file.addEventListener('change',()=>{
  url=URL.createObjectURL(f);
  if(f.type.startsWith('video/')){
   video.src=url;video.load();
-  video.onloadeddata=()=>{displayMedia('video');say(pilotRequired&&!pilotNet?'Vidéo prête. Choisis maintenant le fichier .bin du nouveau modèle.':'Vidéo prête. Mets-la en pause sur l’image à tester, puis lance la vraie IA.');};
+  video.onloadedmetadata=()=>{displayMedia('video');say('Vidéo reconnue. Sélectionne l’image à restaurer puis utilise Restaurer : le modèle privé sera demandé automatiquement.');};
+  video.onloadeddata=()=>{displayMedia('video');say(pilotRequired&&!pilotNet?'Vidéo prête. Touche Restaurer pour choisir le fichier .bin du nouveau modèle.':'Vidéo prête. Mets-la en pause sur l’image à tester, puis lance la vraie IA.');};
   video.onerror=()=>say('Impossible de lire cette vidéo dans Safari.');
   $('#sourceNote').textContent='Mets la vidéo en pause à l’instant de ton choix. Touche l’image pour déplacer la zone de test.';
  }else{
@@ -242,9 +246,13 @@ async function compute(){
  }catch(e){
   say('Échec du vrai calcul neuronal : '+(e&&e.message||String(e))+
   '. Aucun faux résultat classique n’a été créé.');
- }finally{busy=false;go.disabled=!canRun();}
+ }finally{busy=false;syncButton();}
 }
-go.addEventListener('click',compute);$('#redo').addEventListener('click',()=>{result.hidden=true;source.scrollIntoView({behavior:'smooth'})});
+go.addEventListener('click',()=>{
+ if(!media){say('Choisis une vidéo ou une photo dans Fichiers.');$('#file').click();return}
+ if(pilotRequired&&!pilotNet){autoRunAfterModel=true;say('Sélectionne le fichier RetoucheProAI_MODELE_PILOTE_PRIVE_V1.bin dans Fichiers. Après validation, la restauration démarrera automatiquement.');$('#pilotBin').click();return}
+ compute();
+});$('#redo').addEventListener('click',()=>{result.hidden=true;source.scrollIntoView({behavior:'smooth'})});
 document.querySelectorAll('[data-grade]').forEach(b=>b.addEventListener('click',()=>{
  verdict=b.dataset.grade;if(!audit)return;audit.verdict=verdict;$('#report').value=JSON.stringify(audit,null,2);
  document.querySelectorAll('[data-grade]').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
