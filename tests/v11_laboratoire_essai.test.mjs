@@ -55,7 +55,31 @@ try{
   const dl=page.waitForEvent("download",{timeout:15000});
   await page.locator("#download").click();
   const got=await dl;assert.ok(got.suggestedFilename().endsWith(".png"));
-  assert.deepEqual(posts,[],"Un média a été envoyé par une requête non GET");
+  /* Le vrai modèle entraîné est privé. Ici, UNIQUEMENT des poids synthétiques
+     tous nuls : teste l'import local nf16/nc2, la forme x4 et WebGL sans jamais
+     publier ni transmettre le checkpoint issu des vidéos personnelles. */
+  await page.locator("#pilotBin").setInputFiles({
+    name:"poids-synthetiques-test.bin",
+    mimeType:"application/octet-stream",
+    buffer:Buffer.alloc(24192)
+  });
+  await page.waitForFunction(()=>/Modèle privé chargé localement/.test(document.querySelector("#status").textContent),null,{timeout:15000});
+  assert.equal(await page.locator("#factor").inputValue(),"2","Le pilote n'est testé qu'à x2");
+  assert.ok(await page.locator('#factor option[value="4"]').isDisabled(),"Le mode x4 doit être interdit pour le pilote x2");
+  const second=Date.now();
+  await page.locator("#go").click();
+  await page.waitForFunction(()=>!document.querySelector("#result").hidden,null,{timeout:120000});
+  const pilotReport=await page.locator("#report").inputValue();
+  assert.match(pilotReport,/pilote privé 5 vidéos/);
+  const parsed=JSON.parse(pilotReport);
+  assert.equal(parsed.sortie,"408×408");
+  assert.ok(parsed.ecart_rgb_sur_255>=0);
+  console.log("LABORATOIRE_IMPORT_PRIVE_PASS",JSON.stringify({elapsedSec:((Date.now()-second)/1000).toFixed(2),pixels:parsed.sortie,model:"poids synthetiques, pas donnees utilisateurs"}));
+  await page.locator("#pilotBin").setInputFiles({
+    name:"faux-modele.bin",mimeType:"application/octet-stream",buffer:Buffer.alloc(16)
+  });
+  assert.match(await page.locator("#status").innerText(),/Poids non compatibles/);
+    assert.deepEqual(posts,[],"Un média a été envoyé par une requête non GET");
   assert.deepEqual(errors,[],"Erreurs du navigateur: "+errors.join("; "));
   console.log("LABORATOIRE_PASS",JSON.stringify({elapsedSec:((Date.now()-start)/1000).toFixed(2),output:output.report,networkPosts:posts.length}));
   await ctx.close();
