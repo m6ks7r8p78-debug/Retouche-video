@@ -126,7 +126,9 @@
     const a=$("#auto_tweaks"),n=$("#auto_result_summary");
     if(a)a.hidden=false;
     if(n)n.textContent=o.iaFrames===o.frames&&o.iaFrames>0
-      ?"Restauration IA effectuée sur les "+o.iaFrames+" images : "+o.width+" × "+o.height+". Tu peux enregistrer ou ajuster le rendu."
+      ?"Réseau IA appliqué sur "+o.iaFrames+" images : "+o.width+" × "+o.height+
+       (o.pixelMAD!=null?". Différence RGB face au rendu classique : "+o.pixelMAD+"/255.":" . Mesure pixel indisponible.")+
+       " Une différence ne prouve pas encore une meilleure qualité ; compare les détails avant/après."
       :"Amélioration classique effectuée, sans reconstruction IA : "+o.width+" × "+o.height+
        ". Le fichier n'est pas présenté comme une vraie restauration 4K IA.";
     if($("#auto_tweaks_note"))$("#auto_tweaks_note").textContent="";
