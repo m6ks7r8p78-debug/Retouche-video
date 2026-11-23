@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c1623">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; connect-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:">
 <title>Laboratoire IA — Essai de restauration RetoucheProAI</title>
 <style>
 :root{color-scheme:dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:#0b1420;color:#f2f6f7}
@@ -59,6 +59,9 @@ footer{margin-top:26px;font-size:12px;color:#91aab8}
 </section>
 <section class="panel">
 <h2>2. Tester une vraie reconstruction</h2>
+<label for="pilotBin">Modèle utilisé (facultatif)</label>
+<input id="pilotBin" type="file" accept=".bin,application/octet-stream" aria-describedby="pilotHelp">
+<p id="pilotHelp" class="small">Sans fichier : modèle public sr.bin. Avec notre fichier .bin privé : nouveau pilote entraîné sur 5 vidéos, ×2 uniquement. Le fichier de poids reste sur ton iPhone ; il n'est pas envoyé au site.</p>
 <label for="zone">Zone à restaurer</label>
 <div class="controls">
 <select id="zone"><option value="384">Zone native 384 px (conseillée sur iPhone)</option><option value="192">Zone native 192 px (rapide)</option><option value="full">Image entière si possible</option></select>
@@ -79,7 +82,7 @@ footer{margin-top:26px;font-size:12px;color:#91aab8}
 <p class="small">Une différence de pixels prouve que le réseau a travaillé, pas que le résultat est meilleur. Examine les yeux, les cheveux, les contours, les textures, le bruit et les éventuels halos.</p>
 <h2>4. Ton verdict</h2>
 <div id="feedback"><button data-grade="Amélioré">Amélioration visible</button><button data-grade="Identique">Aucun gain visible</button><button data-grade="Dégradé">Moins naturel</button><button data-grade="Artefacts">Nouveaux artefacts</button></div>
-<p class="small">Après ton choix, copie le compte rendu et colle-le dans notre conversation ChatGPT pour que je puisse ajuster le projet. Aucune donnée n'est envoyée automatiquement.</p>
+<p class="small">Après ton choix, copie le compte rendu et colle-le dans notre conversation ChatGPT pour que je puisse ajuster le projet. Aucune donnée n'est envoyée automatiquement. Le pilote privé n'est pas validé pour la restauration d'un film complet.</p>
 <textarea id="report" readonly aria-label="Compte rendu de test"></textarea>
 <div class="controls"><button id="copy">Copier mon compte rendu</button></div>
 </section>
@@ -92,6 +95,27 @@ footer{margin-top:26px;font-size:12px;color:#91aab8}
 const $=s=>document.querySelector(s),file=$('#file'),video=$('#video'),photo=$('#photo');
 const go=$('#go'),status=$('#status'),result=$('#result'),source=$('#source');
 let url=null,media=null,pos={x:.5,y:.5},busy=false,release=null,verdict='À évaluer',audit=null;
+let pilotURL=null,pilotNet=null,pilotSHA=null;
+$('#pilotBin').addEventListener('change',async()=>{
+ if(busy){say('Le traitement est en cours : attends son résultat avant de changer de modèle.');return}
+ const f=$('#pilotBin').files?.[0];if(pilotNet){try{pilotNet.unload()}catch(e){}pilotNet=null}
+ if(pilotURL){URL.revokeObjectURL(pilotURL);pilotURL=null}pilotSHA=null;
+ $('#factor option[value="4"]').disabled=false;
+ if(!f){say('Modèle public sr.bin rétabli.');return}
+ try{
+  const expected=24192; // nf16 / nc2 / x4, poids FP16 avec une unique paire.
+  if(f.size!==expected)throw Error('Poids non compatibles : taille attendue '+expected+' octets.');
+  const buf=await f.arrayBuffer(),bits=new Uint16Array(buf);
+  for(const v of bits)if((v&0x7c00)===0x7c00)throw Error('Poids invalides (Inf/NaN).');
+  const hash=await crypto.subtle.digest('SHA-256',buf);
+  pilotSHA=Array.from(new Uint8Array(hash)).map(x=>x.toString(16).padStart(2,'0')).join('');
+  if(typeof window.mkSR!=='function')throw Error('Moteur neuronal non chargé.');
+  pilotURL=URL.createObjectURL(f);
+  pilotNet=mkSR({id:'sr_pilote_prive',file:pilotURL,nf:16,pairs:1,gpu:'__no_gpu_model_private'});
+  $('#factor').value='2';$('#factor option[value="4"]').disabled=true;
+  result.hidden=true;say('Modèle privé chargé localement ('+f.size+' octets). Prêt pour un vrai essai ×2. Aucun fichier envoyé.');
+ }catch(e){pilotNet=null;pilotSHA=null;$('#pilotBin').value='';say('Modèle privé refusé : '+(e.message||e));}
+});
 const say=t=>{status.textContent=t;};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const create=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
@@ -150,6 +174,7 @@ async function compute(){
    y=clamp(Math.round(h*pos.y-ch/2),0,h-ch);
   }
   if(cw*ch>1100000)throw Error('Image trop grande pour un essai complet. Choisis une zone native de 384 px.');
+  if(pilotNet&&factor!==2)throw Error('Le nouveau modèle privé est entraîné pour ×2 seulement.');
   const W=cw*factor,H=ch*factor;
   if(W*H>8300000)throw Error('Sortie trop grande pour un test iPhone. Choisis ×2 ou une zone plus petite.');
   const original=create(cw,ch),ox=original.getContext('2d');
@@ -158,7 +183,8 @@ async function compute(){
   bx.imageSmoothingEnabled=true;bx.imageSmoothingQuality='high';bx.drawImage(original,0,0,W,H);
   say('Modèle neuronal en cours de calcul… Le premier chargement télécharge les poids IA.');
   const start=performance.now();
-  const canvas=await window.SR.run(original,factor,.3,f=>{
+  const network=pilotNet||window.SR;
+  const canvas=await network.run(original,factor,.3,f=>{
     say('Réseau neuronal : '+Math.round(clamp(Number(f)||0,0,1)*100)+' % (les images ne quittent pas ton appareil)');
   });
   const elapsed=performance.now()-start;
@@ -175,7 +201,9 @@ async function compute(){
   release=await new Promise(ok=>final.toBlob(blob=>ok(blob?URL.createObjectURL(blob):null),'image/png'));
   $('#download').hidden=!release;if(release)$('#download').href=release;
   audit={type:media,source:w+'×'+h,zone:cw+'×'+ch,position:Math.round(pos.x*100)+'% / '+Math.round(pos.y*100)+'%',
-    sortie:W+'×'+H,echelle:'×'+factor,moteur:window.SR.engine||'inconnu',duree_s:ms,ecart_rgb_sur_255:mad,modele:'sr.bin',verdict};
+    sortie:W+'×'+H,echelle:'×'+factor,moteur:network.engine||'inconnu',duree_s:ms,ecart_rgb_sur_255:mad,
+    modele:pilotNet?'pilote privé 5 vidéos (SRVGG nf16 nc2)':'sr.bin',
+    ...(pilotNet?{empreinte_pilote_sha256:pilotSHA}:{}),verdict};
   $('#numbers').textContent='Réseau : '+audit.moteur+' · source '+audit.zone+' → '+audit.sortie+
     ' · '+ms+' s · écart RGB moyen vs bicubique : '+mad+'/255';
   $('#report').value=JSON.stringify(audit,null,2);
