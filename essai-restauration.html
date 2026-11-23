@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c1623">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; worker-src 'self' blob:">
+<title>Laboratoire IA — Essai de restauration RetoucheProAI</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:#0b1420;color:#f2f6f7}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% -10%,#20465c,#0b1420 55%);min-height:100vh}
+main{max-width:900px;margin:auto;padding:clamp(18px,4vw,36px) 20px 80px}
+h1{font-size:clamp(28px,5vw,44px);letter-spacing:-.045em;line-height:1.12;margin:10px 0 16px}
+h2{font-size:19px;margin:0 0 13px;letter-spacing:-.02em}
+p{color:#b6c5cf;line-height:1.5}strong{color:#ecf9fe}a{color:#d1f2f4}
+.kicker{font-size:12px;color:#95e3db;text-transform:uppercase;letter-spacing:.17em;font-weight:700}
+.pill{display:inline-block;border-radius:20px;background:#17373e;color:#a0f2db;border:1px solid #35787b;padding:5px 10px;font-size:12px;font-weight:700}
+.cards{display:grid;grid-template-columns:1fr;gap:16px;margin-top:20px}.panel{background:#101f2c;border:1px solid #284154;border-radius:21px;padding:20px;box-shadow:0 16px 40px #0002}
+label{font-size:14px;font-weight:600;color:#e4f0f4}input[type=file]{display:block;width:100%;padding:14px;background:#152b39;border:1px dashed #619195;border-radius:15px;color:#d8f8f4;font-size:15px}
+input[type=range]{width:100%;accent-color:#87e3d1;min-height:34px}
+button,.button-link{font:inherit;cursor:pointer;border:1px solid #598b92;color:#effaff;border-radius:13px;padding:12px 17px;background:#1a3843;font-weight:650;min-height:46px}
+button.primary,.button-link.primary{background:#9ae8d3;color:#0a2730;border-color:#9ae8d3}
+button:disabled{opacity:.45;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #9be5d4;outline-offset:2px}
+select{padding:11px 12px;background:#162f3d;color:#fff;border:1px solid #668f9d;border-radius:10px;font:inherit}
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+.small{font-size:13px;color:#a9bfca}.muted{color:#a8bdc8}#video,#photo{max-width:100%;max-height:300px;object-fit:contain;border-radius:13px;display:block;margin:auto}
+#source{position:relative;border-radius:16px;background:#07111d;min-height:120px;display:grid;place-items:center;overflow:hidden}
+#target{position:absolute;width:30px;height:30px;border:2px solid #9ff9dc;border-radius:50%;box-shadow:0 0 0 5px #0a333a99;pointer-events:none;left:50%;top:50%;transform:translate(-50%,-50%)}
+#source[hidden],#result[hidden],#photo[hidden],#video[hidden],#target[hidden],#download[hidden]{display:none!important}
+#status{white-space:pre-wrap;overflow-wrap:anywhere;background:#0b1b29;border:1px solid #305669;border-radius:12px;padding:13px;min-height:45px;font-size:14px}
+#compare{position:relative;margin-top:15px;overflow:hidden;background:#0b151e;border-radius:14px}
+#before,#after{width:100%;height:auto;display:block;aspect-ratio:1;object-fit:contain}
+#after{position:relative}#before{position:absolute;inset:0;clip-path:inset(0 50% 0 0)}
+#splitline{position:absolute;top:0;bottom:0;left:50%;width:2px;background:#e7fffb;pointer-events:none}
+.split-legend{display:flex;justify-content:space-between;font-size:12px;color:#a5d7dc;font-weight:700;margin-top:8px}
+#feedback{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#report{display:block;min-height:72px;width:100%;font:12px/1.5 ui-monospace,Menlo,monospace;background:#081824;color:#d8eff6;border:1px solid #365c6d;border-radius:10px;padding:10px}
+.stats{font-variant-numeric:tabular-nums;color:#d7ecf1;font-size:13px}
+footer{margin-top:26px;font-size:12px;color:#91aab8}
+@media(min-width:760px){.cards{grid-template-columns:1fr 1fr;align-items:start}.panel.wide{grid-column:span 2}}
+</style>
+<script defer src="sr-gpu.js"></script>
+<script defer src="sr.js"></script>
+</head>
+<body>
+<main>
+<div class="kicker">RetoucheProAI · Laboratoire indépendant</div>
+<h1>La restauration, <em>à l'épreuve des yeux.</em></h1>
+<p>Teste le <strong>vrai réseau neuronal <code>sr.bin</code></strong> sur une image de ta vidéo, et décide toi-même s'il améliore les détails. Aucun changement de contraste ne sera présenté comme une restauration.</p>
+<span class="pill">Essai expérimental · traitements locaux</span>
+<div class="cards">
+<section class="panel">
+<h2>1. Choisir un souvenir</h2>
+<label for="file">Photo ou vidéo personnelle</label>
+<input id="file" type="file" accept="image/*,video/*">
+<p class="small">Le fichier reste sur ton appareil. Cette page ne l'envoie à aucun serveur. Les scripts et les poids IA sont téléchargés depuis ce site.</p>
+<div id="source" hidden><video id="video" playsinline muted controls preload="auto" hidden></video><img id="photo" alt="Source sélectionnée" hidden><span id="target" aria-hidden="true"></span></div>
+<p class="small" id="sourceNote">Choisis un média. Pour une vidéo, positionne la lecture sur l'image que tu souhaites tester, puis mets-la en pause.</p>
+</section>
+<section class="panel">
+<h2>2. Tester une vraie reconstruction</h2>
+<label for="zone">Zone à restaurer</label>
+<div class="controls">
+<select id="zone"><option value="384">Zone native 384 px (conseillée sur iPhone)</option><option value="192">Zone native 192 px (rapide)</option><option value="full">Image entière si possible</option></select>
+<select id="factor" aria-label="Agrandissement"><option value="2">IA ×2</option><option value="4">IA ×4</option></select>
+</div>
+<p class="small">Touche l'image pour choisir le centre de la zone. Le réseau traite les pixels d'origine, sans les réduire artificiellement avant le test. ×4 peut être plus lent.</p>
+<button id="go" class="primary" disabled>Restaurer cette zone par IA</button>
+<p id="status" role="status" aria-live="polite">Aucun média sélectionné.</p>
+</section>
+<section class="panel wide" id="result" hidden>
+<h2>3. Regarder la différence réelle</h2>
+<div id="compare"><img id="after" alt="Sortie du modèle neuronal"><img id="before" alt="Agrandissement classique"><span id="splitline"></span></div>
+<div class="split-legend"><span>Avant · interpolation classique</span><span>Après · réseau IA</span></div>
+<label for="slider">Faire glisser le comparateur</label>
+<input type="range" id="slider" min="0" max="100" value="50" aria-label="Comparaison avant après">
+<p class="stats" id="numbers"></p>
+<div class="controls"><a id="download" class="button-link primary" download="retoucheproai-essai-ia.png" hidden>Enregistrer l'image IA</a><button id="redo">Tester une autre zone</button></div>
+<p class="small">Une différence de pixels prouve que le réseau a travaillé, pas que le résultat est meilleur. Examine les yeux, les cheveux, les contours, les textures, le bruit et les éventuels halos.</p>
+<h2>4. Ton verdict</h2>
+<div id="feedback"><button data-grade="Amélioré">Amélioration visible</button><button data-grade="Identique">Aucun gain visible</button><button data-grade="Dégradé">Moins naturel</button><button data-grade="Artefacts">Nouveaux artefacts</button></div>
+<p class="small">Après ton choix, copie le compte rendu et colle-le dans notre conversation ChatGPT pour que je puisse ajuster le projet. Aucune donnée n'est envoyée automatiquement.</p>
+<textarea id="report" readonly aria-label="Compte rendu de test"></textarea>
+<div class="controls"><button id="copy">Copier mon compte rendu</button></div>
+</section>
+</div>
+<footer>Laboratoire local de vérification · modèle déjà présent dans le projet, et non un nouveau modèle entraîné. La qualité vidéo Full HD/4K et l'export long sont des validations distinctes.</footer>
+</main>
+<script>
+(function(){
+'use strict';
+const $=s=>document.querySelector(s),file=$('#file'),video=$('#video'),photo=$('#photo');
+const go=$('#go'),status=$('#status'),result=$('#result'),source=$('#source');
+let url=null,media=null,pos={x:.5,y:.5},busy=false,release=null,verdict='À évaluer',audit=null;
+const say=t=>{status.textContent=t;};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const create=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
+function displayMedia(which){
+ media=which;
+ video.hidden=which!=='video';photo.hidden=which!=='photo';source.hidden=false;
+ go.disabled=false;result.hidden=true;pos={x:.5,y:.5};$('#target').style.left='50%';$('#target').style.top='50%';
+}
+file.addEventListener('change',()=>{
+ if(url){URL.revokeObjectURL(url);url=null}
+ result.hidden=true;go.disabled=true;media=null;audit=null;
+ const f=file.files&&file.files[0];if(!f){say('Choisis une photo ou une vidéo.');return}
+ if(!f.type.startsWith('image/')&&!f.type.startsWith('video/')){say('Format non pris en charge.');return}
+ url=URL.createObjectURL(f);
+ if(f.type.startsWith('video/')){
+  video.src=url;video.load();
+  video.onloadeddata=()=>{displayMedia('video');say('Vidéo prête. Mets-la en pause sur l’image à tester, puis lance la vraie IA.');};
+  video.onerror=()=>say('Impossible de lire cette vidéo dans Safari.');
+  $('#sourceNote').textContent='Mets la vidéo en pause à l’instant de ton choix. Touche l’image pour déplacer la zone de test.';
+ }else{
+  photo.src=url;
+  photo.onload=()=>{displayMedia('photo');say('Photo prête. Touche la zone à restaurer, puis lance l’IA.');};
+  photo.onerror=()=>say('Impossible de lire cette photo.');
+  $('#sourceNote').textContent='Touche la photo pour déplacer le centre de la zone de test.';
+ }
+});
+source.addEventListener('pointerdown',e=>{
+ const el=media==='video'?video:photo;if(!el)return;
+ const r=el.getBoundingClientRect(),w=media==='video'?video.videoWidth:photo.naturalWidth,h=media==='video'?video.videoHeight:photo.naturalHeight;
+ if(!w||!h)return;
+ const scale=Math.min(r.width/w,r.height/h),visW=w*scale,visH=h*scale;
+ const x0=r.left+(r.width-visW)/2,y0=r.top+(r.height-visH)/2;
+ pos={x:clamp((e.clientX-x0)/visW,0,1),y:clamp((e.clientY-y0)/visH,0,1)};
+ $('#target').style.left=(pos.x*100)+'%';$('#target').style.top=(pos.y*100)+'%';
+});
+function compareSlide(){
+ const v=Number($('#slider').value);
+ $('#before').style.clipPath='inset(0 '+(100-v)+'% 0 0)';
+ $('#splitline').style.left=v+'%';
+}
+$('#slider').addEventListener('input',compareSlide);
+function waitImage(el){return new Promise((ok,fail)=>{el.onload=ok;el.onerror=fail;})}
+async function compute(){
+ if(busy||!media)return;
+ busy=true;go.disabled=true;result.hidden=true;verdict='À évaluer';audit=null;
+ try{
+  if(!window.SR||typeof window.SR.run!=='function')throw Error('Le moteur neuronal sr.js n’est pas chargé.');
+  const el=media==='video'?video:photo;
+  if(media==='video'){video.pause();if(video.readyState<2)throw Error('Vidéo pas encore prête. Patiente que l’image apparaisse.')}
+  const w=media==='video'?video.videoWidth:photo.naturalWidth,h=media==='video'?video.videoHeight:photo.naturalHeight;
+  if(!w||!h)throw Error('Dimensions de la source inconnues.');
+  let cw,ch,x,y;const zone=$('#zone').value,factor=Number($('#factor').value);
+  if(zone==='full'){cw=w;ch=h;x=0;y=0}else{
+   cw=Math.min(w,Number(zone));ch=Math.min(h,Number(zone));
+   x=clamp(Math.round(w*pos.x-cw/2),0,w-cw);
+   y=clamp(Math.round(h*pos.y-ch/2),0,h-ch);
+  }
+  if(cw*ch>1100000)throw Error('Image trop grande pour un essai complet. Choisis une zone native de 384 px.');
+  const W=cw*factor,H=ch*factor;
+  if(W*H>8300000)throw Error('Sortie trop grande pour un test iPhone. Choisis ×2 ou une zone plus petite.');
+  const original=create(cw,ch),ox=original.getContext('2d');
+  ox.drawImage(el,x,y,cw,ch,0,0,cw,ch);
+  const classic=create(W,H),bx=classic.getContext('2d',{willReadFrequently:true});
+  bx.imageSmoothingEnabled=true;bx.imageSmoothingQuality='high';bx.drawImage(original,0,0,W,H);
+  say('Modèle neuronal en cours de calcul… Le premier chargement télécharge les poids IA.');
+  const start=performance.now();
+  const canvas=await window.SR.run(original,factor,.3,f=>{
+    say('Réseau neuronal : '+Math.round(clamp(Number(f)||0,0,1)*100)+' % (les images ne quittent pas ton appareil)');
+  });
+  const elapsed=performance.now()-start;
+  if(!canvas||canvas.width!==W||canvas.height!==H)throw Error('Résolution de sortie neuronale incorrecte.');
+  const final=create(W,H);final.getContext('2d').drawImage(canvas,0,0);
+  const a=final.getContext('2d',{willReadFrequently:true}).getImageData(0,0,W,H).data;
+  const b=bx.getImageData(0,0,W,H).data;
+  const step=Math.max(1,Math.floor(W*H/180000));
+  let sum=0,n=0;for(let i=0;i<a.length;i+=4*step){sum+=Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2]);n+=3}
+  const mad=+(sum/n).toFixed(3),ms=+(elapsed/1000).toFixed(2);
+  $('#before').src=classic.toDataURL('image/png');
+  $('#after').src=final.toDataURL('image/png');
+  if(release)URL.revokeObjectURL(release);
+  release=await new Promise(ok=>final.toBlob(blob=>ok(blob?URL.createObjectURL(blob):null),'image/png'));
+  $('#download').hidden=!release;if(release)$('#download').href=release;
+  audit={type:media,source:w+'×'+h,zone:cw+'×'+ch,position:Math.round(pos.x*100)+'% / '+Math.round(pos.y*100)+'%',
+    sortie:W+'×'+H,echelle:'×'+factor,moteur:window.SR.engine||'inconnu',duree_s:ms,ecart_rgb_sur_255:mad,modele:'sr.bin',verdict};
+  $('#numbers').textContent='Réseau : '+audit.moteur+' · source '+audit.zone+' → '+audit.sortie+
+    ' · '+ms+' s · écart RGB moyen vs bicubique : '+mad+'/255';
+  $('#report').value=JSON.stringify(audit,null,2);
+  $('#slider').value=50;compareSlide();result.hidden=false;result.scrollIntoView({behavior:'smooth',block:'start'});
+  say('IA exécutée. À toi de juger si elle restaure vraiment des détails naturels.');
+ }catch(e){
+  say('Échec du vrai calcul neuronal : '+(e&&e.message||String(e))+
+  '. Aucun faux résultat classique n’a été créé.');
+ }finally{busy=false;go.disabled=!media;}
+}
+go.addEventListener('click',compute);$('#redo').addEventListener('click',()=>{result.hidden=true;source.scrollIntoView({behavior:'smooth'})});
+document.querySelectorAll('[data-grade]').forEach(b=>b.addEventListener('click',()=>{
+ verdict=b.dataset.grade;if(!audit)return;audit.verdict=verdict;$('#report').value=JSON.stringify(audit,null,2);
+ document.querySelectorAll('[data-grade]').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+ say('Verdict noté localement : '+verdict+'. Copie le compte rendu et colle-le dans notre conversation.');
+}));
+$('#copy').addEventListener('click',async()=>{
+ if(!audit)return;
+ try{await navigator.clipboard.writeText($('#report').value);$('#copy').textContent='Compte rendu copié ✓';}
+ catch(e){$('#report').focus();$('#report').select();say('Sélectionne et copie le texte du compte rendu.');}
+});
+})();
+</script>
+</body>
+</html>
