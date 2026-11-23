@@ -242,3 +242,13 @@ sujets protégés (visage ±35 %, personne ±12 %, animal ±15 % de marge), rés
 (s = 1 ⇒ copie exacte). format.js : deciderFidele, rendreFidele (une copie de l'image puis bandes de colonnes), controlerFidele (8 images),
 verifierFidele (export, chaque image), boucle de correction dans creer(). Rapport et banc : RAPPORT_FIDELE.md, tests/fidele/.
 
+
+## v12.0 — Rafale (23 nov. 2026)
+`rafale.js` (RAFALE, WebGL2 + EXT_color_buffer_float) : pousser(rang, image) une fois par image (couleur + pyramide de luminance),
+fusion(rang, {s, R}) → canvas. Étapes : appariement de blocs 8×8 grossier → fin (rayon 2 puis 1, ajustement parabolique),
+Lucas-Kanade 10×10 à moyennes retirées (niveaux 0 et 1), médian 3×3 ; robustesse (moyennes 3×3, bruit + texture locale, érosion) ;
+noyaux anisotropes (tenseur de structure) accumulés en addition flottante ; puis rétroprojection Irani-Peleg (psf 0,8 px, μ 0,8, 5 tours),
+mouvement inverse par point fixe. Réglages dans RAFALE.P. Intégration app.js : boucle d'export, chemin lecture image par image sans plan
+de vitesse ni IA ; window.__raf (état), __rafSrc (anti-blocs sauté), __rafDn (débruitage ×0,6). Grille ×2 si sortie ≥ 1,5× et source
+≤ 0,6 Mpx, sinon ×1. Pistes : banc de réglages plus large (RAFALE_N, tests/rafale/mesurer_juste.py), aperçu Rafale à la pause,
+Rafale avant l'IA par images clés, rayon 3 (7 images).

@@ -1,5 +1,20 @@
 # Journal des versions
 
+## v12.0 (23 nov. 2026) — Rafale : super-résolution multi-images (vrai détail, rien d'inventé)
+- **Nouveau moteur `rafale.js`** (carte graphique, WebGL2), inspiré du « Super Res Zoom » des Pixel (Wronski et al., 2019) :
+  chaque image de la vidéo est fusionnée avec ses **4 voisines**, alignées au dixième de pixel (pyramide + appariement de blocs +
+  Lucas-Kanade), sur une grille ×2 avec des noyaux qui suivent les contours, puis **rétroprojection itérative** (5 tours) :
+  l'image est corrigée jusqu'à ce que, « refilmée » par chaque voisine, elle redonne ce que chacune a vraiment enregistré.
+  Là où l'alignement échoue (objet qui bouge, changement de plan), la voisine est écartée pixel par pixel → au pire, agrandissement simple.
+- Option **« Rafale — détail réel multi-images »**, cochée par défaut, pour l'export vidéo sans IA (l'IA garde son propre chemin).
+  Anti-blocs sauté et débruitage ×0,6 sur l'image fusionnée (bruit et blocs déjà réduits par la fusion). Repli automatique sur
+  l'ancien parcours en cas d'erreur, sans perte.
+- **Mesuré contre la vérité** (export réel dans l'app, vidéo de vieux téléphone simulée : tremblement, bruit, H.264 fort, sortie Full HD) :
+  scène de nuit bruitée : LPIPS 0,304 → **0,245 (−19 %)**, PSNR +0,16 dB, **scintillement −21 %** ; scène de portrait :
+  LPIPS 0,188 → **0,148 (−21 %)**, PSNR +0,34 dB, scintillement égal. Banc du moteur seul (3 scènes,
+  chacun avec son meilleur débruitage) : LPIPS −15 %. Tests : `tests/rafale_app.test.mjs`, `tests/rafale_banc.mjs`, `tests/rafale/`.
+- Reste : essai sur iPhone (vitesse réelle et mémoire). Retour arrière : branche `sauvegarde-v11.2`.
+
 ## v11.2 (22 nov. 2026) — Lecture réparée et nouveaux boutons d'aperçu
 - **Lecture** : sur iPhone, la vidéo avançait mais l'aperçu restait figé (il ne changeait qu'en touchant un bouton). Safari peut
   cesser d'envoyer les images du lecteur caché : une garde redessine alors l'aperçu à chaque rafraîchissement de l'écran.
