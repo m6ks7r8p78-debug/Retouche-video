@@ -72,6 +72,26 @@ try{
   assert.match(await page.locator("#status").innerText(),/Poids non compatibles/);
   assert.deepEqual(posts,[],"Un média a été envoyé par une requête non GET");
   assert.deepEqual(errors,[],"Erreurs du navigateur: "+errors.join("; "));
+  // Le lien pour évaluer le modèle privé ne doit JAMAIS traiter avec sr.bin par défaut.
+  const beta=await ctx.newPage();
+  const betaErrors=[];beta.on("pageerror",e=>betaErrors.push(e.message));
+  await beta.goto(url+"?mode=pilote",{waitUntil:"domcontentloaded"});
+  assert.match(await beta.locator("#activeModel").innerText(),/MODE PILOTE/);
+  assert.ok(await beta.locator("#pilotModeNotice").isVisible());
+  assert.ok(await beta.locator("#go").isDisabled());
+  assert.equal(await beta.locator("#factor").inputValue(),"2");
+  assert.ok(await beta.locator('#factor option[value="4"]').isDisabled());
+  await beta.locator("#file").setInputFiles({name:"photo-compressee.jpg",mimeType:"image/jpeg",buffer:Buffer.from(jpeg,"base64")});
+  await beta.waitForFunction(()=>!document.querySelector("#source").hidden);
+  assert.ok(await beta.locator("#go").isDisabled(),"Mode pilote doit refuser un ancien modèle malgré une photo chargée");
+  await beta.locator("#pilotBin").setInputFiles({name:"mauvais-modele.bin",mimeType:"application/octet-stream",buffer:Buffer.alloc(24192)});
+  await beta.waitForFunction(()=>/Empreinte incompatible/.test(document.querySelector("#status").textContent),null,{timeout:15000});
+  assert.ok(await beta.locator("#go").isDisabled(),"Mode pilote doit rester verrouillé après refus d'un faux binaire");
+  assert.ok(await beta.locator("#result").isHidden());
+  assert.match(await beta.locator("#activeModel").innerText(),/MODE PILOTE/);
+  assert.deepEqual(betaErrors,[]);
+  await beta.close();
+  console.log("LABORATOIRE_PILOTE_EXCLUSIF_PASS : interdit ancien modèle sans vrai .bin et refuse mauvais SHA");
   console.log("LABORATOIRE_PASS",JSON.stringify({elapsedSec:((Date.now()-start)/1000).toFixed(2),output:output.report,networkPosts:posts.length}));
   await ctx.close();
 }finally{
