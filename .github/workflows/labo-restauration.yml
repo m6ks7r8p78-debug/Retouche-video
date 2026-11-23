@@ -31,5 +31,14 @@ jobs:
           export PW="$RUNNER_TEMP/rpa-preview/node_modules/playwright/index.mjs"
           if command -v google-chrome >/dev/null 2>&1; then export CHROME="$(command -v google-chrome)"; fi
           node tests/v11_laboratoire_essai.test.mjs
+      - name: Vérifier le laboratoire réellement publié sur le domaine existant
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --max-time 35 --retry 2 https://retoucheproai.com/essai-restauration.html -o /tmp/labo-public.html
+          grep -q 'Laboratoire IA' /tmp/labo-public.html
+          grep -q 'sr-gpu.js' /tmp/labo-public.html
+          grep -q 'Aucun changement de contraste' /tmp/labo-public.html
+          echo "URL publique du laboratoire vérifiée, page IA reçue."
       - name: Rappel de portée
         run: echo "Un test Chrome n'est pas une validation Safari iPhone physique ni un export vidéo 4K."
