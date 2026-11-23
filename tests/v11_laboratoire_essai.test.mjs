@@ -22,7 +22,16 @@ try{
   await page.waitForFunction(()=>typeof window.SR?.run==="function");
   assert.ok(await page.getByText("La restauration,").count()>=1);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),"Défilement horizontal iPhone");
-  await page.locator("#file").setInputFiles(path.join(ROOT,"tests/medias/visage_vieuxtel.jpg"));
+  const jpeg=await page.evaluate(()=>{
+    const c=document.createElement("canvas");c.width=c.height=204;
+    const x=c.getContext("2d"),grad=x.createLinearGradient(0,0,204,204);
+    grad.addColorStop(0,"#1b2f40");grad.addColorStop(.5,"#e1cda5");grad.addColorStop(1,"#4c3545");
+    x.fillStyle=grad;x.fillRect(0,0,204,204);
+    for(let n=0;n<26;n++){x.fillStyle=n%2?"#e7b26a":"#253b5e";x.fillRect(n*8,20+(n%3)*8,5,124)}
+    x.fillStyle="#fff";x.font="20px sans-serif";x.fillText("1999",30,180);
+    return c.toDataURL("image/jpeg",.12).split(",")[1];
+  });
+  await page.locator("#file").setInputFiles({name:"photo-compressee.jpg",mimeType:"image/jpeg",buffer:Buffer.from(jpeg,"base64")});
   await page.waitForFunction(()=>!document.querySelector("#source").hidden);
   await page.locator("#factor").selectOption("2");
   const start=Date.now();await page.locator("#go").click();
