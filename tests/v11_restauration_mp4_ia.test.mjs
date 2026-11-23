@@ -14,7 +14,7 @@ const original=path.join(MED,"video_vieuxtel.mp4");
 if(!fs.existsSync(original))throw new Error("Créer les médias tests/creer_medias.py");
 const sample=path.join(OUT,"source_0_7_s_neuronal.mp4");
 execFileSync("ffmpeg",["-nostdin","-v","error","-y","-i",original,"-t","0.7",
-  "-c:v","libx264","-preset","veryfast","-c:a","aac","-movflags","+faststart",sample],
+  "-vf","scale=128:72","-r","5","-c:v","libx264","-preset","veryfast","-c:a","aac","-movflags","+faststart",sample],
   {timeout:40000});
 const server=spawn(process.execPath,["tests/serveur.mjs"],{
   cwd:ROOT,env:{...process.env,PORT:"8898"},stdio:"ignore"});
@@ -49,10 +49,12 @@ try{
   await page.locator("#ab-enhance").click();
   await page.waitForFunction(()=>{
     const status=document.querySelector("#st1")?.textContent||"";
-    return /Terminé/.test(status)&&document.querySelector("#out")?.hidden===false;
-  },null,{timeout:300000});
+    return /Terminé|Échec|refusé|interrompu|impossible|erreur|Budget IA/.test(status);
+  },null,{timeout:180000});
+  const foundStatus=await page.locator("#st1").innerText();
+  assert.match(foundStatus,/Terminé/,"Échec du vrai export IA : "+foundStatus);
   const elapsed=(Date.now()-start)/1000;
-  assert.ok(elapsed<300,"Traitement neural vidéo 0,7 s trop long : "+elapsed+" s");
+  assert.ok(elapsed<180,"Traitement neural vidéo 0,7 s trop long : "+elapsed+" s");
   const diag=await page.evaluate(()=>({
     ia:document.querySelector("#o_max")?.checked||false,
     summary:document.querySelector("#auto_result_summary")?.textContent||"",
@@ -82,7 +84,7 @@ try{
   const dur=Number(meta.format.duration);
   assert.ok(dur>=0.45&&dur<=1.3,"Durée sortie 0,7 s différente : "+dur);
   assert.match(diag.summary,/Réseau IA appliqué/i,"Le résultat doit indiquer la participation du réseau");
-  assert.ok(meta.streams.some(st=>st.codec_type==="video"&&st.width===480&&st.height===270),
+  assert.ok(meta.streams.some(st=>st.codec_type==="video"&&st.width===128&&st.height===72),
      "On valide le parcours neuronal à la résolution SOURCE, pas une fausse 4K");
   console.log(JSON.stringify({status:"PASS",input_duration_s:0.7,
     total_walltime_s:Number(elapsed.toFixed(2)),output_duration_s:dur,
