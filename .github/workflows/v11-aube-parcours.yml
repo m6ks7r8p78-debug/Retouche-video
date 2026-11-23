@@ -68,6 +68,13 @@ jobs:
           set -euo pipefail
           export PW="$RUNNER_TEMP/rpa-browser/node_modules/playwright/index.mjs"
           node tests/v11_restauration_reelle.test.mjs
+      - name: MP4 complet avec vrai réseau neuronal SR sur vidéo 0.7 s (source native)
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PW="$RUNNER_TEMP/rpa-browser/node_modules/playwright/index.mjs"
+          node tests/v11_restauration_mp4_ia.test.mjs
       - name: Métriques de sortie anonymes (sans photo privée)
         if: always()
         run: |
