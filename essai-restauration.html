@@ -66,6 +66,7 @@ footer{margin-top:26px;font-size:12px;color:#91aab8}
 <div class="controls">
 <select id="zone"><option value="384">Zone native 384 px (conseillée sur iPhone)</option><option value="192">Zone native 192 px (rapide)</option><option value="full">Image entière si possible</option></select>
 <select id="factor" aria-label="Agrandissement"><option value="2">IA ×2</option><option value="4">IA ×4</option></select>
+<select id="reference" aria-label="Comparer au"><option value="bicubique">Comparer à la bicubique</option><option value="current" disabled>Comparer à sr.bin actuel (plus long)</option></select>
 </div>
 <p class="small">Touche l'image pour choisir le centre de la zone. Le réseau traite les pixels d'origine, sans les réduire artificiellement avant le test. ×4 peut être plus lent.</p>
 <button id="go" class="primary" disabled>Restaurer cette zone par IA</button>
@@ -74,7 +75,7 @@ footer{margin-top:26px;font-size:12px;color:#91aab8}
 <section class="panel wide" id="result" hidden>
 <h2>3. Regarder la différence réelle</h2>
 <div id="compare"><img id="after" alt="Sortie du modèle neuronal"><img id="before" alt="Agrandissement classique"><span id="splitline"></span></div>
-<div class="split-legend"><span>Avant · interpolation classique</span><span>Après · réseau IA</span></div>
+<div class="split-legend"><span id="refLabel">Avant · interpolation classique</span><span>Après · réseau IA</span></div>
 <label for="slider">Faire glisser le comparateur</label>
 <input type="range" id="slider" min="0" max="100" value="50" aria-label="Comparaison avant après">
 <p class="stats" id="numbers"></p>
@@ -101,6 +102,7 @@ $('#pilotBin').addEventListener('change',async()=>{
  const f=$('#pilotBin').files?.[0];if(pilotNet){try{pilotNet.unload()}catch(e){}pilotNet=null}
  if(pilotURL){URL.revokeObjectURL(pilotURL);pilotURL=null}pilotSHA=null;
  $('#factor option[value="4"]').disabled=false;
+ $('#reference').value='bicubique';$('#reference option[value="current"]').disabled=true;
  if(!f){say('Modèle public sr.bin rétabli.');return}
  try{
   const expected=24192; // nf16 / nc2 / x4, poids FP16 avec une unique paire.
@@ -113,7 +115,8 @@ $('#pilotBin').addEventListener('change',async()=>{
   pilotURL=URL.createObjectURL(f);
   pilotNet=mkSR({id:'sr_pilote_prive',file:pilotURL,nf:16,pairs:1,gpu:'__no_gpu_model_private'});
   $('#factor').value='2';$('#factor option[value="4"]').disabled=true;
-  result.hidden=true;say('Modèle privé chargé localement ('+f.size+' octets). Prêt pour un vrai essai ×2. Aucun fichier envoyé.');
+  $('#reference option[value="current"]').disabled=false;$('#reference').value='current';
+  result.hidden=true;say('Modèle privé chargé localement ('+f.size+' octets). Comparaison directe avec sr.bin sélectionnée (deux calculs, plus long). Aucun fichier envoyé.');
  }catch(e){pilotNet=null;pilotSHA=null;$('#pilotBin').value='';say('Modèle privé refusé : '+(e.message||e));}
 });
 const say=t=>{status.textContent=t;};
@@ -190,6 +193,14 @@ async function compute(){
   const elapsed=performance.now()-start;
   if(!canvas||canvas.width!==W||canvas.height!==H)throw Error('Résolution de sortie neuronale incorrecte.');
   const final=create(W,H);final.getContext('2d').drawImage(canvas,0,0);
+  let compareName='bicubique';
+  if(pilotNet&&$('#reference').value==='current'){
+    say('Comparaison : calcul du modèle actuel sr.bin sur la même zone, sans changer la source…');
+    const current=await window.SR.run(original,factor,.3,()=>{});
+    bx.clearRect(0,0,W,H);bx.drawImage(current,0,0,W,H);
+    compareName='sr.bin';
+  }
+  $('#refLabel').textContent=compareName==='sr.bin'?'Avant · modèle actuel sr.bin':'Avant · agrandissement bicubique';
   const a=final.getContext('2d',{willReadFrequently:true}).getImageData(0,0,W,H).data;
   const b=bx.getImageData(0,0,W,H).data;
   const step=Math.max(1,Math.floor(W*H/180000));
@@ -201,11 +212,11 @@ async function compute(){
   release=await new Promise(ok=>final.toBlob(blob=>ok(blob?URL.createObjectURL(blob):null),'image/png'));
   $('#download').hidden=!release;if(release)$('#download').href=release;
   audit={type:media,source:w+'×'+h,zone:cw+'×'+ch,position:Math.round(pos.x*100)+'% / '+Math.round(pos.y*100)+'%',
-    sortie:W+'×'+H,echelle:'×'+factor,moteur:network.engine||'inconnu',duree_s:ms,ecart_rgb_sur_255:mad,
+    sortie:W+'×'+H,echelle:'×'+factor,moteur:network.engine||'inconnu',duree_s:ms,reference:compareName,ecart_rgb_sur_255:mad,
     modele:pilotNet?'pilote privé 5 vidéos (SRVGG nf16 nc2)':'sr.bin',
     ...(pilotNet?{empreinte_pilote_sha256:pilotSHA}:{}),verdict};
   $('#numbers').textContent='Réseau : '+audit.moteur+' · source '+audit.zone+' → '+audit.sortie+
-    ' · '+ms+' s · écart RGB moyen vs bicubique : '+mad+'/255';
+    ' · '+ms+' s pour le candidat · écart RGB moyen vs '+compareName+' : '+mad+'/255';
   $('#report').value=JSON.stringify(audit,null,2);
   $('#slider').value=50;compareSlide();result.hidden=false;result.scrollIntoView({behavior:'smooth',block:'start'});
   say('IA exécutée. À toi de juger si elle restaure vraiment des détails naturels.');
