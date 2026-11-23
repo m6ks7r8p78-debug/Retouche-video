@@ -1,0 +1,44 @@
+name: AUBE v11.0 + budget IA - integration sans regression
+on:
+  pull_request:
+    paths:
+      - 'app.js'
+      - 'budget-ia.js'
+      - 'mode-simple.js'
+      - 'index.html'
+      - 'sw.js'
+      - 'aube*.js'
+      - 'aube*.css'
+      - 'tests/v11_aube_pr92.test.mjs'
+      - '.github/workflows/v11-aube-pr92.yml'
+jobs:
+  controles-statiques:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntaxe JavaScript moteur et AUBE
+        run: |
+          node --check app.js
+          node --check mode-simple.js
+          node --check budget-ia.js
+          node --check sr.js
+          node --check sr-gpu.js
+          node --check kaggle.js
+          node --check aube.js
+          node --check aube-etapes.js
+      - name: AUBE et poids de production octet-identiques
+        run: node tests/v11_aube_pr92.test.mjs
+      - name: Preflight IA et parcours grand public
+        run: |
+          node tests/budget_ia.test.mjs
+          node tests/simple_auto.test.mjs
+      - name: Empreinte PWA et fichiers disponibles hors connexion
+        run: |
+          node tests/sw.test.mjs --maj
+          git diff --exit-code -- sw.js
+          node tests/sw.test.mjs
