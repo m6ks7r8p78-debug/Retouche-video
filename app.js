@@ -41,7 +41,7 @@ const P={br:0,co:1,sa:1,wa:0,sh:0,dn:0,cs:.7,wb:0,db:0};const DB={ph:[0,0],r:1};
    LPIPS du visage 0,370 → 0,459 (plus loin de l'original) : la version classique y remet les blocs de compression (tests/calibrage_visages.py).
    « Équilibré » = réglages mesurés sur le banc depuis la v2.45 (inchangés). */
 const PROF={id:"equilibre",manual:false,
-  T:{naturel:{sh:.5,dn:.6,cs:.6,c:.5,hp:.9,srdn:-.12,ai:.45},equilibre:{sh:1,dn:1,cs:1,c:1,hp:.7,srdn:0,ai:.55},details:{sh:1.7,dn:1,cs:1,c:1,hp:.7,srdn:.15,ai:.75},
+  T:{naturel:{sh:.5,dn:.6,cs:.6,c:.5,hp:.9,srdn:-.12,ai:.75},equilibre:{sh:1,dn:1,cs:1,c:1,hp:.7,srdn:0,ai:.85},details:{sh:1.7,dn:1,cs:1,c:1,hp:.7,srdn:.15,ai:.92},
     nuit:{sh:.6,dn:1.6,cs:1.2,c:1,hp:.85,srdn:.2,ai:1,lift:.42},jour:{sh:.6,dn:1.6,cs:1.2,c:1,hp:.85,srdn:.2,ai:1,lift:.5,warm:.03,sat:.05,con:.05}},
   NOM:{naturel:"Naturel",equilibre:"Équilibré",details:"Détails",nuit:"Faible luminosité",jour:"Nuit → jour (esthétique)"},m:null,
   /* faible luminosité : gamma choisi pour amener la médiane de l'image vers la cible « lift », borné (jamais plus de ×2,2) */
@@ -460,11 +460,17 @@ var SRX={pc:null,key:"",pt:0,lock:Promise.resolve(),warned:false,off:false,
     xb.globalCompositeOperation="copy";xb.drawImage(cv,0,0);xb.globalCompositeOperation="source-over";
     if(g>.001){xa.globalAlpha=g;xa.drawImage(B,0,0)}
     xa.globalCompositeOperation="color";xa.globalAlpha=.85;xa.drawImage(B,0,0);/* couleurs verrouillées sur la version classique */
-    if(!SRX.gr){const n=document.createElement("canvas");n.width=n.height=256;const x=n.getContext("2d"),im=x.createImageData(256,256);
-      let sd=12345;for(let i=0;i<im.data.length;i+=4){sd=(sd*1103515245+12345)>>>0;const q=118+((sd>>>16)%21);im.data[i]=im.data[i+1]=im.data[i+2]=q;im.data[i+3]=255}
-      x.putImageData(im,0,0);SRX.gr=n}
-    xa.globalCompositeOperation="overlay";xa.globalAlpha=.35;const ox=Math.random()*256|0,oy=Math.random()*256|0;xa.translate(-ox,-oy);xa.fillStyle=xa.createPattern(SRX.gr,"repeat");xa.fillRect(ox,oy,W,H);xa.setTransform(1,0,0,1,0,0);/* grain léger */
-    xa.globalCompositeOperation="source-over";xa.globalAlpha=1;blit(A)},
+    /* Ne pas recréer du grain aléatoire : ce n'est pas un détail retrouvé. */
+    xa.globalCompositeOperation="source-over";xa.globalAlpha=1;
+    if(exporting&&mode==="video"&&SRX.proof&&SRX.proof.samples<4){
+      try{
+        const w=Math.min(96,W),h=Math.min(96,H),sx=Math.floor((W-w)/2),sy=Math.floor((H-h)/2);
+        const a=xa.getImageData(sx,sy,w,h).data,b=xb.getImageData(sx,sy,w,h).data;
+        let sum=0;for(let i=0;i<a.length;i+=4)sum+=Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2]);
+        SRX.proof.samples++;SRX.proof.sumMAD+=sum/(w*h*3);
+      }catch(e){SRX.proof.erreur=(e&&e.message)||"mesure pixels indisponible"}
+    }
+    blit(A)},
   /* échec de l'IA : message clair selon la cause ; en cas de mémoire saturée, on libère les modèles avant de continuer sans IA */
   fail(e){if(SRX.remote){SRX.remoteErr=SRX.remoteErr||e;return}/* IA rapide : l'export s'arrête proprement, l'IA locale reste active */
     const t=window.MODELS?MODELS.explain(e):{code:"MOTEUR",texte:(e&&e.message)||"erreur",solution:""};
@@ -1974,7 +1980,7 @@ $("#ex").onclick=async()=>{
       const L=plan?plan.map(pp=>pp.a):Array.from({length:total},(_,k)=>k+off),ns=[.08,.2,.32,.44,.56,.68,.8,.92].map(f=>L[Math.min(L.length-1,Math.floor(f*L.length))]);
       try{await SRX.caler(ns,OFPS)}catch(e){if(cancel)throw e;throw new Error("IA rapide : "+((e&&e.message)||e)+". Rien n’est perdu : décoche « Qualité IA » pour l’améliorer sans IA.")}}
     if(!rdr){await initPool();for(let i=0;i<POOL;i++)go(i);if(dustOn)msg("Anti-poussière indisponible avec ce mode de lecture : la vidéo est traitée sans.")}
-    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();let frameIA=0,glN=0;window.__glN=0;
+    poolMode=!rdr;const T0=performance.now();const srUse=SRX.on();SRX.proof=srUse?{samples:0,sumMAD:0,erreur:null}:null;let frameIA=0,glN=0;window.__glN=0;
     for(let i=0;i<total;i++){
       if(cancel||err)break;
       if(window.__iaDeadlineMs&&performance.now()>window.__iaDeadlineMs)throw new Error("Budget IA local de 10 min dépassé. Export interrompu, sans faux 4K. Utilise l’essai sur une image ou le GPU Kaggle.");
@@ -2070,6 +2076,7 @@ $("#ex").onclick=async()=>{
       if(pr!==true&&cfg.codec.startsWith("hvc")){try{localStorage.setItem("nohevc","1")}catch(e){}throw new Error("hevc illisible")}
       if(pr!==true&&window.__plan)throw new Error("le fichier est illisible (code "+pr+")");
       if(pr!==true){
+        if(srUse)throw new Error("Le fichier restauré par IA est illisible : repli vidéo classique interdit. Aucun faux export IA ne sera livré.");
         msg("Le fichier image par image n’est pas lisible ici (code "+pr+"). Passage à la méthode de secours en temps réel : garde l’écran allumé…");
         $("#pg").value=0;outBlob=await realtime();wa=!rtNoSound;
         if(cancel)throw new Error("export annulé.");
@@ -2079,7 +2086,7 @@ $("#ex").onclick=async()=>{
       if(outUrl)URL.revokeObjectURL(outUrl);
       outUrl=URL.createObjectURL(outBlob);$("#rv").src=outUrl;
       $("#rv").hidden=false;$("#pv").hidden=true;{const pk=window.__planK;baShow(!isPlan||!!(pk&&!pk.rev),pk?pk.a:tS,null,null,pk&&!pk.rev?pk.s:1)}if(!window.__baMode){$("#socn").hidden=false;$("#bab").hidden=!!isPlan;$("#bares").hidden=true;$("#kbb").hidden=true;$("#erb").hidden=true;$("#rvb").hidden=true;$("#kbres").hidden=true}$("#ri").hidden=true;if(!isPlan&&!window.__baMode)setTimeout(()=>REC.after(),300);$("#sv").textContent="Enregistrer la vidéo";$("#rtb").hidden=!!wa||!!window.__plan||audioWhy==="ta vidéo n’a pas de son";$("#out").hidden=false;$("#sv").hidden=false;
-       try{window.__simpleExportDone&&window.__simpleExportDone({width:cfg.width,height:cfg.height,frames:total,iaFrames:frameIA,iaRequested:srUse})}catch(e){}
+       try{window.__simpleExportDone&&window.__simpleExportDone({width:cfg.width,height:cfg.height,frames:total,iaFrames:frameIA,iaRequested:srUse,pixelMAD:SRX.proof&&SRX.proof.samples?+(SRX.proof.sumMAD/SRX.proof.samples).toFixed(3):null})}catch(e){}
       /* images identiques à la suivante : signe d'une recherche d'image ratée SEULEMENT en lecture par recherche (repli) ;
          en lecture séquentielle, ce sont les images de la source elle-même (plan fixe, mouvement très lent) : pas une erreur */
       const frozen=!plan&&poolUp&&maxRun>=3;
@@ -2090,7 +2097,7 @@ $("#ex").onclick=async()=>{
         const l=$("#orep_l");l.textContent="";let nb=0;ro.forEach(([k,t])=>{const li=document.createElement("li");li.className=k;li.textContent=t;l.appendChild(li);if(k!=="ok")nb++});
         $("#orep_s").textContent=nb?"Compte rendu de l’export : "+nb+" point"+(nb>1?"s":"")+" à savoir":"Compte rendu de l’export : tout s’est bien passé";$("#orep").classList.toggle("warn",nb>0);$("#orep").hidden=false;window.__orep=ro;window.__retried4k=false}catch(e){}
       try{$("#techt").textContent=(plan?"":"Images identiques à la précédente : "+dup+" sur "+Math.min(total,150)+(dup?" (série la plus longue : "+(maxRun+1)+")":"")+". ")+"["+window.__timing+"]";$("#tech").hidden=false}catch(e){}
-      try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,ia_images:frameIA,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)]}))}catch(e){}
+      try{showRecipe(recipe({sortie:cfg.width+"×"+cfg.height,codec:cfg.codec,debit_mbps:+(cfg.bitrate/1e6).toFixed(1),cadence:+OUTF.toFixed(3),images:total,ia_images:frameIA,ia_ecart_pixels_rgb:SRX.proof&&SRX.proof.samples?+(SRX.proof.sumMAD/SRX.proof.samples).toFixed(3):null,son:!!wa,partie_s:[+tS.toFixed(2),+tE.toFixed(2)]}))}catch(e){}
       try{DIAG.send("export",{ok:true,codec:cfg.codec,cascade:!!SRX.cascade,cascNet:SRX.cascNet||null,sr2Err:SRX.sr2Err||null,cascErr:SRX.cascErr||null,mbps:+(cfg.bitrate/1e6).toFixed(2),wall:Math.round((performance.now()-T0)/100)/10,frames:total,out:cfg.width+"x"+cfg.height,mo:+(outBlob.size/1048576).toFixed(1),son:!!wa,ia_images:frameIA,...(window.__glN?{gl_reprises:window.__glN}:{}),msg:$("#st1").textContent.slice(0,400)})}catch(e){}
       $("#out").scrollIntoView({behavior:"smooth"});
     }
