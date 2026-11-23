@@ -46,9 +46,8 @@
     /* Impossible de promettre une restauration 4K IA rapide localement.
        Préserver les pixels d'origine si la source est déjà UHD. */
     const q=Math.max(v.videoWidth,v.videoHeight)>1920?"-1":"1920";
-    return{kind:"standard",q,ia:false,remote:false,
-      note:"Amélioration rapide sans reconstruction IA"+(q==="-1"?" (définition d’origine).":" (sortie Full HD).")+
-      " La vraie IA 4K demanderait ici trop de temps. Le fichier ne sera pas présenté comme une restauration IA."};
+    return{kind:"unavailable",q,ia:false,remote:false,
+      note:"Aucune restauration neuronale disponible dans le budget mesuré. Aucun simple changement de luminosité/contraste ne sera proposé comme restauration. Active un GPU autorisé dans les Options avancées ou teste une image avec le vrai modèle ; l'export classique reste accessible en mode Expert."};
   }
   function prepare(p){
     if(!p)return;
@@ -92,7 +91,19 @@
       if(note)note.textContent="Résolution choisie manuellement dans AUBE. Le moteur vérifie toujours le budget IA avant la conversion.";
       return;
     }
-    prepare(decide()); /* immédiatement avant l'ancien gestionnaire d'export */
+    const choix=decide();
+    /* Priorité explicite : restaurer réellement ou expliquer le blocage ; jamais un
+       simple contraste/agrandissement automatique déguisé en restauration. */
+    if(!choix||choix.kind==="unavailable"){
+      const note=$("#auto_note"),raison=choix?.note||"Source vidéo non disponible pour la restauration.";
+      if(note)note.textContent=raison;
+      window.__rpaRestoreBlocked={at:new Date().toISOString(),reason:raison};
+      try{if(typeof msg==="function")msg(raison)}catch(x){}
+      if(e){e.preventDefault?.();e.stopImmediatePropagation?.()}
+      return;
+    }
+    window.__rpaRestoreBlocked=null;
+    prepare(choix); /* immédiatement avant l'ancien gestionnaire d'export */
   },true);
   for(const b of document.querySelectorAll("[data-auto-retouch]"))b.onclick=()=>{
     retouche=b.dataset.autoRetouch;
