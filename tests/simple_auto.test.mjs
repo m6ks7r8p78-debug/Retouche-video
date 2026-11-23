@@ -14,6 +14,8 @@ const app=fs.readFileSync(path.join(root,"app.js"),"utf8");
 assert.match(html,/id="auto_note"/);assert.match(html,/id="auto_tweaks"/);assert.match(html,/id="auto_reprocess"/);
 assert.match(html,/body\.simple #qwrap/);assert.match(html,/body\.simple #sai/);
 assert.match(app,/window\.__simpleExportDone/);assert.match(app,/window\.__simpleRefresh/);
+assert.match(app,/pixelMAD:SRX\.proof/,"une preuve de pixels doit être jointe au résultat");
+assert.doesNotMatch(app,/Math\.random\(\)\*256\|0/,"aucun grain aléatoire sur les images restaurées");
 let pass=0;
 function scene({w=848,h=480,d=.7,remote=false,local=true,mode="video"}={}){
   const names=["#o_max","#o_srv","#s_ia","#s_iah","#ex","#modeb","#q","#auto_note",
@@ -40,11 +42,12 @@ function scene({w=848,h=480,d=.7,remote=false,local=true,mode="video"}={}){
 }
 {
  const x=scene();x.els["#ex"].listeners.click();
- assert.equal(x.els["#o_max"].checked,false);
+ assert.equal(x.els["#o_max"].checked,true,"un clic automatique ne doit plus désactiver l'IA discrètement");
  assert.equal(x.els["#o_srv"].checked,false);
  assert.equal(x.els["#q"].value,"1920");
- assert.match(x.els["#auto_note"].textContent,/sans reconstruction IA/);
- pass++;console.log("✓ sans GPU : un clic -> amélioration rapide, aucune fausse restauration");
+ assert.match(x.els["#auto_note"].textContent,/Aucune restauration neuronale/);
+ assert.ok(x.win.__rpaRestoreBlocked,"sans GPU local assez rapide, l'export Auto classique est bloqué");
+ pass++;console.log("✓ sans GPU adapté : aucune amélioration classique trompeuse sous le bouton Auto");
 }
 {
  const x=scene({remote:true});x.els["#ex"].listeners.click();
@@ -64,9 +67,10 @@ function scene({w=848,h=480,d=.7,remote=false,local=true,mode="video"}={}){
 }
 {
  const x=scene({local:false});x.els["#ex"].listeners.click();
- assert.equal(x.els["#o_max"].checked,false);
+ assert.equal(x.els["#o_max"].checked,true);
  assert.equal(x.els["#o_srv"].checked,false);
- pass++;console.log("✓ moteur local indisponible : pas d'attente ni de faux résultat IA");
+ assert.ok(x.win.__rpaRestoreBlocked);
+ pass++;console.log("✓ modèle local indisponible : blocage explicite, pas d'export classique déguisé");
 }
 {
  const x=scene();x.win.__simpleExportDone({width:1920,height:1080,frames:21,iaFrames:0});
@@ -91,8 +95,9 @@ function scene({w=848,h=480,d=.7,remote=false,local=true,mode="video"}={}){
  x.document.listeners.click({target:{closest:()=>({dataset:{abQ:"3840"}})}});
  x.document.listeners.change({target:{id:"f"}});
  x.els["#ex"].listeners.click();
- assert.equal(x.els["#q"].value,"1920","nouvelle vidéo : le mode Auto doit revenir");
- pass++;console.log("✓ nouvel import : le choix manuel précédent ne bloque pas l'automatisation");
+ assert.equal(x.els["#q"].value,"3840","restauration bloquée : ne pas déplacer la résolution affichée");
+ assert.ok(x.win.__rpaRestoreBlocked,"nouvel import : Auto peut à nouveau décider et bloquer honnêtement");
+ pass++;console.log("✓ nouvel import : la sélection manuelle est réinitialisée et Auto reprend");
 }
 {
  const x=scene();
