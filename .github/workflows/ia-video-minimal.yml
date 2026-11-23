@@ -25,7 +25,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p tests/medias
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
           command -v ffmpeg
+          command -v ffprobe
           ffmpeg -hide_banner -loglevel error -y -f lavfi -i testsrc2=size=128x72:rate=5 \
             -f lavfi -i sine=frequency=440:sample_rate=44100 -t 0.7 \
             -c:v libx264 -crf 37 -pix_fmt yuv420p -c:a aac -b:a 64k -shortest \
